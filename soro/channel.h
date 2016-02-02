@@ -188,11 +188,11 @@ private:
     QTime _lastSendTime;
     QTime _lastStatisticsSendTime;
 
-    inline void setState(State status);
+    inline void setState(State state);
     inline void setPeerAddress(Channel::SocketAddress address);
     inline bool sendMessage(QByteArray message, MESSAGE_TYPE type);
     bool sendMessage(QByteArray message, MESSAGE_TYPE type, MESSAGE_ID ID);
-    void close(State status);
+    void close(State closeState);
     inline bool compareHandshake(QByteArray message);
     inline void sendHandshake();
     inline void sendHeartbeat();

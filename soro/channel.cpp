@@ -339,8 +339,8 @@ void Channel::close() {
     close(ReadyState);
 }
 
-void Channel::close(Channel::State status) {   //PRIVATE
-    LOG_W("Closing channel with status " + QString::number(status));
+void Channel::close(Channel::State closeState) {   //PRIVATE
+    LOG_W("Closing channel in state " + QString::number(closeState));
     if (_watchdogTimer->isActive()) {
         _watchdogTimer->stop();
     }
@@ -350,7 +350,7 @@ void Channel::close(Channel::State status) {   //PRIVATE
     if (_tcpServer != NULL) {
         _tcpServer->close();
     }
-    setState(status);
+    setState(closeState);
 }
 
 void Channel::udpReadyRead() {  //PRIVATE SLOT
@@ -526,10 +526,10 @@ void Channel::newTcpClient() {  //PRIVATE SLOT
     }
 }
 
-inline void Channel::setState(Channel::State status) {   //PRIVATE
-    //signals the statusChanged event
-     if (_state != status) {
-         _state = status;
+inline void Channel::setState(Channel::State state) {   //PRIVATE
+    //signals the stateChanged event
+     if (_state != state) {
+         _state = state;
          emit stateChanged(this, _state);
      }
 }
