@@ -15,12 +15,16 @@ DEFINES += SORO_LIBRARY
 
 SOURCES += \
     channel.cpp \
-    logger.cpp
+    logger.cpp \
+    watchdog.cpp \
+    tagvalueparser.cpp
 
 HEADERS +=\
         soro_global.h \
     channel.h \
-    logger.h
+    logger.h \
+    watchdog.h \
+    tagvalueparser.h
 
 unix {
     target.path = /usr/lib

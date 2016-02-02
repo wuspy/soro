@@ -1,18 +1,8 @@
 #include "channel.h"
 
-const QString Channel::IPV4_REGEX = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
-const QString Channel::IPV6_REGEX = "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))";
-
-Channel::Channel (QObject *parent, QString configFile, Logger *log) : QObject(parent) {
+Channel::Channel (QObject *parent, const QString &configFile, Logger *log) : QObject(parent) {
     _log = log;
-    LOG_TAG = "CHANNEL";
-    _tcpServer = NULL;
-    _tcpSocket = NULL;
-    _udpSocket = NULL;
-    _socket = NULL;
-    _buffer = NULL;
-    _watchdogTimer = NULL;
-
+    initVars();
     LOG_I("Opening configuration file " + configFile);
     QFile file(configFile, this);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -27,15 +17,9 @@ Channel::Channel (QObject *parent, QString configFile, Logger *log) : QObject(pa
     file.close();
 }
 
-Channel::Channel (QObject *parent, QUrl configUrl, Logger *log) : QObject(parent) {
+Channel::Channel (QObject *parent, const QUrl &configUrl, Logger *log) : QObject(parent) {
     _log = log;
-    LOG_TAG = "CHANNEL";
-    _tcpServer = NULL;
-    _tcpSocket = NULL;
-    _udpSocket = NULL;
-    _socket = NULL;
-    _buffer = NULL;
-
+    initVars();
     _netConfigUrl = configUrl;
     setState(AwaitingConfigurationState);
     _watchdogTimer = new QTimer(this);
@@ -53,6 +37,18 @@ Channel::~Channel() {
     //Qt will take care of cleaning up any object that has 'this' passed to it in its constructor
 }
 
+
+inline void Channel::initVars() {
+    LOG_TAG = "CHANNEL";
+    _tcpServer = NULL;
+    _tcpSocket = NULL;
+    _udpSocket = NULL;
+    _socket = NULL;
+    _buffer = NULL;
+    _sentTimeTable = NULL;
+    _watchdogTimer = NULL;
+}
+
 void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     //default if not specified
     _dropOldPackets = true;
@@ -63,139 +59,119 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     _sentLogCap = DEFAULT_SENT_LOG_CAP;
     _hostAddress.address = QHostAddress::Any;
     
-    //these items must exits
-    bool foundProtocol = false;
-    bool foundName = false;
-    bool foundServerAddress = false;
-    bool foundServerPort = false;
-    bool foundEndPoint = false;
+    const QString usingDefaultWarningString = "%1 was either not found or invalid while loading configuration, using default value %2";
+    const QString parseErrorString = "%1 was either not found or invalid while loading configuration";
 
-    const QString usingDefaultWarningString = "Cannot parse value for %1 in configuration, using default value";
-    const QString parseErrorString = "Cannot parse value for %1 in configuration";
-    
-    while (!stream.atEnd()) {
-        QString line = stream.readLine().trimmed();
-        if (line.isEmpty() || line.startsWith('#')) continue;
-        int sepIndex = line.indexOf(' ');
-        if (sepIndex < 0) continue;
-        QString tag = line.mid(0, sepIndex).trimmed().toLower();
-        QString value = line.mid(sepIndex + 1).trimmed();
-        if (tag == CONFIG_TAG_SERVER_ADDRESS) {
-            if (QRegExp(IPV4_REGEX).exactMatch(value) || QRegExp(IPV6_REGEX).exactMatch(value)) {
-                _serverAddress.address = QHostAddress(value);
-                foundServerAddress = true;
-            }
-            else {
-                LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
-            }
-        }
-        else if (tag == CONFIG_TAG_HOST_ADDRESS) {
-            if (QRegExp(IPV4_REGEX).exactMatch(value) || QRegExp(IPV6_REGEX).exactMatch(value)) {
-                _hostAddress.address = QHostAddress(value);
-            }
-            else {
-                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_HOST_ADDRESS));
-            }
-        }
-        else if (tag == CONFIG_TAG_SERVER_PORT) {
-            bool valid;
-            _serverAddress.port = value.toInt(&valid);
-            if (!valid) {
-                LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_PORT));
-                continue;
-            }
-            foundServerPort = true;
-        }
-        else if (tag == CONFIG_TAG_WATCHDOG_INTERVAL) {
-            bool valid;
-            _watchdogInterval = value.toInt(&valid);
-            if (!valid) {
-                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_WATCHDOG_INTERVAL));
-                _watchdogInterval = DEFAULT_WATCHDOG_INTERVAL;
-            }
-        }
-        else if (tag == CONFIG_TAG_IDLE_CONNECTION_TIMEOUT) {
-            bool valid;
-            _idleConnectionTimeout = value.toInt(&valid);
-            if (!valid) {
-                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT));
-                _idleConnectionTimeout = DEFAULT_IDLE_CONNECTION_TIMEOUT;
-            }
-        }
-        else if (tag == CONFIG_TAG_TCP_VERIFY_TIMEOUT) {
-            bool valid;
-            _tcpVerifyTimeout = value.toInt(&valid);
-            if (!valid) {
-                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_TCP_VERIFY_TIMEOUT));
-                _tcpVerifyTimeout = DEFAULT_TCP_VERIFY_TIMEOUT;
-            }
-        }
-        else if (tag == CONFIG_TAG_SENT_LOG_CAP) {
-            bool valid;
-            _sentLogCap = value.toInt(&valid);
-            if (!valid) {
-                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_SENT_LOG_CAP));
-                _sentLogCap = DEFAULT_SENT_LOG_CAP;
-            }
-        }
-        else if (tag == CONFIG_TAG_STATISTICS_INTERVAL) {
-            bool valid;
-            _statisticsInterval = value.toInt(&valid);
-            if (!valid) {
-                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_STATISTICS_INTERVAL));
-                _statisticsInterval = DEFAULT_STATISTICS_INTERVAL;
-            }
-        }
-        else if (tag == CONFIG_TAG_DROP_OLD_PACKETS) {
-            bool valid;
-            _dropOldPackets = parseBoolString(value, &valid);
-            if (!valid) {
-                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_DROP_OLD_PACKETS));
-                _dropOldPackets = false;
-            }
-        }
-        else if (tag == CONFIG_TAG_CHANNEL_NAME) {
-            _name = value;
-            foundName = true;
-        }
-        else if (tag == CONFIG_TAG_PROTOCOL) {
-            if (value.toLower() == "udp") {
-                _protocol = UdpProtocol;
-            }
-            else if (value.toLower() == "tcp") {
-                _protocol = TcpProtocol;
-            }
-            else {
-                LOG_E(parseErrorString.arg(CONFIG_TAG_PROTOCOL));
-                continue;
-            }
-            foundProtocol = true;
-        }
-        else if (tag == CONFIG_TAG_ENDPOINT) {
-            if (value.toLower() == "server") {
-                _isServer = true;
-            }
-            else if (value.toLower() == "client") {
-                _isServer = false;
-            }
-            else {
-                LOG_E(parseErrorString.arg(CONFIG_TAG_ENDPOINT));
-                continue;
-            }
-            foundEndPoint = true;
-        }
-        else {
-            LOG_W("Configuration contains unknown tag " + tag);
-        }
-    }
-
-    if (!foundProtocol | !foundServerAddress | !foundServerPort | !foundEndPoint | !foundName) {
-        //config file was incomplete or invalid
-        LOG_E("Coniguration file was incomplete");
+    TagValueParser parser;
+    if (!parser.load(stream)) {
+        LOG_E("The configuration file is not properly formatted");
         setState(ErrorState);
         return;
     }
-    
+
+    //These values must be in the file
+
+    bool success;
+    success = parser.valueAsIP(CONFIG_TAG_SERVER_ADDRESS, &_serverAddress.address, true);
+    parser.remove(CONFIG_TAG_SERVER_ADDRESS);
+    if (!success) {
+        LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
+        setState(ErrorState);
+        return;
+    }
+    int port;
+    success = parser.valueAsInt(CONFIG_TAG_SERVER_PORT, &port);
+    parser.remove(CONFIG_TAG_SERVER_PORT);
+    if (!success) {
+        LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_PORT));
+        setState(ErrorState);
+        return;
+    }
+    _serverAddress.port = port;
+    QString protocol = parser.value(CONFIG_TAG_PROTOCOL).toLower();
+    parser.remove(CONFIG_TAG_PROTOCOL);
+    if (protocol == "udp") {
+        _protocol = UdpProtocol;
+    }
+    else if (protocol == "tcp") {
+        _protocol = TcpProtocol;
+    }
+    else {
+        LOG_E(parseErrorString.arg(CONFIG_TAG_PROTOCOL));
+        setState(ErrorState);
+        return;
+    }
+    QString endpoint = parser.value(CONFIG_TAG_ENDPOINT).toLower();
+    parser.remove(CONFIG_TAG_ENDPOINT);
+    if (endpoint == "server") {
+        _isServer = true;
+    }
+    else if (endpoint == "client") {
+        _isServer = false;
+    }
+    else {
+        LOG_E(parseErrorString.arg(CONFIG_TAG_ENDPOINT));
+        setState(ErrorState);
+        return;
+    }
+    _name = parser.value(CONFIG_TAG_CHANNEL_NAME);
+    parser.remove(CONFIG_TAG_CHANNEL_NAME);
+    if (_name.isEmpty()) {
+        LOG_E(parseErrorString.arg(CONFIG_TAG_CHANNEL_NAME));
+        setState(ErrorState);
+        return;
+    }
+
+    //These values are optional
+
+    success = parser.valueAsIP(CONFIG_TAG_HOST_ADDRESS, &_hostAddress.address, true);
+    parser.remove(CONFIG_TAG_HOST_ADDRESS);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_HOST_ADDRESS, "-any-"));
+        _hostAddress.address = QHostAddress::Any;
+    }
+    success = parser.valueAsBool(CONFIG_TAG_DROP_OLD_PACKETS, &_dropOldPackets);
+    parser.remove(CONFIG_TAG_DROP_OLD_PACKETS);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_DROP_OLD_PACKETS, "true"));
+        _dropOldPackets = true;
+    }
+    success = parser.valueAsInt(CONFIG_TAG_WATCHDOG_INTERVAL, &_watchdogInterval);
+    parser.remove(CONFIG_TAG_WATCHDOG_INTERVAL);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_WATCHDOG_INTERVAL, QString::number(DEFAULT_WATCHDOG_INTERVAL)));
+        _watchdogInterval = DEFAULT_WATCHDOG_INTERVAL;
+    }
+    success = parser.valueAsInt(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT, &_idleConnectionTimeout);
+    parser.remove(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT, QString::number(DEFAULT_IDLE_CONNECTION_TIMEOUT)));
+        _idleConnectionTimeout = DEFAULT_IDLE_CONNECTION_TIMEOUT;
+    }
+    success = parser.valueAsInt(CONFIG_TAG_SENT_LOG_CAP, &_sentLogCap);
+    parser.remove(CONFIG_TAG_SENT_LOG_CAP);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_SENT_LOG_CAP, QString::number(DEFAULT_SENT_LOG_CAP)));
+        _sentLogCap = DEFAULT_SENT_LOG_CAP;
+    }
+    success = parser.valueAsInt(CONFIG_TAG_STATISTICS_INTERVAL, &_statisticsInterval);
+    parser.remove(CONFIG_TAG_STATISTICS_INTERVAL);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_STATISTICS_INTERVAL, QString::number(DEFAULT_STATISTICS_INTERVAL)));
+        _statisticsInterval = DEFAULT_STATISTICS_INTERVAL;
+    }
+    success = parser.valueAsInt(CONFIG_TAG_TCP_VERIFY_TIMEOUT, &_tcpVerifyTimeout);
+    parser.remove(CONFIG_TAG_TCP_VERIFY_TIMEOUT);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_TCP_VERIFY_TIMEOUT, QString::number(DEFAULT_TCP_VERIFY_TIMEOUT)));
+        _tcpVerifyTimeout = DEFAULT_TCP_VERIFY_TIMEOUT;
+    }
+
+    //check for unknown values (known ones were already removed
+    foreach (QString unknown, parser.keys()) {
+        LOG_W("Uknown configuration option " + unknown);
+    }
+
     //log tag for debugging
     LOG_TAG = _name + (_isServer ? "(S)" : "(C)");
 
@@ -239,19 +215,6 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     setState(ReadyState); //now safe to call open()
 }
 
-inline bool Channel::parseBoolString(QString string, bool* value) { //PRIVATE
-    string = string.toLower();
-    if (string == "true" || string == "1") {
-        *value = true;
-        return true;
-    }
-    else if (string == "false" || string == "0") {
-        *value = false;
-        return true;
-    }
-    return false;
-}
-
 void Channel::open() {
     if (_state == ReadyState) {
         //If this is the server, we will bind to the server port
@@ -293,7 +256,7 @@ void Channel::configureNewTcpSocket() {
     }
 }
 
-void Channel::routeMessage(Channel *sender, QByteArray message) {  //PRIVATE SLOT
+void Channel::routeMessage(Channel *sender, const QByteArray &message) {  //PRIVATE SLOT
     sendMessage(message);
 }
 
@@ -426,7 +389,7 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
     }
 }
 
-void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, QByteArray message, SocketAddress address) {
+void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QByteArray &message, const SocketAddress &address) {
     switch (type) {
     case MSGTYPE_NORMAL:
         //normal data packet
@@ -500,7 +463,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, QByteArra
     }
 }
 
-inline bool Channel::compareHandshake(QByteArray message) { //PRIVATE
+inline bool Channel::compareHandshake(const QByteArray &message)  const { //PRIVATE
     if (message.size() != _nameUtf8.size()) return false;
     return _nameUtf8.startsWith(message);
 }
@@ -687,11 +650,13 @@ inline void Channel::sendHeartbeat() {   //PRIVATE
     sendMessage(QByteArray(""), MSGTYPE_HEARTBEAT);
 }
 
-bool Channel::sendMessage(QByteArray message) {
+bool Channel::sendMessage(const QByteArray &message) {
     if (_state == ConnectedState) {
         if (message.size() > MAX_MESSAGE_LENGTH) {
             LOG_W("Attempting to send a message that is too long, it will be truncated");
-            message.truncate(MAX_MESSAGE_LENGTH);
+            QByteArray truncated(message);
+            truncated.truncate(MAX_MESSAGE_LENGTH);
+            return sendMessage(truncated, MSGTYPE_NORMAL);
         }
         return sendMessage(message, MSGTYPE_NORMAL);
     }
@@ -701,11 +666,11 @@ bool Channel::sendMessage(QByteArray message) {
     }
 }
 
-inline bool Channel::sendMessage(QByteArray message, MESSAGE_TYPE type) {  //PRIVATE
+inline bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {  //PRIVATE
     return sendMessage(message, type, ++_nextSendID);
 }
 
-bool Channel::sendMessage(QByteArray message, MESSAGE_TYPE type, MESSAGE_ID ID) {  //PRIVATE
+bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_ID ID) {  //PRIVATE
     qint64 status;
     if (_protocol == UdpProtocol) {
         QByteArray arr(NULL, message.size() + UDP_HEADER_BYTES);
@@ -744,22 +709,22 @@ bool Channel::sendMessage(QByteArray message, MESSAGE_TYPE type, MESSAGE_ID ID) 
     return true;
 }
 
-QString Channel::getName() {
+QString Channel::getName() const {
     return _name;
 }
 
-Channel::Protocol Channel::getProtocol() {
+Channel::Protocol Channel::getProtocol() const {
     return _protocol;
 }
 
-bool Channel::isServer() {
+bool Channel::isServer() const {
     return _isServer;
 }
 
-Channel::SocketAddress Channel::getPeerAddress() {
+Channel::SocketAddress Channel::getPeerAddress() const {
     return _peerAddress;
 }
 
-Channel::State Channel::getState() {
+Channel::State Channel::getState() const {
     return _state;
 }

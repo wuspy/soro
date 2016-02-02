@@ -3,6 +3,8 @@
 
 #include "soro_global.h"
 #include "logger.h"
+#include "tagvalueparser.h"
+
 #include <QUdpSocket>
 #include <QTcpSocket>
 #include <cstring>
@@ -80,7 +82,7 @@ public:
         QHostAddress address;
         quint16 port;
 
-        SocketAddress(QHostAddress address, quint16 port) {
+        SocketAddress(const QHostAddress &address, quint16 port) {
             this->address = address;
             this->port = port;
         }
@@ -90,15 +92,15 @@ public:
             this->port = 0;
         }
 
-        inline QString toString() {
+        QString toString() const {
             return address.toString() + ":" + QString::number(port);
         }
 
-        inline bool operator==(const SocketAddress& other) {
-            return (address == other.address) & (port = other.port);
+        inline bool operator==(const SocketAddress& other) const {
+            return (address == other.address) & (port == other.port);
         }
 
-        inline bool operator!=(const SocketAddress& other) {
+        inline bool operator!=(const SocketAddress& other) const {
             return !(*this == other);
         }
     };
@@ -126,19 +128,19 @@ public:
 
     ~Channel();
 
-    Channel (QObject *parent, QString configFile, Logger *log);
-    Channel (QObject *parent, QUrl configUrl, Logger *log);
-    QString getName();
-    Protocol getProtocol();
-    SocketAddress getPeerAddress();
+    Channel (QObject *parent, const QString &configFile, Logger *log);
+    Channel (QObject *parent, const QUrl &configUrl, Logger *log);
+    QString getName() const;
+    Protocol getProtocol() const;
+    SocketAddress getPeerAddress() const;
     void route(Channel *receiver);
     void unroute(Channel *receiver);
     void open();
     void close();
-    bool sendMessage(QByteArray message);
-    bool isServer();
+    bool sendMessage(const QByteArray &message);
+    bool isServer() const;
     void setDropOldPackets(bool dropOld);
-    State getState();
+    State getState() const;
 
 private:
     //Message type identifiers
@@ -147,9 +149,6 @@ private:
     static const MESSAGE_TYPE MSGTYPE_SERVER_HANDSHAKE = 2;
     static const MESSAGE_TYPE MSGTYPE_HEARTBEAT = 3;
     static const MESSAGE_TYPE MSGTYPE_ACK = 4;
-
-    static const QString IPV4_REGEX;
-    static const QString IPV6_REGEX;
 
     char *_buffer;
     MESSAGE_LENGTH _bufferLength;
@@ -190,22 +189,22 @@ private:
 
     inline void setState(State state);
     inline void setPeerAddress(Channel::SocketAddress address);
-    inline bool sendMessage(QByteArray message, MESSAGE_TYPE type);
-    bool sendMessage(QByteArray message, MESSAGE_TYPE type, MESSAGE_ID ID);
+    inline bool sendMessage(const QByteArray &message, MESSAGE_TYPE type);
+    bool sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_ID ID);
     void close(State closeState);
-    inline bool compareHandshake(QByteArray message);
+    inline bool compareHandshake(const QByteArray &message) const;
     inline void sendHandshake();
     inline void sendHeartbeat();
     void resetConnection();
     void processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID,
-                                QByteArray message, SocketAddress address);
+                                const QByteArray &message, const SocketAddress &address);
     void configureNewTcpSocket();
     void resetConnectionVars();
+    inline void initVars();
     void initWithConfiguration(QTextStream &stream);
-    bool parseBoolString(QString string, bool* value);
 
 private slots:
-    void routeMessage(Channel *sender, QByteArray message);
+    void routeMessage(Channel *sender, const QByteArray &message);
     void udpReadyRead();
     void tcpReadyRead();
     void watchdogTick();
@@ -215,9 +214,9 @@ private slots:
     void serverError(QAbstractSocket::SocketError err);
 
 signals:
-    void messageReceived(Channel *channel, QByteArray message);
+    void messageReceived(Channel *channel, const QByteArray &message);
     void stateChanged(Channel *channel, Channel::State state);
-    void peerAddressChanged(Channel *channel, Channel::SocketAddress peerAddress);
+    void peerAddressChanged(Channel *channel,  const Channel::SocketAddress &peerAddress);
     void statisticsUpdate(Channel *channel, int rtt, quint64 msg_up, quint64 msg_down);
 };
 
