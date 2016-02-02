@@ -1,112 +1,46 @@
 #include "channel.h"
 
 const QString Channel::IPV4_REGEX = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+const QString Channel::IPV6_REGEX = "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))";
 
-Channel::Channel (QObject *parent, QString configFile, Logger *log,
-                  ChannelSide side, QHostAddress host) : QObject(parent) {
+Channel::Channel (QObject *parent, QString configFile, Logger *log) : QObject(parent) {
     _log = log;
-    _isServer = side == ServerSide;
-    _hostAddress.address = host;
     LOG_TAG = "CHANNEL";
+    _tcpServer = NULL;
+    _tcpSocket = NULL;
+    _udpSocket = NULL;
+    _socket = NULL;
+    _buffer = NULL;
+    _watchdogTimer = NULL;
+
     LOG_I("Opening configuration file " + configFile);
     QFile file(configFile, this);
     if (!file.open(QIODevice::ReadOnly)) {
         LOG_E("Cannot open configuration file " + configFile + " for read access");
-        setStatus(ErrorState);
+        setState(ErrorState);
         return;
     }
-    _dropOldPackets = true; //default value if not found
-
-    //these items must exits
-    bool foundProtocol = false;
-    bool foundName = false;
-    bool foundServerAddress = false;
-    bool foundServerPort = false;
 
     QTextStream stream(&file);
-    while (!stream.atEnd()) {
-        QString line = stream.readLine().trimmed();
-        if (line.isEmpty() || line.startsWith('#')) continue;
-        int sepIndex = line.indexOf(' ');
-        if (sepIndex < 0) continue;
-        QString tag = line.mid(0, sepIndex).trimmed().toLower();
-        QString value = line.mid(sepIndex + 1).trimmed();
-        if (tag == "dropoldudppackets" || tag == "dropoldpackets") {
-            bool result;
-            bool valid = parseBoolString(value, &result);
-            if (!valid) {
-                LOG_E("Cannot parse value for DropOldUdpPackets in configuration file");
-                continue;
-            }
-           _dropOldPackets = result;
-        }
-        else if (tag == "serveraddress" || tag == "serverip") {
-            if (QRegExp(IPV4_REGEX).exactMatch(value)) {
-                _serverAddress.address = QHostAddress(value);
-                foundServerAddress = true;
-            }
-            else {
-                LOG_E("Cannot parse value for ServerAddress in configuration file");
-            }
-        }
-        else if (tag == "serverport") {
-            bool valid;
-            _serverAddress.port = value.toInt(&valid);
-            if (!valid) {
-                LOG_E("Cannot parse value for ServerPort in configuration file");
-                continue;
-            }
-            foundServerPort = true;
-        }
-        else if (tag == "name") {
-            _name = value;
-            foundName = true;
-        }
-        else if (tag == "protocol") {
-            if (value.toLower() == "udp") {
-                _protocol = UdpProtocol;
-            }
-            else if (value.toLower() == "tcp") {
-                _protocol = TcpProtocol;
-            }
-            else {
-                LOG_E("Configuration file contains unknown protocol " + value);
-                continue;
-            }
-            foundProtocol = true;
-        }
-        else {
-            LOG_E("Configuration file contains unknown tag " + tag);
-        }
-    }
+    initWithConfiguration(stream);
 
     file.close();
-    _buffer = NULL;
-    if (foundProtocol & foundServerAddress & foundServerPort & foundIsServer & foundName) {
-        init();
-    }
-    else {
-        //config file was incomplete or invalid
-        LOG_E("Coniguration file was incomplete");
-        setStatus(ErrorState);
-    }
 }
 
-Channel::Channel(QObject *parent, Configuration configuration, Logger *log,
-                 ChannelSide mode, QHostAddress side) : QObject(parent) {
+Channel::Channel (QObject *parent, QUrl configUrl, Logger *log) : QObject(parent) {
     _log = log;
-    _isServer = side == ServerSide;
-    _hostAddress.address = host;
-    //load config
-    _dropOldPackets = configuration.dropOldUdpPackets;
-    _log = configuration.logger;
-    _serverAddress = configuration.serverAddress;
-    _name = configuration.name;
-    _nameUtf8 = _name.toUtf8();
-    _protocol = configuration.protocol;
-    _isServer = configuration.isServer;
+    LOG_TAG = "CHANNEL";
+    _tcpServer = NULL;
+    _tcpSocket = NULL;
+    _udpSocket = NULL;
+    _socket = NULL;
+    _buffer = NULL;
 
-    init();
+    _netConfigUrl = configUrl;
+    setState(AwaitingConfigurationState);
+    _watchdogTimer = new QTimer(this);
+    _watchdogTimer->setInterval(DEFAULT_WATCHDOG_INTERVAL);
+    _watchdogTimer->start();
 }
 
 Channel::~Channel() {
@@ -119,13 +53,154 @@ Channel::~Channel() {
     //Qt will take care of cleaning up any object that has 'this' passed to it in its constructor
 }
 
-void Channel::init() { //PRIVATE
+void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
+    //default if not specified
+    _dropOldPackets = true;
+    _watchdogInterval = DEFAULT_WATCHDOG_INTERVAL;
+    _statisticsInterval = DEFAULT_STATISTICS_INTERVAL;
+    _idleConnectionTimeout = DEFAULT_IDLE_CONNECTION_TIMEOUT;
+    _tcpVerifyTimeout = DEFAULT_TCP_VERIFY_TIMEOUT;
+    _sentLogCap = DEFAULT_SENT_LOG_CAP;
+    _hostAddress.address = QHostAddress::Any;
+    
+    //these items must exits
+    bool foundProtocol = false;
+    bool foundName = false;
+    bool foundServerAddress = false;
+    bool foundServerPort = false;
+    bool foundEndPoint = false;
+
+    const QString usingDefaultWarningString = "Cannot parse value for %1 in configuration, using default value";
+    const QString parseErrorString = "Cannot parse value for %1 in configuration";
+    
+    while (!stream.atEnd()) {
+        QString line = stream.readLine().trimmed();
+        if (line.isEmpty() || line.startsWith('#')) continue;
+        int sepIndex = line.indexOf(' ');
+        if (sepIndex < 0) continue;
+        QString tag = line.mid(0, sepIndex).trimmed().toLower();
+        QString value = line.mid(sepIndex + 1).trimmed();
+        if (tag == CONFIG_TAG_SERVER_ADDRESS) {
+            if (QRegExp(IPV4_REGEX).exactMatch(value) || QRegExp(IPV6_REGEX).exactMatch(value)) {
+                _serverAddress.address = QHostAddress(value);
+                foundServerAddress = true;
+            }
+            else {
+                LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
+            }
+        }
+        else if (tag == CONFIG_TAG_HOST_ADDRESS) {
+            if (QRegExp(IPV4_REGEX).exactMatch(value) || QRegExp(IPV6_REGEX).exactMatch(value)) {
+                _hostAddress.address = QHostAddress(value);
+            }
+            else {
+                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_HOST_ADDRESS));
+            }
+        }
+        else if (tag == CONFIG_TAG_SERVER_PORT) {
+            bool valid;
+            _serverAddress.port = value.toInt(&valid);
+            if (!valid) {
+                LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_PORT));
+                continue;
+            }
+            foundServerPort = true;
+        }
+        else if (tag == CONFIG_TAG_WATCHDOG_INTERVAL) {
+            bool valid;
+            _watchdogInterval = value.toInt(&valid);
+            if (!valid) {
+                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_WATCHDOG_INTERVAL));
+                _watchdogInterval = DEFAULT_WATCHDOG_INTERVAL;
+            }
+        }
+        else if (tag == CONFIG_TAG_IDLE_CONNECTION_TIMEOUT) {
+            bool valid;
+            _idleConnectionTimeout = value.toInt(&valid);
+            if (!valid) {
+                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT));
+                _idleConnectionTimeout = DEFAULT_IDLE_CONNECTION_TIMEOUT;
+            }
+        }
+        else if (tag == CONFIG_TAG_TCP_VERIFY_TIMEOUT) {
+            bool valid;
+            _tcpVerifyTimeout = value.toInt(&valid);
+            if (!valid) {
+                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_TCP_VERIFY_TIMEOUT));
+                _tcpVerifyTimeout = DEFAULT_TCP_VERIFY_TIMEOUT;
+            }
+        }
+        else if (tag == CONFIG_TAG_SENT_LOG_CAP) {
+            bool valid;
+            _sentLogCap = value.toInt(&valid);
+            if (!valid) {
+                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_SENT_LOG_CAP));
+                _sentLogCap = DEFAULT_SENT_LOG_CAP;
+            }
+        }
+        else if (tag == CONFIG_TAG_STATISTICS_INTERVAL) {
+            bool valid;
+            _statisticsInterval = value.toInt(&valid);
+            if (!valid) {
+                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_STATISTICS_INTERVAL));
+                _statisticsInterval = DEFAULT_STATISTICS_INTERVAL;
+            }
+        }
+        else if (tag == CONFIG_TAG_DROP_OLD_PACKETS) {
+            bool valid;
+            _dropOldPackets = parseBoolString(value, &valid);
+            if (!valid) {
+                LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_DROP_OLD_PACKETS));
+                _dropOldPackets = false;
+            }
+        }
+        else if (tag == CONFIG_TAG_CHANNEL_NAME) {
+            _name = value;
+            foundName = true;
+        }
+        else if (tag == CONFIG_TAG_PROTOCOL) {
+            if (value.toLower() == "udp") {
+                _protocol = UdpProtocol;
+            }
+            else if (value.toLower() == "tcp") {
+                _protocol = TcpProtocol;
+            }
+            else {
+                LOG_E(parseErrorString.arg(CONFIG_TAG_PROTOCOL));
+                continue;
+            }
+            foundProtocol = true;
+        }
+        else if (tag == CONFIG_TAG_ENDPOINT) {
+            if (value.toLower() == "server") {
+                _isServer = true;
+            }
+            else if (value.toLower() == "client") {
+                _isServer = false;
+            }
+            else {
+                LOG_E(parseErrorString.arg(CONFIG_TAG_ENDPOINT));
+                continue;
+            }
+            foundEndPoint = true;
+        }
+        else {
+            LOG_W("Configuration contains unknown tag " + tag);
+        }
+    }
+
+    if (!foundProtocol | !foundServerAddress | !foundServerPort | !foundEndPoint | !foundName) {
+        //config file was incomplete or invalid
+        LOG_E("Coniguration file was incomplete");
+        setState(ErrorState);
+        return;
+    }
+    
     //log tag for debugging
     LOG_TAG = _name + (_isServer ? "(S)" : "(C)");
 
     //create a buffer for storing received messages
     _buffer = new char[1024];
-    setStatus(DisconnectedState);
 
     LOG_I("Initializing with serverAddress=" + _serverAddress.toString()
           + ",protocol=" + (_protocol == TcpProtocol ? "TCP" : "UDP"));
@@ -133,15 +208,12 @@ void Channel::init() { //PRIVATE
     //Create a QHash for storing sent message ID's and times for QoS monitoring
     _sentTimeTable = _isServer ? new QHash<MESSAGE_ID, QTime>() : NULL;
 
-    //setup the monitor timer
-    _monitorTimer = new QTimer(this);
-    _monitorTimer->setInterval(MONITOR_INTERVAL);
-    connect(_monitorTimer, SIGNAL(timeout()), this, SLOT(monitorTick()));
-
-    _tcpServer = NULL;
-    _tcpSocket = NULL;
-    _udpSocket = NULL;
-    _socket = NULL;
+    //setup the watchdog timer
+    if (_watchdogTimer == NULL) {
+        _watchdogTimer = new QTimer(this);
+        connect(_watchdogTimer, SIGNAL(timeout()), this, SLOT(watchdogTick()));
+    }
+    _watchdogTimer->setInterval(_watchdogInterval);
 
     //create socket and connect signals
     if (_protocol == UdpProtocol) {
@@ -164,6 +236,7 @@ void Channel::init() { //PRIVATE
         configureNewTcpSocket(); //This is its own function, as it must be called every time a new
                                  //TCP client connects in a server scenario
     }
+    setState(ReadyState); //now safe to call open()
 }
 
 inline bool Channel::parseBoolString(QString string, bool* value) { //PRIVATE
@@ -180,7 +253,7 @@ inline bool Channel::parseBoolString(QString string, bool* value) { //PRIVATE
 }
 
 void Channel::open() {
-    if (_status == DisconnectedState) {
+    if (_state == ReadyState) {
         //If this is the server, we will bind to the server port
         if (_isServer) {
             _hostAddress.port = _serverAddress.port;
@@ -198,14 +271,14 @@ void Channel::open() {
         else {
             _socket->bind(_hostAddress.address, _hostAddress.port);
         }
-        if (!_monitorTimer->isActive()) {
-            _monitorTimer->start();
+        if (!_watchdogTimer->isActive()) {
+            _watchdogTimer->start();
         }
         //start the connection procedure
         resetConnection();
     }
     else {
-        LOG_W("open() was already called on this channel");
+        LOG_E("Cannot call open() in the current channel state");
     }
 }
 
@@ -215,7 +288,7 @@ void Channel::configureNewTcpSocket() {
         _socket = _tcpSocket;
         connect(_socket, SIGNAL(readyRead()), this, SLOT(tcpReadyRead()));
         connect(_socket, SIGNAL(connected()), this, SLOT(tcpConnected()));
-        connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)), 
+        connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
                 this, SLOT(socketError(QAbstractSocket::SocketError)));
     }
 }
@@ -236,7 +309,7 @@ void Channel::socketError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
         break;
     default:
         LOG_E("Connection Error: " + _socket->errorString());
-        setStatus(DisconnectedState); //this will force the timer to reset the connection
+        setState(DisconnectedState); //this will force the timer to reset the connection
         break;
     }
 }
@@ -256,20 +329,20 @@ void Channel::serverError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
         //don't automatically kill the connection if it's still active, only the listening server
         //experienced the error
         if (_tcpSocket == NULL || _tcpSocket->state() != QAbstractSocket::ConnectedState) {
-            setStatus(DisconnectedState); //this will force the timer to reset the connection
+            setState(DisconnectedState); //this will force the timer to reset the connection
         }
         break;
     }
 }
 
 void Channel::close() {
-    close(DisconnectedState);
+    close(ReadyState);
 }
 
-void Channel::close(Channel::Status status) {   //PRIVATE
+void Channel::close(Channel::State status) {   //PRIVATE
     LOG_W("Closing channel with status " + QString::number(status));
-    if (_monitorTimer->isActive()) {
-        _monitorTimer->stop();
+    if (_watchdogTimer->isActive()) {
+        _watchdogTimer->stop();
     }
     if (_socket != NULL) {
         _socket->close();
@@ -277,7 +350,7 @@ void Channel::close(Channel::Status status) {   //PRIVATE
     if (_tcpServer != NULL) {
         _tcpServer->close();
     }
-    setStatus(status);
+    setState(status);
 }
 
 void Channel::udpReadyRead() {  //PRIVATE SLOT
@@ -371,7 +444,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, QByteArra
                 //we are the client, and we got a respoonse from the server (yay)
                 resetConnectionVars();
                 setPeerAddress(address);
-                setStatus(ConnectedState);
+                setState(ConnectedState);
                 if (_protocol == TcpProtocol) _tcpVerified = true;
                 LOG_I("Received handshake response from server " + _serverAddress.toString());
                 _lastReceiveTime = QTime::currentTime();
@@ -388,7 +461,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, QByteArra
                 //We are the server getting a new (valid) handshake request, respond back and record the address
                 resetConnectionVars();
                 setPeerAddress(address);
-                setStatus(ConnectedState);
+                setState(ConnectedState);
                 if (_protocol == TcpProtocol) {
                     _tcpVerified = true;
                 }
@@ -408,10 +481,10 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, QByteArra
     case MSGTYPE_HEARTBEAT:
         _lastReceiveTime = QTime::currentTime();
         break;
-    case MSGTYPE_QOS_ACK:
+    case MSGTYPE_ACK:
         if (_isServer && _sentTimeTable->contains(ID)) {
             int rtt = _sentTimeTable->value(ID).msecsTo(QTime::currentTime());
-            emit qosUpdate(this, rtt, _messagesUp, _messagesDown);
+            emit statisticsUpdate(this, rtt, _messagesUp, _messagesDown);
             _sentTimeTable->remove(ID);
         }
         break;
@@ -421,9 +494,9 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, QByteArra
         return;
     }
     _messagesDown++;
-    if (!_isServer & (_lastQosSendTime.msecsTo(QTime::currentTime()) >= QOS_UPDATE_INTERVAL)) {
-        _lastQosSendTime = _lastReceiveTime;
-        sendMessage(QByteArray(""), MSGTYPE_QOS_ACK, ID);
+    if (!_isServer & (_lastStatisticsSendTime.msecsTo(QTime::currentTime()) >= _statisticsInterval)) {
+        _lastStatisticsSendTime = _lastReceiveTime;
+        sendMessage(QByteArray(""), MSGTYPE_ACK, ID);
     }
 }
 
@@ -437,8 +510,8 @@ void Channel::tcpConnected() {  //PRIVATE SLOT
     //Both sides of the channel must send handshakes to each other to verify identity.
     //If this message is not sent timely (within a few seconds), both sides will disconnect
     //and attempt the whole thing over again
-    setStatus(ConnectingState);
-    _tcpVerifyTimeouts = 0;
+    setState(ConnectingState);
+    _tcpVerifyTicks = 0;
     _tcpVerified = false;
     setPeerAddress(SocketAddress(_tcpSocket->peerAddress(), _tcpSocket->peerPort()));
     sendHandshake();
@@ -453,11 +526,11 @@ void Channel::newTcpClient() {  //PRIVATE SLOT
     }
 }
 
-inline void Channel::setStatus(Channel::Status status) {   //PRIVATE
+inline void Channel::setState(Channel::State status) {   //PRIVATE
     //signals the statusChanged event
-     if (_status != status) {
-         _status = status;
-         emit statusChanged(this, _status);
+     if (_state != status) {
+         _state = status;
+         emit stateChanged(this, _state);
      }
 }
 
@@ -469,21 +542,20 @@ inline void Channel::setPeerAddress(Channel::SocketAddress address) {    //PRIVA
     }
 }
 
-void Channel::monitorTick() {   //PRIVATE SLOT
-    switch (_status) {
+void Channel::watchdogTick() {   //PRIVATE SLOT
+    switch (_state) {
     case ConnectedState:
         //check for sending heartbeat message, even on TCP (They are needed for QoC updates
         //and are a good idea anyway)
-        if (_lastSendTime.msecsTo(QTime::currentTime()) > (IDLE_CONNECTION_TIMEOUT / 5)) {
+        if (_lastSendTime.msecsTo(QTime::currentTime()) > (_idleConnectionTimeout / 5)) {
             //A message hasn't been sent in a while, send a heartbeat
             //to let the other side know the we are still active
             sendHeartbeat();
         }
         //check for a stale connection (several seconds without a message)
-        else if (_lastReceiveTime.msecsTo(QTime::currentTime()) >= IDLE_CONNECTION_TIMEOUT) {
-            setStatus(ConnectingState);
-            resetConnection();
+        else if (_lastReceiveTime.msecsTo(QTime::currentTime()) >= _idleConnectionTimeout) {
             LOG_E("Peer has stopped responding, dropping connection");
+            resetConnection();
         }
         break;
     case ConnectingState:
@@ -493,13 +565,13 @@ void Channel::monitorTick() {   //PRIVATE SLOT
              (_tcpSocket != NULL) &&
              (_tcpSocket->state() == QAbstractSocket::ConnectedState) &&
                 !_tcpVerified) {
-            _tcpVerifyTimeouts++;
-            if (_tcpVerifyTimeouts > TCP_VERIFY_WINDOW / MONITOR_INTERVAL) {
-                resetConnection();
+            _tcpVerifyTicks++;
+            if (_tcpVerifyTicks > _tcpVerifyTimeout / _watchdogInterval) {
                 LOG_E("Peer did not verify TCP connection in time");
+                resetConnection();
             }
             else {
-                LOG_W("Awaiting verification from connected TCP peer...");
+                LOG_I("Awaiting verification from connected TCP peer...");
             }
         }
         //check for sending UDP handshake
@@ -509,13 +581,37 @@ void Channel::monitorTick() {   //PRIVATE SLOT
         }
         break;
     case DisconnectedState:
-        setStatus(ConnectingState);
+    case ReadyState:
+        //The channel is disconnected, and the watchdog is still running so we
+        //should reconnect it
         resetConnection();
-        _socketError = false;
         break;
     case ErrorState:
         LOG_E("Fatal error caught, stopping channel monitor");
-        _monitorTimer->stop();
+        _watchdogTimer->stop();
+        break;
+    case AwaitingConfigurationState:
+        //We are loading from a network configuration file and are waiting
+        //for a response
+        if (_netConfigReply == NULL) {
+            LOG_I("Loading configuration from  " + _netConfigUrl.toString());
+            QNetworkAccessManager manager(this);
+            _netConfigReply = manager.get(QNetworkRequest(_netConfigUrl));
+        }
+        if (_netConfigReply->isFinished()) {
+            LOG_I("Downloaded configuration");
+            _watchdogTimer->stop(); //will be restarted once open() is called
+            QTextStream stream(_netConfigReply);
+            initWithConfiguration(stream);
+            delete _netConfigReply;
+            _netConfigReply = NULL;
+        }
+        else if (!_netConfigReply->isRunning()) {
+            LOG_E("Could not fetch configuration from " + _netConfigUrl.toString() + ", retrying...");
+            delete _netConfigReply;
+            QNetworkAccessManager manager(this);
+            _netConfigReply = manager.get(QNetworkRequest(_netConfigUrl));
+        }
         break;
     }
 }
@@ -523,16 +619,16 @@ void Channel::monitorTick() {   //PRIVATE SLOT
 void Channel::resetConnectionVars() {
     _bufferLength = 0;
     _lastReceiveID = 0;
-    _lastQosSendTime = QTime::currentTime();
+    _lastStatisticsSendTime = QTime::currentTime();
     _nextSendID = 1;
-    _tcpVerifyTimeouts = 0;
+    _tcpVerifyTicks = 0;
     _messagesDown = _messagesUp = 0;
     if (_isServer && _sentTimeTable != NULL) _sentTimeTable->clear();
 }
 
 void Channel::resetConnection() {
-    LOG_I("Connection is resetting...");
-    setStatus(ConnectingState);
+    LOG_I("Attempting to connect to other side of channel...");
+    setState(ConnectingState);
     resetConnectionVars();
     if (_isServer) {
         setPeerAddress(SocketAddress(QHostAddress::Null, 0));
@@ -592,7 +688,7 @@ inline void Channel::sendHeartbeat() {   //PRIVATE
 }
 
 bool Channel::sendMessage(QByteArray message) {
-    if (_status == ConnectedState) {
+    if (_state == ConnectedState) {
         if (message.size() > MAX_MESSAGE_LENGTH) {
             LOG_W("Attempting to send a message that is too long, it will be truncated");
             message.truncate(MAX_MESSAGE_LENGTH);
@@ -639,7 +735,7 @@ bool Channel::sendMessage(QByteArray message, MESSAGE_TYPE type, MESSAGE_ID ID) 
     if (_isServer) {
         _sentTimeTable->insert(_nextSendID, _lastSendTime);
         //remove an old entry
-        _sentTimeTable->remove(_nextSendID - SENT_TIME_TABLE_CAP);
+        _sentTimeTable->remove(_nextSendID - _sentLogCap);
     }
     if (status < 0) {
         LOG_W("Could not send message (status=" + QString::number(status) + ")");
@@ -664,6 +760,6 @@ Channel::SocketAddress Channel::getPeerAddress() {
     return _peerAddress;
 }
 
-Channel::Status Channel::getStatus() {
-    return _status;
+Channel::State Channel::getState() {
+    return _state;
 }

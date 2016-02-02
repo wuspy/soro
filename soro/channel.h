@@ -10,12 +10,24 @@
 #define UDP_HEADER_BYTES 5
 #define TCP_HEADER_BYTES 7
 
-#define IDLE_CONNECTION_TIMEOUT 5000
-#define QOS_UPDATE_INTERVAL 1000
-#define TCP_VERIFY_WINDOW 5000
-#define MONITOR_INTERVAL 100
+#define DEFAULT_IDLE_CONNECTION_TIMEOUT 5000
+#define DEFAULT_STATISTICS_INTERVAL 1000
+#define DEFAULT_TCP_VERIFY_TIMEOUT 5000
+#define DEFAULT_WATCHDOG_INTERVAL 100
+#define DEFAULT_SENT_LOG_CAP 500
 
-#define SENT_TIME_TABLE_CAP 500
+#define CONFIG_TAG_SERVER_ADDRESS "serveraddress"
+#define CONFIG_TAG_SERVER_PORT "serverport"
+#define CONFIG_TAG_CHANNEL_NAME "name"
+#define CONFIG_TAG_PROTOCOL "protocol"
+#define CONFIG_TAG_HOST_ADDRESS "hostaddress"
+#define CONFIG_TAG_ENDPOINT "endpoint"
+#define CONFIG_TAG_DROP_OLD_PACKETS "dropoldpackets"
+#define CONFIG_TAG_WATCHDOG_INTERVAL "watchdoginterval"
+#define CONFIG_TAG_STATISTICS_INTERVAL "statisticsinterval"
+#define CONFIG_TAG_IDLE_CONNECTION_TIMEOUT "idletimeout"
+#define CONFIG_TAG_TCP_VERIFY_TIMEOUT "tcpverifytimeout"
+#define CONFIG_TAG_SENT_LOG_CAP "sentlogcap"
 
 #define LOG_I(X) if (_log != NULL) _log->i(LOG_TAG, X)
 #define LOG_W(X) if (_log != NULL) _log->w(LOG_TAG, X)
@@ -94,28 +106,18 @@ public:
     /* Protocol modes supported by a Channel
      */
     enum Protocol {
-        PROTOCOL_UDP, PROTOCOL_TCP
+        UdpProtocol, TcpProtocol
     };
 
     /* Lists the current state a Channel can be in
      */
-    enum Status {
-        CHANNEL_STATUS_CONNECTING,
-        CHANNEL_STATUS_CONNECTED,
-        CHANNEL_STATUS_DISCONNECTED,
-        CHANNEL_STATUS_FATAL_ERROR
-    };
-
-    /* Contains initialization information needed to create
-     * a channel
-     */
-    struct Configuration {
-        SocketAddress serverAddress;
-        bool isServer;
-        bool dropOldUdpPackets;
-        Logger *logger;
-        QString name;
-        Protocol protocol;
+    enum State {
+        AwaitingConfigurationState,
+        ReadyState,
+        ConnectingState,
+        ConnectedState,
+        DisconnectedState,
+        ErrorState
     };
 
     //The maximum size of a sent message (the header may make the actual message
@@ -123,9 +125,9 @@ public:
     static const MESSAGE_LENGTH MAX_MESSAGE_LENGTH = 512;
 
     ~Channel();
-    
-    Channel(QObject *parent, Configuration configuration) ;
+
     Channel (QObject *parent, QString configFile, Logger *log);
+    Channel (QObject *parent, QUrl configUrl, Logger *log);
     QString getName();
     Protocol getProtocol();
     SocketAddress getPeerAddress();
@@ -135,7 +137,8 @@ public:
     void close();
     bool sendMessage(QByteArray message);
     bool isServer();
-    Status getStatus();
+    void setDropOldPackets(bool dropOld);
+    State getState();
 
 private:
     //Message type identifiers
@@ -143,14 +146,15 @@ private:
     static const MESSAGE_TYPE MSGTYPE_CLIENT_HANDSHAKE = 1;
     static const MESSAGE_TYPE MSGTYPE_SERVER_HANDSHAKE = 2;
     static const MESSAGE_TYPE MSGTYPE_HEARTBEAT = 3;
-    static const MESSAGE_TYPE MSGTYPE_QOS_ACK = 4;
+    static const MESSAGE_TYPE MSGTYPE_ACK = 4;
 
     static const QString IPV4_REGEX;
+    static const QString IPV6_REGEX;
 
     char *_buffer;
     MESSAGE_LENGTH _bufferLength;
     QByteArray _nameUtf8;
-    Status _status;
+    State _state;
     QHash<MESSAGE_ID, QTime>* _sentTimeTable;
     bool _qosAckNextMessage;
     QString _name;
@@ -159,12 +163,17 @@ private:
     SocketAddress _hostAddress;
     SocketAddress _peerAddress;
     Protocol _protocol;
+    QUrl _netConfigUrl;
+    QNetworkReply *_netConfigReply;
+    int _tcpVerifyTimeout;
+    int _sentLogCap;
+    int _statisticsInterval;
+    int _idleConnectionTimeout;
+    int _watchdogInterval;
     Logger* _log;
-    int _monitorTimeout;
-    bool _socketError;
     bool _isServer;
     bool _dropOldPackets;
-    int _tcpVerifyTimeouts;
+    int _tcpVerifyTicks;
     bool _tcpVerified;
     QTcpSocket *_tcpSocket;
     QTcpServer *_tcpServer;
@@ -174,16 +183,16 @@ private:
     MESSAGE_ID _lastReceiveID;
     quint64 _messagesUp;
     quint64 _messagesDown;
-    QTimer *_monitorTimer;
+    QTimer *_watchdogTimer;
     QTime _lastReceiveTime;
     QTime _lastSendTime;
-    QTime _lastQosSendTime;
+    QTime _lastStatisticsSendTime;
 
-    inline void setStatus(Status status);
+    inline void setState(State status);
     inline void setPeerAddress(Channel::SocketAddress address);
     inline bool sendMessage(QByteArray message, MESSAGE_TYPE type);
     bool sendMessage(QByteArray message, MESSAGE_TYPE type, MESSAGE_ID ID);
-    void close(Status status);
+    void close(State status);
     inline bool compareHandshake(QByteArray message);
     inline void sendHandshake();
     inline void sendHeartbeat();
@@ -192,14 +201,14 @@ private:
                                 QByteArray message, SocketAddress address);
     void configureNewTcpSocket();
     void resetConnectionVars();
-    void init();
+    void initWithConfiguration(QTextStream &stream);
     bool parseBoolString(QString string, bool* value);
 
 private slots:
     void routeMessage(Channel *sender, QByteArray message);
     void udpReadyRead();
     void tcpReadyRead();
-    void monitorTick();
+    void watchdogTick();
     void tcpConnected();
     void newTcpClient();
     void socketError(QAbstractSocket::SocketError err);
@@ -207,9 +216,9 @@ private slots:
 
 signals:
     void messageReceived(Channel *channel, QByteArray message);
-    void statusChanged(Channel *channel, Channel::Status status);
+    void stateChanged(Channel *channel, Channel::State state);
     void peerAddressChanged(Channel *channel, Channel::SocketAddress peerAddress);
-    void qosUpdate(Channel *channel, int rtt, quint64 msg_up, quint64 msg_down);
+    void statisticsUpdate(Channel *channel, int rtt, quint64 msg_up, quint64 msg_down);
 };
 
 #endif // CHANNEL_H
