@@ -16,7 +16,7 @@
  * from a QTextStream
  *
  * - Call load(QTextStream) to read in a file
- * - Call value(QString&), valueAsInt(QString&), etc to get a value
+ * - Call value(QString&), valueAsInt(QString&), etc to get a tag's value
  */
 class SOROSHARED_EXPORT TagValueParser {
 
@@ -41,30 +41,30 @@ public:
 
     /* Gets a tag's value from the last file read in.
      */
-    QString value(const QString &key);
+    QString value(const QString &tag);
 
     /* Gets a tag's value from the last file read in as an integer,
      * and returns true if the conversion was successful.
      */
-    bool valueAsInt(const QString &key, int *value);
+    bool valueAsInt(const QString &tag, int *value);
 
     /* Gets a tag's value from the last file read in as an boolean,
      * and returns true if the conversion was successful.
      */
-    bool valueAsBool(const QString &key, bool *value);
+    bool valueAsBool(const QString &tag, bool *value);
 
     /* Gets a tag's value from the last file read in as an QHostAddress,
      * and returns true if the conversion was successful.
      */
-    bool valueAsIP(const QString &key, QHostAddress *value, bool allowV6);
+    bool valueAsIP(const QString &tag, QHostAddress *value, bool allowV6);
 
     /* Gets the list of tags from the last file read in.
      */
-    QList<QString> keys();
+    QList<QString> tags();
 
     /* Returns true if the tag was contained in the last file read in, false otherwise.
      */
-    bool contains(const QString &key);
+    bool contains(const QString &tag);
 
     /* Gets the number of tags/value pairs read in.
      */
@@ -72,7 +72,7 @@ public:
 
     /* Removes a loaded tag/value pair. Does not modify the original file.
      */
-    bool remove(const QString &key);
+    bool remove(const QString &tag);
 };
 
 #endif // TAGVALUEPARSER_H

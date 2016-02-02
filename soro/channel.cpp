@@ -168,7 +168,7 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     }
 
     //check for unknown values (known ones were already removed
-    foreach (QString unknown, parser.keys()) {
+    foreach (QString unknown, parser.tags()) {
         LOG_W("Uknown configuration option " + unknown);
     }
 

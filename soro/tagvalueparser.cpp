@@ -22,22 +22,22 @@ bool TagValueParser::load(QTextStream &stream) {
     return true;
 }
 
-bool TagValueParser::contains(const QString &key) {
-    return _contents->contains(key);
+bool TagValueParser::contains(const QString &tag) {
+    return _contents->contains(tag);
 }
 
-QString TagValueParser::value(const QString &key) {
-    return _contents->value(key, "");
+QString TagValueParser::value(const QString &tag) {
+    return _contents->value(tag, "");
 }
 
-bool TagValueParser::valueAsInt(const QString &key, int* value) {
+bool TagValueParser::valueAsInt(const QString &tag, int* value) {
     bool success;
-    *value = this->value(key).toInt(&success);
+    *value = this->value(tag).toInt(&success);
     return success;
 }
 
-bool TagValueParser::valueAsBool(const QString &key, bool* value) {
-    QString rawValue = this->value(key).toLower();
+bool TagValueParser::valueAsBool(const QString &tag, bool* value) {
+    QString rawValue = this->value(tag).toLower();
     if (rawValue == "true" || rawValue == "1") {
         *value = true;
         return true;
@@ -49,8 +49,8 @@ bool TagValueParser::valueAsBool(const QString &key, bool* value) {
     return false;
 }
 
-bool TagValueParser::valueAsIP(const QString &key, QHostAddress* value, bool allowV6) {
-    QString rawValue = this->value(key);
+bool TagValueParser::valueAsIP(const QString &tag, QHostAddress* value, bool allowV6) {
+    QString rawValue = this->value(tag);
     if (QRegExp(IPV4_REGEX).exactMatch(rawValue) || (allowV6 && QRegExp(IPV6_REGEX).exactMatch(rawValue))) {
             value->setAddress(rawValue);
             return true;
@@ -62,11 +62,11 @@ int TagValueParser::count() {
     return _contents->size();
 }
 
-bool TagValueParser::remove(const QString &key) {
-    return _contents->remove(key) > 0;
+bool TagValueParser::remove(const QString &tag) {
+    return _contents->remove(tag) > 0;
 }
 
-QList<QString> TagValueParser::keys() {
+QList<QString> TagValueParser::tags() {
     return _contents->keys();
 }
 
