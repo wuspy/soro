@@ -37,7 +37,6 @@ Channel::~Channel() {
     //Qt will take care of cleaning up any object that has 'this' passed to it in its constructor
 }
 
-
 inline void Channel::initVars() {
     LOG_TAG = "CHANNEL";
     _tcpServer = NULL;
@@ -47,6 +46,8 @@ inline void Channel::initVars() {
     _buffer = NULL;
     _sentTimeTable = NULL;
     _watchdogTimer = NULL;
+    _openOnConfigured = false;
+    _qosAckNextMessage = false;
 }
 
 void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
@@ -72,6 +73,13 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     //These values must be in the file
 
     bool success;
+    _name = parser.value(CONFIG_TAG_CHANNEL_NAME);
+    parser.remove(CONFIG_TAG_CHANNEL_NAME);
+    if (_name.isEmpty()) {
+        LOG_E(parseErrorString.arg(CONFIG_TAG_CHANNEL_NAME));
+        setState(ErrorState);
+        return;
+    }
     QString endpoint = parser.value(CONFIG_TAG_ENDPOINT).toLower();
     parser.remove(CONFIG_TAG_ENDPOINT);
     if (endpoint == "server") {
@@ -87,10 +95,15 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     }
     success = parser.valueAsIP(CONFIG_TAG_SERVER_ADDRESS, &_serverAddress.address, true);
     parser.remove(CONFIG_TAG_SERVER_ADDRESS);
-    if (!success & !_isServer) {    //Server address is not mandatory if we are the server
-        LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
-        setState(ErrorState);
-        return;
+    if (!success) {
+        if (_isServer) {      //Server address is not mandatory if we are the server
+            _serverAddress.address = QHostAddress::Any;
+        }
+        else {
+            LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
+            setState(ErrorState);
+            return;
+        }
     }
     int port;
     success = parser.valueAsInt(CONFIG_TAG_SERVER_PORT, &port);
@@ -111,13 +124,6 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     }
     else {
         LOG_E(parseErrorString.arg(CONFIG_TAG_PROTOCOL));
-        setState(ErrorState);
-        return;
-    }
-    _name = parser.value(CONFIG_TAG_CHANNEL_NAME);
-    parser.remove(CONFIG_TAG_CHANNEL_NAME);
-    if (_name.isEmpty()) {
-        LOG_E(parseErrorString.arg(CONFIG_TAG_CHANNEL_NAME));
         setState(ErrorState);
         return;
     }
@@ -216,7 +222,8 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
 }
 
 void Channel::open() {
-    if (_state == ReadyState) {
+    switch (_state) {
+    case ReadyState:
         //If this is the server, we will bind to the server port
         if (_isServer) {
             _hostAddress.port = _serverAddress.port;
@@ -239,9 +246,15 @@ void Channel::open() {
         }
         //start the connection procedure
         resetConnection();
-    }
-    else {
+        break;
+    case AwaitingConfigurationState:
+        //cannot open yet because we are waiting on a reply from the network server
+        //where the config file is stored. Open as soon as it's ready.
+        _openOnConfigured = true;
+        break;
+    default:
         LOG_E("Cannot call open() in the current channel state");
+        break;
     }
 }
 
@@ -568,6 +581,11 @@ void Channel::watchdogTick() {   //PRIVATE SLOT
             initWithConfiguration(stream);
             delete _netConfigReply;
             _netConfigReply = NULL;
+            if (_openOnConfigured) {
+                //the user has called open() before we had the configuration, so the request has
+                //been delayed
+                open();
+            }
         }
         else if (!_netConfigReply->isRunning()) {
             LOG_E("Could not fetch configuration from " + _netConfigUrl.toString() + ", retrying...");
@@ -579,7 +597,7 @@ void Channel::watchdogTick() {   //PRIVATE SLOT
     }
 }
 
-void Channel::resetConnectionVars() {
+void Channel::resetConnectionVars() {   //PRIVATE
     _bufferLength = 0;
     _lastReceiveID = 0;
     _lastStatisticsSendTime = QTime::currentTime();
@@ -589,7 +607,7 @@ void Channel::resetConnectionVars() {
     if (_isServer && _sentTimeTable != NULL) _sentTimeTable->clear();
 }
 
-void Channel::resetConnection() {
+void Channel::resetConnection() {   //PRIVATE
     LOG_I("Attempting to connect to other side of channel...");
     setState(ConnectingState);
     resetConnectionVars();
