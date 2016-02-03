@@ -72,9 +72,22 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     //These values must be in the file
 
     bool success;
+    QString endpoint = parser.value(CONFIG_TAG_ENDPOINT).toLower();
+    parser.remove(CONFIG_TAG_ENDPOINT);
+    if (endpoint == "server") {
+        _isServer = true;
+    }
+    else if (endpoint == "client") {
+        _isServer = false;
+    }
+    else {
+        LOG_E(parseErrorString.arg(CONFIG_TAG_ENDPOINT));
+        setState(ErrorState);
+        return;
+    }
     success = parser.valueAsIP(CONFIG_TAG_SERVER_ADDRESS, &_serverAddress.address, true);
     parser.remove(CONFIG_TAG_SERVER_ADDRESS);
-    if (!success) {
+    if (!success & !_isServer) {    //Server address is not mandatory if we are the server
         LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
         setState(ErrorState);
         return;
@@ -98,19 +111,6 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     }
     else {
         LOG_E(parseErrorString.arg(CONFIG_TAG_PROTOCOL));
-        setState(ErrorState);
-        return;
-    }
-    QString endpoint = parser.value(CONFIG_TAG_ENDPOINT).toLower();
-    parser.remove(CONFIG_TAG_ENDPOINT);
-    if (endpoint == "server") {
-        _isServer = true;
-    }
-    else if (endpoint == "client") {
-        _isServer = false;
-    }
-    else {
-        LOG_E(parseErrorString.arg(CONFIG_TAG_ENDPOINT));
         setState(ErrorState);
         return;
     }
