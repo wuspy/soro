@@ -315,7 +315,7 @@ void Channel::close() {
 
 void Channel::close(Channel::State closeState) {   //PRIVATE
     LOG_W("Closing channel in state " + QString::number(closeState));
-    if (_watchdogTimer->isActive()) {
+    if (_watchdogTimer != NULL && _watchdogTimer->isActive()) {
         _watchdogTimer->stop();
     }
     if (_socket != NULL) {
@@ -406,9 +406,9 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         //normal data packet
         //check the packet sequence ID
         if ((ID > _lastReceiveID) | !_dropOldPackets){
+            _lastReceiveTime = QTime::currentTime();
             _lastReceiveID = ID;
             emit messageReceived(this, message);
-            _lastReceiveTime = QTime::currentTime();
         }
         break;
     case MSGTYPE_SERVER_HANDSHAKE:
@@ -420,15 +420,15 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
                 setPeerAddress(address);
                 setState(ConnectedState);
                 if (_protocol == TcpProtocol) _tcpVerified = true;
-                LOG_I("Received handshake response from server " + _serverAddress.toString());
                 _lastReceiveTime = QTime::currentTime();
                 _lastReceiveID = ID;
+                LOG_I("Received handshake response from server " + _serverAddress.toString());
             }
             else {
                 LOG_W("Received server handshake with invalid channel name");
             }
         }
-        return;
+        return; //don't calculate statistics on handshake messages
     case MSGTYPE_CLIENT_HANDSHAKE:
         if (_isServer && compareHandshake(message)) {
             if (compareHandshake(message)) {
@@ -442,17 +442,18 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
                 else {
                     sendHandshake();
                 }
-                LOG_I("Received handshake request from client "
-                                        + _peerAddress.toString());
                 _lastReceiveTime = QTime::currentTime();
                 _lastReceiveID = ID;
+                LOG_I("Received handshake request from client "
+                                        + _peerAddress.toString());
             }
             else {
                 LOG_W("Received client handshake with invalid channel name");
             }
         }
-        return;
+        return; //don't calculate statistics on handshake messages
     case MSGTYPE_HEARTBEAT:
+        //no reason to update or check _lastReceiveID
         _lastReceiveTime = QTime::currentTime();
         break;
     case MSGTYPE_ACK:
@@ -620,16 +621,11 @@ void Channel::resetConnection() {   //PRIVATE
         setPeerAddress(_serverAddress);
     }
     if (_tcpSocket != NULL) {
-        if (_tcpSocket->state() == QAbstractSocket::ConnectedState) {
-            LOG_I("Disconnecting from TCP peer "
-                  + SocketAddress(_tcpSocket->peerAddress(), _tcpSocket->peerPort()).toString());
-            _tcpSocket->disconnectFromHost();
-        }
+        LOG_I("Cancelling any previous TCP operations...");
+        _tcpSocket->abort();
         if (_isServer) {
             LOG_I("Cleaning up TCP connection with old client...");
-            if (_tcpSocket->state() == QAbstractSocket::BoundState) {
-                _tcpSocket->close();
-            }
+            _tcpSocket->close();
             delete _tcpSocket;
             _tcpSocket = NULL;
         }

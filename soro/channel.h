@@ -29,11 +29,6 @@
 #define CONFIG_TAG_TCP_VERIFY_TIMEOUT "tcpverifytimeout"
 #define CONFIG_TAG_SENT_LOG_CAP "sentlogcap"
 
-//Log macros
-#define LOG_I(X) if (_log != NULL) _log->i(LOG_TAG, X)
-#define LOG_W(X) if (_log != NULL) _log->w(LOG_TAG, X)
-#define LOG_E(X) if (_log != NULL) _log->e(LOG_TAG, X)
-
 //These dictate the header structure, listing the size
 //and data types for the required fields
 #define UDP_HEADER_BYTES 5
@@ -194,7 +189,7 @@ private:
 
     State _state;   //current state the channel is in
 
-    QHash<MESSAGE_ID, QTime>* _sentTimeTable;   //Used for statistic calculation (rtt)
+    QHash<MESSAGE_ID, QTime>* _sentTimeTable;   //Used for statistic calculation
     bool _ackNextMessage;
 
     QString LOG_TAG;    //Tag for debugging, ususally the
