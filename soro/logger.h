@@ -19,7 +19,7 @@ private:
     void publish(qint32 level, QString tag, QString message);
 public:
     Logger(QObject *parent);
-    ~_Logger();
+    ~Logger();
     static const qint32 LEVEL_INFORMATION = 0;
     static const qint32 LEVEL_WARN = 1;
     static const qint32 LEVEL_ERROR = 2;

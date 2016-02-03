@@ -47,7 +47,7 @@ inline void Channel::initVars() {
     _sentTimeTable = NULL;
     _watchdogTimer = NULL;
     _openOnConfigured = false;
-    _qosAckNextMessage = false;
+    _ackNextMessage = false;
 }
 
 void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
@@ -470,8 +470,10 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         return;
     }
     _messagesDown++;
-    if (!_isServer & (_lastStatisticsSendTime.msecsTo(QTime::currentTime()) >= _statisticsInterval)) {
-        _lastStatisticsSendTime = _lastReceiveTime;
+    //If we have reached _statisticsInterval without acking a received packet,
+    //send one so the other side can calculate RTT
+    if (!_isServer && (_lastAckSendTime.msecsTo(QTime::currentTime()) >= _statisticsInterval)) {
+        _lastAckSendTime = _lastReceiveTime;
         sendMessage(QByteArray(""), MSGTYPE_ACK, ID);
     }
 }
@@ -600,7 +602,7 @@ void Channel::watchdogTick() {   //PRIVATE SLOT
 void Channel::resetConnectionVars() {   //PRIVATE
     _bufferLength = 0;
     _lastReceiveID = 0;
-    _lastStatisticsSendTime = QTime::currentTime();
+    _lastAckSendTime = QTime::currentTime();
     _nextSendID = 1;
     _tcpVerifyTicks = 0;
     _messagesDown = _messagesUp = 0;
