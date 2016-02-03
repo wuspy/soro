@@ -32,7 +32,7 @@ Channel::~Channel() {
         delete _buffer;
     }
     if (_sentTimeLog != NULL) {
-        delete _sentTimeLog;
+        delete [] _sentTimeLog;
     }
     //Qt will take care of cleaning up any object that has 'this' passed to it in its constructor
 }
