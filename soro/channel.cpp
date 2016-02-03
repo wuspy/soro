@@ -48,6 +48,7 @@ inline void Channel::initVars() {
     _watchdogTimer = NULL;
     _openOnConfigured = false;
     _ackNextMessage = false;
+    _sentTimeTable = new QHash<MESSAGE_ID, QTime>();
 }
 
 void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
@@ -186,9 +187,6 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
 
     LOG_I("Initializing with serverAddress=" + _serverAddress.toString()
           + ",protocol=" + (_protocol == TcpProtocol ? "TCP" : "UDP"));
-
-    //Create a QHash for storing sent message ID's and times for QoS monitoring
-    _sentTimeTable = _isServer ? new QHash<MESSAGE_ID, QTime>() : NULL;
 
     //setup the watchdog timer
     if (_watchdogTimer == NULL) {
@@ -458,7 +456,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         _lastReceiveTime = QTime::currentTime();
         break;
     case MSGTYPE_ACK:
-        if (_isServer && _sentTimeTable->contains(ID)) {
+        if (_sentTimeTable->contains(ID)) {
             int rtt = _sentTimeTable->value(ID).msecsTo(QTime::currentTime());
             emit statisticsUpdate(this, rtt, _messagesUp, _messagesDown);
             _sentTimeTable->remove(ID);
@@ -472,7 +470,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
     _messagesDown++;
     //If we have reached _statisticsInterval without acking a received packet,
     //send one so the other side can calculate RTT
-    if (!_isServer && (_lastAckSendTime.msecsTo(QTime::currentTime()) >= _statisticsInterval)) {
+    if (_lastAckSendTime.msecsTo(QTime::currentTime()) >= _statisticsInterval) {
         _lastAckSendTime = _lastReceiveTime;
         sendMessage(QByteArray(""), MSGTYPE_ACK, ID);
     }
@@ -606,16 +604,16 @@ void Channel::resetConnectionVars() {   //PRIVATE
     _nextSendID = 1;
     _tcpVerifyTicks = 0;
     _messagesDown = _messagesUp = 0;
-    if (_isServer && _sentTimeTable != NULL) _sentTimeTable->clear();
+    _sentTimeTable->clear();
 }
 
 void Channel::resetConnection() {   //PRIVATE
     LOG_I("Attempting to connect to other side of channel...");
     setState(ConnectingState);
     resetConnectionVars();
+    _sentTimeTable->clear();
     if (_isServer) {
         setPeerAddress(SocketAddress(QHostAddress::Null, 0));
-        _sentTimeTable->clear();
     }
     else {
         //Only allow the server address to connect
@@ -717,11 +715,9 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_
     _messagesUp++;
     _lastSendTime = QTime::currentTime();
     //Log the ID and time of sending the message
-    if (_isServer) {
-        _sentTimeTable->insert(_nextSendID, _lastSendTime);
-        //remove an old entry
-        _sentTimeTable->remove(_nextSendID - _sentLogCap);
-    }
+    _sentTimeTable->insert(_nextSendID, _lastSendTime);
+    //remove an old entry (if it exists)
+    _sentTimeTable->remove(_nextSendID - _sentLogCap);
     if (status < 0) {
         LOG_W("Could not send message (status=" + QString::number(status) + ")");
         return false;
