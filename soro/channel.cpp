@@ -231,13 +231,8 @@ void Channel::open() {
             _hostAddress.port = 0;
             LOG_I("Attempting to bind to an available port on " + _hostAddress.address.toString());
         }
-        if ((_protocol == TcpProtocol) & _isServer) {
-            _socket = _tcpSocket = NULL;
+        if (_tcpServer != NULL) {
             _tcpServer->setMaxPendingConnections(1);
-            resetConnection();
-        }
-        else {
-            _socket->bind(_hostAddress.address, _hostAddress.port);
         }
         if (!_watchdogTimer->isActive()) {
             _watchdogTimer->start();
@@ -344,13 +339,18 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
         QDataStream stream(&arr, QIODevice::ReadOnly);
         stream >> type;
         //ensure the datagram either came from the correct address, or is marked as a handshake
-        if (((address.address == _peerAddress.address) & (address.port == _peerAddress.port))
-                | (_isServer & (type == MSGTYPE_CLIENT_HANDSHAKE))) {
-            stream >> ID;
-            ID = qFromBigEndian(ID);
-            QByteArray message(_buffer + UDP_HEADER_BYTES, _bufferLength - UDP_HEADER_BYTES);
-            processBufferedMessage(type, ID, message, address);
+        if (_isServer) {
+            if ((address != _peerAddress) & (type != MSGTYPE_CLIENT_HANDSHAKE)) {
+                continue;
+            }
         }
+        else if ((address != _peerAddress) & (address != _serverAddress)) {
+            continue;
+        }
+        stream >> ID;
+        ID = qFromBigEndian(ID);
+        QByteArray message(_buffer + UDP_HEADER_BYTES, _bufferLength - UDP_HEADER_BYTES);
+        processBufferedMessage(type, ID, message, address);
     }
 }
 
@@ -413,15 +413,15 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         break;
     case MSGTYPE_SERVER_HANDSHAKE:
         //this packet is a handshake request
-        if (!_isServer && compareHandshake(message)) {
+        if (!_isServer) {
             if (compareHandshake(message)) {
                 //we are the client, and we got a respoonse from the server (yay)
                 resetConnectionVars();
                 setPeerAddress(address);
-                setState(ConnectedState);
                 if (_protocol == TcpProtocol) _tcpVerified = true;
                 _lastReceiveTime = QTime::currentTime();
                 _lastReceiveID = ID;
+                setState(ConnectedState);
                 LOG_I("Received handshake response from server " + _serverAddress.toString());
             }
             else {
@@ -430,7 +430,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         }
         return; //don't calculate statistics on handshake messages
     case MSGTYPE_CLIENT_HANDSHAKE:
-        if (_isServer && compareHandshake(message)) {
+        if (_isServer) {
             if (compareHandshake(message)) {
                 //We are the server getting a new (valid) handshake request, respond back and record the address
                 resetConnectionVars();
@@ -632,8 +632,14 @@ void Channel::resetConnection() {   //PRIVATE
         }
         else {
             LOG_I("Trying to establish TCP connection with server " + _serverAddress.toString());
+            _tcpSocket->bind(_hostAddress.address, _hostAddress.port);
             _tcpSocket->connectToHost(_serverAddress.address, _serverAddress.port);
         }
+    }
+    else if (_udpSocket != NULL) {
+        LOG_I("Cancelling any previous UDP operations...");
+        _udpSocket->abort();
+        _udpSocket->bind(_hostAddress.address, _hostAddress.port);
     }
     if (_tcpServer != NULL) {
         if (!_tcpServer->isListening()) {
@@ -688,7 +694,7 @@ inline bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {
 bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_ID ID) {  //PRIVATE
     qint64 status;
     if (_protocol == UdpProtocol) {
-        QByteArray arr("", message.size() + UDP_HEADER_BYTES);
+        QByteArray arr("", UDP_HEADER_BYTES);
         QDataStream stream(&arr, QIODevice::WriteOnly);
         stream << (MESSAGE_TYPE)type;
         stream << (MESSAGE_ID)qToBigEndian(ID);
@@ -697,7 +703,7 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_
     }
     else if (_tcpSocket != NULL) {
         MESSAGE_LENGTH size = message.size() + TCP_HEADER_BYTES;
-        QByteArray arr("", size);
+        QByteArray arr("", TCP_HEADER_BYTES);
         QDataStream stream(&arr, QIODevice::WriteOnly);
         stream << (MESSAGE_LENGTH)qToBigEndian(size);
         stream << (MESSAGE_TYPE)type;

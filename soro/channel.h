@@ -8,6 +8,8 @@
 #include <QUdpSocket>
 #include <QTcpSocket>
 
+#include <cstring>  //for memcmp
+
 //Default configuration options, which can optionally be specified in the configuraiton file
 #define DEFAULT_IDLE_CONNECTION_TIMEOUT 5000
 #define DEFAULT_STATISTICS_INTERVAL 1000
@@ -89,8 +91,13 @@ public:
             return address.toString() + ":" + QString::number(port);
         }
 
-        inline bool operator==(const SocketAddress& other) const {
-            return (address == other.address) & (port == other.port);
+        bool operator==(const SocketAddress& other) const {
+            //In a situations where we are working with IPv4 addresses, but the :ffff: (IPv6)
+            //prefix is added to only one of them, simple 'address == address' will fail
+            Q_IPV6ADDR a = address.toIPv6Address();
+            Q_IPV6ADDR b = other.address.toIPv6Address();
+            return (std::memcmp(&a, &b, sizeof(Q_IPV6ADDR)) == 0)
+                    & (port == other.port);
         }
 
         inline bool operator!=(const SocketAddress& other) const {
