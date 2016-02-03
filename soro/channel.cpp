@@ -673,7 +673,7 @@ inline bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {
 bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_ID ID) {  //PRIVATE
     qint64 status;
     if (_protocol == UdpProtocol) {
-        QByteArray arr(NULL, message.size() + UDP_HEADER_BYTES);
+        QByteArray arr("", message.size() + UDP_HEADER_BYTES);
         QDataStream stream(&arr, QIODevice::WriteOnly);
         stream << (MESSAGE_TYPE)type;
         stream << (MESSAGE_ID)qToBigEndian(ID);
@@ -682,7 +682,7 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_
     }
     else if (_tcpSocket != NULL) {
         MESSAGE_LENGTH size = message.size() + TCP_HEADER_BYTES;
-        QByteArray arr(NULL, size);
+        QByteArray arr("", size);
         QDataStream stream(&arr, QIODevice::WriteOnly);
         stream << (MESSAGE_LENGTH)qToBigEndian(size);
         stream << (MESSAGE_TYPE)type;
