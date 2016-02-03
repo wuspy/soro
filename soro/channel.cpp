@@ -31,8 +31,8 @@ Channel::~Channel() {
     if (_buffer != NULL) {
         delete _buffer;
     }
-    if (_sentTimeTable != NULL) {
-        delete _sentTimeTable;
+    if (_sentTimeLog != NULL) {
+        delete _sentTimeLog;
     }
     //Qt will take care of cleaning up any object that has 'this' passed to it in its constructor
 }
@@ -44,11 +44,10 @@ inline void Channel::initVars() {
     _udpSocket = NULL;
     _socket = NULL;
     _buffer = NULL;
-    _sentTimeTable = NULL;
+    _sentTimeLog = NULL;
     _watchdogTimer = NULL;
     _openOnConfigured = false;
     _ackNextMessage = false;
-    _sentTimeTable = new QHash<MESSAGE_ID, QTime>();
 }
 
 void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
@@ -173,6 +172,14 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
         LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_TCP_VERIFY_TIMEOUT, QString::number(DEFAULT_TCP_VERIFY_TIMEOUT)));
         _tcpVerifyTimeout = DEFAULT_TCP_VERIFY_TIMEOUT;
     }
+    bool lowDelay;
+    success = parser.valueAsBool(CONFIG_TAG_LOW_DELAY, &lowDelay);
+    parser.remove(CONFIG_TAG_LOW_DELAY);
+    if (!success) {
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_LOW_DELAY, "false"));
+        lowDelay = false;
+    }
+    _lowDelaySocketOption = lowDelay ? 1 : 0;
 
     //check for unknown values (known ones were already removed
     foreach (QString unknown, parser.tags()) {
@@ -184,6 +191,7 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
 
     //create a buffer for storing received messages
     _buffer = new char[1024];
+    _sentTimeLog = new QTime[_sentLogCap];
 
     LOG_I("Initializing with serverAddress=" + _serverAddress.toString()
           + ",protocol=" + (_protocol == TcpProtocol ? "TCP" : "UDP"));
@@ -199,6 +207,7 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     if (_protocol == UdpProtocol) {
         //Clients and servers for UDP communication function similarly (unlike TCP)
         _socket = _udpSocket = new QUdpSocket(this);
+        _socket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
         connect(_socket, SIGNAL(readyRead()), this, SLOT(udpReadyRead()));
         connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
                 this, SLOT(socketError(QAbstractSocket::SocketError)));
@@ -213,6 +222,7 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     else {
         //Client for a TCP connection
         _socket = _tcpSocket = new QTcpSocket(this);
+        _socket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
         configureNewTcpSocket(); //This is its own function, as it must be called every time a new
                                  //TCP client connects in a server scenario
     }
@@ -255,6 +265,7 @@ void Channel::configureNewTcpSocket() {
     //set the signals for a new TCP socket
     if (_tcpSocket != NULL) {
         _socket = _tcpSocket;
+        _socket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
         connect(_socket, SIGNAL(readyRead()), this, SLOT(tcpReadyRead()));
         connect(_socket, SIGNAL(connected()), this, SLOT(tcpConnected()));
         connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
@@ -268,23 +279,41 @@ void Channel::routeMessage(Channel *sender, const QByteArray &message) {  //PRIV
 
 void Channel::socketError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
     switch (err) {
-    case QAbstractSocket::SocketAddressNotAvailableError:
+    case QAbstractSocket::SocketTimeoutError:    //non-fatal
+        LOG_E("A socket operation has timed out");
+        break;
+    case QAbstractSocket::TemporaryError:    //non-fatal
+        LOG_E("Temporary connection error: " + _socket->errorString());
+        break;
+    case QAbstractSocket::SocketAddressNotAvailableError:   //fatal
         LOG_E("FATAL: The address is not available to open on this device. Select a different host address");
         close(ErrorState);
         break;
-    case QAbstractSocket::AddressInUseError:
+    case QAbstractSocket::AddressInUseError:    //fatal
         LOG_E("FATAL: Address in use. Select a different port");
         close(ErrorState);
         break;
-    default:
+    case QAbstractSocket::DatagramTooLargeError: //non-fatal, should never happen with the checks we have in place
+        LOG_E("Attempted to send a datagram that was too large");
+        break;
+    default:    //reset connection to be safe
         LOG_E("Connection Error: " + _socket->errorString());
-        setState(DisconnectedState); //this will force the timer to reset the connection
+        //this will force the watchdog to reset the connection,
+        //we should NOT directly call resetConnectio() here as that could
+        //potentially force an error loop
+        setState(DisconnectedState);
         break;
     }
 }
 
 void Channel::serverError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
     switch (err) {
+    case QAbstractSocket::SocketTimeoutError:    //non-fatal
+        LOG_E("A server operation has timed out");
+        break;
+    case QAbstractSocket::TemporaryError:    //non-fatal
+        LOG_E("Temporary server error: " + _socket->errorString());
+        break;
     case QAbstractSocket::SocketAddressNotAvailableError:
         LOG_E("FATAL: The address is not available to open on this device. Select a different host address");
         close(ErrorState);
@@ -335,8 +364,7 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
             return;
         }
         _bufferLength = status;
-        QByteArray arr(_buffer, _bufferLength);
-        QDataStream stream(&arr, QIODevice::ReadOnly);
+        QDataStream stream(QByteArray::fromRawData(_buffer, _bufferLength));
         stream >> type;
         //ensure the datagram either came from the correct address, or is marked as a handshake
         if (_isServer) {
@@ -349,7 +377,7 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
         }
         stream >> ID;
         ID = qFromBigEndian(ID);
-        QByteArray message(_buffer + UDP_HEADER_BYTES, _bufferLength - UDP_HEADER_BYTES);
+        QByteArray message = QByteArray::fromRawData(_buffer + UDP_HEADER_BYTES, _bufferLength - UDP_HEADER_BYTES);
         processBufferedMessage(type, ID, message, address);
     }
 }
@@ -369,8 +397,7 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
         if (_bufferLength >= TCP_HEADER_BYTES) {
             //The header is in the buffer, so we know how long the packet is
             MESSAGE_LENGTH length;
-            QByteArray arr(_buffer, TCP_HEADER_BYTES);
-            QDataStream stream(&arr, QIODevice::ReadOnly);
+            QDataStream stream(QByteArray::fromRawData(_buffer, TCP_HEADER_BYTES));
             stream >> length;
             length = qFromBigEndian(length);
             if (length > MAX_MESSAGE_LENGTH + TCP_HEADER_BYTES) {
@@ -382,6 +409,7 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
             status = _tcpSocket->read(_buffer + _bufferLength, length - _bufferLength);
             if (status < 0) {
                 //an error occurred reading from the socket, the onSocketError slot will handle it
+                _bufferLength = 0;
                 return;
             }
             _bufferLength += status;
@@ -392,7 +420,7 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
                 stream >> type;
                 stream >> ID;
                 ID = qFromBigEndian(ID);
-                QByteArray message(_buffer + TCP_HEADER_BYTES, _bufferLength - TCP_HEADER_BYTES);
+                QByteArray message = QByteArray::fromRawData(_buffer + TCP_HEADER_BYTES, _bufferLength - TCP_HEADER_BYTES);
                 _bufferLength = 0;
                 processBufferedMessage(type, ID, message, _peerAddress);
             }
@@ -456,25 +484,38 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         //no reason to update or check _lastReceiveID
         _lastReceiveTime = QTime::currentTime();
         break;
-    case MSGTYPE_ACK:
-        if (_sentTimeTable->contains(ID)) {
-            int rtt = _sentTimeTable->value(ID).msecsTo(QTime::currentTime());
-            emit statisticsUpdate(this, rtt, _messagesUp, _messagesDown);
-            _sentTimeTable->remove(ID);
-        }
-        _lastReceiveTime = QTime::currentTime();
-        break;
     default:
         LOG_W("Peer sent a message with an invalid header (type=" + QString::number(type) + ")");
         resetConnection();
         return;
+    case MSGTYPE_ACK:
+        _lastReceiveTime = QTime::currentTime();
+        QDataStream stream(message);
+        MESSAGE_ID ackID;
+        stream >> ackID;
+        ackID = qFromBigEndian(ackID);
+        if (ackID >= _nextSendID) break;
+        int logIndex = _sentTimeLogIndex - _nextSendID - ackID;
+        if (logIndex < 0) {
+            if (logIndex <= -_sentLogCap) {
+                LOG_W("Received ack for message that had already been discarded from the log, consider increasing SentLogCap in configuration");
+                break;
+            }
+            logIndex = _sentLogCap - logIndex;
+        }
+        int rtt = _sentTimeLog[logIndex].msecsTo(_lastReceiveTime);
+        emit statisticsUpdate(this, rtt, _messagesUp, _messagesDown);
+        break;
     }
     _messagesDown++;
     //If we have reached _statisticsInterval without acking a received packet,
     //send one so the other side can calculate RTT
     if (_lastAckSendTime.msecsTo(QTime::currentTime()) >= _statisticsInterval) {
         _lastAckSendTime = _lastReceiveTime;
-        sendMessage(QByteArray(""), MSGTYPE_ACK, ID);
+        QByteArray ack("", sizeof(MESSAGE_ID));
+        QDataStream stream(&ack, QIODevice::WriteOnly);
+        stream << qToBigEndian(ID);
+        sendMessage(ack, MSGTYPE_ACK);
     }
 }
 
@@ -606,14 +647,14 @@ void Channel::resetConnectionVars() {   //PRIVATE
     _nextSendID = 1;
     _tcpVerifyTicks = 0;
     _messagesDown = _messagesUp = 0;
-    _sentTimeTable->clear();
+    _sentTimeLogIndex = 0;
 }
 
-void Channel::resetConnection() {   //PRIVATE
+void Channel::resetConnection() {
     LOG_I("Attempting to connect to other side of channel...");
     setState(ConnectingState);
     resetConnectionVars();
-    _sentTimeTable->clear();
+    _sentTimeLogIndex = 0;
     if (_isServer) {
         setPeerAddress(SocketAddress(QHostAddress::Null, 0));
     }
@@ -668,7 +709,7 @@ inline void Channel::sendHandshake() {   //PRIVATE
 }
 
 inline void Channel::sendHeartbeat() {   //PRIVATE
-    sendMessage(QByteArray(""), MSGTYPE_HEARTBEAT);
+    sendMessage(QByteArray(), MSGTYPE_HEARTBEAT);
 }
 
 bool Channel::sendMessage(const QByteArray &message) {
@@ -687,18 +728,14 @@ bool Channel::sendMessage(const QByteArray &message) {
     }
 }
 
-inline bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {  //PRIVATE
-    return sendMessage(message, type, ++_nextSendID);
-}
-
-bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_ID ID) {  //PRIVATE
+bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {
     qint64 status;
     if (_protocol == UdpProtocol) {
         QByteArray arr("", UDP_HEADER_BYTES);
+        arr.reserve(3);
         QDataStream stream(&arr, QIODevice::WriteOnly);
         stream << (MESSAGE_TYPE)type;
-        stream << (MESSAGE_ID)qToBigEndian(ID);
-        arr.append(message);
+        stream << (MESSAGE_ID)qToBigEndian(_nextSendID);
         status = _udpSocket->writeDatagram(arr, _peerAddress.address, _peerAddress.port);
     }
     else if (_tcpSocket != NULL) {
@@ -707,7 +744,7 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_
         QDataStream stream(&arr, QIODevice::WriteOnly);
         stream << (MESSAGE_LENGTH)qToBigEndian(size);
         stream << (MESSAGE_TYPE)type;
-        stream << (MESSAGE_ID)qToBigEndian(ID);
+        stream << (MESSAGE_ID)qToBigEndian(_nextSendID);
         arr.append(message);
         status = _tcpSocket->write(arr);
     }
@@ -715,15 +752,18 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_
         LOG_E("Attempted to send a message through a null TCP socket");
         return false;
     }
-    _messagesUp++;
-    _lastSendTime = QTime::currentTime();
-    //Log the ID and time of sending the message
-    _sentTimeTable->insert(_nextSendID, _lastSendTime);
-    //remove an old entry (if it exists)
-    _sentTimeTable->remove(_nextSendID - _sentLogCap);
-    if (status < 0) {
+    if (status <= 0) {
         LOG_W("Could not send message (status=" + QString::number(status) + ")");
         return false;
+    }
+    //log statistics and increment _nextSendID
+    _messagesUp++;
+    _lastSendTime = QTime::currentTime();
+    _sentTimeLog[_sentTimeLogIndex] = _lastSendTime;
+    _nextSendID++;
+    _sentTimeLogIndex++;
+    if (_sentTimeLogIndex >= _sentLogCap) {
+        _sentTimeLogIndex = 0;
     }
     return true;
 }

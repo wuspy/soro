@@ -30,6 +30,7 @@
 #define CONFIG_TAG_IDLE_CONNECTION_TIMEOUT "idletimeout"
 #define CONFIG_TAG_TCP_VERIFY_TIMEOUT "tcpverifytimeout"
 #define CONFIG_TAG_SENT_LOG_CAP "sentlogcap"
+#define CONFIG_TAG_LOW_DELAY "lowdelay"
 
 //These dictate the header structure, listing the size
 //and data types for the required fields
@@ -132,7 +133,7 @@ public:
 
     //The maximum size of a sent message (the header may make the actual message
     //slighty larger)
-    static const MESSAGE_LENGTH MAX_MESSAGE_LENGTH = 512;
+    static const MESSAGE_LENGTH MAX_MESSAGE_LENGTH = 500;
 
     Channel (QObject *parent, const QString &configFile, Logger *log);
     Channel (QObject *parent, const QUrl &configUrl, Logger *log);
@@ -196,8 +197,10 @@ private:
 
     State _state;   //current state the channel is in
 
-    QHash<MESSAGE_ID, QTime>* _sentTimeTable;   //Used for statistic calculation
+    QTime *_sentTimeLog;   //Used for statistic calculation
+    int _sentTimeLogIndex;
     bool _ackNextMessage;
+    QTime _lastAckSendTime;
 
     QString LOG_TAG;    //Tag for debugging, ususally the
                         //channel name plus (S) for server or (C) for client
@@ -226,6 +229,7 @@ private:
     int _statisticsInterval;
     int _idleConnectionTimeout;
     int _watchdogInterval;
+    int _lowDelaySocketOption;
 
     int _tcpVerifyTicks;    //Used to keep track of verifying TCP peers
     bool _tcpVerified;
@@ -242,7 +246,6 @@ private:
     QTimer *_watchdogTimer;
     QTime _lastReceiveTime; //Last time a message was received
     QTime _lastSendTime;    //Last time a message was sent
-    QTime _lastAckSendTime; //Last time we sent an ack for a received packet (for RTT calculation)
 
     inline void setState(State state);  //Internal method to set the channel status and
                                         //emit the statusChanged signal
@@ -264,9 +267,6 @@ private:
 
     inline void sendHeartbeat();    //Sends a heartbeat message to the connected peer
 
-    void resetConnection(); //Resets the connection and attempts to reconnect
-                            //This is also called when first performing the initial connection
-
     void processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID,
                                 const QByteArray &message, const SocketAddress &address);   //Processes a received message
 
@@ -274,6 +274,9 @@ private:
 
     void resetConnectionVars(); //Resets variables relating to the current connection state,
                                 //called when a new connection is established
+
+    void resetConnection(); //Closes any existing connections and attempts to reconnect. Called in the event
+                            //of a network error or dropped connection. Also called for initial connection.
 
     inline void initVars(); //Initializes variables when the channel is fist created (mostly nulling pointers)
 
