@@ -19,10 +19,11 @@ private:
     void publish(qint32 level, QString tag, QString message);
 public:
     Logger(QObject *parent);
+    ~_Logger();
     static const qint32 LEVEL_INFORMATION = 0;
     static const qint32 LEVEL_WARN = 1;
     static const qint32 LEVEL_ERROR = 2;
-    bool setLogfile(QString dir);
+    bool setLogfile(QString file);
     void closeLogfile();
     void i(QString tag, QString message);
     void w(QString tag, QString message);

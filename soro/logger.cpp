@@ -43,6 +43,7 @@ void Logger::publish(qint32 level, QString tag, QString message) {
     emit onLogMessagePublished(formatted);
     if (_fileStream != NULL) {
         *_fileStream << formatted << "\n";
+        _fileStream->flush();
     }
 }
 
@@ -58,4 +59,8 @@ void Logger::closeLogfile() {
         delete _file;
         _file = NULL;
     }
+}
+
+Logger::~Logger() {
+    closeLogfile();
 }
