@@ -462,6 +462,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
             emit statisticsUpdate(this, rtt, _messagesUp, _messagesDown);
             _sentTimeTable->remove(ID);
         }
+        _lastReceiveTime = QTime::currentTime();
         break;
     default:
         LOG_W("Peer sent a message with an invalid header (type=" + QString::number(type) + ")");
