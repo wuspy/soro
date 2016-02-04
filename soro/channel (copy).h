@@ -34,9 +34,6 @@
 #define CONFIG_TAG_SENT_LOG_CAP "sentlogcap"
 #define CONFIG_TAG_LOW_DELAY "lowdelay"
 
-#define START_TIMER(X,Y) if (X == -1) X = startTimer(Y)
-#define KILL_TIMER(X) if (X != -1) { killTimer(X); X = -1; }
-
 //These dictate the header structure, listing the size
 //and data types for the required fields
 #define UDP_HEADER_BYTES 5
@@ -236,11 +233,8 @@ private:
     MESSAGE_ID _lastReceiveID;  //ID the most recent inbound message was marked with
     quint64 _messagesUp;    //Total number of sent messages
     quint64 _messagesDown;  //Total number of received messages
-    int _connectionMonitorTimerID;
-    int _handshakeTimerID;
-    int _resetTimerID;
-    int _resetTcpTimerID;
-    int _fetchNetConfigFileTimerID;
+    QTimer *_connectionMonitorTimer;
+    QTimer *_handshakeTimer;
     QTime _lastReceiveTime; //Last time a message was received
     QTime _lastSendTime;    //Last time a message was sent
 
@@ -272,14 +266,6 @@ private:
 
     void initWithConfiguration(QTextStream &stream);    //Sets up a channel for use once the configuration source
                                                         //has been located and accessed as a QTextStream
-    void resetConnection(); //Closes any existing connections and attempts to reconnect. Called in the event
-                            //of a network error or dropped connection. Also called for initial connection.
-
-    inline void sendHandshake();    //Sends a handshake message to the connected peer
-
-    inline void sendHeartbeat();    //Sends a heartbeat message to the connected peer
-
-    void fetchNetworkConfigFile();
 
 private slots:
     void udpReadyRead();
@@ -288,8 +274,14 @@ private slots:
     void newTcpClient();
     void socketError(QAbstractSocket::SocketError err);
     void serverError(QAbstractSocket::SocketError err);
+    void resetConnection(); //Closes any existing connections and attempts to reconnect. Called in the event
+                            //of a network error or dropped connection. Also called for initial connection.
+    void connectionMonitorTimeout();
+    void sendHandshake();    //Sends a handshake message to the connected peer
+    void sendHeartbeat();    //Sends a heartbeat message to the connected peer
     void netConfigFileAvailable();
     void netConfigRequestError(QNetworkReply::NetworkError);
+    void fetchNetworkConfigFile();
 
 
 signals: //Always public
@@ -309,10 +301,6 @@ signals: //Always public
     /* Signal to notify an observer that the connection statistics have been updated
      */
     void statisticsUpdate(Channel *channel, int rtt, quint64 msg_up, quint64 msg_down);
-
-protected:
-    void timerEvent(QTimerEvent *);
-
 };
 
 #endif // CHANNEL_H
