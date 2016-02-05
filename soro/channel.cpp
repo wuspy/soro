@@ -755,6 +755,7 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {   //PR
         QDataStream stream(&arr, QIODevice::WriteOnly);
         stream << (MESSAGE_TYPE)type;
         stream << (MESSAGE_ID)qToBigEndian(_nextSendID);
+        arr.append(message);
         status = _udpSocket->writeDatagram(arr, _peerAddress.address, _peerAddress.port);
     }
     else if (_tcpSocket != NULL) {
