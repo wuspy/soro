@@ -695,7 +695,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
                 LOG_W("Received ack for message that had already been discarded from the log, consider increasing SentLogCap in configuration");
                 break;
             }
-            logIndex = _sentLogCap - logIndex;
+            logIndex += _sentLogCap;
         }
         int rtt = _sentTimeLog[logIndex].msecsTo(_lastReceiveTime);
         emit statisticsUpdate(this, rtt, _messagesUp, _messagesDown);
