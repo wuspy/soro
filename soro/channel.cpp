@@ -66,7 +66,7 @@ void Channel::fetchNetworkConfigFile() {    //PRIVATE
     connect(_netConfigFileReply, SIGNAL(finished()),
             this, SLOT(netConfigFileAvailable()));
     connect(_netConfigFileReply, SIGNAL(error(QNetworkReply::NetworkError)),
-            this, SLOT(netConfigRequestError(QNetworkReply::NetworkError)));
+            this, SLOT(netConfigRequestError()));
 }
 
 void Channel::netConfigFileAvailable() {    //PRIVATE SLOT
@@ -82,12 +82,11 @@ void Channel::netConfigFileAvailable() {    //PRIVATE SLOT
     }
 }
 
-void Channel::netConfigRequestError(QNetworkReply::NetworkError err) {  //PRIVATE SLOT
+void Channel::netConfigRequestError() {  //PRIVATE SLOT
     LOG_E("Cannot fetch network configuration file: " + _netConfigFileReply->errorString() + ", retrying...");
     delete _netConfigFileReply;
     //retry again after RECOVERY_DELAY
     START_TIMER(_fetchNetConfigFileTimerID, RECOVERY_DELAY);
-    //QTimer::singleShot(RECOVERY_DELAY, this, SLOT(fetchNetworkConfigFile()));
 }
 
 /*  Initialization, creates timers, sockets, apply configuration
@@ -95,7 +94,7 @@ void Channel::netConfigRequestError(QNetworkReply::NetworkError err) {  //PRIVAT
  ***************************************************************************
  ***************************************************************************/
 
-inline void Channel::initVars() {
+inline void Channel::initVars() {   //PRIVATE
     LOG_TAG = "CHANNEL";
     _tcpServer = NULL;
     _tcpSocket = NULL;
@@ -110,7 +109,6 @@ inline void Channel::initVars() {
     _resetTcpTimerID = -1;
     _fetchNetConfigFileTimerID = -1;
     _openOnConfigured = false;
-    _ackNextMessage = false;
 }
 
 void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
@@ -316,9 +314,12 @@ void Channel::open() {
 void Channel::resetConnectionVars() {   //PRIVATE
     _bufferLength = 0;
     _lastReceiveID = 0;
+    _lastRtt = -1;
     _lastAckSendTime = QTime::currentTime();
+    _connectionEstablishedTime = QTime::currentTime();
     _nextSendID = 1;
-    _messagesDown = _messagesUp = 0;
+    _messagesDown = 0;
+    _messagesUp = 0;
     _sentTimeLogIndex = 0;
 }
 
@@ -326,7 +327,6 @@ void Channel::resetConnection() {   //PRIVATE SLOT
     LOG_I("Attempting to connect to other side of channel...");
     setState(ConnectingState);
     resetConnectionVars();
-    _sentTimeLogIndex = 0;
     KILL_TIMER(_connectionMonitorTimerID);
     KILL_TIMER(_handshakeTimerID);
     KILL_TIMER(_resetTcpTimerID);
@@ -399,8 +399,7 @@ void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
     }
     else if (id == _fetchNetConfigFileTimerID) {
         fetchNetworkConfigFile();
-        killTimer(_fetchNetConfigFileTimerID);   //single shot
-        _fetchNetConfigFileTimerID = -1;
+        KILL_TIMER(_fetchNetConfigFileTimerID); //single shot
     }
 }
 
@@ -679,7 +678,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         _lastReceiveTime = QTime::currentTime();
         break;
     default:
-        LOG_W("Peer sent a message with an invalid header (type=" + QString::number(type) + ")");
+        LOG_E("Peer sent a message with an invalid header (type=" + QString::number(type) + ")");
         resetConnection();
         return;
     case MSGTYPE_ACK:
@@ -697,8 +696,8 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
             }
             logIndex += _sentLogCap;
         }
-        int rtt = _sentTimeLog[logIndex].msecsTo(_lastReceiveTime);
-        emit statisticsUpdate(this, rtt, _messagesUp, _messagesDown);
+        _lastRtt = _sentTimeLog[logIndex].msecsTo(_lastReceiveTime);
+        emit statisticsUpdate(this, _lastRtt, _messagesUp, _messagesDown);
         break;
     }
     _messagesDown++;
@@ -778,8 +777,7 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {   //PR
     }
     //log statistics and increment _nextSendID
     _messagesUp++;
-    _lastSendTime = QTime::currentTime();
-    _sentTimeLog[_sentTimeLogIndex] = _lastSendTime;
+    _sentTimeLog[_sentTimeLogIndex] = QTime::currentTime();
     _nextSendID++;
     _sentTimeLogIndex++;
     if (_sentTimeLogIndex >= _sentLogCap) {
@@ -811,4 +809,23 @@ Channel::SocketAddress Channel::getPeerAddress() const {
 
 Channel::State Channel::getState() const {
     return _state;
+}
+
+int Channel::getConnectionUptime() const {
+    if (_state == ConnectedState) {
+        return _connectionEstablishedTime.secsTo(QTime::currentTime());
+    }
+    return -1;
+}
+
+int Channel::getLastRtt() const {
+    return _lastRtt;
+}
+
+int Channel::getConnectionMessagesUp() const {
+    return _messagesUp;
+}
+
+int Channel::getConnectionMessagesDown() const {
+    return _messagesDown;
 }

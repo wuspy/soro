@@ -99,7 +99,7 @@ public:
 
         bool operator==(const SocketAddress& other) const {
             //In a situations where we are working with IPv4 addresses, but the :ffff: (IPv6)
-            //prefix is added to only one of them, simple 'address == address' will fail
+            //prefix is added to only one of them, simple 'a == b' will fail
             Q_IPV6ADDR a = address.toIPv6Address();
             Q_IPV6ADDR b = other.address.toIPv6Address();
             return (std::memcmp(&a, &b, sizeof(Q_IPV6ADDR)) == 0)
@@ -140,8 +140,14 @@ public:
     //slighty larger)
     static const MESSAGE_LENGTH MAX_MESSAGE_LENGTH = 500;
 
+    /* Creates a new Channel with a local configuration file
+     */
     Channel (QObject *parent, const QString &configFile, Logger *log);
+
+    /* Creates a new Channel with the configuration file on a network server
+     */
     Channel (QObject *parent, const QUrl &configUrl, Logger *log);
+
     ~Channel();
 
     /* Gets the name the channel was configured with
@@ -178,6 +184,23 @@ public:
      */
     Channel::State getState() const;
 
+    /* Gets the uptime of the channel connection in seconds. Returns -1 if no
+     * connection has been established
+     */
+    int getConnectionUptime() const;
+
+    /* Gets the last calculated round trip time for the connection
+     */
+    int getLastRtt() const;
+
+    /* Gets the number of messages send through this connection
+     */
+    int getConnectionMessagesUp() const;
+
+    /* Gets the number of messages received through this connection
+     */
+    int getConnectionMessagesDown() const;
+
 private:
     //Message type identifiers
     static const MESSAGE_TYPE MSGTYPE_NORMAL = 0;
@@ -196,8 +219,9 @@ private:
 
     QTime *_sentTimeLog;   //Used for statistic calculation
     int _sentTimeLogIndex;
-    bool _ackNextMessage;
     QTime _lastAckSendTime;
+    QTime _connectionEstablishedTime;
+    int _lastRtt;
 
     QString LOG_TAG;    //Tag for debugging, ususally the
                         //channel name plus (S) for server or (C) for client
@@ -215,9 +239,7 @@ private:
     QNetworkReply *_netConfigFileReply; //Used for network configuration file
     bool _openOnConfigured;
 
-
     Logger* _log;   //Logger object we are writing log messages to (can be null)
-
 
     bool _isServer;         //Holders for configuration preferences
     bool _dropOldPackets;
@@ -236,13 +258,14 @@ private:
     MESSAGE_ID _lastReceiveID;  //ID the most recent inbound message was marked with
     quint64 _messagesUp;    //Total number of sent messages
     quint64 _messagesDown;  //Total number of received messages
-    int _connectionMonitorTimerID;
+
+    int _connectionMonitorTimerID;  //Timer ID's for repeatedly executed tasks and watchdogs
     int _handshakeTimerID;
     int _resetTimerID;
     int _resetTcpTimerID;
     int _fetchNetConfigFileTimerID;
+
     QTime _lastReceiveTime; //Last time a message was received
-    QTime _lastSendTime;    //Last time a message was sent
 
     inline void setState(State state);  //Internal method to set the channel status and
                                         //emit the statusChanged signal
@@ -289,7 +312,7 @@ private slots:
     void socketError(QAbstractSocket::SocketError err);
     void serverError(QAbstractSocket::SocketError err);
     void netConfigFileAvailable();
-    void netConfigRequestError(QNetworkReply::NetworkError);
+    void netConfigRequestError();
 
 
 signals: //Always public
@@ -301,8 +324,13 @@ signals: //Always public
     /* Signal to notify an observer that the state of the channel has changed
      */
     void stateChanged(Channel *channel, Channel::State state);
+
     /* Signal to notify an observer that the connected peer has changed
      * If the channel is no longer connected, peerAddress.address will be QHostAddress::Null
+     *
+     * Also, if this channel is the client side of a UDP connection, peer address will always be the
+     * server address regardless of the state of the connection since that is the only allowed address
+     * for communication.
      */
     void peerAddressChanged(Channel *channel,  const Channel::SocketAddress &peerAddress);
 

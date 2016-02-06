@@ -4,6 +4,10 @@ TagValueParser::TagValueParser() {
     _contents = new QMap<QString, QString>();
 }
 
+TagValueParser::~TagValueParser() {
+    delete _contents;
+}
+
 bool TagValueParser::load(QTextStream &stream) {
     _contents->clear();
 
@@ -22,21 +26,21 @@ bool TagValueParser::load(QTextStream &stream) {
     return true;
 }
 
-bool TagValueParser::contains(const QString &tag) {
+bool TagValueParser::contains(const QString &tag) const {
     return _contents->contains(tag);
 }
 
-QString TagValueParser::value(const QString &tag) {
+QString TagValueParser::value(const QString &tag) const {
     return _contents->value(tag, "");
 }
 
-bool TagValueParser::valueAsInt(const QString &tag, int* value) {
+bool TagValueParser::valueAsInt(const QString &tag, int* value) const {
     bool success;
     *value = this->value(tag).toInt(&success);
     return success;
 }
 
-bool TagValueParser::valueAsBool(const QString &tag, bool* value) {
+bool TagValueParser::valueAsBool(const QString &tag, bool* value) const {
     QString rawValue = this->value(tag).toLower();
     if (rawValue == "true" || rawValue == "1") {
         *value = true;
@@ -49,7 +53,7 @@ bool TagValueParser::valueAsBool(const QString &tag, bool* value) {
     return false;
 }
 
-bool TagValueParser::valueAsIP(const QString &tag, QHostAddress* value, bool allowV6) {
+bool TagValueParser::valueAsIP(const QString &tag, QHostAddress* value, bool allowV6) const {
     QString rawValue = this->value(tag);
     if (QRegExp(IPV4_REGEX).exactMatch(rawValue) || (allowV6 && QRegExp(IPV6_REGEX).exactMatch(rawValue))) {
             value->setAddress(rawValue);
@@ -58,18 +62,14 @@ bool TagValueParser::valueAsIP(const QString &tag, QHostAddress* value, bool all
     return false;
 }
 
-int TagValueParser::count() {
+int TagValueParser::count() const {
     return _contents->size();
 }
 
-bool TagValueParser::remove(const QString &tag) {
+bool TagValueParser::remove(const QString &tag) const {
     return _contents->remove(tag) > 0;
 }
 
-QList<QString> TagValueParser::tags() {
+QList<QString> TagValueParser::tags() const {
     return _contents->keys();
-}
-
-TagValueParser::~TagValueParser() {
-    delete _contents;
 }
