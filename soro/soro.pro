@@ -4,9 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += network
-
-QT       -= gui
+QT       += network gui
 
 TARGET = soro
 TEMPLATE = lib
@@ -16,14 +14,12 @@ DEFINES += SORO_LIBRARY
 SOURCES += \
     channel.cpp \
     logger.cpp \
-    watchdog.cpp \
     tagvalueparser.cpp
 
 HEADERS +=\
         soro_global.h \
     channel.h \
     logger.h \
-    watchdog.h \
     tagvalueparser.h
 
 unix {

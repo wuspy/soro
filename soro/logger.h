@@ -3,34 +3,43 @@
 
 #include "soro_global.h"
 
+#define LOG_LEVEL_DEBUG 3
+#define LOG_LEVEL_INFORMATION 2
+#define LOG_LEVEL_WARN 1
+#define LOG_LEVEL_ERROR 0
+
 /* A very simple logging implementation. Provides functionality to output
  * log data to a file as well signaling when messages are published.
+ *
+ * This class is reentrant, because QTextStream is reentrant and mutexes are expensive.
+ * Create separate logger instances for separate threads.
  */
 class SOROSHARED_EXPORT Logger: public QObject
 {
     Q_OBJECT
 
 private:
-    static const QString LOG_TAG;
-    static const QString _levelStrings[];
     static const QString _levelFormatters[];
     QFile* _file;
     QTextStream* _fileStream;
-    void publish(qint32 level, QString tag, QString message);
+    inline void publish(int level, QString tag, QString message);
+
 public:
     Logger(QObject *parent);
     ~Logger();
-    static const qint32 LEVEL_INFORMATION = 0;
-    static const qint32 LEVEL_WARN = 1;
-    static const qint32 LEVEL_ERROR = 2;
-    bool setLogfile(QString file);
+
+    bool setLogfile(QString dir);
     void closeLogfile();
+    void d(QString tag, QString message);
     void i(QString tag, QString message);
     void w(QString tag, QString message);
     void e(QString tag, QString message);
+    int MaxLevel;
+    bool RouteToQtLogger;
+
 signals:
-    void onLogMessagePublished(qint32 level, QString tag, QString message);
-    void onLogMessagePublished(QString messageFormatted);
+    void logMessagePublished(int level, QString tag, QString message);
+    void logMessagePublished(QString messageFormatted);
 };
 
 #endif // LOGGER_H

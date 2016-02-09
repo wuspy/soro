@@ -10,41 +10,6 @@
 
 #include <cstring>  //for memcmp
 
-//Default configuration options, which can optionally be specified in the configuraiton file
-#define DEFAULT_IDLE_CONNECTION_TIMEOUT 5000
-#define DEFAULT_STATISTICS_INTERVAL 1000
-#define DEFAULT_TCP_VERIFY_TIMEOUT 5000
-#define DEFAULT_SENT_LOG_CAP 500
-
-//These are hardcoded and cannot be loaded from a file
-#define HANDSHAKE_FREQUENCY 100
-#define RECOVERY_DELAY 100
-
-//Tags for writing the configuration file
-#define CONFIG_TAG_SERVER_ADDRESS "serveraddress"
-#define CONFIG_TAG_SERVER_PORT "serverport"
-#define CONFIG_TAG_CHANNEL_NAME "name"
-#define CONFIG_TAG_PROTOCOL "protocol"
-#define CONFIG_TAG_HOST_ADDRESS "hostaddress"
-#define CONFIG_TAG_ENDPOINT "endpoint"
-#define CONFIG_TAG_DROP_OLD_PACKETS "dropoldpackets"
-#define CONFIG_TAG_STATISTICS_INTERVAL "statisticsinterval"
-#define CONFIG_TAG_IDLE_CONNECTION_TIMEOUT "idletimeout"
-#define CONFIG_TAG_TCP_VERIFY_TIMEOUT "tcpverifytimeout"
-#define CONFIG_TAG_SENT_LOG_CAP "sentlogcap"
-#define CONFIG_TAG_LOW_DELAY "lowdelay"
-
-#define START_TIMER(X,Y) if (X == -1) X = startTimer(Y)
-#define KILL_TIMER(X) if (X != -1) { killTimer(X); X = -1; }
-
-//These dictate the header structure, listing the size
-//and data types for the required fields
-#define UDP_HEADER_BYTES 5
-#define TCP_HEADER_BYTES 7
-typedef quint32 MESSAGE_ID;     //4 bytes, unsigned 32-bit int
-typedef quint8 MESSAGE_TYPE;    //1 byte, unsigned byte
-typedef quint16 MESSAGE_LENGTH; //2 bytes, unsigned 16-bit int
-
 /* Channels abstract over message-based internet communication in a super easy way,
  * supporting either TCP or UDP as the transport protocol.
  *
@@ -73,6 +38,19 @@ typedef quint16 MESSAGE_LENGTH; //2 bytes, unsigned 16-bit int
  */
 class SOROSHARED_EXPORT Channel: public QObject {
     Q_OBJECT
+
+private:
+    //data types used for header information
+    typedef quint32 MESSAGE_ID;     //4 bytes, unsigned 32-bit int
+    typedef quint8 MESSAGE_TYPE;    //1 byte, unsigned byte
+    typedef quint16 MESSAGE_LENGTH; //2 bytes, unsigned 16-bit int
+
+    //Message type identifiers
+    static const MESSAGE_TYPE MSGTYPE_NORMAL = 0;
+    static const MESSAGE_TYPE MSGTYPE_CLIENT_HANDSHAKE = 1;
+    static const MESSAGE_TYPE MSGTYPE_SERVER_HANDSHAKE = 2;
+    static const MESSAGE_TYPE MSGTYPE_HEARTBEAT = 3;
+    static const MESSAGE_TYPE MSGTYPE_ACK = 4;
 
 public:
 
@@ -129,8 +107,6 @@ public:
         ConnectingState,    //The channel is attempting to connect
 
         ConnectedState, //The channel is connected to the other side
-
-        DisconnectedState,  //The channel has become disconnected from the other side
 
         ErrorState  //The channel has encountered an unrecoverable error and cannot be used
                     //This is usually do to invalid configuration (specifying an unbindable port or host)
@@ -195,20 +171,17 @@ public:
 
     /* Gets the number of messages send through this connection
      */
-    int getConnectionMessagesUp() const;
+    quint64 getConnectionMessagesUp() const;
 
     /* Gets the number of messages received through this connection
      */
-    int getConnectionMessagesDown() const;
+    quint64 getConnectionMessagesDown() const;
+
+    int getDataRateUp() const;
+
+    int getDataRateDown() const;
 
 private:
-    //Message type identifiers
-    static const MESSAGE_TYPE MSGTYPE_NORMAL = 0;
-    static const MESSAGE_TYPE MSGTYPE_CLIENT_HANDSHAKE = 1;
-    static const MESSAGE_TYPE MSGTYPE_SERVER_HANDSHAKE = 2;
-    static const MESSAGE_TYPE MSGTYPE_HEARTBEAT = 3;
-    static const MESSAGE_TYPE MSGTYPE_ACK = 4;
-
     char *_buffer;  //buffer for received messages
     MESSAGE_LENGTH _bufferLength;
 
@@ -217,10 +190,10 @@ private:
 
     State _state;   //current state the channel is in
 
-    QTime *_sentTimeLog;   //Used for statistic calculation
+    qint64 *_sentTimeLog;   //Used for statistic calculation
     int _sentTimeLogIndex;
-    QTime _lastAckSendTime;
-    QTime _connectionEstablishedTime;
+    qint64 _lastAckSendTime;
+    qint64 _connectionEstablishedTime;
     int _lastRtt;
 
     QString LOG_TAG;    //Tag for debugging, ususally the
@@ -243,10 +216,7 @@ private:
 
     bool _isServer;         //Holders for configuration preferences
     bool _dropOldPackets;
-    int _tcpVerifyTimeout;
-    int _sentLogCap;
-    int _statisticsInterval;
-    int _idleConnectionTimeout;
+    bool _sendAcks;
     int _lowDelaySocketOption;
 
     QTcpSocket *_tcpSocket; //Currently active TCP socket
@@ -258,6 +228,10 @@ private:
     MESSAGE_ID _lastReceiveID;  //ID the most recent inbound message was marked with
     quint64 _messagesUp;    //Total number of sent messages
     quint64 _messagesDown;  //Total number of received messages
+    quint64 _bytesUp;
+    quint64 _bytesDown;
+    int _dataRateUp;
+    int _dataRateDown;
 
     int _connectionMonitorTimerID;  //Timer ID's for repeatedly executed tasks and watchdogs
     int _handshakeTimerID;
@@ -265,7 +239,9 @@ private:
     int _resetTcpTimerID;
     int _fetchNetConfigFileTimerID;
 
-    QTime _lastReceiveTime; //Last time a message was received
+    qint64 _lastReceiveTime; //Last time a message was received
+    qint64 _lastSendTime;
+    qint64 _lastAckReceiveTime;
 
     inline void setState(State state);  //Internal method to set the channel status and
                                         //emit the statusChanged signal
@@ -309,11 +285,10 @@ private slots:
     void tcpReadyRead();
     void tcpConnected();
     void newTcpClient();
-    void socketError(QAbstractSocket::SocketError err);
+    void connectionError(QAbstractSocket::SocketError err);
     void serverError(QAbstractSocket::SocketError err);
     void netConfigFileAvailable();
     void netConfigRequestError();
-
 
 signals: //Always public
 
@@ -336,7 +311,9 @@ signals: //Always public
 
     /* Signal to notify an observer that the connection statistics have been updated
      */
-    void statisticsUpdate(Channel *channel, int rtt, quint64 msg_up, quint64 msg_down);
+    void statisticsUpdate(Channel *channel, int rtt, quint64 msg_up, quint64 msg_down, int rate_up, int rate_down);
+
+    void connectionError(Channel* channel, QAbstractSocket::SocketError err);
 
 protected:
     void timerEvent(QTimerEvent *);

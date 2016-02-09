@@ -1,49 +1,68 @@
 #include "logger.h"
 
-const QString Logger::_levelStrings[3] = { "I", "W", "E" };
-const QString Logger::_levelFormatters[3] = {
-    "<div>%1&emsp;I/<i>%2</i>:&emsp;%3</div>",
-    "<div style=\"color:#0d47a1\">%1&emsp;W/<i>%2</i>:&emsp;%3</div>",
-    "<div style=\"color:#b71c1c\">%1&emsp;E/<i>%2</i>:&emsp;%3</div>"
+const QString Logger::_levelFormatters[4] = {
+    "[E]\t%1\t%2:\t%3",
+    "[W]\t%1\t%2:\t%3",
+    "[I]\t%1\t%2:\t%3",
+    "[D]\t%1\t%2:\t%3"
 };
-
-const QString Logger::LOG_TAG = "Logger";
 
 Logger::Logger(QObject *parent) : QObject(parent) {
   _file = NULL;
+  MaxLevel = LOG_LEVEL_DEBUG;
   _fileStream = NULL;
+  RouteToQtLogger = false;
 }
 
 bool Logger::setLogfile(QString file) {
     _file = new QFile(file);
-    if (_file->open(QIODevice::ReadWrite)) {
+    if (_file->open(QIODevice::Append)) {
         _fileStream = new QTextStream(_file);
         return true;
     }
     //could not open the file
-    e(LOG_TAG, "Unable to open the specified logfile for write access (" + file + ")");
+    qCritical() << "Unable to open the specified logfile for write access (" << file << ")";
     return false;
 }
 
+void Logger::d(QString tag, QString message) {
+    publish(LOG_LEVEL_DEBUG, tag, message);
+}
+
 void Logger::i(QString tag, QString message) {
-    publish(LEVEL_INFORMATION, tag, message);
+    publish(LOG_LEVEL_INFORMATION, tag, message);
 }
 
 void Logger::w(QString tag, QString message) {
-    publish(LEVEL_WARN, tag, message);
+    publish(LOG_LEVEL_WARN, tag, message);
 }
 
 void Logger::e(QString tag, QString message) {
-    publish(LEVEL_ERROR, tag, message);
+    publish(LOG_LEVEL_ERROR, tag, message);
 }
 
-void Logger::publish(qint32 level, QString tag, QString message) {
-    emit onLogMessagePublished(level, tag, message);
-    QString formatted = _levelFormatters[level].arg(QTime::currentTime().toString(), tag, message);
-    emit onLogMessagePublished(formatted);
-    if (_fileStream != NULL) {
-        *_fileStream << formatted << "\n";
-        _fileStream->flush();
+inline void Logger::publish(int level, QString tag, QString message) { //PRIVATE
+    if (level <= MaxLevel) {
+        emit logMessagePublished(level, tag, message);
+        QString formatted = _levelFormatters[level].arg(QTime::currentTime().toString(), tag, message);
+        emit logMessagePublished(formatted);
+        if (_fileStream != NULL) {
+            *_fileStream << formatted << endl;
+        }
+        if (RouteToQtLogger) {
+            switch (level) {
+            case LOG_LEVEL_DEBUG:
+            case LOG_LEVEL_INFORMATION:
+                qDebug() << formatted;
+                break;
+            case LOG_LEVEL_WARN:
+                qWarning() << formatted;
+                break;
+            case LOG_LEVEL_ERROR:
+                qCritical() << formatted;
+                break;
+            }
+        }
     }
 }
 

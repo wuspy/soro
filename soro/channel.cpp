@@ -1,5 +1,42 @@
 #include "channel.h"
 
+//rough rate at which handshakes are sent when trying to establish a UDP connection
+#define HANDSHAKE_FREQUENCY 250
+//timeout for dropping a connection with no received packets
+#define IDLE_CONNECTION_TIMEOUT 5000
+//rough rate at which this channel should send the other side an ack for their last packet
+#define STATISTICS_INTERVAL 500
+//rough rate at which heartbeats should be sent if no other packets are being sent
+#define HEARTBEAT_INTERVAL 500
+//number of sent entries to log for rtt calculation
+#define SENT_LOG_CAP 300
+//delay after an error when a reconnect will be tried
+#define RECOVERY_DELAY 1000
+
+//Tags for writing the configuration file
+#define CONFIG_TAG_SERVER_ADDRESS "serveraddress"
+#define CONFIG_TAG_SERVER_PORT "serverport"
+#define CONFIG_TAG_CHANNEL_NAME "name"
+#define CONFIG_TAG_PROTOCOL "protocol"
+#define CONFIG_TAG_HOST_ADDRESS "hostaddress"
+#define CONFIG_TAG_ENDPOINT "endpoint"
+#define CONFIG_TAG_DROP_OLD_PACKETS "dropoldpackets"
+#define CONFIG_TAG_LOW_DELAY "lowdelay"
+#define CONFIG_TAG_SEND_ACKS "sendacks"
+
+#define START_TIMER(X,Y) if (X == -1) X = startTimer(Y)
+#define KILL_TIMER(X) if (X != -1) { killTimer(X); X = -1; }
+
+//Log macros
+#define LOG_D(X) if (_log != NULL) _log->d(LOG_TAG, X)
+#define LOG_I(X) if (_log != NULL) _log->i(LOG_TAG, X)
+#define LOG_W(X) if (_log != NULL) _log->w(LOG_TAG, X)
+#define LOG_E(X) if (_log != NULL) _log->e(LOG_TAG, X)
+
+//Macros for the size of UDP and TCP headers
+#define UDP_HEADER_BYTES 5
+#define TCP_HEADER_BYTES 7
+
 /*  Constructors and destructor
  ***************************************************************************
  ***************************************************************************
@@ -107,6 +144,10 @@ inline void Channel::initVars() {   //PRIVATE
     _handshakeTimerID = -1;
     _resetTimerID = -1;
     _resetTcpTimerID = -1;
+    _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
+    _lastSendTime = QDateTime::currentMSecsSinceEpoch();
+    _lastAckReceiveTime = QDateTime::currentMSecsSinceEpoch();
+    _lastAckSendTime = QDateTime::currentMSecsSinceEpoch();
     _fetchNetConfigFileTimerID = -1;
     _openOnConfigured = false;
 }
@@ -114,10 +155,6 @@ inline void Channel::initVars() {   //PRIVATE
 void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     //default if not specified
     _dropOldPackets = true;
-    _statisticsInterval = DEFAULT_STATISTICS_INTERVAL;
-    _idleConnectionTimeout = DEFAULT_IDLE_CONNECTION_TIMEOUT;
-    _tcpVerifyTimeout = DEFAULT_TCP_VERIFY_TIMEOUT;
-    _sentLogCap = DEFAULT_SENT_LOG_CAP;
     _hostAddress.address = QHostAddress::Any;
 
     const QString usingDefaultWarningString = "%1 was either not found or invalid while loading configuration, using default value %2";
@@ -202,29 +239,11 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
         LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_DROP_OLD_PACKETS, "true"));
         _dropOldPackets = true;
     }
-    success = parser.valueAsInt(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT, &_idleConnectionTimeout);
-    parser.remove(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT);
+    success = parser.valueAsBool(CONFIG_TAG_SEND_ACKS, &_sendAcks);
+    parser.remove(CONFIG_TAG_SEND_ACKS);
     if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_IDLE_CONNECTION_TIMEOUT, QString::number(DEFAULT_IDLE_CONNECTION_TIMEOUT)));
-        _idleConnectionTimeout = DEFAULT_IDLE_CONNECTION_TIMEOUT;
-    }
-    success = parser.valueAsInt(CONFIG_TAG_SENT_LOG_CAP, &_sentLogCap);
-    parser.remove(CONFIG_TAG_SENT_LOG_CAP);
-    if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_SENT_LOG_CAP, QString::number(DEFAULT_SENT_LOG_CAP)));
-        _sentLogCap = DEFAULT_SENT_LOG_CAP;
-    }
-    success = parser.valueAsInt(CONFIG_TAG_STATISTICS_INTERVAL, &_statisticsInterval);
-    parser.remove(CONFIG_TAG_STATISTICS_INTERVAL);
-    if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_STATISTICS_INTERVAL, QString::number(DEFAULT_STATISTICS_INTERVAL)));
-        _statisticsInterval = DEFAULT_STATISTICS_INTERVAL;
-    }
-    success = parser.valueAsInt(CONFIG_TAG_TCP_VERIFY_TIMEOUT, &_tcpVerifyTimeout);
-    parser.remove(CONFIG_TAG_TCP_VERIFY_TIMEOUT);
-    if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_TCP_VERIFY_TIMEOUT, QString::number(DEFAULT_TCP_VERIFY_TIMEOUT)));
-        _tcpVerifyTimeout = DEFAULT_TCP_VERIFY_TIMEOUT;
+        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_SEND_ACKS, "true"));
+        _sendAcks = true;
     }
     bool lowDelay;
     success = parser.valueAsBool(CONFIG_TAG_LOW_DELAY, &lowDelay);
@@ -245,7 +264,7 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
 
     //create a buffer for storing received messages
     _buffer = new char[1024];
-    _sentTimeLog = new QTime[_sentLogCap];
+    _sentTimeLog = new qint64[SENT_LOG_CAP];
 
     LOG_I("Initializing with serverAddress=" + _serverAddress.toString()
           + ",protocol=" + (_protocol == TcpProtocol ? "TCP" : "UDP"));
@@ -257,7 +276,7 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
         _socket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
         connect(_socket, SIGNAL(readyRead()), this, SLOT(udpReadyRead()));
         connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-                this, SLOT(socketError(QAbstractSocket::SocketError)));
+                this, SLOT(connectionError(QAbstractSocket::SocketError)));
     }
     else if (_isServer) {
         //Server for a TCP connection; we must use a QTcpServer to manage connecting peers
@@ -276,13 +295,13 @@ void Channel::initWithConfiguration(QTextStream &stream) { //PRIVATE
     setState(ReadyState); //now safe to call open()
 }
 
-
 /*  Connection lifecycle management
  ***************************************************************************
  ***************************************************************************
  ***************************************************************************/
 
 void Channel::open() {
+    LOG_D("open() called");
     switch (_state) {
     case ReadyState:
         //If this is the server, we will bind to the server port
@@ -303,6 +322,7 @@ void Channel::open() {
     case AwaitingConfigurationState:
         //cannot open yet because we are waiting on a reply from the network server
         //where the config file is stored. Open as soon as it's ready.
+        LOG_D("openOnConfiguration set to true");
         _openOnConfigured = true;
         break;
     default:
@@ -312,18 +332,25 @@ void Channel::open() {
 }
 
 void Channel::resetConnectionVars() {   //PRIVATE
+    LOG_D("resetConnectionVars() called");
     _bufferLength = 0;
     _lastReceiveID = 0;
     _lastRtt = -1;
-    _lastAckSendTime = QTime::currentTime();
-    _connectionEstablishedTime = QTime::currentTime();
+    _lastAckSendTime = 0;
+    _lastAckReceiveTime = 0;
+    _connectionEstablishedTime = QDateTime::currentMSecsSinceEpoch();
     _nextSendID = 1;
     _messagesDown = 0;
     _messagesUp = 0;
+    _bytesUp = 0;
+    _bytesDown = 0;
+    _dataRateUp = 0;
+    _dataRateDown = 0;
     _sentTimeLogIndex = 0;
+    emit statisticsUpdate(this, _lastRtt, _messagesUp, _messagesDown, _dataRateUp, _dataRateDown);
 }
 
-void Channel::resetConnection() {   //PRIVATE SLOT
+void Channel::resetConnection() {   //PRIVATE
     LOG_I("Attempting to connect to other side of channel...");
     setState(ConnectingState);
     resetConnectionVars();
@@ -374,12 +401,13 @@ void Channel::resetConnection() {   //PRIVATE SLOT
 void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
     int id = e->timerId();
     if (id == _connectionMonitorTimerID) {
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
         //check for a stale connection (several seconds without a message)
-        if (_lastReceiveTime.msecsTo(QTime::currentTime()) >= _idleConnectionTimeout) {
+        if (now - _lastReceiveTime >= IDLE_CONNECTION_TIMEOUT) {
             LOG_E("Peer has stopped responding, dropping connection");
             resetConnection();
         }
-        else {
+        else if (now - _lastSendTime >= HEARTBEAT_INTERVAL) {
             //Send a heartbeat message, even on TCP (They are needed for RTT updates
             //and are a good idea anyway)
             sendHeartbeat();
@@ -411,7 +439,7 @@ void Channel::configureNewTcpSocket() { //PRIVATE
         connect(_socket, SIGNAL(readyRead()), this, SLOT(tcpReadyRead()));
         connect(_socket, SIGNAL(connected()), this, SLOT(tcpConnected()));
         connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-                this, SLOT(socketError(QAbstractSocket::SocketError)));
+                this, SLOT(connectionError(QAbstractSocket::SocketError)));
     }
 }
 
@@ -424,7 +452,7 @@ void Channel::tcpConnected() {  //PRIVATE SLOT
     setPeerAddress(SocketAddress(_tcpSocket->peerAddress(), _tcpSocket->peerPort()));
     sendHandshake();
     //Close the connection if it is not verified in time
-    START_TIMER(_resetTcpTimerID, _tcpVerifyTimeout);
+    START_TIMER(_resetTcpTimerID, IDLE_CONNECTION_TIMEOUT);
     LOG_I("TCP peer " + _peerAddress.toString() + " has connected");
 }
 
@@ -439,6 +467,7 @@ void Channel::newTcpClient() {  //PRIVATE SLOT
 inline void Channel::setState(Channel::State state) {   //PRIVATE
     //signals the stateChanged event
      if (_state != state) {
+         LOG_D("Setting state to " + QString::number(state));
          _state = state;
          emit stateChanged(this, _state);
      }
@@ -447,6 +476,7 @@ inline void Channel::setState(Channel::State state) {   //PRIVATE
 inline void Channel::setPeerAddress(Channel::SocketAddress address) {    //PRIVATE
     //signals the peerAddressChanged event
     if (_peerAddress != address) {
+        LOG_D("Setting peer address to " + address.toString());
         _peerAddress = address;
         emit peerAddressChanged(this, _peerAddress);
     }
@@ -481,7 +511,8 @@ void Channel::close(Channel::State closeState) {   //PRIVATE
  ***************************************************************************
  ***************************************************************************/
 
-void Channel::socketError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
+void Channel::connectionError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
+    emit connectionError(this, err);
     switch (err) {
     case QAbstractSocket::SocketTimeoutError:    //non-fatal
         LOG_E("A socket operation has timed out");
@@ -490,7 +521,7 @@ void Channel::socketError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
         LOG_E("Temporary connection error: " + _socket->errorString());
         return;
     case QAbstractSocket::SocketAddressNotAvailableError:   //fatal
-        LOG_E("FATAL: The address is not available to open on this device. Select a different host address");
+        LOG_E("FATAL: The address is not availabfle to open on this device. Select a different host address");
         close(ErrorState);
         break;
     case QAbstractSocket::AddressInUseError:    //fatal
@@ -511,6 +542,7 @@ void Channel::socketError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
 }
 
 void Channel::serverError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
+    emit connectionError(this, err);
     switch (err) {
     case QAbstractSocket::SocketTimeoutError:    //non-fatal
         LOG_E("A server operation has timed out");
@@ -544,6 +576,7 @@ void Channel::serverError(QAbstractSocket::SocketError err) { //PRIVATE SLOT
  ***************************************************************************/
 
 void Channel::udpReadyRead() {  //PRIVATE SLOT
+    LOG_D("udpReadyRead() called");
     SocketAddress address;
     MESSAGE_ID ID;
     MESSAGE_TYPE type;
@@ -561,12 +594,15 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
         //ensure the datagram either came from the correct address, or is marked as a handshake
         if (_isServer) {
             if ((address != _peerAddress) & (type != MSGTYPE_CLIENT_HANDSHAKE)) {
+                LOG_D("Received non-handshake UDP packet from unknown peer");
                 continue;
             }
         }
         else if ((address != _peerAddress) & (address != _serverAddress)) {
+            LOG_D("Received UDP packet that was not from server");
             continue;
         }
+        _bytesDown += status;
         stream >> ID;
         ID = qFromBigEndian(ID);
         QByteArray message = QByteArray::fromRawData(_buffer + UDP_HEADER_BYTES, _bufferLength - UDP_HEADER_BYTES);
@@ -575,6 +611,7 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
 }
 
 void Channel::tcpReadyRead() {  //PRIVATE SLOT
+    LOG_D("tcpReadyRead() called");
     qint64 status;
     while (_tcpSocket->bytesAvailable() > 0) {
         if (_bufferLength < TCP_HEADER_BYTES) {
@@ -607,6 +644,7 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
             _bufferLength += status;
             if (_bufferLength == length) {
                 //we have the whole message
+                _bytesDown += length;
                 MESSAGE_TYPE type;
                 MESSAGE_ID ID;
                 stream >> type;
@@ -626,13 +664,15 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         //normal data packet
         //check the packet sequence ID
         if ((ID > _lastReceiveID) | !_dropOldPackets){
-            _lastReceiveTime = QTime::currentTime();
+            LOG_D("Received normal packet " + QString::number(ID));
+            _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
             _lastReceiveID = ID;
             emit messageReceived(this, message);
         }
         break;
     case MSGTYPE_SERVER_HANDSHAKE:
         //this packet is a handshake request
+        LOG_D("Received server handshake packet " + QString::number(ID));
         if (!_isServer) {
             if (compareHandshake(message)) {
                 //we are the client, and we got a respoonse from the server (yay)
@@ -640,10 +680,10 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
                 setPeerAddress(address);
                 KILL_TIMER(_handshakeTimerID);
                 KILL_TIMER(_resetTcpTimerID);
-                _lastReceiveTime = QTime::currentTime();
+                _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
                 setState(ConnectedState);
-                START_TIMER(_connectionMonitorTimerID, _idleConnectionTimeout / 5);
+                START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_I("Received handshake response from server " + _serverAddress.toString());
             }
             else {
@@ -653,6 +693,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         return; //don't calculate statistics on handshake messages
     case MSGTYPE_CLIENT_HANDSHAKE:
         if (_isServer) {
+            LOG_D("Received client handshake packet " + QString::number(ID));
             if (compareHandshake(message)) {
                 //We are the server getting a new (valid) handshake request, respond back and record the address
                 resetConnectionVars();
@@ -662,10 +703,10 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
                     //send a handshake back in UDP server mode
                     sendHandshake();
                 }
-                _lastReceiveTime = QTime::currentTime();
+                _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
                 setState(ConnectedState);
-                START_TIMER(_connectionMonitorTimerID, _idleConnectionTimeout / 5);
+                START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_I("Received handshake request from client " + _peerAddress.toString());
             }
             else {
@@ -674,15 +715,23 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         }
         return; //don't calculate statistics on handshake messages
     case MSGTYPE_HEARTBEAT:
+        LOG_D("Received heartbeat packet " + QString::number(ID));
         //no reason to update or check _lastReceiveID
-        _lastReceiveTime = QTime::currentTime();
+        _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
         break;
     default:
         LOG_E("Peer sent a message with an invalid header (type=" + QString::number(type) + ")");
         resetConnection();
         return;
     case MSGTYPE_ACK:
-        _lastReceiveTime = QTime::currentTime();
+        LOG_D("Received ack packet " + QString::number(ID));
+        _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
+        int time = _lastReceiveTime - _lastAckReceiveTime;
+        _lastAckReceiveTime = _lastReceiveTime;
+        _dataRateUp = (_bytesUp * (100000 / time)) / 100;
+        _dataRateDown = (_bytesDown * (100000 / time)) / 100;
+        _bytesUp = 0;
+        _bytesDown = 0;
         QDataStream stream(message);
         MESSAGE_ID ackID;
         stream >> ackID;
@@ -690,20 +739,20 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         if (ackID >= _nextSendID) break;
         int logIndex = _sentTimeLogIndex - (_nextSendID - ackID);
         if (logIndex < 0) {
-            if (logIndex < -_sentLogCap) {
+            if (logIndex < -SENT_LOG_CAP) {
                 LOG_W("Received ack for message that had already been discarded from the log, consider increasing SentLogCap in configuration");
                 break;
             }
-            logIndex += _sentLogCap;
+            logIndex += SENT_LOG_CAP;
         }
-        _lastRtt = _sentTimeLog[logIndex].msecsTo(_lastReceiveTime);
-        emit statisticsUpdate(this, _lastRtt, _messagesUp, _messagesDown);
+        _lastRtt = _lastReceiveTime - _sentTimeLog[logIndex];
+        emit statisticsUpdate(this, _lastRtt, _messagesUp, _messagesDown, _dataRateUp, _dataRateDown);
         break;
     }
     _messagesDown++;
     //If we have reached _statisticsInterval without acking a received packet,
     //send one so the other side can calculate RTT
-    if (_lastAckSendTime.msecsTo(QTime::currentTime()) >= _statisticsInterval) {
+    if (_sendAcks && (QDateTime::currentMSecsSinceEpoch() - _lastAckSendTime >= STATISTICS_INTERVAL)) {
         _lastAckSendTime = _lastReceiveTime;
         QByteArray ack("", sizeof(MESSAGE_ID));
         QDataStream stream(&ack, QIODevice::WriteOnly);
@@ -749,6 +798,7 @@ bool Channel::sendMessage(const QByteArray &message) {
 
 bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {   //PRIVATE
     qint64 status;
+    LOG_D("Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
     if (_protocol == UdpProtocol) {
         QByteArray arr("", UDP_HEADER_BYTES);
         QDataStream stream(&arr, QIODevice::WriteOnly);
@@ -777,10 +827,12 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {   //PR
     }
     //log statistics and increment _nextSendID
     _messagesUp++;
-    _sentTimeLog[_sentTimeLogIndex] = QTime::currentTime();
+    _bytesUp += status;
+    _lastSendTime = QDateTime::currentMSecsSinceEpoch();
+    _sentTimeLog[_sentTimeLogIndex] = _lastSendTime;
     _nextSendID++;
     _sentTimeLogIndex++;
-    if (_sentTimeLogIndex >= _sentLogCap) {
+    if (_sentTimeLogIndex >= SENT_LOG_CAP) {
         _sentTimeLogIndex = 0;
     }
     return true;
@@ -813,7 +865,7 @@ Channel::State Channel::getState() const {
 
 int Channel::getConnectionUptime() const {
     if (_state == ConnectedState) {
-        return _connectionEstablishedTime.secsTo(QTime::currentTime());
+        return (QDateTime::currentMSecsSinceEpoch() - _connectionEstablishedTime) / 1000;
     }
     return -1;
 }
@@ -822,10 +874,18 @@ int Channel::getLastRtt() const {
     return _lastRtt;
 }
 
-int Channel::getConnectionMessagesUp() const {
+quint64 Channel::getConnectionMessagesUp() const {
     return _messagesUp;
 }
 
-int Channel::getConnectionMessagesDown() const {
+quint64 Channel::getConnectionMessagesDown() const {
     return _messagesDown;
+}
+
+int Channel::getDataRateUp() const {
+    return _dataRateUp;
+}
+
+int Channel::getDataRateDown() const {
+    return _dataRateDown;
 }
