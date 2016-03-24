@@ -1,0 +1,1 @@
+This directory contains code files that are shared between various projects (including the mbed projects). I've opted for simply building the sources separately into each project mainly because trying to get shit to dynamically link on OSX made me wanna punch kittens.
