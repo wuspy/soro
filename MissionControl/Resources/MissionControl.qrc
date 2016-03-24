@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>warning_red_18px.png</file>
+        <file>settings_red_18px.png</file>
+        <file>minus_circle_yellow_18px.png</file>
+        <file>location_red_18px.png</file>
+        <file>gamepad_red_18px.png</file>
+        <file>fullscreen_red_18px.png</file>
+        <file>check_circle_green_18px.png</file>
+    </qresource>
+    <qresource prefix="/images">
+        <file>vlc_logo.png</file>
+    </qresource>
+    <qresource prefix="/">
+        <file>map.html</file>
+    </qresource>
+</RCC>
