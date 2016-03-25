@@ -53,7 +53,7 @@ namespace Soro {
             AxisMapItem(int index, QString name): MapItem(index, name) { }
 
             float value(const float *glfwAxes, int size) const {
-                if (!isMapped() | GlfwIndex >= size) return 0;
+                if (!isMapped() | (GlfwIndex >= size)) return 0;
                 return glfwAxes[GlfwIndex];
             }
         };
@@ -64,7 +64,7 @@ namespace Soro {
             ButtonMapItem(int index, QString name): MapItem(index, name) { }
 
             bool isPressed(const unsigned char *glfwButtons, int size) const {
-                if (!isMapped() | GlfwIndex >= size) return false;
+                if (!isMapped() | (GlfwIndex >= size)) return false;
                 return glfwButtons[GlfwIndex] == 1;
             }
         };
@@ -80,6 +80,9 @@ namespace Soro {
         bool loadMapping(QFile& file);
         bool writeMapping(QFile& file);
         bool isMapped() const;
+
+    protected:
+        virtual QString getClassName() const=0;
     };
 }
 

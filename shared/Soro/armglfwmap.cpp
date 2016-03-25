@@ -23,6 +23,10 @@ ArmGlfwMap::ArmGlfwMap() {
     };
 }
 
+QString ArmGlfwMap::getClassName() const {
+    return "ArmGlfwMap";
+}
+
 int ArmGlfwMap::axisCount() const {
     return 5;
 }
@@ -31,50 +35,50 @@ int ArmGlfwMap::buttonCount() const {
     return 7;
 }
 
-const GlfwMap::AxisMapItem& ArmGlfwMap::XAxis() const {
+const GlfwMap::AxisMapItem& ArmGlfwMap::xAxis() const {
     return AxisList[0];
 }
 
-const GlfwMap::AxisMapItem& ArmGlfwMap::YAxis() const {
+const GlfwMap::AxisMapItem& ArmGlfwMap::yAxis() const {
     return AxisList[1];
 }
 
-const GlfwMap::AxisMapItem& ArmGlfwMap::YawAxis() const {
+const GlfwMap::AxisMapItem& ArmGlfwMap::yawAxis() const {
     return AxisList[2];
 }
 
-const GlfwMap::AxisMapItem& ArmGlfwMap::WristAxis() const {
+const GlfwMap::AxisMapItem& ArmGlfwMap::wristAxis() const {
     return AxisList[3];
 }
 
-const GlfwMap::AxisMapItem& ArmGlfwMap::BucketAxis() const {
+const GlfwMap::AxisMapItem& ArmGlfwMap::bucketAxis() const {
     return AxisList[4];
 }
 
-const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketOpenButton() const {
+const GlfwMap::ButtonMapItem& ArmGlfwMap::bucketOpenButton() const {
     return ButtonList[0];
 }
 
-const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketCloseButton() const {
+const GlfwMap::ButtonMapItem& ArmGlfwMap::bucketCloseButton() const {
     return ButtonList[1];
 }
 
-const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketFullOpenButton() const {
+const GlfwMap::ButtonMapItem& ArmGlfwMap::bucketFullOpenButton() const {
     return ButtonList[2];
 }
 
-const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketFullCloseButton() const {
+const GlfwMap::ButtonMapItem& ArmGlfwMap::bucketFullCloseButton() const {
     return ButtonList[3];
 }
 
-const GlfwMap::ButtonMapItem& ArmGlfwMap::WristUpButton() const {
+const GlfwMap::ButtonMapItem& ArmGlfwMap::wristUpButton() const {
     return ButtonList[4];
 }
 
-const GlfwMap::ButtonMapItem& ArmGlfwMap::WristDownButton() const {
+const GlfwMap::ButtonMapItem& ArmGlfwMap::wristDownButton() const {
     return ButtonList[5];
 }
 
-const GlfwMap::ButtonMapItem& ArmGlfwMap::StowButton() const {
+const GlfwMap::ButtonMapItem& ArmGlfwMap::stowButton() const {
     return ButtonList[6];
 }

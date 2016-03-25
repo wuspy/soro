@@ -1,11 +1,14 @@
 #ifndef GLFWMAPDIALOG_H
 #define GLFWMAPDIALOG_H
 
+#include <QtCore>
 #include <QDialog>
 #include <QAbstractButton>
+#include <QMessageBox>
 #include <QTimerEvent>
 
-#include <glfwmap.h>
+#include "soroutil.h"
+#include "glfwmap.h"
 
 #include "GLFW/glfw3.h"
 
@@ -25,20 +28,19 @@ namespace MissionControl {
 
     private:
         Ui::GlfwMapDialog *ui;
-        Soro::GlfwMap *_map;
-        int _controllerId = GLFW_JOYSTICK_1;
-        int _joyTimerId = -1;
-        int joyIdByName(QString name);
-        void populateJoyMenu();
+        Soro::GlfwMap _map;
+        int _controllerId;
+        int _joyTimerId = TIMER_INACTIVE;
         void populateTable();
 
     private slots:
         void tableCellClicked(int row, int column);
-        void joyMenuSelectionChanged(int index);
         void buttonClicked(QAbstractButton *button);
 
     protected:
-        void timerEvent(QTimerEvent *);
+        void timerEvent(QTimerEvent *e);
+        void showEvent(QShowEvent *e);
+        void hideEvent(QHideEvent *e);
     };
 
 }

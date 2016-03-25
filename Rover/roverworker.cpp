@@ -10,10 +10,10 @@ RoverWorker::RoverWorker(QObject *parent) : QObject(parent) {
     _log = new Logger(this);
     _log->setLogfile(appPath + "/rover.log");
     _log->RouteToQtLogger = true;
-    _log->i(LOG_TAG, "-------------------------------------------------------");
-    _log->i(LOG_TAG, "-------------------------------------------------------");
-    _log->i(LOG_TAG, "-------------------------------------------------------");
-    _log->i(LOG_TAG, "Starting up...");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("Starting up...");
 
     //Must initialize from the event loop
     START_TIMER(_initTimerId, 1);
@@ -24,50 +24,50 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
     if (e->timerId() == _initTimerId) {
         KILL_TIMER(_initTimerId); //single shot
 
-        SoroIniConfig config;
         QString err = QString::null;
-        if (!config.parse(&err)) {
-            _log->e(LOG_TAG, err);
+        if (!_soroIniConfig.load(&err)) {
+            LOG_E(err);
             exit(1); return;
         }
-        _armVideoPort = config.armVideoPort;
-        _driveVideoPort = config.driveVideoPort;
-        _gimbalVideoPort = config.gimbalVideoPort;
-        _log->i(LOG_TAG, "Configuration has been loaded successfully");
+        _soroIniConfig.applyLogLevel(_log);
+        LOG_I("Configuration has been loaded successfully");
+        Channel::EndPoint commEndPoint =
+                _soroIniConfig.ServerSide == SoroIniConfig::RoverEndPoint ?
+                    Channel::ServerEndPoint : Channel::ClientEndPoint;
 
         //create network channels
-        _armChannel = new Channel(this, SocketAddress(config.serverAddress, config.armChannelPort), CHANNEL_NAME_ARM,
-                                  Channel::UdpProtocol, Channel::ClientEndPoint, QHostAddress::Any, _log);
-        _driveChannel = new Channel(this, SocketAddress(config.serverAddress, config.driveChannelPort), CHANNEL_NAME_DRIVE,
-                                  Channel::UdpProtocol, Channel::ClientEndPoint, QHostAddress::Any, _log);
-        _gimbalChannel = new Channel(this, SocketAddress(config.serverAddress, config.gimbalChannelPort), CHANNEL_NAME_GIMBAL,
-                                  Channel::UdpProtocol, Channel::ClientEndPoint, QHostAddress::Any, _log);
-        _sharedChannel = new Channel(this, SocketAddress(config.serverAddress, config.sharedChannelPort), CHANNEL_NAME_SHARED,
-                                  Channel::TcpProtocol, Channel::ClientEndPoint, QHostAddress::Any, _log);
+        _armChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
+                                  Channel::UdpProtocol, commEndPoint, QHostAddress::Any, _log);
+        _driveChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveChannelPort), CHANNEL_NAME_DRIVE,
+                                  Channel::UdpProtocol, commEndPoint, QHostAddress::Any, _log);
+        _gimbalChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
+                                  Channel::UdpProtocol, commEndPoint, QHostAddress::Any, _log);
+        _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
+                                  Channel::TcpProtocol, commEndPoint, QHostAddress::Any, _log);
 
         if (_armChannel->getState() == Channel::ErrorState) {
-            _log->e(LOG_TAG, "The arm channel experienced a fatal error during initialization");
+            LOG_E("The arm channel experienced a fatal error during initialization");
             exit(1); return;
         }
         if (_driveChannel->getState() == Channel::ErrorState) {
-            _log->e(LOG_TAG, "The drive channel experienced a fatal error during initialization");
+            LOG_E("The drive channel experienced a fatal error during initialization");
             exit(1); return;
         }
         if (_gimbalChannel->getState() == Channel::ErrorState) {
-            _log->e(LOG_TAG, "The gimbal channel experienced a fatal error during initialization");
+            LOG_E("The gimbal channel experienced a fatal error during initialization");
             exit(1); return;
         }
         if (_sharedChannel->getState() == Channel::ErrorState) {
-            _log->e(LOG_TAG, "The shared channel experienced a fatal error during initialization");
+            LOG_E("The shared channel experienced a fatal error during initialization");
             exit(1); return;
         }
-        _log->i(LOG_TAG, "All network channels initialized successfully");
+        LOG_I("All network channels initialized successfully");
 
         //create serial (mbed) channels
-        _armControllerSerial = new SerialChannel("ARM", this, _log);
-        _driveControllerSerial = new SerialChannel("DRIVE", this, _log);
-        _gimbalControllerSerial = new SerialChannel("GIMBAL", this, _log);
-        _log->i(LOG_TAG, "All serial channels initialized successfully");
+        _armControllerSerial = new SerialChannel(SERIAL_ARM_CHANNEL_NAME, this, _log);
+        _driveControllerSerial = new SerialChannel(SERIAL_DRIVE_CHANNEL_NAME, this, _log);
+        _gimbalControllerSerial = new SerialChannel(SERIAL_GIMBAL_CHANNEL_NAME, this, _log);
+        LOG_I("All serial channels initialized successfully");
 
         //observers for network channels message received
         connect(_armChannel, SIGNAL(messageReceived(const QByteArray)),
@@ -107,7 +107,7 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         _gimbalChannel->open();
         _sharedChannel->open();
 
-        _log->i(LOG_TAG, "Waiting for connections...");
+        LOG_I("Waiting for connections...");
     }
 }
 
@@ -116,10 +116,10 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
 void RoverWorker::armControllerChannelStateChanged(SerialChannel::State state) {
     switch (state) {
     case SerialChannel::ConnectedState:
-        _log->i(LOG_TAG, "Arm controller (mbed) is trying to connect...");
+        LOG_I("Arm controller (mbed) is trying to connect...");
         break;
     case SerialChannel::ConnectingState:
-        _log->i(LOG_TAG, "Arm controller (mbed) is connected");
+        LOG_I("Arm controller (mbed) is connected");
         break;
     }
 }
@@ -127,10 +127,10 @@ void RoverWorker::armControllerChannelStateChanged(SerialChannel::State state) {
 void RoverWorker::driveControllerChannelStateChanged(SerialChannel::State state) {
     switch (state) {
     case SerialChannel::ConnectedState:
-        _log->i(LOG_TAG, "Drive controller (mbed) is trying to connect...");
+        LOG_I("Drive controller (mbed) is trying to connect...");
         break;
     case SerialChannel::ConnectingState:
-        _log->i(LOG_TAG, "Drive controller (mbed) is connected");
+        LOG_I("Drive controller (mbed) is connected");
         break;
     }
 }
@@ -138,10 +138,10 @@ void RoverWorker::driveControllerChannelStateChanged(SerialChannel::State state)
 void RoverWorker::gimbalControllerChannelStateChanged(SerialChannel::State state) {
     switch (state) {
     case SerialChannel::ConnectedState:
-        _log->i(LOG_TAG, "Gimbal controller (mbed) is trying to connect...");
+        LOG_I("Gimbal controller (mbed) is trying to connect...");
         break;
     case SerialChannel::ConnectingState:
-        _log->i(LOG_TAG, "Gimbal controller (mbed) is connected");
+        LOG_I("Gimbal controller (mbed) is connected");
         break;
     }
 }
@@ -149,15 +149,15 @@ void RoverWorker::gimbalControllerChannelStateChanged(SerialChannel::State state
 //observers for serial (mbed) messages received
 
 void RoverWorker::armControllerMessageReceived(const char *message, int size) {
-    _log->i("Arm Controller (mbed)", QString::fromLatin1(message, size));
+    if (_log != NULL) _log->i("Arm Controller (mbed)", QString::fromLatin1(message, size));
 }
 
 void RoverWorker::driveControllerMessageReceived(const char *message, int size) {
-    _log->i("Drive Controller (mbed)", QString::fromLatin1(message, size));
+    if (_log != NULL) _log->i("Drive Controller (mbed)", QString::fromLatin1(message, size));
 }
 
 void RoverWorker::gimbalControllerMessageReceived(const char *message, int size) {
-    _log->i("Gimbal Controller (mbed)", QString::fromLatin1(message, size));
+    if (_log != NULL) _log->i("Gimbal Controller (mbed)", QString::fromLatin1(message, size));
 }
 
 //observers for network channels message received
@@ -181,7 +181,9 @@ void RoverWorker::sharedChannelStateChanged(Channel::State state) {
 //observers for network channels message received
 
 void RoverWorker::armChannelMessageReceived(const QByteArray &message) {
-    _armControllerSerial->sendMessage(message.constData(), message.size());
+    if (ArmMessage::messageType(message) != ArmMessage::INVALID) {
+        _armControllerSerial->sendMessage(message.constData(), message.size());
+    }
 }
 
 void RoverWorker::driveChannelMessageReceived(const QByteArray &message) {

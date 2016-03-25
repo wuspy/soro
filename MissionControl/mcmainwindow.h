@@ -18,8 +18,12 @@
 #include "mcutil.h"
 #include "soroutil.h"
 #include "armmessage.h"
+#include "drivemessage.h"
+#include "gimbalmessage.h"
 #include "serialinterop.h"
 #include "armglfwmap.h"
+#include "driveglfwmap.h"
+#include "gimbalglfwmap.h"
 #include "glfwmapdialog.h"
 #include "videowindow.h"
 #include "latlng.h"
@@ -62,15 +66,17 @@ namespace MissionControl {
         char _buffer[512];
         bool _glfwInitialized = false;
 
-        //ports for video stream
-        quint16 _armVideoPort, _driveVideoPort, _gimbalVideoPort;
+        //shared configuration
+        SoroIniConfig _soroIniConfig;
 
         //internet communication channels
         Channel *_controlChannel = NULL;
         Channel *_sharedChannel = NULL;
 
         //for joystick control
-        ArmGlfwMap _controlMap;
+        ArmGlfwMap *_armInputMap = NULL;
+        DriveGlfwMap *_driveInputMap = NULL;
+        GimbalGlfwMap *_gimbalInputMap = NULL;
         //TODO drive and gimbal
         int _controllerId = NO_CONTROLLER;
         int _controlSendTimerId = TIMER_INACTIVE;
@@ -78,7 +84,11 @@ namespace MissionControl {
         //Arm specific stuff
         SerialChannel *_masterArmSerial;
         ArmMessage::MasterRanges _masterArmRanges;
+
         void loadMasterArmConfig();
+        int findGlfwIdByName(QString name);
+        void selectPreferredJoystick(GlfwMap *map);
+        int firstGlfwControllerId();
 
     private slots:
         void sharedChannelMessageReceived(const QByteArray& message);
@@ -91,6 +101,7 @@ namespace MissionControl {
         void masterArmSerialMessageReceived(const char *message, int size);
         void masterArmSerialStateChanged(SerialChannel::State);
         void settingsClicked();
+        void glfwMappingUpdated(GlfwMap map);
 
     protected:
         void timerEvent(QTimerEvent *e);

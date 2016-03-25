@@ -117,6 +117,7 @@ namespace Soro {
         SerialChannel::State _state;
         void resetConnection();
         qint64 _lastReadTime = 0;
+        QString LOG_TAG;
 
     private slots:
         /* Slot that receives the QSerialPort's readyRead() signal

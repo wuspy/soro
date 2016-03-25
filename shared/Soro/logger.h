@@ -5,8 +5,21 @@
 #define LOG_LEVEL_INFORMATION 2
 #define LOG_LEVEL_WARN 1
 #define LOG_LEVEL_ERROR 0
+#define LOG_LEVEL_DISABLED -1
 
 #include <QtCore>
+
+/* If a class has a Logger named _log, and a variable (or define)
+ * named LOG_TAG, it can use these macros to more concisely
+ * write log messages.
+ * These macros also check to make sure _log isn't null, which
+ * can also make it easier to add support for disabling the log
+ * entirely.
+ */
+#define LOG_D(X) if (_log != NULL) _log->d(LOG_TAG, X)
+#define LOG_I(X) if (_log != NULL) _log->i(LOG_TAG, X)
+#define LOG_W(X) if (_log != NULL) _log->w(LOG_TAG, X)
+#define LOG_E(X) if (_log != NULL) _log->e(LOG_TAG, X)
 
 namespace Soro {
 

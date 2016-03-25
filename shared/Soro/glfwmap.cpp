@@ -1,6 +1,7 @@
 #include "glfwmap.h"
 
-#define CONFIG_TAG_CONTROLLER_NAME "controllername"
+#define CONFIG_TAG_CONTROLLER_NAME "ControllerName"
+#define CONFIG_TAG_CLASS_TYPE "Classtype"
 
 using namespace Soro;
 
@@ -11,9 +12,9 @@ GlfwMap::~GlfwMap() {
 
 bool GlfwMap::loadMapping(QFile& file) {
     IniParser parser;
-    if (!parser.load(file)) return false;
+    if (!parser.load(file)
+            || (getClassName() != parser.value(CONFIG_TAG_CLASS_TYPE))) return false;
     ControllerName = parser.value(CONFIG_TAG_CONTROLLER_NAME);
-    if (ControllerName == QString::null) return false;
     int axes = axisCount();
     for(int i = 0; i < axes; i++) {
         if (!parser.valueAsInt("A" + QString::number(i), &AxisList[i].GlfwIndex)) {
@@ -45,15 +46,21 @@ void GlfwMap::reset() {
 }
 
 bool GlfwMap::writeMapping(QFile& file) {
+    if (!isMapped()) return false;
     IniParser parser;
+    parser.insert(CONFIG_TAG_CLASS_TYPE, getClassName());
     parser.insert(CONFIG_TAG_CONTROLLER_NAME, ControllerName);
     int axes = axisCount();
     for (int i = 0; i < axes; i++) {
-        parser.insert("A" + QString::number(i), QString::number(AxisList[i].GlfwIndex));
+        if (AxisList[i].isMapped()) {
+            parser.insert("A" + QString::number(i), QString::number(AxisList[i].GlfwIndex));
+        }
     }
     int buttons = buttonCount();
     for (int i = 0; i < buttons; i++) {
-        parser.insert("B" + QString::number(i), QString::number(ButtonList[i].GlfwIndex));
+        if (ButtonList[i].isMapped()) {
+            parser.insert("B" + QString::number(i), QString::number(ButtonList[i].GlfwIndex));
+        }
     }
     return parser.write(file);
 }

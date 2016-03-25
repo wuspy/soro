@@ -24,12 +24,6 @@
 #define CONFIG_TAG_LOW_DELAY "lowdelay"
 #define CONFIG_TAG_SEND_ACKS "sendacks"
 
-//Log macros
-#define LOG_D(X) if (_log != NULL) _log->d(LOG_TAG, X)
-#define LOG_I(X) if (_log != NULL) _log->i(LOG_TAG, X)
-#define LOG_W(X) if (_log != NULL) _log->w(LOG_TAG, X)
-#define LOG_E(X) if (_log != NULL) _log->e(LOG_TAG, X)
-
 //Macros for the size of UDP and TCP headers
 #define UDP_HEADER_BYTES 5
 #define TCP_HEADER_BYTES 7

@@ -407,7 +407,7 @@ margin-right: 10px;</string>
        <string notr="true">qproperty-icon: url(:/icons/settings_red_18px.png);</string>
       </property>
       <property name="text">
-       <string>Control Connection Status</string>
+       <string>Input device status</string>
       </property>
      </widget>
      <widget class="QPushButton" name="settingsButton">

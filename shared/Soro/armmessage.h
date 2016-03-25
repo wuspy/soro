@@ -57,7 +57,7 @@
 #define MARINI_TAG_BUCKETMAX "bucketmax"
 #define MARINI_TAG_BUCKETADD "bucketadd"
 
-#define ARM_SERIAL_CHANNEL_NAME "arm"
+#define ARM_SERIAL_CHANNEL_NAME "arm-serial-channel"
 
 namespace Soro {
 
@@ -122,29 +122,29 @@ namespace Soro {
         static void setGlfwData(char *message, const float *glfwAxes, const unsigned char *glfwButtons,
                               int axisCount, int buttonCount, ArmGlfwMap& mapping) {
             message[0] = ARM_JOY_MESSAGE_BLOCK_START;  //identify this message as glfw and not master
-            message[ARM_JOY_MESSAGE_X_INDEX] = joyAxisToByte(mapping.XAxis().value(glfwAxes, axisCount));
-            message[ARM_JOY_MESSAGE_Y_INDEX] = joyAxisToByte(mapping.YAxis().value(glfwAxes, axisCount));
-            message[ARM_JOY_MESSAGE_YAW_INDEX] = joyAxisToByte(mapping.YawAxis().value(glfwAxes, axisCount));
-            message[ARM_JOY_MESSAGE_WRIST_INDEX] = joyAxisToByte(mapping.WristAxis().value(glfwAxes, axisCount));
-            message[ARM_JOY_MESSAGE_BUCKET_INDEX] = joyAxisToByte(mapping.BucketAxis().value(glfwAxes, axisCount));
-            if (mapping.WristUpButton().isPressed(glfwButtons, buttonCount)) {
+            message[ARM_JOY_MESSAGE_X_INDEX] = joyAxisToByte(mapping.xAxis().value(glfwAxes, axisCount));
+            message[ARM_JOY_MESSAGE_Y_INDEX] = joyAxisToByte(mapping.yAxis().value(glfwAxes, axisCount));
+            message[ARM_JOY_MESSAGE_YAW_INDEX] = joyAxisToByte(mapping.yawAxis().value(glfwAxes, axisCount));
+            message[ARM_JOY_MESSAGE_WRIST_INDEX] = joyAxisToByte(mapping.wristAxis().value(glfwAxes, axisCount));
+            message[ARM_JOY_MESSAGE_BUCKET_INDEX] = joyAxisToByte(mapping.bucketAxis().value(glfwAxes, axisCount));
+            if (mapping.wristUpButton().isPressed(glfwButtons, buttonCount)) {
                 message[ARM_JOY_MESSAGE_WRIST_INDEX] = 0.7;
             }
-            else if (mapping.WristDownButton().isPressed(glfwButtons, buttonCount)) {
+            else if (mapping.wristDownButton().isPressed(glfwButtons, buttonCount)) {
                 message[ARM_JOY_MESSAGE_WRIST_INDEX] = -0.7;
             }
-            if (mapping.BucketOpenButton().isPressed(glfwButtons, buttonCount)) {
+            if (mapping.bucketOpenButton().isPressed(glfwButtons, buttonCount)) {
                 message[ARM_JOY_MESSAGE_BUCKET_INDEX] = 0.7;
             }
-            else if (mapping.BucketCloseButton().isPressed(glfwButtons, buttonCount)) {
+            else if (mapping.bucketCloseButton().isPressed(glfwButtons, buttonCount)) {
                 message[ARM_JOY_MESSAGE_BUCKET_INDEX] = -0.7;
             }
             message[ARM_MESSAGE_BUCKET_FULL_OPEN_INDEX] =
-                    mapping.BucketFullOpenButton().isPressed(glfwButtons, buttonCount) ? 1 : 0;
+                    mapping.bucketFullOpenButton().isPressed(glfwButtons, buttonCount) ? 1 : 0;
             message[ARM_MESSAGE_BUCKET_FULL_CLOSE_INDEX] =
-                    mapping.BucketFullCloseButton().isPressed(glfwButtons, buttonCount) ? 1 : 0;
+                    mapping.bucketFullCloseButton().isPressed(glfwButtons, buttonCount) ? 1 : 0;
             message[ARM_MESSAGE_STOW_MACRO_INDEX] =
-                    mapping.StowButton().isPressed(glfwButtons, buttonCount) ? 1 : 0;
+                    mapping.stowButton().isPressed(glfwButtons, buttonCount) ? 1 : 0;
         }
 
         /* Translates a master arm message from potentiometer values to servo percentages that the slave arm can use
@@ -193,6 +193,10 @@ namespace Soro {
                 return JOYSTICK;
             default: return INVALID;
             }
+        }
+
+        static inline bool hasValidHeader(const char *message) {
+            return messageType(message) != INVALID;
         }
 
         static inline int size(const char *message) {

@@ -1,12 +1,5 @@
 #include "serialinterop.h"
 
-#ifdef QT_CORE_LIB
-//  Log macros
-#   define LOG_D(X) if (_log != NULL) _log->d(_name, X)
-#   define LOG_I(X) if (_log != NULL) _log->i(_name, X)
-#   define LOG_W(X) if (_log != NULL) _log->w(_name, X)
-#   define LOG_E(X) if (_log != NULL) _log->e(_name, X)
-#endif
 #ifdef TARGET_LPC1768
 extern "C" void mbed_reset();
 #endif
@@ -37,7 +30,7 @@ void SerialChannel::sendMessage(const char* message, int size) {
  */
 int SerialChannel::read() {
     _messageAvailable = false;
-    if (!SERIAL_READABLE((*_serial))) return 0;
+    if (!(SERIAL_READABLE((*_serial)))) return 0;
     int read = 0;
     //No, I did not forget to break these case labels
     switch (_readIndex) {
@@ -110,6 +103,7 @@ SerialChannel::SerialChannel(const char *name, QObject *parent, Logger *log)
     : QObject(parent) {
     _log = log;
     _name = name;
+    LOG_TAG = (QString)_name + "-Serial";
     _size = 0;
     _readIndex = -1;
     _messageAvailable = false;

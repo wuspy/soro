@@ -11,6 +11,7 @@
 //config
 #define MARINI_PATH "config/master_arm.ini"
 #define MCINI_PATH "config/mission_control.ini"
+#define GLFWINI_PATH "config/last_glfw_config.ini"
 #define MCINI_TAG_LAYOUT "Layout"
 #define MCINI_VALUE_LAYOUT_ARM "Arm"
 #define MCINI_VALUE_LAYOUT_DRIVE "Drive"
@@ -37,10 +38,10 @@ McMainWindow::McMainWindow(QWidget *parent) :
     _log = new Logger(this);
     _log->setLogfile(APPPATH + "/mission_control.log");
     //_log->RouteToQtLogger = true;
-    _log->i(LOG_TAG, "-------------------------------------------------------");
-    _log->i(LOG_TAG, "-------------------------------------------------------");
-    _log->i(LOG_TAG, "-------------------------------------------------------");
-    _log->i(LOG_TAG, "Starting up...");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("Starting up...");
 
     _videoWindow = new VideoWindow(this);
     _videoWindow->show();
@@ -72,19 +73,21 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
                 const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
                 switch (_mode) {
                 case ArmLayoutMode:
-                    ArmMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, _controlMap);
+                    ArmMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_armInputMap);
                     _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, ArmMessage::size(_buffer)));
                     break;
                 case DriveLayoutMode:
-                    //TODO
+                    DriveMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_driveInputMap);
+                    _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, DriveMessage::size(_buffer)));
                     break;
                 case GimbalLayoutMode:
-                    //TODO
+                    GimbalMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_gimbalInputMap);
+                    _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, GimbalMessage::size(_buffer)));
                     break;
                 }
             }
             else {
-                _log->w(LOG_TAG, "Controller ID " + QString::number(_controllerId) + " has been disconnected");
+                LOG_W("Controller ID " + QString::number(_controllerId) + " has been disconnected");
                 QMessageBox(QMessageBox::Critical, "DAFUQ YOU DO?",
                             "The joystick or gamepad you were using to control the rover has been disconnected. Connect a controller, then load its appropriate button map file.",
                             QMessageBox::Ok, this).exec();
@@ -106,34 +109,34 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
 
         KILL_TIMER(_initTimerId); //single shot
         //parse soro.ini configuration
-        SoroIniConfig config;
         QString err = QString::null;
-        if (!config.parse(&err)) {
-            _log->e(LOG_TAG, err);
+        if (!_soroIniConfig.load(&err)) {
+            LOG_E(err);
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR", err, QMessageBox::Ok, this).exec();
             exit(1); return;
         }
-        _armVideoPort = config.armVideoPort;
-        _driveVideoPort = config.driveVideoPort;
-        _gimbalVideoPort = config.gimbalVideoPort;  //TODO everything video
+        _soroIniConfig.applyLogLevel(_log);
+        Channel::EndPoint commEndPoint =
+                _soroIniConfig.ServerSide == SoroIniConfig::MissionControlEndPoint ?
+                    Channel::ServerEndPoint : Channel::ClientEndPoint;
 
         //parse configuration
         IniParser configParser;
         QFile configFile(APPPATH + "/" + MCINI_PATH);
         if (!configParser.load(configFile)) {
-            _log->e(LOG_TAG, "The configuration file " + APPPATH + "/" + MCINI_PATH + " is missing or invalid");
+            LOG_E("The configuration file " + APPPATH + "/" + MCINI_PATH + " is missing or invalid");
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
                         "The configuration file " + APPPATH + "/" + MCINI_PATH + " missing or invalid",
                         QMessageBox::Ok, this).exec();
             exit(1); return;
         }
-        QHostAddress mainHost, videoHost;
-        if (!configParser.valueAsIP(MCINI_TAG_COMM_HOST_ADDRESS, &mainHost, true)) {
-            _log->i(LOG_TAG, "Using default host for main communication");
-            mainHost = QHostAddress::Any;
+        QHostAddress commHost, videoHost;
+        if (!configParser.valueAsIP(MCINI_TAG_COMM_HOST_ADDRESS, &commHost, true)) {
+            LOG_I("Using default host for main communication");
+            commHost = QHostAddress::Any;
         }
         if (!configParser.valueAsIP(MCINI_TAG_VIDEO_HOST_ADDRESS, &videoHost, true)) {
-            _log->i(LOG_TAG, "Using default host for video receiving");
+            LOG_I("Using default host for video receiving");
             videoHost = QHostAddress::Any;
         }
         QString modeStr =  configParser.value(MCINI_TAG_LAYOUT);
@@ -142,14 +145,15 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             QString inputMode = configParser.value(MCINI_TAG_INPUT_MODE);
             if (inputMode == MCINI_VALUE_USE_GLFW) {
                 //use gamepad to control the arm
-                _log->i(LOG_TAG, "Input mode set to use GLFW (joystick or gamepad)");
+                LOG_I("Input mode set to use GLFW (joystick or gamepad)");
                 _inputMode = GLFW;
                 glfwInit();
+                _armInputMap = new ArmGlfwMap();
                 _glfwInitialized = true;
             }
             else if (inputMode == MCINI_VALUE_USE_MASTER) {
                 //Use the master/slave arm input method
-                _log->i(LOG_TAG, "Input mode set to Master Arm");
+                LOG_I("Input mode set to Master Arm");
                 _inputMode = MasterArm;
                 loadMasterArmConfig();
                 _masterArmSerial = new SerialChannel(SERIAL_MASTER_ARM_CHANNEL_NAME, this, _log);
@@ -165,8 +169,8 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
                             QMessageBox::Ok, this).exec();
                 exit(1); return;
             }
-            _controlChannel = new Channel(this, SocketAddress(config.serverAddress, config.armChannelPort), CHANNEL_NAME_ARM,
-                                      Channel::UdpProtocol, Channel::ServerEndPoint, mainHost, _log);
+            _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
+                                      Channel::UdpProtocol, commEndPoint, commHost, _log);
             ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
             ui->videoPane2->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
             _videoWindow->getVideoPane()->setCameraName(ARM_CAMERA_DISPLAY_NAME);
@@ -174,9 +178,10 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
         else if (modeStr == MCINI_VALUE_LAYOUT_DRIVE) {
             _mode = DriveLayoutMode;
             glfwInit();
+            _driveInputMap = new DriveGlfwMap();
             _glfwInitialized = true;
-            _controlChannel = new Channel(this, SocketAddress(config.serverAddress, config.driveChannelPort), CHANNEL_NAME_DRIVE,
-                                      Channel::UdpProtocol, Channel::ServerEndPoint, mainHost, _log);
+            _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveChannelPort), CHANNEL_NAME_DRIVE,
+                                      Channel::UdpProtocol, commEndPoint, commHost, _log);
             ui->videoPane1->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
             ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
             _videoWindow->getVideoPane()->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
@@ -184,9 +189,12 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
         else if (modeStr == MCINI_VALUE_LAYOUT_GIMBAL) {
             _mode = GimbalLayoutMode;
             glfwInit();
+            _gimbalInputMap = new GimbalGlfwMap();
+
+
             _glfwInitialized = true;
-            _controlChannel = new Channel(this, SocketAddress(config.serverAddress, config.gimbalChannelPort), CHANNEL_NAME_GIMBAL,
-                                      Channel::UdpProtocol, Channel::ServerEndPoint, mainHost, _log);
+            _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
+                                      Channel::UdpProtocol, commEndPoint, commHost, _log);
             ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
             ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
             _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
@@ -198,14 +206,14 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         }
         else {
-            _log->e(LOG_TAG, "Unknown configuration value for MCINI_TAG_LAYOUT");
+            LOG_E("Unknown configuration value for MCINI_TAG_LAYOUT");
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
                         "The configuration file " + APPPATH + "/" + MCINI_PATH + " is invalid (can't determine layout)",
                         QMessageBox::Ok, this).exec();
             exit(1); return;
         }
-        _sharedChannel = new Channel(this, SocketAddress(config.serverAddress, config.sharedChannelPort), CHANNEL_NAME_SHARED,
-                                  Channel::TcpProtocol, Channel::ClientEndPoint, QHostAddress::Any, _log);
+        _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
+                                  Channel::TcpProtocol, commEndPoint, commHost, _log);
         sharedChannelStateChanged(Channel::ConnectingState);
         connect(_sharedChannel, SIGNAL(messageReceived(QByteArray)),
                 this, SLOT(sharedChannelMessageReceived(QByteArray)));
@@ -233,12 +241,33 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
                         QMessageBox::Ok, this).exec();
             exit(1); return;
         }
-        _log->i(LOG_TAG, "Configuration has been loaded successfully");
+        LOG_I("Configuration has been loaded successfully");
 
         /***************************************
          ***************************************/
 
     }
+}
+
+int McMainWindow::firstGlfwControllerId() {
+    for (int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++) {
+        if (glfwJoystickPresent(i)) return i;
+    }
+    return -1;
+}
+
+bool McMainWindow::selectPreferredJoystick(GlfwMap *map) {
+    map->loadMapping(APPPATH + (QString)"/" + GLFWINI_PATH);
+    _controllerId = firstGlfwControllerId();
+    if (_controllerId < 0) {
+        return false; //no joysticks connected
+    }
+    if (map->ControllerName != glfwJoystickName(_controllerId)) {
+        //the controller selected does not match the one in the mapping file
+        map->reset();
+        map->ControllerName = glfwJoystickName(_controllerId);
+    }
+    return true;
 }
 
 void McMainWindow::masterArmSerialStateChanged(SerialChannel::State state) {
@@ -375,7 +404,7 @@ void McMainWindow::controlChannelStateChanged(Channel::State state) {
 
 void McMainWindow::controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                                        int rateUp, int rateDown) {
-    if (rtt = -1) {
+    if (rtt == -1) {
         ui->comm_mainPingLabel->setText("---");
     }
     else {
@@ -408,10 +437,10 @@ void McMainWindow::loadMasterArmConfig() {
     if (_mode == ArmLayoutMode) {
         QFile masterArmFile(APPPATH + "/" + MARINI_PATH);
         if (_masterArmRanges.load(masterArmFile)) {
-            _log->i(LOG_TAG, "Loaded master arm configuration");
+            LOG_I("Loaded master arm configuration");
         }
         else {
-            _log->e(LOG_TAG, "Could not load master arm configuration");
+            LOG_E("Could not load master arm configuration");
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
                         "The master arm configuration file " + APPPATH + "/" + MARINI_PATH + " is either missing or invalid",
                         QMessageBox::Ok, this).exec();
@@ -436,6 +465,30 @@ void McMainWindow::keyReleaseEvent(QKeyEvent *e) {
 }
 
 McMainWindow::~McMainWindow() {
+    if (_armInputMap != NULL) {
+        if (_armInputMap->isMapped()) {
+            QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
+            _armInputMap->writeMapping(mapFile);
+            LOG_I("Writing arm glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
+        }
+        delete _armInputMap;
+    }
+    if (_driveInputMap != NULL) {
+        if (_driveInputMap->isMapped()) {
+            QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
+            _driveInputMap->writeMapping(mapFile);
+            LOG_I("Writing drive glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
+        }
+        delete _driveInputMap;
+    }
+    if (_gimbalInputMap != NULL) {
+        if (_gimbalInputMap->isMapped()) {
+            QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
+            _gimbalInputMap->writeMapping(mapFile);
+            LOG_I("Writing gimbal glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
+        }
+        delete _gimbalInputMap;
+    }
     if (_controlChannel != NULL) delete _controlChannel;
     if (_sharedChannel != NULL) delete _sharedChannel;
     if (_masterArmSerial != NULL) delete _masterArmSerial;

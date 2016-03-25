@@ -12,18 +12,21 @@ namespace Soro {
         int axisCount() const;
         int buttonCount() const;
 
-        const GlfwMap::AxisMapItem& XAxis() const;
-        const GlfwMap::AxisMapItem& YAxis() const;
-        const GlfwMap::AxisMapItem& YawAxis() const;
-        const GlfwMap::AxisMapItem& WristAxis() const;
-        const GlfwMap::AxisMapItem& BucketAxis() const;
-        const GlfwMap::ButtonMapItem& BucketOpenButton() const;
-        const GlfwMap::ButtonMapItem& BucketCloseButton() const;
-        const GlfwMap::ButtonMapItem& BucketFullOpenButton() const;
-        const GlfwMap::ButtonMapItem& BucketFullCloseButton() const;
-        const GlfwMap::ButtonMapItem& WristUpButton() const;
-        const GlfwMap::ButtonMapItem& WristDownButton() const;
-        const GlfwMap::ButtonMapItem& StowButton() const;
+        const GlfwMap::AxisMapItem& xAxis() const;
+        const GlfwMap::AxisMapItem& yAxis() const;
+        const GlfwMap::AxisMapItem& yawAxis() const;
+        const GlfwMap::AxisMapItem& wristAxis() const;
+        const GlfwMap::AxisMapItem& bucketAxis() const;
+        const GlfwMap::ButtonMapItem& bucketOpenButton() const;
+        const GlfwMap::ButtonMapItem& bucketCloseButton() const;
+        const GlfwMap::ButtonMapItem& bucketFullOpenButton() const;
+        const GlfwMap::ButtonMapItem& bucketFullCloseButton() const;
+        const GlfwMap::ButtonMapItem& wristUpButton() const;
+        const GlfwMap::ButtonMapItem& wristDownButton() const;
+        const GlfwMap::ButtonMapItem& stowButton() const;
+
+    protected:
+        QString getClassName() const;
     };
 }
 

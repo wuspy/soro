@@ -22,7 +22,9 @@ SOURCES += \
     googlemapview.cpp \
     videowindow.cpp \
     videopane.cpp \
-    ../shared/Soro/serialinterop.cpp
+    ../shared/Soro/serialinterop.cpp \
+    ../shared/Soro/driveglfwmap.cpp \
+    ../shared/Soro/gimbalglfwmap.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -41,7 +43,11 @@ HEADERS  += \
     videowindow.h \
     videopane.h \
     mcutil.h \
-    ../shared/Soro/serialinterop.h
+    ../shared/Soro/serialinterop.h \
+    ../shared/Soro/driveglfwmap.h \
+    ../shared/Soro/drivemessage.h \
+    ../shared/Soro/gimbalglfwmap.h \
+    ../shared/Soro/gimbalmessage.h
 
 FORMS    += \
     mcmainwindow.ui \

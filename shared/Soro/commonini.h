@@ -4,9 +4,11 @@
 #include <QtCore>
 
 #include "iniparser.h"
+#include "logger.h"
 
 #define SOROINI_PATH "config/soro.ini"
 #define SOROINI_TAG_SERVER_ADDRESS "serveraddress"
+#define SOROINI_TAG_SERVER_SIDE "serverside"
 #define SOROINI_TAG_ARM_SERVER_PORT "armchannelserverport"
 #define SOROINI_TAG_DRIVE_SERVER_PORT "drivechannelserverport"
 #define SOROINI_TAG_GIMBAL_SERVER_PORT "gimbalchannelserverport"
@@ -15,17 +17,38 @@
 #define SOROINI_TAG_ARM_VIDEO_PORT "armvideoport"
 #define SOROINI_TAG_DRIVE_VIDEO_PORT "drivevideoport"
 #define SOROINI_TAG_GIMBAL_VIDEO_PORT "gimbalvideoport"
+#define SOROINI_TAG_LOG_LEVEL "loglevel"
+#define SOROINI_VALUE_ROVER_SERVER "rover"
+#define SOROINI_VALUE_MC_SERVER "missioncontrol"
+#define SOROINI_VALUE_LOG_LEVEL_DEBUG "debug"
+#define SOROINI_VALUE_LOG_LEVEL_INFO "information"
+#define SOROINI_VALUE_LOG_LEVEL_WARN "warning"
+#define SOROINI_VALUE_LOG_LEVEL_ERROR "error"
+#define SOROINI_VALUE_LOG_LEVEL_DISABLED "disabled"
 
 namespace Soro {
 
+/* Struct to contain and parse the configuration file that is common
+ * to mission control and the rover (stuff like the server IP, which side should
+ * act as server, ports, etc)
+ */
 struct SoroIniConfig {
 
-    QHostAddress serverAddress;
-    QHostAddress videoServerAddress;
-    quint16 armChannelPort, driveChannelPort, gimbalChannelPort, sharedChannelPort;
-    quint16 armVideoPort, driveVideoPort, gimbalVideoPort;
+    enum EndPoint {
+        RoverEndPoint, MissionControlEndPoint
+    };
 
-    bool parse(QString *err) {
+    QHostAddress ServerAddress;
+    QHostAddress VideoServerAddress;
+    EndPoint ServerSide;
+    int LogLevel;
+    quint16 ArmChannelPort, DriveChannelPort, GimbalChannelPort, SharedChannelPort;
+    quint16 ArmVideoPort, DriveVideoPort, GimbalVideoPort;
+
+    /* Loads the configuration from the default path, and returns true if successful.
+     * If there is an error, err will contain a summary of what went wrong.
+     */
+    bool load(QString *err) {
         QString appPath = QCoreApplication::applicationDirPath();
         IniParser configParser;
         QFile configFile(appPath + "/" + SOROINI_PATH);
@@ -35,45 +58,91 @@ struct SoroIniConfig {
         }
 
         int tmp;
-        if (!configParser.valueAsIP(SOROINI_TAG_SERVER_ADDRESS, &serverAddress, true)) {
+        if (!configParser.valueAsIP(SOROINI_TAG_SERVER_ADDRESS, &ServerAddress, true)) {
             *err = "No server address found in configuration file";
             return false;
         }
-        if (!configParser.valueAsIP(SOROINI_TAG_VIDEO_SERVER_ADDRESS, &videoServerAddress, true)) {
-            //assume video server address is same as main server address
-            videoServerAddress = serverAddress;
+        QString serverSide = configParser.value(SOROINI_TAG_SERVER_SIDE).toLower();
+        if (serverSide == SOROINI_VALUE_ROVER_SERVER) {
+            ServerSide = RoverEndPoint;
+            //we cannot know were to send the video when we act as the server.
+            //wait for mission control to connect first, then send it to that address.
+            VideoServerAddress = QHostAddress::Null;
+        }
+        else {
+            //default to mission control as server
+            ServerSide = MissionControlEndPoint;
+            if (!configParser.valueAsIP(SOROINI_TAG_VIDEO_SERVER_ADDRESS, &VideoServerAddress, true)) {
+                //assume video server address is same as main server address
+                VideoServerAddress = ServerAddress;
+            }
+        }
+        QString logLevel = configParser.value(SOROINI_TAG_LOG_LEVEL).toLower();
+        if (logLevel == SOROINI_VALUE_LOG_LEVEL_DEBUG) {
+            LogLevel = LOG_LEVEL_DEBUG;
+        }
+        else if (logLevel == SOROINI_VALUE_LOG_LEVEL_INFO) {
+            LogLevel = LOG_LEVEL_INFORMATION;
+        }
+        else if (logLevel == SOROINI_VALUE_LOG_LEVEL_ERROR) {
+            LogLevel = LOG_LEVEL_ERROR;
+        }
+        else if (logLevel == SOROINI_VALUE_LOG_LEVEL_DISABLED) {
+            LogLevel = LOG_LEVEL_DISABLED;
+        }
+        else {
+            //default to info level
+            LogLevel = LOG_LEVEL_INFORMATION;
         }
         if (!configParser.valueAsInt(SOROINI_TAG_ARM_SERVER_PORT, &tmp)) {
             *err = "No arm channel port found in configuration file";
             return false;
         }
-        armChannelPort = tmp;
+        ArmChannelPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_DRIVE_SERVER_PORT, &tmp)) {
             *err = "No drive channel port found in configuration file";
             return false;
         }
-        driveChannelPort = tmp;
+        DriveChannelPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_GIMBAL_SERVER_PORT, &tmp)) {
             *err = "No gimbal channel port found in configuration file";
             return false;
         }
-        gimbalChannelPort = tmp;
+        GimbalChannelPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_ARM_VIDEO_PORT, &tmp)) {
             *err = "No arm video port found in configuration file";
             return false;
         }
-        armVideoPort = tmp;
+        ArmVideoPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_DRIVE_VIDEO_PORT, &tmp)) {
             *err = "No drive video  port found in configuration file";
             return false;
         }
-        driveVideoPort = tmp;
+        DriveVideoPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_GIMBAL_VIDEO_PORT, &tmp)) {
             *err = "No gimbal video  port found in configuration file";
             return false;
         }
-        gimbalVideoPort = tmp;
+        GimbalVideoPort = tmp;
         return true;
+    }
+
+    /* Configures a logger object based on the log level specified in the
+     * config file. If it is set to LOG_LEVEL_DISABLED, this will delete &
+     * null the logger!!!
+     */
+    void applyLogLevel(Logger*& log) {
+        switch (LogLevel) {
+        case LOG_LEVEL_DISABLED:
+            if (log != NULL) {
+                if (log != NULL) log->i("SoroIniConfig", "The configuration file specifies to disable logging, goodbye!");
+                delete log;
+                log = NULL;
+            }
+            break;
+        default:
+            log->MaxLevel = LogLevel;
+        }
     }
 };
 
