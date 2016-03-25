@@ -96,40 +96,6 @@ margin-right: 10px;</string>
        </property>
       </spacer>
      </item>
-     <item>
-      <widget class="QPushButton" name="markLocationButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="font">
-        <font>
-         <family>Roboto</family>
-         <pointsize>9</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="cursor">
-        <cursorShape>PointingHandCursor</cursorShape>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">color: rgb(183, 28, 28);
-qproperty-icon: url(:/icons/location_red_18px.png);
-margin-left: 10px;
-margin-right:10px;
-background: rgba(0, 0, 0, 0);</string>
-       </property>
-       <property name="text">
-        <string>MARK THIS LOCATION</string>
-       </property>
-       <property name="flat">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
     </layout>
    </widget>
    <widget class="QWidget" name="videoContainerWidget" native="true">
@@ -181,7 +147,7 @@ background: rgba(0, 0, 0, 0);</string>
       <x>0</x>
       <y>0</y>
       <width>551</width>
-      <height>141</height>
+      <height>161</height>
      </rect>
     </property>
     <widget class="QWidget" name="connectionStatusWidget" native="true">
@@ -190,7 +156,7 @@ background: rgba(0, 0, 0, 0);</string>
        <x>0</x>
        <y>0</y>
        <width>231</width>
-       <height>141</height>
+       <height>161</height>
       </rect>
      </property>
      <widget class="QLabel" name="comm_mainPingLabel">
@@ -404,14 +370,86 @@ background: rgba(0, 0, 0, 0);</string>
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
+     <widget class="QLabel" name="comm_inputDeviceGraphicLabel">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>21</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="comm_inputDeviceLabel">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>110</y>
+        <width>181</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Roboto</family>
+        <pointsize>9</pointsize>
+        <weight>50</weight>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">qproperty-icon: url(:/icons/settings_red_18px.png);</string>
+      </property>
+      <property name="text">
+       <string>Control Connection Status</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="settingsButton">
+      <property name="geometry">
+       <rect>
+        <x>130</x>
+        <y>130</y>
+        <width>101</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Roboto</family>
+        <pointsize>9</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="cursor">
+       <cursorShape>PointingHandCursor</cursorShape>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(183, 28, 28);
+qproperty-icon: url(:/icons/settings_red_18px.png);
+background: rgba(0, 0, 0, 0);</string>
+      </property>
+      <property name="text">
+       <string>SETTINGS</string>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
+      </property>
+     </widget>
     </widget>
     <widget class="Line" name="line">
      <property name="geometry">
       <rect>
        <x>230</x>
        <y>10</y>
-       <width>10</width>
-       <height>101</height>
+       <width>16</width>
+       <height>141</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -424,45 +462,12 @@ background: rgba(0, 0, 0, 0);</string>
       <enum>Qt::Vertical</enum>
      </property>
     </widget>
-    <widget class="QPushButton" name="settingsButton">
-     <property name="geometry">
-      <rect>
-       <x>440</x>
-       <y>80</y>
-       <width>101</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Roboto</family>
-       <pointsize>9</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="cursor">
-      <cursorShape>PointingHandCursor</cursorShape>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(183, 28, 28);
-qproperty-icon: url(:/icons/settings_red_18px.png);
-background: rgba(0, 0, 0, 0);</string>
-     </property>
-     <property name="text">
-      <string>SETTINGS</string>
-     </property>
-     <property name="flat">
-      <bool>true</bool>
-     </property>
-    </widget>
     <zorder>line</zorder>
     <zorder>connectionStatusWidget</zorder>
-    <zorder>settingsButton</zorder>
    </widget>
    <zorder>googleMapView</zorder>
-   <zorder>infoContainer</zorder>
    <zorder>statusBarWidget</zorder>
+   <zorder>infoContainer</zorder>
    <zorder>videoContainerWidget</zorder>
   </widget>
  </widget>

@@ -111,7 +111,7 @@ namespace Soro {
     }
 
     static void addShadow(QWidget *target) {
-        addShadow(target, 10, 0);
+        addShadow(target, 15, 0);
     }
 
     static bool handleFullscreenEvent(QMainWindow *window, QKeyEvent *e, bool *stateHolder) {

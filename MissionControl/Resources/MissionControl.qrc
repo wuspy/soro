@@ -7,6 +7,9 @@
         <file>gamepad_red_18px.png</file>
         <file>fullscreen_red_18px.png</file>
         <file>check_circle_green_18px.png</file>
+        <file>minus_circle_black_18px.png</file>
+        <file>gamepad_yellow_18px.png</file>
+        <file>gamepad_green_18px.png</file>
     </qresource>
     <qresource prefix="/images">
         <file>vlc_logo.png</file>

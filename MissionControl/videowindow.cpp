@@ -7,6 +7,7 @@ VideoWindow::VideoWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::VideoWindow) {
     ui->setupUi(this);
+    ui->videoPane->setShowFullscreenOption(false);
 }
 
 void VideoWindow::keyPressEvent(QKeyEvent *e) {

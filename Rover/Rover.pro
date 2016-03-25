@@ -11,19 +11,18 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     ../shared/Soro/channel.cpp \
-    ../shared/Soro/serialchannel.cpp \
+    ../shared/Soro/serialinterop.cpp \
     ../shared/Soro/logger.cpp \
     ../shared/Soro/iniparser.cpp \
     roverworker.cpp
 
 HEADERS += \
-    ../shared/Soro/serialinterop.h \
     ../shared/Soro/armmessage.h \
     ../shared/Soro/armglfwmap.h \
     ../shared/Soro/soroutil.h \
     ../shared/Soro/socketaddress.h \
     ../shared/Soro/channel.h \
-    ../shared/Soro/serialchannel.h \
+    ../shared/Soro/serialinterop.h \
     ../shared/Soro/logger.h \
     ../shared/Soro/iniparser.h \
     ../shared/Soro/commonini.h \

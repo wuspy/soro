@@ -18,7 +18,7 @@
 #include "mcutil.h"
 #include "soroutil.h"
 #include "armmessage.h"
-#include "serialchannel.h"
+#include "serialinterop.h"
 #include "armglfwmap.h"
 #include "glfwmapdialog.h"
 #include "videowindow.h"
@@ -53,7 +53,7 @@ namespace MissionControl {
     private:
         Ui::McMainWindow *ui;
         int _initTimerId = TIMER_INACTIVE;
-        VideoWindow *_videoWindow;
+        VideoWindow *_videoWindow = NULL;
         bool _fullscreen = false;
         Logger *_log = NULL;
         char _currentKey = '\0';

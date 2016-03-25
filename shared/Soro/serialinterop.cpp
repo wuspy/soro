@@ -1,4 +1,4 @@
-#include "serialchannel.h"
+#include "serialinterop.h"
 
 #ifdef QT_CORE_LIB
 //  Log macros
@@ -17,7 +17,6 @@ extern "C" void mbed_reset();
 
 #define IDLE_CONNECTION_TIMEOUT 1000
 #define HEARTBEAT_INTERVAL 250
-#define VERIFY_TIMEOUT 1000
 
 using namespace Soro;
 
@@ -26,7 +25,7 @@ using namespace Soro;
 void SerialChannel::sendMessage(const char* message, int size) {
     if (size < 250) {
         SERIAL_PUTC((*_serial), SERIAL_MESSAGE_HEADER);
-        SERIAL_PUTC((*_serial), (char)(unsigned char)size);
+        SERIAL_PUTC((*_serial), (unsigned char)size);
         for (int i = 0; i < size; i++) {
             SERIAL_PUTC((*_serial), message[i]);
         }
@@ -57,7 +56,7 @@ int SerialChannel::read() {
             return read;
         default:
             #ifdef QT_CORE_LIB
-            qWarning() << "Got invalid serial header " << QString::number((unsigned char)head);
+            LOG_I("Got invalid serial header " + QString::number((unsigned char)head));
             #endif
             return read;
         }
@@ -66,13 +65,14 @@ int SerialChannel::read() {
         if (SERIAL_READABLE((*_serial))) {
             SERIAL_GETC((*_serial), size);
             read++;
+            _readIndex = 0;
             _size = (int)(unsigned char)size;
         }
         else break;
     default:
-        for (int i = _readIndex; i < _size; _readIndex++) {
+        for (; _readIndex < _size; _readIndex++) {
             if (SERIAL_READABLE((*_serial))) {
-                SERIAL_GETC((*_serial), _buffer[i]);
+                SERIAL_GETC((*_serial), _buffer[_readIndex]);
                 read++;
             }
             else return read;
@@ -84,20 +84,20 @@ int SerialChannel::read() {
             SERIAL_GETC((*_serial), foot);
             read++;
             if ((unsigned char)foot == SERIAL_MESSAGE_FOOTER) {
-                _readIndex = __WAITING_FOR_HEADER;
                 _messageAvailable = true;
             }
-            else {
-                //message footer was incorrect, discard it and wait for frame alignment
-                _readIndex = __WAITING_FOR_HEADER;
-            }
+            _readIndex = __WAITING_FOR_HEADER;
         }
+        break;
     }
     return read;
 }
 
 SerialChannel::~SerialChannel() {
     delete _serial;
+#ifdef TARGET_LPC1768
+    delete _led;
+#endif
 }
 
 /************************************************************
@@ -118,7 +118,11 @@ SerialChannel::SerialChannel(const char *name, QObject *parent, Logger *log)
     configureMbedSerial(_serial);
     _state = SerialChannel::ConnectingState;
     connect(_serial, SIGNAL(readyRead()),
-            this, SLOT(serialReadyRead()));
+           this, SLOT(serialReadyRead()));
+    connect(_serial, SIGNAL(error(QSerialPort::SerialPortError)),
+            this, SLOT(serialError(QSerialPort::SerialPortError)));
+    //begin looking for the correct serial port
+    resetConnection();
 }
 
 /* Slot that receives the QSerialPort's readyRead() signal
@@ -126,20 +130,38 @@ SerialChannel::SerialChannel(const char *name, QObject *parent, Logger *log)
 void SerialChannel::serialReadyRead() {
     int chars = read();
     if (chars > 0) {
-        KILL_TIMER(_watchdogTimerId);
-        START_TIMER(_watchdogTimerId, IDLE_CONNECTION_TIMEOUT);
+        if (_verified) _lastReadTime = QDateTime::currentMSecsSinceEpoch();
         if (_messageAvailable) {
             if (!_verified) {
                 //in case it is a handshake response
-                _verified = memcmp(_buffer, _name, (size_t)qMin((size_t)_size, strlen(_name)));
-                LOG_I("Serial port " + _serial->portName() + " has verified its identity, communication can now proceed");
-                START_TIMER(_heartbeatTimerId, HEARTBEAT_INTERVAL);
-                START_TIMER(_watchdogTimerId, IDLE_CONNECTION_TIMEOUT);
-                _state = SerialChannel::ConnectedState;
-                emit stateChanged(_state);
+                size_t size = strnlen(_name, 100);
+                if (size == 100) {
+                    LOG_I("Connected serial port send garbage data");
+                    resetConnection();
+                    return;
+                }
+                _verified = memcmp(_buffer, _name, size);
+                if (_verified) {
+                    LOG_I("Serial port " + _serial->portName() + " has verified its identity, communication can now proceed");
+                    _lastReadTime = QDateTime::currentMSecsSinceEpoch();
+                    START_TIMER(_heartbeatTimerId, HEARTBEAT_INTERVAL);
+                    _state = SerialChannel::ConnectedState;
+                    emit stateChanged(_state);
+                }
+                else {
+                    LOG_I("Connected to incorrect serial port (got name " + (QString)_name + ")");
+                    resetConnection();
+                }
             }
             else emit messageReceived(_buffer, _size);
         }
+    }
+}
+
+void SerialChannel::serialError(QSerialPort::SerialPortError err) {
+    if (err != QSerialPort::NoError) {
+        LOG_E("Serial " + _serial->portName() + " experienced an error: " + _serial->errorString());
+        resetConnection();
     }
 }
 
@@ -147,6 +169,8 @@ void SerialChannel::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
     if (e->timerId() == _handshakeTimerId) {
         if (_serialHandshakeIndex >= _serialPorts.size()) {
+            //we have searched all serial ports with no luck (or we're just starting out),
+            //repopulate the serial list and try again
             _serialHandshakeIndex = 0;
             _serialPorts = QSerialPortInfo::availablePorts();
         }
@@ -156,33 +180,38 @@ void SerialChannel::timerEvent(QTimerEvent *e) {
             LOG_D("Trying serial port " + _serial->portName());
             if (_serial->open(QIODevice::ReadWrite)) {
                 LOG_I("Connected to serial port " + _serial->portName());
-                SERIAL_PUTC((*_serial), SERIAL_MESSAGE_HANDSHAKE);
+                _serial->putChar(SERIAL_MESSAGE_HANDSHAKE);
                 _verified = false;
                 KILL_TIMER(_handshakeTimerId);
-                START_TIMER(_verifyTimerId, VERIFY_TIMEOUT);
+                START_TIMER(_watchdogTimerId, IDLE_CONNECTION_TIMEOUT);
                 return;
             }
-            else {
-                LOG_D("Could not connect to " + _serial->portName() + ": " + _serial->errorString());
-            }
         }
-    }
-    else if (e->timerId() == _verifyTimerId) {
-        if (!_verified) {
-            LOG_I("Serial port " + _serial->portName() + " did not verify in time, disconnecting");
-            START_TIMER(_handshakeTimerId, 100);
-        }
-        KILL_TIMER(_verifyTimerId); //single shot
     }
     else if (e->timerId() == _heartbeatTimerId) {
-        SERIAL_PUTC((*_serial), SERIAL_MESSAGE_HEARTBEAT);
+        _serial->putChar(SERIAL_MESSAGE_HEARTBEAT);
     }
     else if (e->timerId() == _watchdogTimerId) {
-        KILL_TIMER(_heartbeatTimerId);
-        KILL_TIMER(_watchdogTimerId);
-        KILL_TIMER(_verifyTimerId)
-        START_TIMER(_handshakeTimerId, 100);
-        _state = SerialChannel::ConnectingState;
+        if (QDateTime::currentMSecsSinceEpoch() - _lastReadTime > IDLE_CONNECTION_TIMEOUT) {
+            if (_verified) {
+                LOG_I("Serial port " + _serial->portName() + " is not responding");
+            }
+            else {
+                LOG_I("Serial port " + _serial->portName() + " did not verify in time, disconnecting");
+            }
+            resetConnection();
+        }
+    }
+}
+
+void SerialChannel::resetConnection() {
+    if (_serial->isOpen()) _serial->close();
+    KILL_TIMER(_heartbeatTimerId);
+    KILL_TIMER(_watchdogTimerId);
+    START_TIMER(_handshakeTimerId, 100);
+    _verified = false;
+    if (_state != ConnectingState) {
+        _state = ConnectingState;
         emit stateChanged(_state);
     }
 }
@@ -196,39 +225,44 @@ SerialChannel::State SerialChannel::getState() const {
  ************************************************************
  ************************************************************
  ************************************************************/
-#ifdef PLATFORM_LPC1768
+#ifdef TARGET_LPC1768
 
-SerialChannel::SerialChannel(const char *name, PinName tx, PinName rx, int interval) {
+SerialChannel::SerialChannel(const char *name, PinName tx, PinName rx, int ms_interval) {
     _name = name;
     _size = 0;
-    _bytesReceived = 0;
-    _interval = interval;
+    _interval = ms_interval;
     _readIndex = -1;
+    _loopsWithoutMessage = 0;
+    _loopHeartbeatCounter = 0;
     _messageAvailable = false;
+    _led = new DigitalOut(LED4);
     _serial = new Serial(tx, rx);
     _serial->baud(9600);
     _serial->format(8, SerialBase::None, 1);
 }
 
-bool SerialChannel::messageAvailable(char *outMessage, int& outSize) {
+void SerialChannel::process() {
     _loopHeartbeatCounter++;
     if (_loopHeartbeatCounter * _interval > HEARTBEAT_INTERVAL) {
-        __INTEROP_SERIAL_PUTC(_serial, SERIAL_MESSAGE_HEARTBEAT);
+        SERIAL_PUTC((*_serial), SERIAL_MESSAGE_HEARTBEAT);
         _loopHeartbeatCounter = 0;
     }
     int chars = read();
     _loopsWithoutMessage = chars == 0 ? _loopsWithoutMessage + 1 : 0;
+    if (_loopsWithoutMessage * _interval > IDLE_CONNECTION_TIMEOUT) {
+        //We have gone too long without receiving a message, reset and hope
+        //that fixes things
+        *_led = 1;
+        wait(1);
+        mbed_reset();
+    }
+}
+
+bool SerialChannel::getAvailableMessage(char *outMessage, int& outSize) {
     if (_messageAvailable) {
         outMessage = _buffer;
         outSize = _size;
         return true;
-    }
-    if (_loopsWithoutMessage * _interval > IDLE_CONNECTION_TIMEOUT) {
-        //We have gone too long without receiving a message, reset and hope
-        //that fixes things
-        led = 1;
-        wait(1);
-        mbed_reset();
     }
     return false;
 }

@@ -18,9 +18,14 @@
 #   include "mbed.h"
 #   define SERIAL_GETC(s, c) c = s.getc()
 #   define SERIAL_PUTC(s, c) s.putc(c)
-#   define SERIAL_READABLE(s) s.readable();
+#   define SERIAL_READABLE(s) s.readable()
 #   define SERIAL_OBJECT Serial
 #endif
+
+#define SERIAL_MASTER_ARM_CHANNEL_NAME "MasterArm"
+#define SERIAL_ARM_CHANNEL_NAME "Arm"
+#define SERIAL_DRIVE_CHANNEL_NAME "Drive"
+#define SERIAL_GIMBAL_CHANNEL_NAME "Gimbal"
 
 #include <cstring>
 
@@ -31,6 +36,24 @@
 #define SERIAL_MESSAGE_HEARTBEAT (unsigned char)252
 
 namespace Soro {
+
+    /* Encodes a number into 14 bits (2 bytes whrere each byte is limited to 0x7F)
+     * This is done to ensure the high bit of each byte is always 0 for frame alignment purposes
+     *
+     * Range 0-16383
+     */
+    static inline void serialize_14bit(unsigned short us, char *arr, int index) {
+        arr[index] = (us >> 7) & 0x7F; /* low 7 bits of second byte, high bit of first byte */
+        arr[index + 1] = us & 0x7F; //low 7 bits of first byte
+    }
+
+    /* Decodes a number encoded with the above function
+     *
+     * Range 0-16383
+     */
+    static inline unsigned short deserialize_14bit(const char *arr, int index) {
+        return (arr[index] << 7) | arr[index + 1];
+    }
 
     /* This class handles everything about communication between a Qt and mbed enviornment over a serial port.
      * It will handle finding the correct tty device (Qt side) and monitoring the connection to ensure it is still
@@ -47,24 +70,6 @@ namespace Soro {
     class SerialChannel {
 #endif
     public:
-        /* Encodes a number into 14 bits (2 bytes whrere each byte is limited to 0x7F)
-         * This is done to ensure the high bit of each byte is always 0 for frame alignment purposes
-         *
-         * Range 0-16383
-         */
-        static inline void serialize_14bit(unsigned short us, char *arr, int index) {
-            arr[index] = (us >> 7) & 0x7F; /* low 7 bits of second byte, high bit of first byte */
-            arr[index + 1] = us & 0x7F; //low 7 bits of first byte
-        }
-
-        /* Decodes a number encoded with the above function
-         *
-         * Range 0-16383
-         */
-        static inline unsigned short deserialize_14bit(const char *arr, int index) {
-            return (arr[index] << 7) | arr[index + 1];
-        }
-
         /* Writes a message verbatim through the serial port
          */
         void sendMessage(const char* message, int size);
@@ -103,7 +108,6 @@ namespace Soro {
 
     private:
         int _handshakeTimerId = TIMER_INACTIVE;
-        int _verifyTimerId = TIMER_INACTIVE;
         int _watchdogTimerId = TIMER_INACTIVE;
         int _heartbeatTimerId = TIMER_INACTIVE;
         QList<QSerialPortInfo> _serialPorts;
@@ -111,11 +115,14 @@ namespace Soro {
         bool _verified = false;
         Logger *_log = NULL;
         SerialChannel::State _state;
+        void resetConnection();
+        qint64 _lastReadTime = 0;
 
     private slots:
         /* Slot that receives the QSerialPort's readyRead() signal
          */
         void serialReadyRead();
+        void serialError(QSerialPort::SerialPortError err);
 
     signals:
         void messageReceived(const char* message, int size);
@@ -129,16 +136,17 @@ namespace Soro {
  ************************************************************
  ************************************************************
  ************************************************************/
-#ifdef PLATFORM_LPC1768
+#ifdef TARGET_LPC1768
 
     private:
         int _loopsWithoutMessage;
         int _loopHeartbeatCounter;
         int _interval;
-        DigitalOut led(LED4);
+        DigitalOut *_led;
     public:
-        SerialChannel(const char *name, PinName tx, PinName rx, int interval);
-        bool messageAvailable(char *outMessage, int& outSize);
+        SerialChannel(const char *name, PinName tx, PinName rx, int ms_interval);
+        bool getAvailableMessage(char *outMessage, int& outSize);
+        void process();
 #endif
     };
 

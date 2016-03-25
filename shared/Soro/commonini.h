@@ -5,7 +5,7 @@
 
 #include "iniparser.h"
 
-#define SOROINI_PATH "soro.ini"
+#define SOROINI_PATH "config/soro.ini"
 #define SOROINI_TAG_SERVER_ADDRESS "serveraddress"
 #define SOROINI_TAG_ARM_SERVER_PORT "armchannelserverport"
 #define SOROINI_TAG_DRIVE_SERVER_PORT "drivechannelserverport"

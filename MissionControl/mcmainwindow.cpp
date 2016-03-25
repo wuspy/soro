@@ -2,9 +2,15 @@
 #include "ui_mcmainwindow.h"
 
 #define LOG_TAG "Mission Control"
+#define ARM_CAMERA_DISPLAY_NAME "Arm Camera"
+#define DRIVE_CAMERA_DISPLAY_NAME "Drive Camera"
+#define GIMBAL_CAMERA_DISPLAY_NAME "Gimbal Camera"
+
+#define APPPATH QCoreApplication::applicationDirPath()
 
 //config
-#define MARINI_PATH "master_arm_ranges.ini"
+#define MARINI_PATH "config/master_arm.ini"
+#define MCINI_PATH "config/mission_control.ini"
 #define MCINI_TAG_LAYOUT "Layout"
 #define MCINI_VALUE_LAYOUT_ARM "Arm"
 #define MCINI_VALUE_LAYOUT_DRIVE "Drive"
@@ -28,17 +34,18 @@ McMainWindow::McMainWindow(QWidget *parent) :
     connect(ui->settingsButton, SIGNAL(clicked(bool)),
             this, SLOT(settingsClicked()));
 
-    QString appPath = QCoreApplication::applicationDirPath();
-
     _log = new Logger(this);
-    _log->setLogfile(appPath + "/mission_control.log");
-    _log->RouteToQtLogger = true;
+    _log->setLogfile(APPPATH + "/mission_control.log");
+    //_log->RouteToQtLogger = true;
     _log->i(LOG_TAG, "-------------------------------------------------------");
     _log->i(LOG_TAG, "-------------------------------------------------------");
     _log->i(LOG_TAG, "-------------------------------------------------------");
     _log->i(LOG_TAG, "Starting up...");
 
-    //must initialize from the event loop
+    _videoWindow = new VideoWindow(this);
+    _videoWindow->show();
+
+    //must initialize after event loop starts
     START_TIMER(_initTimerId, 1);
 }
 
@@ -53,32 +60,50 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
     
     
     if (e->timerId() == _controlSendTimerId) {
-        if (glfwJoystickPresent(_controllerId)) {
-            int axisCount, buttonCount;
-            const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
-            const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
-            switch (_mode) {
-            case ArmLayoutMode:
-                ArmMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, _controlMap);
-                _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, ArmMessage::size(_buffer)));
-                break;
-            case DriveLayoutMode:
-                //TODO
-                break;
-            case GimbalLayoutMode:
-                //TODO
-                break;
+
+        /***************************************
+         * This code sends gamepad data to the rover at a regular interval
+         */
+
+        if (_controllerId != NO_CONTROLLER) {
+            if (glfwJoystickPresent(_controllerId)) {
+                int axisCount, buttonCount;
+                const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
+                const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
+                switch (_mode) {
+                case ArmLayoutMode:
+                    ArmMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, _controlMap);
+                    _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, ArmMessage::size(_buffer)));
+                    break;
+                case DriveLayoutMode:
+                    //TODO
+                    break;
+                case GimbalLayoutMode:
+                    //TODO
+                    break;
+                }
             }
-        }
-        else if (_controllerId != NO_CONTROLLER) {
-            _log->w(LOG_TAG, "Controller ID " + QString::number(_controllerId) + " has been disconnected");
-            QMessageBox(QMessageBox::Critical, "DAFUQ YOU DO?",
-                        "The joystick or gamepad you were using to control the rover has been disconnected. Connect a controller, then load its appropriate button map file.",
-                        QMessageBox::Ok, this).exec();
-            _controllerId = NO_CONTROLLER;
+            else {
+                _log->w(LOG_TAG, "Controller ID " + QString::number(_controllerId) + " has been disconnected");
+                QMessageBox(QMessageBox::Critical, "DAFUQ YOU DO?",
+                            "The joystick or gamepad you were using to control the rover has been disconnected. Connect a controller, then load its appropriate button map file.",
+                            QMessageBox::Ok, this).exec();
+                _controllerId = NO_CONTROLLER;
+            }
+
+            /***************************************
+             ***************************************/
+
         }
     }
     else if (e->timerId() == _initTimerId) {
+
+        /***************************************
+         * This code handles the initialization and reading the configuration file
+         * This has to be run after the event loop has been started, hence why it's
+         * in a timer event instead of in the main method
+         */
+
         KILL_TIMER(_initTimerId); //single shot
         //parse soro.ini configuration
         SoroIniConfig config;
@@ -92,14 +117,13 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
         _driveVideoPort = config.driveVideoPort;
         _gimbalVideoPort = config.gimbalVideoPort;  //TODO everything video
 
-        //parse mission_control.ini configuration
-        QString appPath = QApplication::applicationDirPath();
+        //parse configuration
         IniParser configParser;
-        QFile configFile(appPath + "/mission_control.ini");
+        QFile configFile(APPPATH + "/" + MCINI_PATH);
         if (!configParser.load(configFile)) {
-            _log->e(LOG_TAG, "The configuration file " + appPath + "/mission_control.ini is missing or invalid");
+            _log->e(LOG_TAG, "The configuration file " + APPPATH + "/" + MCINI_PATH + " is missing or invalid");
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
-                        "The configuration file " + appPath + "/mission_control.ini is missing or invalid",
+                        "The configuration file " + APPPATH + "/" + MCINI_PATH + " missing or invalid",
                         QMessageBox::Ok, this).exec();
             exit(1); return;
         }
@@ -117,29 +141,35 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             _mode = ArmLayoutMode;
             QString inputMode = configParser.value(MCINI_TAG_INPUT_MODE);
             if (inputMode == MCINI_VALUE_USE_GLFW) {
+                //use gamepad to control the arm
                 _log->i(LOG_TAG, "Input mode set to use GLFW (joystick or gamepad)");
                 _inputMode = GLFW;
                 glfwInit();
                 _glfwInitialized = true;
             }
             else if (inputMode == MCINI_VALUE_USE_MASTER) {
+                //Use the master/slave arm input method
                 _log->i(LOG_TAG, "Input mode set to Master Arm");
                 _inputMode = MasterArm;
-                _masterArmSerial = new SerialChannel("ARM", this, _log);
+                loadMasterArmConfig();
+                _masterArmSerial = new SerialChannel(SERIAL_MASTER_ARM_CHANNEL_NAME, this, _log);
+                masterArmSerialStateChanged(SerialChannel::ConnectingState);
                 connect(_masterArmSerial, SIGNAL(messageReceived(const char*,int)),
                         this, SLOT(masterArmSerialMessageReceived(const char*,int)));
                 connect(_masterArmSerial, SIGNAL(stateChanged(SerialChannel::State)),
                         this, SLOT(masterArmSerialStateChanged(SerialChannel::State)));
-                loadMasterArmConfig();
             }
             else {
                 QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
-                            "The configuration file " + appPath + "/mission_control.ini is invalid",
+                            "The configuration file " + APPPATH + "/" + MCINI_PATH + " is invalid (can't determine input mode)",
                             QMessageBox::Ok, this).exec();
                 exit(1); return;
             }
             _controlChannel = new Channel(this, SocketAddress(config.serverAddress, config.armChannelPort), CHANNEL_NAME_ARM,
                                       Channel::UdpProtocol, Channel::ServerEndPoint, mainHost, _log);
+            ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
+            ui->videoPane2->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
+            _videoWindow->getVideoPane()->setCameraName(ARM_CAMERA_DISPLAY_NAME);
         }
         else if (modeStr == MCINI_VALUE_LAYOUT_DRIVE) {
             _mode = DriveLayoutMode;
@@ -147,6 +177,9 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             _glfwInitialized = true;
             _controlChannel = new Channel(this, SocketAddress(config.serverAddress, config.driveChannelPort), CHANNEL_NAME_DRIVE,
                                       Channel::UdpProtocol, Channel::ServerEndPoint, mainHost, _log);
+            ui->videoPane1->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
+            ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
+            _videoWindow->getVideoPane()->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
         }
         else if (modeStr == MCINI_VALUE_LAYOUT_GIMBAL) {
             _mode = GimbalLayoutMode;
@@ -154,19 +187,39 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             _glfwInitialized = true;
             _controlChannel = new Channel(this, SocketAddress(config.serverAddress, config.gimbalChannelPort), CHANNEL_NAME_GIMBAL,
                                       Channel::UdpProtocol, Channel::ServerEndPoint, mainHost, _log);
+            ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
+            ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
+            _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         }
         else if (modeStr == MCINI_VALUE_LAYOUT_SPECTATOR) {
             _mode = SpectatorLayoutMode;
+            ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
+            ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
+            _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         }
         else {
             _log->e(LOG_TAG, "Unknown configuration value for MCINI_TAG_LAYOUT");
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
-                        "The configuration file " + appPath + "/mission_control.ini is invalid",
+                        "The configuration file " + APPPATH + "/" + MCINI_PATH + " is invalid (can't determine layout)",
                         QMessageBox::Ok, this).exec();
             exit(1); return;
         }
         _sharedChannel = new Channel(this, SocketAddress(config.serverAddress, config.sharedChannelPort), CHANNEL_NAME_SHARED,
                                   Channel::TcpProtocol, Channel::ClientEndPoint, QHostAddress::Any, _log);
+        sharedChannelStateChanged(Channel::ConnectingState);
+        connect(_sharedChannel, SIGNAL(messageReceived(QByteArray)),
+                this, SLOT(sharedChannelMessageReceived(QByteArray)));
+        connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
+                this, SLOT(sharedChannelStateChanged(Channel::State)));
+        connect (_sharedChannel, SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
+                 this, SLOT(sharedChannelStatsUpdate(int,quint64,quint64,int,int)));
+        if (_controlChannel != NULL) {
+            controlChannelStateChanged(Channel::ConnectingState);
+            connect (_controlChannel, SIGNAL(stateChanged(Channel::State)),
+                     this, SLOT(controlChannelStateChanged(Channel::State)));
+            connect(_controlChannel, SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
+                    this, SLOT(controlChannelStatsUpdate(int,quint64,quint64,int,int)));
+        }
 
         if ((_controlChannel != NULL) && (_controlChannel->getState() == Channel::ErrorState)) {
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
@@ -181,11 +234,26 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             exit(1); return;
         }
         _log->i(LOG_TAG, "Configuration has been loaded successfully");
+
+        /***************************************
+         ***************************************/
+
     }
 }
 
-void McMainWindow::masterArmSerialStateChanged(SerialChannel::State) {
-
+void McMainWindow::masterArmSerialStateChanged(SerialChannel::State state) {
+    switch (state) {
+    case SerialChannel::ConnectedState:
+        ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
+        ui->comm_inputDeviceLabel->setText("Master arm connected");
+        ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
+        break;
+    case SerialChannel::ConnectingState:
+        ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
+        ui->comm_inputDeviceLabel->setText("Connecting to master arm...");
+        ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
+        break;
+    }
 }
 
 void McMainWindow::masterArmSerialMessageReceived(const char *message, int size) {
@@ -224,6 +292,7 @@ void McMainWindow::sharedChannelStateChanged(Channel::State state) {
     case Channel::ConnectedState:
         ui->comm_sharedStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_sharedStateLabel->setText("Shared link is connected");
+        ui->comm_sharedStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/check_circle_green_18px.png);");
         if ((_controlChannel == NULL) || (_controlChannel->getState() == Channel::ConnectedState)) {
             ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
             ui->comm_mainStateLabel->setText("Connected");
@@ -232,6 +301,7 @@ void McMainWindow::sharedChannelStateChanged(Channel::State state) {
     case Channel::ConnectingState:
         ui->comm_sharedStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_sharedStateLabel->setText("Shared link is connecting...");
+        ui->comm_sharedStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_mainStateLabel->setText("Connecting...");
         break;
@@ -244,12 +314,14 @@ void McMainWindow::sharedChannelStateChanged(Channel::State state) {
     case Channel::UnconfiguredState:
         ui->comm_sharedStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_sharedStateLabel->setText("Shared link is configuring...");
+        ui->comm_sharedStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_mainStateLabel->setText("Connecting...");
         break;
     case Channel::ReadyState:
         ui->comm_sharedStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_sharedStateLabel->setText("Shared link ready");
+        ui->comm_sharedStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_black_18px.png);");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_mainStateLabel->setText("Ready");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
@@ -263,6 +335,7 @@ void McMainWindow::controlChannelStateChanged(Channel::State state) {
     case Channel::ConnectedState:
         ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_controlStateLabel->setText("Control link is connected");
+        ui->comm_controlStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/check_circle_green_18px.png);");
         if (_sharedChannel->getState() == Channel::ConnectedState) {
             ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
             ui->comm_mainStateLabel->setText("Connected");
@@ -271,6 +344,7 @@ void McMainWindow::controlChannelStateChanged(Channel::State state) {
     case Channel::ConnectingState:
         ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_controlStateLabel->setText("Control link is connecting...");
+        ui->comm_controlStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_mainStateLabel->setText("Connecting...");
         break;
@@ -283,12 +357,14 @@ void McMainWindow::controlChannelStateChanged(Channel::State state) {
     case Channel::UnconfiguredState:
         ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_controlStateLabel->setText("Control link is configuring...");
+        ui->comm_controlStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_mainStateLabel->setText("Connecting...");
         break;
     case Channel::ReadyState:
         ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_controlStateLabel->setText("Control link ready");
+        ui->comm_controlStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_black_18px.png);");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_mainStateLabel->setText("Ready");
         ui->comm_mainStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
@@ -309,7 +385,7 @@ void McMainWindow::controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint6
 
 void McMainWindow::sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                                        int rateUp, int rateDown) {
-
+    //TODO
 }
 
 void McMainWindow::resizeEvent(QResizeEvent* event) {
@@ -330,15 +406,14 @@ void McMainWindow::settingsClicked() {
 
 void McMainWindow::loadMasterArmConfig() {
     if (_mode == ArmLayoutMode) {
-        QString appPath = QApplication::applicationDirPath();
-        QFile masterArmFile(appPath + "/" + MARINI_PATH);
-        if (_masterArmRanges.parse(masterArmFile)) {
+        QFile masterArmFile(APPPATH + "/" + MARINI_PATH);
+        if (_masterArmRanges.load(masterArmFile)) {
             _log->i(LOG_TAG, "Loaded master arm configuration");
         }
         else {
             _log->e(LOG_TAG, "Could not load master arm configuration");
             QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
-                        "The master arm configuration file " + appPath + "/" + MARINI_PATH + " is either missing or invalid",
+                        "The master arm configuration file " + APPPATH + "/" + MARINI_PATH + " is either missing or invalid",
                         QMessageBox::Ok, this).exec();
             exit(1);
             return;
@@ -366,6 +441,6 @@ McMainWindow::~McMainWindow() {
     if (_masterArmSerial != NULL) delete _masterArmSerial;
     if (_log != NULL) delete _log;
     delete ui;
-    delete _videoWindow;
+    if (_videoWindow != NULL) delete _videoWindow;
     if (_glfwInitialized) glfwTerminate();
 }

@@ -16,13 +16,13 @@ SOURCES += \
     ../shared/Soro/logger.cpp \
     ../shared/Soro/armglfwmap.cpp \
     ../shared/Soro/glfwmap.cpp \
-    ../shared/Soro/serialchannel.cpp \
     main.cpp \
     mcmainwindow.cpp \
     glfwmapdialog.cpp \
     googlemapview.cpp \
     videowindow.cpp \
-    videopane.cpp
+    videopane.cpp \
+    ../shared/Soro/serialinterop.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -33,7 +33,6 @@ HEADERS  += \
     ../shared/Soro/socketaddress.h \
     ../shared/Soro/armglfwmap.h \
     ../shared/Soro/glfwmap.h \
-    ../shared/Soro/serialchannel.h \
     ../shared/Soro/armmessage.h \
     ../shared/Soro/commonini.h \
     mcmainwindow.h \
@@ -41,7 +40,8 @@ HEADERS  += \
     googlemapview.h \
     videowindow.h \
     videopane.h \
-    mcutil.h
+    mcutil.h \
+    ../shared/Soro/serialinterop.h
 
 FORMS    += \
     mcmainwindow.ui \
