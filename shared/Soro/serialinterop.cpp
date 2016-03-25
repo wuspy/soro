@@ -262,6 +262,7 @@ bool SerialChannel::getAvailableMessage(char *outMessage, int& outSize) {
     if (_messageAvailable) {
         outMessage = _buffer;
         outSize = _size;
+        _messageAvailable = false;
         return true;
     }
     return false;

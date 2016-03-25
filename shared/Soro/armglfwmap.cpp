@@ -2,70 +2,79 @@
 
 using namespace Soro;
 
-void ArmGlfwMap::reset() {
-    XAxis.GlfwIndex = MapItem::UNMAPPED;
-    YAxis.GlfwIndex = MapItem::UNMAPPED;
-    YawAxis.GlfwIndex = MapItem::UNMAPPED;
-    WristAxis.GlfwIndex = MapItem::UNMAPPED;
-    BucketAxis.GlfwIndex = MapItem::UNMAPPED;
-    BucketOpenBtn.GlfwIndex = MapItem::UNMAPPED;
-    BucketCloseBtn.GlfwIndex = MapItem::UNMAPPED;
-    BucketFastOpenBtn.GlfwIndex = MapItem::UNMAPPED;
-    BucketFastCloseBtn.GlfwIndex = MapItem::UNMAPPED;
-    WristUpBtn.GlfwIndex = MapItem::UNMAPPED;
-    WristDownBtn.GlfwIndex = MapItem::UNMAPPED;
-    StowMacroBtn.GlfwIndex = MapItem::UNMAPPED;
-    Macro1Btn.GlfwIndex = MapItem::UNMAPPED;
-    Macro2Btn.GlfwIndex = MapItem::UNMAPPED;
-    Macro3Btn.GlfwIndex = MapItem::UNMAPPED;
-    Macro4Btn.GlfwIndex = MapItem::UNMAPPED;
-    MacroRecordBtn.GlfwIndex = MapItem::UNMAPPED;
+ArmGlfwMap::ArmGlfwMap() {
+    AxisList = new AxisMapItem[5] {
+        //Axis maps
+        AxisMapItem("Extend/Retract"),
+        AxisMapItem("Raise/Lower"),
+        AxisMapItem("Left/Right"),
+        AxisMapItem("Articulate Wrist"),
+        AxisMapItem("Open/Close Bucket"),
+    };
+    ButtonList = new ButtonMapItem[7] {
+        //Button maps
+        ButtonMapItem("Open Bucket"),
+        ButtonMapItem("Close Buckeet"),
+        ButtonMapItem("Fast Open Bucket"),
+        ButtonMapItem("Fast Close Bucket"),
+        ButtonMapItem("Wrist Up"),
+        ButtonMapItem("Wrist Down"),
+        ButtonMapItem("Stow Arm"),
+    };
 }
 
-int ArmGlfwMap::count() const {
-    return 17;
+int ArmGlfwMap::axisCount() const {
+    return 5;
 }
 
-GlfwMap::MapItem& ArmGlfwMap::operator[](int index) {
-    switch (index) {
-    case 0: return XAxis;
-    case 1: return YAxis;
-    case 2: return YawAxis;
-    case 3: return WristAxis;
-    case 4: return BucketAxis;
-    case 5: return BucketOpenBtn;
-    case 6: return BucketCloseBtn;
-    case 7: return BucketFastOpenBtn;
-    case 8: return BucketFastCloseBtn;
-    case 9: return WristUpBtn;
-    case 10: return WristDownBtn;
-    case 11: return StowMacroBtn;
-    case 12: return Macro1Btn;
-    case 13: return Macro2Btn;
-    case 14: return Macro3Btn;
-    case 15: return Macro4Btn;
-    case 16: return MacroRecordBtn;
-    }
+int ArmGlfwMap::buttonCount() const {
+    return 7;
 }
 
-const GlfwMap::MapItem& ArmGlfwMap::operator[](int index) const {
-    switch (index) {
-    case 0: return XAxis;
-    case 1: return YAxis;
-    case 2: return YawAxis;
-    case 3: return WristAxis;
-    case 4: return BucketAxis;
-    case 5: return BucketOpenBtn;
-    case 6: return BucketCloseBtn;
-    case 7: return BucketFastOpenBtn;
-    case 8: return BucketFastCloseBtn;
-    case 9: return WristUpBtn;
-    case 10: return WristDownBtn;
-    case 11: return StowMacroBtn;
-    case 12: return Macro1Btn;
-    case 13: return Macro2Btn;
-    case 14: return Macro3Btn;
-    case 15: return Macro4Btn;
-    case 16: return MacroRecordBtn;
-    }
+const GlfwMap::AxisMapItem& ArmGlfwMap::XAxis() const {
+    return AxisList[0];
+}
+
+const GlfwMap::AxisMapItem& ArmGlfwMap::YAxis() const {
+    return AxisList[1];
+}
+
+const GlfwMap::AxisMapItem& ArmGlfwMap::YawAxis() const {
+    return AxisList[2];
+}
+
+const GlfwMap::AxisMapItem& ArmGlfwMap::WristAxis() const {
+    return AxisList[3];
+}
+
+const GlfwMap::AxisMapItem& ArmGlfwMap::BucketAxis() const {
+    return AxisList[4];
+}
+
+const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketOpenButton() const {
+    return ButtonList[0];
+}
+
+const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketCloseButton() const {
+    return ButtonList[1];
+}
+
+const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketFullOpenButton() const {
+    return ButtonList[2];
+}
+
+const GlfwMap::ButtonMapItem& ArmGlfwMap::BucketFullCloseButton() const {
+    return ButtonList[3];
+}
+
+const GlfwMap::ButtonMapItem& ArmGlfwMap::WristUpButton() const {
+    return ButtonList[4];
+}
+
+const GlfwMap::ButtonMapItem& ArmGlfwMap::WristDownButton() const {
+    return ButtonList[5];
+}
+
+const GlfwMap::ButtonMapItem& ArmGlfwMap::StowButton() const {
+    return ButtonList[6];
 }

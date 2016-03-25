@@ -57,31 +57,10 @@ void GlfwMapDialog::populateJoyMenu() {
 void GlfwMapDialog::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
     if (e->timerId() == _joyTimerId) {
-        int buttonCount, axisCount;
+        int axisCount, buttonCount;
         const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
         const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
-        const int row = ui->tableWidget->currentRow();
-        if (row == -1) return;
-        switch ((*_map)[row].Type) {
-        case GlfwMap::AXIS:
-            for (int i = 0; i < axisCount; i++) {
-                if ((abs(axes[i]) > AXIS_THRESHOLD) && ((*_map)[row].GlfwIndex != i)) {
-                    (*_map)[row].GlfwIndex = i;
-                    ui->tableWidget->item(row, 2)->setText(LABEL_AXIS + QString::number(i));
-                    return;
-                }
-            }
-            break;
-        case GlfwMap::BUTTON:
-            for (int i = 0; i < buttonCount; i++) {
-                if ((buttons[i] == 1) && ((*_map)[row].GlfwIndex != i)) {
-                    (*_map)[row].GlfwIndex = i;
-                    ui->tableWidget->item(row, 2)->setText(LABEL_BUTTON + QString::number(i));
-                    return;
-                }
-            }
-            break;
-        }
+        //TODO
     }
 }
 
@@ -96,42 +75,44 @@ void GlfwMapDialog::populateTable() {
     ui->tableWidget->setColumnCount(4);
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "Type" << "Name" << "Binding" << "");
     if (_map != NULL) {
-        ui->tableWidget->setRowCount(_map->count());
-        for(int i = 0; i < _map->count(); i++) {
-            GlfwMap::InputType type = (*_map)[i].Type;
-            switch (type) {
-            case GlfwMap::AXIS:
-                ui->tableWidget->setItem(i, 0, new QTableWidgetItem(LABEL_AXIS));
-                break;
-            case GlfwMap::BUTTON:
-                ui->tableWidget->setItem(i, 0, new QTableWidgetItem(LABEL_BUTTON));
-                break;
+        int axisCount = _map->axisCount();
+        int buttonCount = _map->buttonCount();
+        ui->tableWidget->setRowCount(axisCount + buttonCount);
+        for(int i = 0; i < axisCount; i++) {
+            ui->tableWidget->setItem(i, 0, new QTableWidgetItem(LABEL_AXIS));
+            ui->tableWidget->setItem(i, 1, new QTableWidgetItem(_map->AxisList[i].DisplayName));
+            if (_map->AxisList[i].isMapped()) {
+                const int mapIndex = _map->AxisList[i].GlfwIndex;
+                ui->tableWidget->setItem(i, 2, new QTableWidgetItem(LABEL_AXIS + QString::number(mapIndex)));
             }
-            ui->tableWidget->setItem(i, 1, new QTableWidgetItem((*_map)[i].Name));
-            const int mapIndex = (*_map)[i].GlfwIndex;
-            switch (mapIndex) {
-            case GlfwMap::MapItem::UNMAPPED:
+            else {
                 ui->tableWidget->setItem(i, 2, new QTableWidgetItem(LABEL_NOT_BOUNT));
-                break;
-            default:
-                switch (type) {
-                case GlfwMap::AXIS:
-                    ui->tableWidget->setItem(i, 2, new QTableWidgetItem(LABEL_AXIS + QString::number(mapIndex)));
-                    break;
-                case GlfwMap::BUTTON:
-                    ui->tableWidget->setItem(i, 2, new QTableWidgetItem(LABEL_BUTTON + QString::number(mapIndex)));
-                    break;
-                }
-                break;
             }
             ui->tableWidget->setItem(i, 3, new QTableWidgetItem("Clear"));
+        }
+        for(int i = 0; i < buttonCount; i++) {
+            ui->tableWidget->setItem(i + axisCount, 0, new QTableWidgetItem(LABEL_BUTTON));
+            ui->tableWidget->setItem(i + axisCount, 1, new QTableWidgetItem(_map->ButtonList[i].DisplayName));
+            if (_map->ButtonList[i].isMapped()) {
+                const int mapIndex = _map->ButtonList[i].GlfwIndex;
+                ui->tableWidget->setItem(i + axisCount, 2, new QTableWidgetItem(LABEL_BUTTON + QString::number(mapIndex)));
+            }
+            else {
+                ui->tableWidget->setItem(i + axisCount, 2, new QTableWidgetItem(LABEL_NOT_BOUNT));
+            }
+            ui->tableWidget->setItem(i + axisCount, 3, new QTableWidgetItem("Clear"));
         }
     }
 }
 
 void GlfwMapDialog::tableCellClicked(int row, int column) {
     if (column == 3) {
-        (*_map)[row].GlfwIndex = GlfwMap::MapItem::UNMAPPED;
+        if (row < _map->axisCount()) {
+            _map->AxisList[row].reset();
+        }
+        else {
+            _map->ButtonList[row - _map->axisCount()].reset();
+        }
         ui->tableWidget->setItem(row, 2, new QTableWidgetItem(LABEL_NOT_BOUNT));
     }
 }
@@ -153,5 +134,4 @@ void GlfwMapDialog::buttonClicked(QAbstractButton *button) {
 GlfwMapDialog::~GlfwMapDialog() {
     killTimer(_joyTimerId);
     delete ui;
-    glfwTerminate();
 }

@@ -11,40 +11,72 @@ namespace Soro {
      */
     struct GlfwMap {
 
-        enum InputType {
-            AXIS, BUTTON
-        };
-
         struct MapItem {
-            static const int UNMAPPED = -1;
+            int GlfwIndex;
+            QString DisplayName;
 
-            int GlfwIndex = UNMAPPED;
-            InputType Type;
-            QString Name;
+            MapItem() {
+                GlfwIndex = -1;
+                DisplayName = QString::null;
+            }
 
-            MapItem(int index, InputType type, QString name) {
+            MapItem(QString name) {
+                GlfwIndex = -1;
+                DisplayName = name;
+            }
+
+            MapItem(int index, QString name) {
                 GlfwIndex = index;
-                Type = type;
-                Name = name;
+                DisplayName = name;
+            }
+
+            inline bool operator ==(const MapItem& other) const {
+                return (GlfwIndex == other.GlfwIndex) & (DisplayName == other.DisplayName);
+            }
+
+            inline bool operator !=(const MapItem& other) const {
+                return !((*this) == other);
             }
 
             inline bool isMapped() const {
-                return GlfwIndex != UNMAPPED;
+                return GlfwIndex >= 0;
+            }
+
+            inline void reset() {
+                GlfwIndex = -1;
             }
         };
 
-        virtual void reset()=0;
-        virtual int count() const=0;
-        virtual MapItem& operator[](int index)=0;
-        virtual const MapItem& operator[](int index) const=0;
+        struct AxisMapItem: MapItem {
+            AxisMapItem() : MapItem() { }
+            AxisMapItem(QString name): MapItem(name) { }
+            AxisMapItem(int index, QString name): MapItem(index, name) { }
 
-        /* If a button is mapped to something that should be controlled by
-         * an axis, this value controls the speed (-100 to 100) that will
-         * be simulated
-         */
-        signed char AxisButtonSpeedFactor;
+            float value(const float *glfwAxes, int size) const {
+                if (!isMapped() | GlfwIndex >= size) return 0;
+                return glfwAxes[GlfwIndex];
+            }
+        };
+
+        struct ButtonMapItem: MapItem {
+            ButtonMapItem() : MapItem() { }
+            ButtonMapItem(QString name): MapItem(name) { }
+            ButtonMapItem(int index, QString name): MapItem(index, name) { }
+
+            bool isPressed(const unsigned char *glfwButtons, int size) const {
+                if (!isMapped() | GlfwIndex >= size) return false;
+                return glfwButtons[GlfwIndex] == 1;
+            }
+        };
+
+        AxisMapItem* AxisList = NULL;
+        ButtonMapItem* ButtonList = NULL;
         QString ControllerName = QString::null;
 
+        ~GlfwMap();
+        void reset();
+        virtual int axisCount() const=0;
+        virtual int buttonCount() const=0;
         bool loadMapping(QFile& file);
         bool writeMapping(QFile& file);
         bool isMapped() const;

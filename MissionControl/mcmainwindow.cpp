@@ -267,16 +267,16 @@ void McMainWindow::masterArmSerialMessageReceived(const char *message, int size)
     //control bucket with keyboard keys
     //TODO bill build the fucking master arm
     if (_currentKey == 'x') {
-        _buffer[ARM_MSG_BUCKET_FAST_OPEN_INDEX] = 1;
-        _buffer[ARM_MSG_BUCKET_FAST_CLOSE_INDEX] = 0;
+        _buffer[ARM_MESSAGE_BUCKET_FULL_OPEN_INDEX] = 1;
+        _buffer[ARM_MESSAGE_BUCKET_FULL_CLOSE_INDEX] = 0;
     }
     else if (_currentKey == 'c') {
-        _buffer[ARM_MSG_BUCKET_FAST_CLOSE_INDEX] = 1;
-        _buffer[ARM_MSG_BUCKET_FAST_OPEN_INDEX] = 0;
+        _buffer[ARM_MESSAGE_BUCKET_FULL_CLOSE_INDEX] = 1;
+        _buffer[ARM_MESSAGE_BUCKET_FULL_OPEN_INDEX] = 0;
     }
     else {
-        _buffer[ARM_MSG_BUCKET_FAST_CLOSE_INDEX] = 0;
-        _buffer[ARM_MSG_BUCKET_FAST_OPEN_INDEX] = 0;
+        _buffer[ARM_MESSAGE_BUCKET_FULL_CLOSE_INDEX] = 0;
+        _buffer[ARM_MESSAGE_BUCKET_FULL_OPEN_INDEX] = 0;
     }
     //translate message from master pot values to slave servo values
     ArmMessage::translateMasterArmValues(_buffer, _masterArmRanges);
