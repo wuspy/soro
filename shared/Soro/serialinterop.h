@@ -22,11 +22,6 @@
 #   define SERIAL_OBJECT Serial
 #endif
 
-#define SERIAL_MASTER_ARM_CHANNEL_NAME "MasterArm"
-#define SERIAL_ARM_CHANNEL_NAME "Arm"
-#define SERIAL_DRIVE_CHANNEL_NAME "Drive"
-#define SERIAL_GIMBAL_CHANNEL_NAME "Gimbal"
-
 #include <cstring>
 
 #define MAX_VALUE_14BIT 16383
@@ -146,7 +141,7 @@ namespace Soro {
         DigitalOut *_led;
     public:
         SerialChannel(const char *name, PinName tx, PinName rx, int ms_interval);
-        bool getAvailableMessage(char *outMessage, int& outSize);
+        bool getAvailableMessage(char*& outMessage, int& outSize);
         void process();
 #endif
     };

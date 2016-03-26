@@ -3,6 +3,7 @@
 using namespace Soro;
 
 DriveGlfwMap::DriveGlfwMap() {
+    _classname = "DriveGlfwMap";
     AxisList = new AxisMapItem[4] {
         //Axis maps
         AxisMapItem("Forward/Back"),
@@ -12,8 +13,8 @@ DriveGlfwMap::DriveGlfwMap() {
     };
 }
 
-QString DriveGlfwMap::getClassName() const {
-    return "DriveGlfwMap";
+DriveGlfwMap::~DriveGlfwMap() {
+    delete[] AxisList;
 }
 
 int DriveGlfwMap::axisCount() const {

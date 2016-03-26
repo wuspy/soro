@@ -58,6 +58,7 @@
 #define MARINI_TAG_BUCKETADD "bucketadd"
 
 #define ARM_SERIAL_CHANNEL_NAME "arm-serial-channel"
+#define MASTER_ARM_SERIAL_CHANNEL_NAME "master-arm-serial-channel"
 
 namespace Soro {
 

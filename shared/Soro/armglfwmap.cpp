@@ -3,6 +3,7 @@
 using namespace Soro;
 
 ArmGlfwMap::ArmGlfwMap() {
+    _classname = "ArmGlfwMap";
     AxisList = new AxisMapItem[5] {
         //Axis maps
         AxisMapItem("Extend/Retract"),
@@ -23,8 +24,9 @@ ArmGlfwMap::ArmGlfwMap() {
     };
 }
 
-QString ArmGlfwMap::getClassName() const {
-    return "ArmGlfwMap";
+ArmGlfwMap::~ArmGlfwMap() {
+    delete[] AxisList;
+    delete[] ButtonList;
 }
 
 int ArmGlfwMap::axisCount() const {

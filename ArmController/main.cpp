@@ -253,7 +253,7 @@ void stow() {
 }
 
 int main() {
-    SerialChannel serial(SERIAL_ARM_CHANNEL_NAME, USBTX, USBRX, INTERVAL);
+    SerialChannel serial(ARM_SERIAL_CHANNEL_NAME, USBTX, USBRX, INTERVAL);
     char *message;
     int messageSize;
     //used to calculate positions in master/slave control
@@ -279,10 +279,10 @@ int main() {
                 x -= ((int)ArmMessage::joyX(message) * 8) / 100;
                 y -= ((int)ArmMessage::joyY(message) * 8) / 100;
                 setYaw(yaw - ((float)ArmMessage::joyYaw(message) * 0.008) / 100.0);
-                if (ArmMessage::bucketFastOpen(message)) {
+                if (ArmMessage::bucketFullOpen(message)) {
                     setBucket(BUCKET_MAX);
                 }
-                else if (ArmMessage::bucketFastClose(message)) {
+                else if (ArmMessage::bucketFullClose(message)) {
                     setBucket(BUCKET_MIN);
                 }
                 else {
@@ -309,10 +309,10 @@ int main() {
                     setShoulder(ArmMessage::masterShoulder(message) * shoulderRangeRatio + SHOULDER_MIN);
                     setElbow(ArmMessage::masterElbow(message) * elbowRangeRatio + ELBOW_MIN);
                     setWrist(ArmMessage::masterWrist(message) * wristRangeRatio + WRIST_MIN);
-                    if (ArmMessage::bucketFastOpen(message)) {
+                    if (ArmMessage::bucketFullOpen(message)) {
                         setBucket(BUCKET_MAX);
                     }
-                    else if (ArmMessage::bucketFastClose(message)) {
+                    else if (ArmMessage::bucketFullClose(message)) {
                         setBucket(BUCKET_MIN);
                     }
                     else {

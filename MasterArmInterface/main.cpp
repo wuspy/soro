@@ -14,7 +14,7 @@ AnalogIn bucket(p19);
 using namespace Soro;
 
 int main() {
-    SerialChannel serial(SERIAL_MASTER_ARM_CHANNEL_NAME, USBTX, USBRX, INTERVAL);
+    SerialChannel serial(MASTER_ARM_SERIAL_CHANNEL_NAME, USBTX, USBRX, INTERVAL);
     char buffer[ARM_MASTER_MESSAGE_SIZE];
     unsigned short shoulderVal, yawVal, elbowVal, wristVal, bucketVal;
     

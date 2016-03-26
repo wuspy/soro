@@ -77,18 +77,18 @@ namespace MissionControl {
         ArmGlfwMap *_armInputMap = NULL;
         DriveGlfwMap *_driveInputMap = NULL;
         GimbalGlfwMap *_gimbalInputMap = NULL;
-        //TODO drive and gimbal
         int _controllerId = NO_CONTROLLER;
         int _controlSendTimerId = TIMER_INACTIVE;
+        int _inputSelectorTimerId = TIMER_INACTIVE;
 
         //Arm specific stuff
-        SerialChannel *_masterArmSerial;
+        SerialChannel *_masterArmSerial = NULL;
         ArmMessage::MasterRanges _masterArmRanges;
 
         void loadMasterArmConfig();
-        int findGlfwIdByName(QString name);
-        void selectPreferredJoystick(GlfwMap *map);
+        void initForGLFW(GlfwMap *map);
         int firstGlfwControllerId();
+        GlfwMap* getInputMap();
 
     private slots:
         void sharedChannelMessageReceived(const QByteArray& message);
@@ -101,7 +101,6 @@ namespace MissionControl {
         void masterArmSerialMessageReceived(const char *message, int size);
         void masterArmSerialStateChanged(SerialChannel::State);
         void settingsClicked();
-        void glfwMappingUpdated(GlfwMap map);
 
     protected:
         void timerEvent(QTimerEvent *e);

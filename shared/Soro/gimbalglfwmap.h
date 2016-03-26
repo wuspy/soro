@@ -9,15 +9,14 @@ namespace Soro {
      */
     struct GimbalGlfwMap: public GlfwMap {
         GimbalGlfwMap();
+        ~GimbalGlfwMap();
+
         int axisCount() const;
         int buttonCount() const;
 
         const GlfwMap::AxisMapItem& pitchAxis() const;
         const GlfwMap::AxisMapItem& rollAxis() const;
         const GlfwMap::AxisMapItem& yawAxis() const;
-
-    protected:
-        QString getClassName() const;
     };
 }
 

@@ -64,9 +64,9 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         LOG_I("All network channels initialized successfully");
 
         //create serial (mbed) channels
-        _armControllerSerial = new SerialChannel(SERIAL_ARM_CHANNEL_NAME, this, _log);
-        _driveControllerSerial = new SerialChannel(SERIAL_DRIVE_CHANNEL_NAME, this, _log);
-        _gimbalControllerSerial = new SerialChannel(SERIAL_GIMBAL_CHANNEL_NAME, this, _log);
+        _armControllerSerial = new SerialChannel(ARM_SERIAL_CHANNEL_NAME, this, _log);
+        _driveControllerSerial = new SerialChannel(DRIVE_SERIAL_CHANNEL_NAME, this, _log);
+        _gimbalControllerSerial = new SerialChannel(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
         LOG_I("All serial channels initialized successfully");
 
         //observers for network channels message received
@@ -175,6 +175,11 @@ void RoverWorker::gimbalChannelStateChanged(Channel::State state) {
 }
 
 void RoverWorker::sharedChannelStateChanged(Channel::State state) {
+    if ((state == Channel::ConnectedState) && (_soroIniConfig.VideoServerAddress == QHostAddress::Null)) {
+        //If the rover acts as a server, the only way we can deduce where to send the video stream is by waiting
+        //for mission control to connect
+        _soroIniConfig.VideoServerAddress = _sharedChannel->getPeerAddress().address;
+    }
     //TODO
 }
 

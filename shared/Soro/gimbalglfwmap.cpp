@@ -3,6 +3,7 @@
 using namespace Soro;
 
 GimbalGlfwMap::GimbalGlfwMap() {
+    _classname = "GimbalGlfwMap";
     AxisList = new AxisMapItem[3] {
         //Axis maps
         AxisMapItem("Pitch"),
@@ -11,8 +12,8 @@ GimbalGlfwMap::GimbalGlfwMap() {
     };
 }
 
-QString GimbalGlfwMap::getClassName() const {
-    return "GimbalGlfwMap";
+GimbalGlfwMap::~GimbalGlfwMap() {
+    delete[] AxisList;
 }
 
 int GimbalGlfwMap::axisCount() const {

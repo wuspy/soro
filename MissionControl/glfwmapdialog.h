@@ -6,6 +6,7 @@
 #include <QAbstractButton>
 #include <QMessageBox>
 #include <QTimerEvent>
+#include <QDebug>
 
 #include "soroutil.h"
 #include "glfwmap.h"
@@ -23,12 +24,12 @@ namespace MissionControl {
         Q_OBJECT
 
     public:
-        explicit GlfwMapDialog(QWidget *parent = 0, Soro::GlfwMap *map = NULL);
+        explicit GlfwMapDialog(QWidget *parent = 0, int controllerId = -1, Soro::GlfwMap *map = NULL);
         ~GlfwMapDialog();
 
     private:
         Ui::GlfwMapDialog *ui;
-        Soro::GlfwMap _map;
+        Soro::GlfwMap *_map;
         int _controllerId;
         int _joyTimerId = TIMER_INACTIVE;
         void populateTable();

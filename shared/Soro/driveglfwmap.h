@@ -9,6 +9,8 @@ namespace Soro {
      */
     struct DriveGlfwMap: public GlfwMap {
         DriveGlfwMap();
+        ~DriveGlfwMap();
+
         int axisCount() const;
         int buttonCount() const;
 
@@ -16,9 +18,6 @@ namespace Soro {
         const GlfwMap::AxisMapItem& turnAxis() const;
         const GlfwMap::AxisMapItem& leftWheelsAxis() const;
         const GlfwMap::AxisMapItem& rightWheelsAxis() const;
-
-    protected:
-        QString getClassName() const;
     };
 }
 

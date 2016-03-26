@@ -19,6 +19,7 @@ SOURCES += main.cpp \
 HEADERS += \
     ../shared/Soro/armmessage.h \
     ../shared/Soro/drivemessage.h \
+    ../shared/Soro/gimbalmessage.h \
     ../shared/Soro/soroutil.h \
     ../shared/Soro/socketaddress.h \
     ../shared/Soro/channel.h \

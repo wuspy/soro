@@ -23,6 +23,9 @@
 #define MCINI_VALUE_USE_GLFW "GLFW"
 #define MCINI_VALUE_USE_MASTER "MasterArm"
 
+#define CONTROL_SEND_INTERVAL 50
+
+using namespace Soro;
 using namespace Soro::MissionControl;
 
 McMainWindow::McMainWindow(QWidget *parent) :
@@ -52,52 +55,88 @@ McMainWindow::McMainWindow(QWidget *parent) :
 
 void McMainWindow::timerEvent(QTimerEvent *e) {
     QMainWindow::timerEvent(e);
-    
+
     //JUST TESTING SHIT
     /*float lat = 29.564844 + qrand() % 1000 * 0.000001;
     float lng = -95.081317 + qrand() % 1000 * 0.000001;
     ui->googleMapView->updateLocation(LatLng(lat, lng));
     ui->googleMapView->updateHeading(rand() % 360);*/
-    
-    
+
+
     if (e->timerId() == _controlSendTimerId) {
 
         /***************************************
          * This code sends gamepad data to the rover at a regular interval
          */
 
-        if (_controllerId != NO_CONTROLLER) {
-            if (glfwJoystickPresent(_controllerId)) {
-                int axisCount, buttonCount;
-                const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
-                const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
-                switch (_mode) {
-                case ArmLayoutMode:
-                    ArmMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_armInputMap);
-                    _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, ArmMessage::size(_buffer)));
-                    break;
-                case DriveLayoutMode:
-                    DriveMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_driveInputMap);
-                    _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, DriveMessage::size(_buffer)));
-                    break;
-                case GimbalLayoutMode:
-                    GimbalMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_gimbalInputMap);
-                    _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, GimbalMessage::size(_buffer)));
-                    break;
-                }
+        if (glfwJoystickPresent(_controllerId)) {
+            int axisCount, buttonCount;
+            const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
+            const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
+            switch (_mode) {
+            case ArmLayoutMode:
+                ArmMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_armInputMap);
+                _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, ArmMessage::size(_buffer)));
+                break;
+            case DriveLayoutMode:
+                DriveMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_driveInputMap);
+                _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, DriveMessage::size(_buffer)));
+                break;
+            case GimbalLayoutMode:
+                GimbalMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_gimbalInputMap);
+                _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, GimbalMessage::size(_buffer)));
+                break;
+            }
+        }
+
+        /***************************************
+         ***************************************/
+    }
+    else if (e->timerId() == _inputSelectorTimerId) {
+
+        /***************************************
+         * This code monitors the state of the connected joysticks and selects an available one when connected
+         */
+
+        int newJoy = firstGlfwControllerId();
+        if (newJoy != _controllerId) {
+            _controllerId = newJoy;
+            if (_controllerId == NO_CONTROLLER) {
+                //the connected controller has been disconnected
+                KILL_TIMER(_controlSendTimerId);
+                ui->comm_inputDeviceLabel->setText("No input devices");
+                //update ui
+                ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
+                ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
+                ui->comm_inputDeviceLabel->setText("No input devices");
             }
             else {
-                LOG_W("Controller ID " + QString::number(_controllerId) + " has been disconnected");
-                QMessageBox(QMessageBox::Critical, "DAFUQ YOU DO?",
-                            "The joystick or gamepad you were using to control the rover has been disconnected. Connect a controller, then load its appropriate button map file.",
-                            QMessageBox::Ok, this).exec();
-                _controllerId = NO_CONTROLLER;
+                //a new controller is connected
+                GlfwMap *map = getInputMap();
+                if (map != NULL) {
+                    QString controllerName = glfwGetJoystickName(_controllerId);
+                    START_TIMER(_controlSendTimerId, CONTROL_SEND_INTERVAL);
+                    if (map->ControllerName != controllerName) {
+                        //the controller selected does not match the one in the mapping file
+                        map->reset();
+                        map->ControllerName = controllerName;
+                        QMessageBox(QMessageBox::Critical, "Unknown Controller",
+                                    "The controller you have just plugged in appears to be a differnt model than the last "
+                                    "one you were using. You will need to set up this controller's configuration, but know that this"
+                                    " will overwrite the saved configuration you had for any previous controllers.",
+                                    QMessageBox::Ok, this).exec();
+                    }
+                    //update ui
+                    ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
+                    ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
+                    ui->comm_inputDeviceLabel->setText(controllerName);
+                }
             }
-
-            /***************************************
-             ***************************************/
-
         }
+
+        /***************************************
+         ***************************************/
+
     }
     else if (e->timerId() == _initTimerId) {
 
@@ -145,18 +184,15 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             QString inputMode = configParser.value(MCINI_TAG_INPUT_MODE);
             if (inputMode == MCINI_VALUE_USE_GLFW) {
                 //use gamepad to control the arm
-                LOG_I("Input mode set to use GLFW (joystick or gamepad)");
-                _inputMode = GLFW;
-                glfwInit();
                 _armInputMap = new ArmGlfwMap();
-                _glfwInitialized = true;
+                initForGLFW(_armInputMap);
             }
             else if (inputMode == MCINI_VALUE_USE_MASTER) {
                 //Use the master/slave arm input method
-                LOG_I("Input mode set to Master Arm");
+                LOG_I("Input mode F57F17set to Master Arm");
                 _inputMode = MasterArm;
                 loadMasterArmConfig();
-                _masterArmSerial = new SerialChannel(SERIAL_MASTER_ARM_CHANNEL_NAME, this, _log);
+                _masterArmSerial = new SerialChannel(MASTER_ARM_SERIAL_CHANNEL_NAME, this, _log);
                 masterArmSerialStateChanged(SerialChannel::ConnectingState);
                 connect(_masterArmSerial, SIGNAL(messageReceived(const char*,int)),
                         this, SLOT(masterArmSerialMessageReceived(const char*,int)));
@@ -177,9 +213,8 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
         }
         else if (modeStr == MCINI_VALUE_LAYOUT_DRIVE) {
             _mode = DriveLayoutMode;
-            glfwInit();
             _driveInputMap = new DriveGlfwMap();
-            _glfwInitialized = true;
+            initForGLFW(_driveInputMap);
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveChannelPort), CHANNEL_NAME_DRIVE,
                                       Channel::UdpProtocol, commEndPoint, commHost, _log);
             ui->videoPane1->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
@@ -188,11 +223,8 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
         }
         else if (modeStr == MCINI_VALUE_LAYOUT_GIMBAL) {
             _mode = GimbalLayoutMode;
-            glfwInit();
             _gimbalInputMap = new GimbalGlfwMap();
-
-
-            _glfwInitialized = true;
+            initForGLFW(_gimbalInputMap);
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
                                       Channel::UdpProtocol, commEndPoint, commHost, _log);
             ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
@@ -213,7 +245,7 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             exit(1); return;
         }
         _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
-                                  Channel::TcpProtocol, commEndPoint, commHost, _log);
+                            Channel::TcpProtocol, commEndPoint, commHost, _log);
         sharedChannelStateChanged(Channel::ConnectingState);
         connect(_sharedChannel, SIGNAL(messageReceived(QByteArray)),
                 this, SLOT(sharedChannelMessageReceived(QByteArray)));
@@ -249,25 +281,39 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
     }
 }
 
+GlfwMap* McMainWindow::getInputMap() {
+    if (_inputMode == GLFW) {
+        switch(_mode) {
+        case ArmLayoutMode:
+            return _armInputMap;
+        case DriveLayoutMode:
+            return _driveInputMap;
+        case GimbalLayoutMode:
+            return _gimbalInputMap;
+        }
+    }
+    return NULL;
+}
+
 int McMainWindow::firstGlfwControllerId() {
     for (int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++) {
         if (glfwJoystickPresent(i)) return i;
     }
-    return -1;
+    return NO_CONTROLLER;
 }
 
-bool McMainWindow::selectPreferredJoystick(GlfwMap *map) {
-    map->loadMapping(APPPATH + (QString)"/" + GLFWINI_PATH);
-    _controllerId = firstGlfwControllerId();
-    if (_controllerId < 0) {
-        return false; //no joysticks connected
-    }
-    if (map->ControllerName != glfwJoystickName(_controllerId)) {
-        //the controller selected does not match the one in the mapping file
-        map->reset();
-        map->ControllerName = glfwJoystickName(_controllerId);
-    }
-    return true;
+void McMainWindow::initForGLFW(GlfwMap *map) {
+    LOG_I("Input mode set to use GLFW (joystick or gamepad)");
+    glfwInit();
+    _inputMode = GLFW;
+    _glfwInitialized = true;
+    QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
+    map->loadMapping(mapFile);
+    START_TIMER(_inputSelectorTimerId, 1000);
+    //update ui
+    ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
+    ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
+    ui->comm_inputDeviceLabel->setText("No input devices");
 }
 
 void McMainWindow::masterArmSerialStateChanged(SerialChannel::State state) {
@@ -430,7 +476,14 @@ void McMainWindow::resizeEvent(QResizeEvent* event) {
 }
 
 void McMainWindow::settingsClicked() {
-    loadMasterArmConfig();  //TODO make this a menu
+    GlfwMap *map = getInputMap();
+    if (map != NULL) {
+        GlfwMapDialog d(NULL, _controllerId, map);
+        d.exec();
+    }
+    else if (_inputMode == MasterArm) {
+        loadMasterArmConfig();
+    }
 }
 
 void McMainWindow::loadMasterArmConfig() {
@@ -465,29 +518,14 @@ void McMainWindow::keyReleaseEvent(QKeyEvent *e) {
 }
 
 McMainWindow::~McMainWindow() {
-    if (_armInputMap != NULL) {
-        if (_armInputMap->isMapped()) {
+    GlfwMap *map = getInputMap();
+    if (map != NULL) {
+        if (map->isMapped()) {
             QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
-            _armInputMap->writeMapping(mapFile);
-            LOG_I("Writing arm glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
+            map->writeMapping(mapFile);
+            LOG_I("Writing glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
         }
-        delete _armInputMap;
-    }
-    if (_driveInputMap != NULL) {
-        if (_driveInputMap->isMapped()) {
-            QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
-            _driveInputMap->writeMapping(mapFile);
-            LOG_I("Writing drive glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
-        }
-        delete _driveInputMap;
-    }
-    if (_gimbalInputMap != NULL) {
-        if (_gimbalInputMap->isMapped()) {
-            QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
-            _gimbalInputMap->writeMapping(mapFile);
-            LOG_I("Writing gimbal glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
-        }
-        delete _gimbalInputMap;
+        delete map;
     }
     if (_controlChannel != NULL) delete _controlChannel;
     if (_sharedChannel != NULL) delete _sharedChannel;

@@ -252,7 +252,7 @@ void SerialChannel::process() {
     }
 }
 
-bool SerialChannel::getAvailableMessage(char *outMessage, int& outSize) {
+bool SerialChannel::getAvailableMessage(char*& outMessage, int& outSize) {
     if (_messageAvailable) {
         outMessage = _buffer;
         outSize = _size;

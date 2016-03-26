@@ -7,7 +7,7 @@
 
 using namespace Soro::MissionControl;
 
-GlfwMapDialog::GlfwMapDialog(QWidget *parent, Soro::GlfwMap *map) :
+GlfwMapDialog::GlfwMapDialog(QWidget *parent, int controllerId, Soro::GlfwMap *map) :
     QDialog(parent),
     ui(new Ui::GlfwMapDialog) {
 
@@ -32,7 +32,7 @@ GlfwMapDialog::GlfwMapDialog(QWidget *parent, Soro::GlfwMap *map) :
 void GlfwMapDialog::showEvent(QShowEvent *e) {
     QDialog::showEvent(e);
     if (glfwJoystickPresent(_controllerId)) {
-        START_TIMER(_joyTimerId, 50);
+        START_TIMER(_joyTimerId, 20);
     }
 }
 
@@ -51,18 +51,21 @@ void GlfwMapDialog::timerEvent(QTimerEvent *e) {
                         "The controller you were using was disconnected. Reconnect it please.",
                         QMessageBox::Ok, this).exec();
             KILL_TIMER(_joyTimerId);
-            exit(1);
+            close();
             return;
         }
         if (row >= 0) {
             int axisCount, buttonCount;
-            const float *axes = glfwGetJoystickAxes(*_controllerId, &axisCount);
-            const unsigned char *buttons = glfwGetJoystickButtons(*_controllerId, &buttonCount);
+            const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
+            const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
             //TODO
-            if (row < _map.axisCount()) {
+            if (row < _map->axisCount()) {
                 for (int i = 0; i < axisCount; i++) {
-                    if (qAbs(axes[i]) > 0.7) {
-                        _map.AxisList[row].GlfwIndex = i;
+                    float abs = qAbs(axes[i]);
+                    //axes may default to 1, -1, or 0 so I need to get tricky
+                    if ((abs < 0.9) & (abs > 0.7)) {
+                        qDebug() << axes[i];
+                        _map->AxisList[row].GlfwIndex = i;
                         ui->tableWidget->setItem(row, 2, new QTableWidgetItem(LABEL_AXIS + QString::number(i)));
                         break;
                     }
@@ -71,7 +74,7 @@ void GlfwMapDialog::timerEvent(QTimerEvent *e) {
             else {
                 for (int i = 0; i < buttonCount; i++) {
                     if (buttons[i] == 1) {
-                        _map.ButtonList[row - _map.axisCount()].GlfwIndex = i;
+                        _map->ButtonList[row - _map->axisCount()].GlfwIndex = i;
                         ui->tableWidget->setItem(row, 2, new QTableWidgetItem(LABEL_BUTTON + QString::number(i)));
                         break;
                     }
@@ -87,14 +90,14 @@ void GlfwMapDialog::populateTable() {
     ui->tableWidget->setColumnCount(4);
     ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "Type" << "Function" << "Binding" << "");
     if (_map != NULL) {
-        int axisCount = _map.axisCount();
-        int buttonCount = _map.buttonCount();
+        int axisCount = _map->axisCount();
+        int buttonCount = _map->buttonCount();
         ui->tableWidget->setRowCount(axisCount + buttonCount);
         for(int i = 0; i < axisCount; i++) {
             ui->tableWidget->setItem(i, 0, new QTableWidgetItem(LABEL_AXIS));
-            ui->tableWidget->setItem(i, 1, new QTableWidgetItem(_map.AxisList[i].DisplayName));
-            if (_map.AxisList[i].isMapped()) {
-                const int mapIndex = _map.AxisList[i].GlfwIndex;
+            ui->tableWidget->setItem(i, 1, new QTableWidgetItem(_map->AxisList[i].DisplayName));
+            if (_map->AxisList[i].isMapped()) {
+                const int mapIndex = _map->AxisList[i].GlfwIndex;
                 ui->tableWidget->setItem(i, 2, new QTableWidgetItem(LABEL_AXIS + QString::number(mapIndex)));
             }
             else {
@@ -104,9 +107,9 @@ void GlfwMapDialog::populateTable() {
         }
         for(int i = 0; i < buttonCount; i++) {
             ui->tableWidget->setItem(i + axisCount, 0, new QTableWidgetItem(LABEL_BUTTON));
-            ui->tableWidget->setItem(i + axisCount, 1, new QTableWidgetItem(_map.ButtonList[i].DisplayName));
-            if (_map.ButtonList[i].isMapped()) {
-                const int mapIndex = _map.ButtonList[i].GlfwIndex;
+            ui->tableWidget->setItem(i + axisCount, 1, new QTableWidgetItem(_map->ButtonList[i].DisplayName));
+            if (_map->ButtonList[i].isMapped()) {
+                const int mapIndex = _map->ButtonList[i].GlfwIndex;
                 ui->tableWidget->setItem(i + axisCount, 2, new QTableWidgetItem(LABEL_BUTTON + QString::number(mapIndex)));
             }
             else {
@@ -119,11 +122,11 @@ void GlfwMapDialog::populateTable() {
 
 void GlfwMapDialog::tableCellClicked(int row, int column) {
     if (column == 3) {
-        if (row < _map.axisCount()) {
-            _map.AxisList[row].reset();
+        if (row < _map->axisCount()) {
+            _map->AxisList[row].reset();
         }
         else {
-            _map.ButtonList[row - _map.axisCount()].reset();
+            _map->ButtonList[row - _map->axisCount()].reset();
         }
         ui->tableWidget->setItem(row, 2, new QTableWidgetItem(LABEL_NOT_BOUNT));
     }
@@ -132,7 +135,7 @@ void GlfwMapDialog::tableCellClicked(int row, int column) {
 void GlfwMapDialog::buttonClicked(QAbstractButton *button) {
     switch (ui->buttonBox->standardButton(button)) {
     case QDialogButtonBox::Reset:
-        _map.reset();
+        _map->reset();
         populateTable();
         break;
     case QDialogButtonBox::Save:

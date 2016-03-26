@@ -5,15 +5,10 @@
 
 using namespace Soro;
 
-GlfwMap::~GlfwMap() {
-    if (AxisList != NULL) delete AxisList;
-    if (ButtonList != NULL) delete ButtonList;
-}
-
 bool GlfwMap::loadMapping(QFile& file) {
     IniParser parser;
     if (!parser.load(file)
-            || (getClassName() != parser.value(CONFIG_TAG_CLASS_TYPE))) return false;
+            || (_classname != parser.value(CONFIG_TAG_CLASS_TYPE))) return false;
     ControllerName = parser.value(CONFIG_TAG_CONTROLLER_NAME);
     int axes = axisCount();
     for(int i = 0; i < axes; i++) {
@@ -48,7 +43,7 @@ void GlfwMap::reset() {
 bool GlfwMap::writeMapping(QFile& file) {
     if (!isMapped()) return false;
     IniParser parser;
-    parser.insert(CONFIG_TAG_CLASS_TYPE, getClassName());
+    parser.insert(CONFIG_TAG_CLASS_TYPE, _classname);
     parser.insert(CONFIG_TAG_CONTROLLER_NAME, ControllerName);
     int axes = axisCount();
     for (int i = 0; i < axes; i++) {

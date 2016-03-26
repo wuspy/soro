@@ -9,6 +9,7 @@ namespace Soro {
      */
     struct ArmGlfwMap: public GlfwMap {
         ArmGlfwMap();
+        ~ArmGlfwMap();
         int axisCount() const;
         int buttonCount() const;
 
@@ -24,9 +25,6 @@ namespace Soro {
         const GlfwMap::ButtonMapItem& wristUpButton() const;
         const GlfwMap::ButtonMapItem& wristDownButton() const;
         const GlfwMap::ButtonMapItem& stowButton() const;
-
-    protected:
-        QString getClassName() const;
     };
 }
 

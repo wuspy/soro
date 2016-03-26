@@ -12,6 +12,8 @@
 #include "soroutil.h"
 #include "serialinterop.h"
 #include "commonini.h"
+#include "drivemessage.h"
+#include "gimbalmessage.h"
 
 #include <stdio.h>
 
