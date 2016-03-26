@@ -12,6 +12,7 @@
 #   define SERIAL_GETC(s, c) s.getChar(&c)
 #   define SERIAL_PUTC(s, c) s.putChar(c)
 #   define SERIAL_READABLE(s) s.bytesAvailable() > 0
+#   define SERIAL_IS_OPEN(s) s.isOpen()
 #   define SERIAL_OBJECT QSerialPort
 #endif
 #ifdef TARGET_LPC1768
@@ -19,6 +20,7 @@
 #   define SERIAL_GETC(s, c) c = s.getc()
 #   define SERIAL_PUTC(s, c) s.putc(c)
 #   define SERIAL_READABLE(s) s.readable()
+#   define SERIAL_IS_OPEN(s) s.writeable()
 #   define SERIAL_OBJECT Serial
 #endif
 

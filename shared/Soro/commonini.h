@@ -7,19 +7,19 @@
 #include "logger.h"
 
 #define SOROINI_PATH "config/soro.ini"
-#define SOROINI_TAG_SERVER_ADDRESS "serveraddress"
-#define SOROINI_TAG_SERVER_SIDE "serverside"
-#define SOROINI_TAG_ARM_SERVER_PORT "armchannelserverport"
-#define SOROINI_TAG_DRIVE_SERVER_PORT "drivechannelserverport"
-#define SOROINI_TAG_GIMBAL_SERVER_PORT "gimbalchannelserverport"
-#define SOROINI_TAG_SHARED_SERVER_PORT "sharedchannelserverport"
+#define SOROINI_TAG_SERVER_ADDRESS "ServerAddress"
+#define SOROINI_TAG_SERVER_SIDE "ServerSide"
+#define SOROINI_TAG_ARM_SERVER_PORT "ArmChannelServerPort"
+#define SOROINI_TAG_DRIVE_SERVER_PORT "DriveChannelServerPort"
+#define SOROINI_TAG_GIMBAL_SERVER_PORT "GimbalChannelServerPort"
+#define SOROINI_TAG_SHARED_SERVER_PORT "SharedChannelServerPort"
 #define SOROINI_TAG_VIDEO_SERVER_ADDRESS "videoserveraddress"
-#define SOROINI_TAG_ARM_VIDEO_PORT "armvideoport"
-#define SOROINI_TAG_DRIVE_VIDEO_PORT "drivevideoport"
-#define SOROINI_TAG_GIMBAL_VIDEO_PORT "gimbalvideoport"
-#define SOROINI_TAG_LOG_LEVEL "loglevel"
-#define SOROINI_VALUE_ROVER_SERVER "rover"
-#define SOROINI_VALUE_MC_SERVER "missioncontrol"
+#define SOROINI_TAG_ARM_VIDEO_PORT "ArmVideoPort"
+#define SOROINI_TAG_DRIVE_VIDEO_PORT "DriveVideoPort"
+#define SOROINI_TAG_GIMBAL_VIDEO_PORT "GimbalVideoPort"
+#define SOROINI_TAG_LOG_LEVEL "LogLevel"
+#define SOROINI_VALUE_ROVER_SERVER "Rover"
+#define SOROINI_VALUE_MC_SERVER "Missioncontrol"
 #define SOROINI_VALUE_LOG_LEVEL_DEBUG "debug"
 #define SOROINI_VALUE_LOG_LEVEL_INFO "information"
 #define SOROINI_VALUE_LOG_LEVEL_WARN "warning"
@@ -109,6 +109,11 @@ struct SoroIniConfig {
             return false;
         }
         GimbalChannelPort = tmp;
+        if (!configParser.valueAsInt(SOROINI_TAG_SHARED_SERVER_PORT, &tmp)) {
+            *err = "No shared channel port found in configuration file";
+            return false;
+        }
+        SharedChannelPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_ARM_VIDEO_PORT, &tmp)) {
             *err = "No arm video port found in configuration file";
             return false;

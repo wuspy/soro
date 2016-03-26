@@ -40,7 +40,7 @@ McMainWindow::McMainWindow(QWidget *parent) :
 
     _log = new Logger(this);
     _log->setLogfile(APPPATH + "/mission_control.log");
-    //_log->RouteToQtLogger = true;
+    _log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -274,6 +274,9 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             exit(1); return;
         }
         LOG_I("Configuration has been loaded successfully");
+
+        if (_controlChannel != NULL) _controlChannel->open();
+        _sharedChannel->open();
 
         /***************************************
          ***************************************/

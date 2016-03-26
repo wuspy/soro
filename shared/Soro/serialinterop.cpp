@@ -16,7 +16,7 @@ using namespace Soro;
 /* Writes a message through the serial port
  */
 void SerialChannel::sendMessage(const char* message, int size) {
-    if (size < 250) {
+    if ((size < 250) & SERIAL_IS_OPEN((*_serial))) {
         SERIAL_PUTC((*_serial), SERIAL_MESSAGE_HEADER);
         SERIAL_PUTC((*_serial), (unsigned char)size);
         for (int i = 0; i < size; i++) {
