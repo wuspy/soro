@@ -4,11 +4,11 @@
 extern "C" void mbed_reset();
 #endif
 
-#define __WAITING_FOR_HEADER -2
-#define __WAITING_FOR_SIZE -1
-#define __WAITING_FOR_FOOTER -3
+#define WAITING_FOR_HEADER -2
+#define WAITING_FOR_SIZE -1
+#define WAITING_FOR_FOOTER -3
 
-#define IDLE_CONNECTION_TIMEOUT 1000
+#define IDLE_CONNECTION_TIMEOUT 2000
 #define HEARTBEAT_INTERVAL 250
 
 using namespace Soro;
@@ -34,13 +34,13 @@ int SerialChannel::read() {
     int read = 0;
     //No, I did not forget to break these case labels
     switch (_readIndex) {
-    case __WAITING_FOR_HEADER:
+    case WAITING_FOR_HEADER:
         char head;
         SERIAL_GETC((*_serial), head);
         read++;
         switch ((unsigned char)head) {
         case SERIAL_MESSAGE_HEADER:
-            _readIndex = __WAITING_FOR_SIZE;
+            _readIndex = WAITING_FOR_SIZE;
             break;
         case SERIAL_MESSAGE_HANDSHAKE:
             sendMessage(_name, strlen(_name));
@@ -53,7 +53,7 @@ int SerialChannel::read() {
             #endif
             return read;
         }
-    case __WAITING_FOR_SIZE:
+    case WAITING_FOR_SIZE:
         char size;
         if (SERIAL_READABLE((*_serial))) {
             SERIAL_GETC((*_serial), size);
@@ -70,8 +70,8 @@ int SerialChannel::read() {
             }
             else return read;
         }
-        _readIndex = __WAITING_FOR_FOOTER;
-    case __WAITING_FOR_FOOTER:
+        _readIndex = WAITING_FOR_FOOTER;
+    case WAITING_FOR_FOOTER:
         if (SERIAL_READABLE((*_serial))) {
             char foot;
             SERIAL_GETC((*_serial), foot);
@@ -79,7 +79,7 @@ int SerialChannel::read() {
             if ((unsigned char)foot == SERIAL_MESSAGE_FOOTER) {
                 _messageAvailable = true;
             }
-            _readIndex = __WAITING_FOR_HEADER;
+            _readIndex = WAITING_FOR_HEADER;
         }
         break;
     }
@@ -252,7 +252,7 @@ void SerialChannel::process() {
     }
 }
 
-bool SerialChannel::getAvailableMessage(char*& outMessage, int& outSize) {
+bool SerialChannel::getAvailableMessage(const char*& outMessage, int& outSize) {
     if (_messageAvailable) {
         outMessage = _buffer;
         outSize = _size;

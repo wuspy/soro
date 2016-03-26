@@ -192,11 +192,15 @@ void RoverWorker::armChannelMessageReceived(const QByteArray &message) {
 }
 
 void RoverWorker::driveChannelMessageReceived(const QByteArray &message) {
-    _driveControllerSerial->sendMessage(message.constData(), message.size());
+    if (DriveMessage::hasValidHeader(message.constData())) {
+        _driveControllerSerial->sendMessage(message.constData(), message.size());
+    }
 }
 
 void RoverWorker::gimbalChannelMessageReceived(const QByteArray &message) {
-    _gimbalControllerSerial->sendMessage(message.constData(), message.size());
+    if (GimbalMessage::hasValidHeader(message.constData())) {
+        _gimbalControllerSerial->sendMessage(message.constData(), message.size());
+    }
 }
 
 void RoverWorker::sharedChannelMessageReceived(const QByteArray &message) {

@@ -57,15 +57,21 @@ namespace Soro {
             if (mapping.forwardAxis().isMapped() & mapping.turnAxis().isMapped()) {
                 signed char forward = joyAxisToByte(mapping.forwardAxis().value(glfwAxes, axisCount));
                 signed char turn = joyAxisToByte(mapping.turnAxis().value(glfwAxes, axisCount));
-                //TODO
+                double angle = qAtan((double)forward / (double)turn);
+                int diff = qAbs(turn);
+                double midScale = 0.6 * (diff/100.0);
+                message[DRIVE_MESSAGE_FR_INDEX] = -turn;
             }
             else {
                 signed char leftDrive = joyAxisToByte(mapping.leftWheelsAxis().value(glfwAxes, axisCount));
                 signed char rightDrive = joyAxisToByte(mapping.rightWheelsAxis().value(glfwAxes, axisCount));
+                //scale the middle wheels by 0.6 at full turn
+                int diff = qAbs((int)(leftDrive - rightDrive));
+                double midScale = 0.6 * (diff/200.0);
                 message[DRIVE_MESSAGE_FL_INDEX] = leftDrive;
                 message[DRIVE_MESSAGE_FR_INDEX] = rightDrive;
-                message[DRIVE_MESSAGE_ML_INDEX] = leftDrive;
-                message[DRIVE_MESSAGE_MR_INDEX] = rightDrive;
+                message[DRIVE_MESSAGE_ML_INDEX] = (signed char)(leftDrive - (midScale * leftDrive));
+                message[DRIVE_MESSAGE_MR_INDEX] = (signed char)(rightDrive - (midScale * rightDrive));
                 message[DRIVE_MESSAGE_BL_INDEX] = leftDrive;
                 message[DRIVE_MESSAGE_BR_INDEX] = rightDrive;
             }
