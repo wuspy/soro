@@ -13,15 +13,15 @@
 #define MCINI_PATH "config/mission_control.ini"
 #define GLFWINI_PATH "config/last_glfw_config.ini"
 #define MCINI_TAG_LAYOUT "Layout"
-#define MCINI_VALUE_LAYOUT_ARM "Arm"
-#define MCINI_VALUE_LAYOUT_DRIVE "Drive"
-#define MCINI_VALUE_LAYOUT_GIMBAL "Gimbal"
-#define MCINI_VALUE_LAYOUT_SPECTATOR "Spectator"
+#define MCINI_VALUE_LAYOUT_ARM "arm"
+#define MCINI_VALUE_LAYOUT_DRIVE "drive"
+#define MCINI_VALUE_LAYOUT_GIMBAL "gimbal"
+#define MCINI_VALUE_LAYOUT_SPECTATOR "spectator"
 #define MCINI_TAG_COMM_HOST_ADDRESS "MainHostAddress"
 #define MCINI_TAG_VIDEO_HOST_ADDRESS "VideoHostAddress"
 #define MCINI_TAG_INPUT_MODE "InputMode"
-#define MCINI_VALUE_USE_GLFW "GLFW"
-#define MCINI_VALUE_USE_MASTER "MasterArm"
+#define MCINI_VALUE_USE_GLFW "glfw"
+#define MCINI_VALUE_USE_MASTER "masterarm"
 
 #define CONTROL_SEND_INTERVAL 50
 
@@ -178,16 +178,16 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             LOG_I("Using default host for video receiving");
             videoHost = QHostAddress::Any;
         }
-        QString modeStr =  configParser.value(MCINI_TAG_LAYOUT);
-        if (modeStr == MCINI_VALUE_LAYOUT_ARM) {
+        QString modeStr = configParser.value(MCINI_TAG_LAYOUT);
+        if (QString::compare(modeStr, MCINI_VALUE_LAYOUT_ARM, Qt::CaseInsensitive) == 0) {
             _mode = ArmLayoutMode;
             QString inputMode = configParser.value(MCINI_TAG_INPUT_MODE);
-            if (inputMode == MCINI_VALUE_USE_GLFW) {
+            if (QString::compare(inputMode, MCINI_VALUE_USE_GLFW, Qt::CaseInsensitive) == 0) {
                 //use gamepad to control the arm
                 _armInputMap = new ArmGlfwMap();
                 initForGLFW(_armInputMap);
             }
-            else if (inputMode == MCINI_VALUE_USE_MASTER) {
+            else if (QString::compare(inputMode, MCINI_VALUE_USE_MASTER, Qt::CaseInsensitive) == 0) {
                 //Use the master/slave arm input method
                 LOG_I("Input mode F57F17set to Master Arm");
                 _inputMode = MasterArm;
@@ -211,7 +211,7 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             ui->videoPane2->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
             _videoWindow->getVideoPane()->setCameraName(ARM_CAMERA_DISPLAY_NAME);
         }
-        else if (modeStr == MCINI_VALUE_LAYOUT_DRIVE) {
+        else if ((QString::compare(modeStr, MCINI_VALUE_LAYOUT_DRIVE, Qt::CaseInsensitive) == 0)) {
             _mode = DriveLayoutMode;
             _driveInputMap = new DriveGlfwMap();
             initForGLFW(_driveInputMap);
@@ -221,7 +221,7 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
             _videoWindow->getVideoPane()->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
         }
-        else if (modeStr == MCINI_VALUE_LAYOUT_GIMBAL) {
+        else if (QString::compare(modeStr, MCINI_VALUE_LAYOUT_GIMBAL, Qt::CaseInsensitive) == 0) {
             _mode = GimbalLayoutMode;
             _gimbalInputMap = new GimbalGlfwMap();
             initForGLFW(_gimbalInputMap);
@@ -231,7 +231,7 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
             ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
             _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         }
-        else if (modeStr == MCINI_VALUE_LAYOUT_SPECTATOR) {
+        else if (QString::compare(modeStr, MCINI_VALUE_LAYOUT_SPECTATOR, Qt::CaseInsensitive) == 0) {
             _mode = SpectatorLayoutMode;
             ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
             ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);

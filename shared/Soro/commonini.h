@@ -19,12 +19,12 @@
 #define SOROINI_TAG_GIMBAL_VIDEO_PORT "GimbalVideoPort"
 #define SOROINI_TAG_LOG_LEVEL "LogLevel"
 #define SOROINI_VALUE_ROVER_SERVER "Rover"
-#define SOROINI_VALUE_MC_SERVER "Missioncontrol"
-#define SOROINI_VALUE_LOG_LEVEL_DEBUG "debug"
-#define SOROINI_VALUE_LOG_LEVEL_INFO "information"
-#define SOROINI_VALUE_LOG_LEVEL_WARN "warning"
-#define SOROINI_VALUE_LOG_LEVEL_ERROR "error"
-#define SOROINI_VALUE_LOG_LEVEL_DISABLED "disabled"
+#define SOROINI_VALUE_MC_SERVER "MissionControl"
+#define SOROINI_VALUE_LOG_LEVEL_DEBUG "Debug"
+#define SOROINI_VALUE_LOG_LEVEL_INFO "Information"
+#define SOROINI_VALUE_LOG_LEVEL_WARN "Warning"
+#define SOROINI_VALUE_LOG_LEVEL_ERROR "Error"
+#define SOROINI_VALUE_LOG_LEVEL_DISABLED "Disabled"
 
 namespace Soro {
 
@@ -62,8 +62,8 @@ struct SoroIniConfig {
             *err = "No server address found in configuration file";
             return false;
         }
-        QString serverSide = configParser.value(SOROINI_TAG_SERVER_SIDE).toLower();
-        if (serverSide == SOROINI_VALUE_ROVER_SERVER) {
+        QString serverSide = configParser.value(SOROINI_TAG_SERVER_SIDE);
+        if (QString::compare(serverSide, SOROINI_VALUE_ROVER_SERVER, Qt::CaseInsensitive) == 0) {
             ServerSide = RoverEndPoint;
             //we cannot know were to send the video when we act as the server.
             //wait for mission control to connect first, then send it to that address.
@@ -77,17 +77,17 @@ struct SoroIniConfig {
                 VideoServerAddress = ServerAddress;
             }
         }
-        QString logLevel = configParser.value(SOROINI_TAG_LOG_LEVEL).toLower();
-        if (logLevel == SOROINI_VALUE_LOG_LEVEL_DEBUG) {
+        QString logLevel = configParser.value(SOROINI_TAG_LOG_LEVEL);
+        if (QString::compare(logLevel, SOROINI_VALUE_LOG_LEVEL_DEBUG, Qt::CaseInsensitive) == 0) {
             LogLevel = LOG_LEVEL_DEBUG;
         }
-        else if (logLevel == SOROINI_VALUE_LOG_LEVEL_INFO) {
-            LogLevel = LOG_LEVEL_INFORMATION;
+        else if (QString::compare(logLevel, SOROINI_VALUE_LOG_LEVEL_WARN, Qt::CaseInsensitive) == 0) {
+            LogLevel = LOG_LEVEL_WARN;
         }
-        else if (logLevel == SOROINI_VALUE_LOG_LEVEL_ERROR) {
+        else if (QString::compare(logLevel, SOROINI_VALUE_LOG_LEVEL_ERROR, Qt::CaseInsensitive) == 0) {
             LogLevel = LOG_LEVEL_ERROR;
         }
-        else if (logLevel == SOROINI_VALUE_LOG_LEVEL_DISABLED) {
+        else if (QString::compare(logLevel, SOROINI_VALUE_LOG_LEVEL_DISABLED, Qt::CaseInsensitive) == 0) {
             LogLevel = LOG_LEVEL_DISABLED;
         }
         else {
