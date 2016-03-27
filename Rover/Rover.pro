@@ -14,7 +14,8 @@ SOURCES += main.cpp \
     ../shared/Soro/serialinterop.cpp \
     ../shared/Soro/logger.cpp \
     ../shared/Soro/iniparser.cpp \
-    roverworker.cpp
+    roverworker.cpp \
+    ../shared/Soro/serialchannel2.cpp
 
 HEADERS += \
     ../shared/Soro/armmessage.h \
@@ -27,7 +28,8 @@ HEADERS += \
     ../shared/Soro/logger.h \
     ../shared/Soro/iniparser.h \
     ../shared/Soro/commonini.h \
-    roverworker.h
+    roverworker.h \
+    ../shared/Soro/serialchannel2.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro
