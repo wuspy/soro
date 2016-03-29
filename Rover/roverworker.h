@@ -10,7 +10,7 @@
 #include "logger.h"
 #include "armmessage.h"
 #include "soroutil.h"
-#include "serialinterop.h"
+#include "serialchannel2.h"
 #include "commonini.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
@@ -35,9 +35,9 @@ namespace Rover {
         Channel *_driveChannel = NULL;
         Channel *_gimbalChannel = NULL;
         Channel *_sharedChannel = NULL;
-        SerialChannel *_armControllerSerial = NULL;
-        SerialChannel *_driveControllerSerial = NULL;
-        SerialChannel *_gimbalControllerSerial = NULL;
+        SerialChannel2 *_armControllerSerial = NULL;
+        SerialChannel2 *_driveControllerSerial = NULL;
+        SerialChannel2 *_gimbalControllerSerial = NULL;
 
         SoroIniConfig _soroIniConfig;
 

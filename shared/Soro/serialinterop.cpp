@@ -231,7 +231,7 @@ SerialChannel::SerialChannel(const char *name, PinName tx, PinName rx, int ms_in
     _messageAvailable = false;
     _led = new DigitalOut(LED4);
     _serial = new Serial(tx, rx);
-    _serial->baud(9600);
+    _serial->baud(115200);
     _serial->format(8, SerialBase::None, 1);
 }
 
@@ -252,7 +252,7 @@ void SerialChannel::process() {
     }
 }
 
-bool SerialChannel::getAvailableMessage(const char*& outMessage, int& outSize) {
+bool SerialChannel::getAvailableMessage(char*& outMessage, int& outSize) {
     if (_messageAvailable) {
         outMessage = _buffer;
         outSize = _size;

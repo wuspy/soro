@@ -40,7 +40,7 @@ McMainWindow::McMainWindow(QWidget *parent) :
 
     _log = new Logger(this);
     _log->setLogfile(APPPATH + "/mission_control.log");
-    _log->RouteToQtLogger = true;
+    //_log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");

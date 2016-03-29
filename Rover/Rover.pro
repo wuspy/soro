@@ -14,8 +14,7 @@ SOURCES += main.cpp \
     ../shared/Soro/serialinterop.cpp \
     ../shared/Soro/logger.cpp \
     ../shared/Soro/iniparser.cpp \
-    roverworker.cpp \
-    ../shared/Soro/serialchannel2.cpp
+    roverworker.cpp
 
 HEADERS += \
     ../shared/Soro/armmessage.h \

@@ -64,9 +64,9 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         LOG_I("All network channels initialized successfully");
 
         //create serial (mbed) channels
-        _armControllerSerial = new SerialChannel(ARM_SERIAL_CHANNEL_NAME, this, _log);
-        _driveControllerSerial = new SerialChannel(DRIVE_SERIAL_CHANNEL_NAME, this, _log);
-        _gimbalControllerSerial = new SerialChannel(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
+        //_armControllerSerial = new SerialChannel2(ARM_SERIAL_CHANNEL_NAME, this, _log);
+        _driveControllerSerial = new SerialChannel2(DRIVE_SERIAL_CHANNEL_NAME, this, _log);
+        //_gimbalControllerSerial = new SerialChannel2(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
         LOG_I("All serial channels initialized successfully");
 
         //observers for network channels message received
@@ -95,12 +95,12 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         connect(_gimbalControllerSerial, SIGNAL(messageReceived(const char*,int)),
                 this, SLOT(gimbalControllerMessageReceived(const char*,int)));
         //observers for serial (mbed) connectivity state changes
-        connect(_armControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
-                this, SLOT(armControllerChannelStateChanged(SerialChannel::State)));
+        //connect(_armControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
+        //        this, SLOT(armControllerChannelStateChanged(SerialChannel::State)));
         connect(_driveControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
                 this, SLOT(driveControllerChannelStateChanged(SerialChannel::State)));
-        connect(_gimbalControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
-                this, SLOT(gimbalControllerChannelStateChanged(SerialChannel::State)));
+        //connect(_gimbalControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
+        //        this, SLOT(gimbalControllerChannelStateChanged(SerialChannel::State)));
 
         _armChannel->open();
         _driveChannel->open();
@@ -187,19 +187,19 @@ void RoverWorker::sharedChannelStateChanged(Channel::State state) {
 
 void RoverWorker::armChannelMessageReceived(const QByteArray &message) {
     if (ArmMessage::messageType(message) != ArmMessage::INVALID) {
-        _armControllerSerial->sendMessage(message.constData(), message.size());
+        _armControllerSerial->sendMessage(message.constData());
     }
 }
 
 void RoverWorker::driveChannelMessageReceived(const QByteArray &message) {
     if (DriveMessage::hasValidHeader(message.constData())) {
-        _driveControllerSerial->sendMessage(message.constData(), message.size());
+        _driveControllerSerial->sendMessage(message.constData());
     }
 }
 
 void RoverWorker::gimbalChannelMessageReceived(const QByteArray &message) {
     if (GimbalMessage::hasValidHeader(message.constData())) {
-        _gimbalControllerSerial->sendMessage(message.constData(), message.size());
+        _gimbalControllerSerial->sendMessage(message.constData());
     }
 }
 

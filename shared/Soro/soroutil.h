@@ -22,10 +22,10 @@ namespace Soro {
     }
 
     static void configureMbedSerial(QSerialPort* port) {
-        port->setBaudRate(QSerialPort::Baud9600);
+        port->setBaudRate(QSerialPort::Baud115200);
+        port->setDataBits(QSerialPort::Data8);
         port->setParity(QSerialPort::NoParity);
         port->setStopBits(QSerialPort::OneStop);
-        port->setDataBits(QSerialPort::Data8);
     }
 }
 
