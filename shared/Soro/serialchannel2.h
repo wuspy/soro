@@ -124,6 +124,7 @@ namespace Soro {
                         }
                         else {
                             LOG_I("Got incorrect name " + QString::fromLatin1(_buffer + 2));
+                            START_TIMER(_resetConnectionTimerId, 50);
                             return;
                         }
                     }
