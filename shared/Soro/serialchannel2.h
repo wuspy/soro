@@ -250,6 +250,9 @@ namespace Soro {
                 }
                 if (_serial->isOpen()) _serial->close();
                 for (;_serialHandshakeIndex < _serialPorts.size(); _serialHandshakeIndex++) {
+#ifdef __linux__
+                if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("ttyACM")) continue;
+#endif
                     _serial->setPort(_serialPorts[_serialHandshakeIndex]);
                     LOG_D("Trying serial port " + _serial->portName());
                     if (_serial->open(QIODevice::ReadWrite)) {
