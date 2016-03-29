@@ -28,7 +28,9 @@ HEADERS += \
     ../shared/Soro/iniparser.h \
     ../shared/Soro/commonini.h \
     roverworker.h \
-    ../shared/Soro/serialchannel2.h
+    ../shared/Soro/serialchannel2.h \
+    ../shared/Soro/drivemessage2.h \
+    ../shared/Soro/serialchannel3.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro

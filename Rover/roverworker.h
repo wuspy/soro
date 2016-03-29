@@ -10,7 +10,7 @@
 #include "logger.h"
 #include "armmessage.h"
 #include "soroutil.h"
-#include "serialchannel2.h"
+#include "serialchannel3.h"
 #include "commonini.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
@@ -35,9 +35,9 @@ namespace Rover {
         Channel *_driveChannel = NULL;
         Channel *_gimbalChannel = NULL;
         Channel *_sharedChannel = NULL;
-        SerialChannel2 *_armControllerSerial = NULL;
-        SerialChannel2 *_driveControllerSerial = NULL;
-        SerialChannel2 *_gimbalControllerSerial = NULL;
+        SerialChannel3 *_armControllerSerial = NULL;
+        SerialChannel3 *_driveControllerSerial = NULL;
+        SerialChannel3 *_gimbalControllerSerial = NULL;
 
         SoroIniConfig _soroIniConfig;
 
@@ -54,13 +54,9 @@ namespace Rover {
         void gimbalChannelStateChanged(Channel::State state);
         void sharedChannelStateChanged(Channel::State state);
 
-        void armControllerMessageReceived(const char *message, int size);
-        void driveControllerMessageReceived(const char *message, int size);
-        void gimbalControllerMessageReceived(const char *message, int size);
-
-        void armControllerChannelStateChanged(SerialChannel::State state);
-        void driveControllerChannelStateChanged(SerialChannel::State state);
-        void gimbalControllerChannelStateChanged(SerialChannel::State state);
+        void armControllerChannelStateChanged(SerialChannel3::State state);
+        void driveControllerChannelStateChanged(SerialChannel3::State state);
+        void gimbalControllerChannelStateChanged(SerialChannel3::State state);
 
     protected:
         void timerEvent(QTimerEvent *e);
