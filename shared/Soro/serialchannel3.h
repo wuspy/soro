@@ -39,7 +39,7 @@ extern "C" void mbed_reset();
 #define SERIAL_LOG_HEADER (unsigned char)251
 #define SERIAL_MESSAGE_FOOTER (unsigned char)250
 
-#define SERIAL_IDLE_CONNECTION_TIMEOUT 3000
+#define SERIAL_IDLE_CONNECTION_TIMEOUT 2000
 #define SERIAL_HEARTBEAT_INTERVAL 1000
 
 using namespace std;
@@ -73,17 +73,21 @@ namespace Soro {
      * It will handle finding the correct tty device (Qt side) and monitoring the connection to ensure it is still
      * alive (if a connection appear to be dead, the mbed will reset itself)
      */
-#ifdef QT_CORE_LIB
+#ifdef QT_CORE_LIB //////////////////////////////////
     class SerialChannel3: public QObject {
         Q_OBJECT
-#endif
-#ifdef TARGET_LPC1768
+#endif /////////////////////////////////////////////
+#ifdef TARGET_LPC1768 //////////////////////////////
     class SerialChannel3 {
-#endif
+#endif /////////////////////////////////////////////
     public:
-        /* Writes a message verbatim through the serial port
+        /* Writes a message through the serial por
+         * Messages are not null terminated, so the length must also be specified
          */
         inline void sendMessage(const char* message, int length) {
+            #ifdef TARGET_LPC1768
+            if (!_sentName) return;
+            #endif
              sendMessage(message, length, SERIAL_MESSAGE_HEADER);
         }
 
@@ -94,8 +98,10 @@ namespace Soro {
         const char *_name;
         SERIAL_OBJECT *_serial;
 
+        /* Writes a message through the serial port with the specified type header
+         */
         void sendMessage(const char* message, int length, unsigned char header) {
-            if ((SERIAL_WRITEABLE(_serial)) & (length < 253)) {
+            if (length < 253) {
                 SERIAL_PUTCHAR(_serial, (char)header);
                 SERIAL_PUTCHAR(_serial, (char)((unsigned char)length + 3));
                 for (int i = 0; i < length; i++) {
@@ -105,9 +111,20 @@ namespace Soro {
             }
         }
 
-#ifdef QT_CORE_LIB
+        /* Called when a valid message is received.
+         */
+        inline void resetMessageWatchdog() {
+            #ifdef TARGET_LPC1768 ///////////////////////////////
+            _lastReadTime = time(NULL);
+            #endif //////////////////////////////////////////////
+            #ifdef QT_CORE_LIB //////////////////////////////////
+            _lastReadTime = QDateTime::currentMSecsSinceEpoch();
+            #endif //////////////////////////////////////////////
+        }
+
+    #ifdef QT_CORE_LIB ///////////////////////////////////////////
     private slots:
-#endif
+    #endif ///////////////////////////////////////////////////////
         void readSerial() {
             while (SERIAL_READABLE(_serial)) {
                 SERIAL_GETCHAR(_serial, _buffer[_bufferLength]);
@@ -115,30 +132,34 @@ namespace Soro {
                 if (_bufferLength == 256) {
                     LOG_E("Buffer overflow while reading message");
                     _bufferLength = 0;
-                    return;
+                    continue;
                 }
                 if ((unsigned char)_buffer[_bufferLength - 1] == SERIAL_MESSAGE_FOOTER) {
                     //a whole message has been read
                     switch ((unsigned char)_buffer[0]) {
                     case SERIAL_HEARTBEAT_HEADER:
+                        resetMessageWatchdog();
                         break;
-#ifdef TARGET_LPC1768
+                    #ifdef TARGET_LPC1768 ////////////////////////////////////////
                     case SERIAL_MESSAGE_HEADER:
-                        if (_callback != NULL & (_bufferLength == (int)(unsigned char)_buffer[1])) { //verify length
-                            _callback(_buffer, _bufferLength);
+                        if (_bufferLength == (int)(unsigned char)_buffer[1]) { //verify length
+                            if (_callback != NULL) {
+                                _callback(_buffer + 2, _bufferLength - 3);
+                            }
+                            resetMessageWatchdog();
                         }
                         break;
                     case SERIAL_HANDSHAKE_HEADER:
                         sendMessage(_name, strlen(_name) + 1, SERIAL_NAME_HEADER);
+                        _sentName = true;
+                        resetMessageWatchdog();
                         break;
-                    default: return;
-                    }
-                    _lastReadTime = time(NULL);
-#endif
-#ifdef  QT_CORE_LIB
+                    #endif ////////////////////////////////////////////////////////
+                    #ifdef  QT_CORE_LIB ///////////////////////////////////////////
                     case SERIAL_MESSAGE_HEADER:
-                        if (_bufferLength == (int)(unsigned char)_buffer[1]) { //verify length
-                            emit messageReceived(_buffer + 2, _bufferLength);
+                        if (_verified && (_bufferLength == (int)(unsigned char)_buffer[1])) { //verify length
+                            emit messageReceived(_buffer + 2, _bufferLength - 3);
+                            resetMessageWatchdog();
                         }
                         break;
                     case SERIAL_NAME_HEADER:
@@ -146,36 +167,40 @@ namespace Soro {
                             if (strcmp(_buffer + 2, _name) == 0) {
                                 LOG_I(_serial->portName() + " is the correct serial port!!!!");
                                 _verified = true;
+                                KILL_TIMER(_handshakeTimerId);
                                 START_TIMER(_heartbeatTimerId, SERIAL_HEARTBEAT_INTERVAL);
                                 _state = ConnectedState;
                                 emit stateChanged(_state);
+                                resetMessageWatchdog();
                             }
                             else {
                                 LOG_I("Got incorrect name " + QString::fromLatin1(_buffer + 2));
                                 START_TIMER(_resetConnectionTimerId, 50);
-                                return;
                             }
                         }
                         else {
                             LOG_W("Got name message from an already verified serial port");
+                            resetMessageWatchdog();
                         }
                         break;
                     case SERIAL_LOG_HEADER:
-                        LOG_I(_buffer + 2);
+                        if (_verified) {
+                            LOG_I(_buffer + 2);
+                            resetMessageWatchdog();
+                        }
                         break;
-                    default: return;
+                    #endif /////////////////////////////////////////////////////////
+                    default: break;
                     }
-                    _lastReadTime = QDateTime::currentMSecsSinceEpoch();
-#endif
                     _bufferLength = 0;
                 }
             }
-        }
+    }
 
-/************************************************************
- ************************************************************
- ************************************************************
- ************************************************************/
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 #ifdef QT_CORE_LIB
 
     public:
@@ -209,10 +234,11 @@ namespace Soro {
         }
 
     private:
-        int _handshakeTimerId = TIMER_INACTIVE;
+        int _searchTimerId = TIMER_INACTIVE;
         int _watchdogTimerId = TIMER_INACTIVE;
         int _heartbeatTimerId = TIMER_INACTIVE;
         int _resetConnectionTimerId = TIMER_INACTIVE;
+        int  _handshakeTimerId = TIMER_INACTIVE;
         QList<QSerialPortInfo> _serialPorts;
         int _serialHandshakeIndex = 0;
         bool _verified = false;
@@ -226,7 +252,9 @@ namespace Soro {
             _bufferLength = 0;
             KILL_TIMER(_heartbeatTimerId);
             KILL_TIMER(_watchdogTimerId);
-            START_TIMER(_handshakeTimerId, 100);
+            KILL_TIMER(_handshakeTimerId);
+            KILL_TIMER(_searchTimerId);
+            START_TIMER(_searchTimerId, 100);
             _verified = false;
             if (_state != ConnectingState) {
                 _state = ConnectingState;
@@ -251,7 +279,7 @@ namespace Soro {
     protected:
         void timerEvent(QTimerEvent *e) {
             QObject::timerEvent(e);
-            if (e->timerId() == _handshakeTimerId) {
+            if (e->timerId() == _searchTimerId) {
                 if (_serialHandshakeIndex >= _serialPorts.size()) {
                     //we have searched all serial ports with no luck (or we're just starting out),
                     //repopulate the serial list and try again
@@ -259,13 +287,16 @@ namespace Soro {
                     _serialPorts = QSerialPortInfo::availablePorts();
                 }
                 if (_serial->isOpen()) _serial->close();
+
                 for (;_serialHandshakeIndex < _serialPorts.size(); _serialHandshakeIndex++) {
-#ifdef __linux__
-                if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("ttyACM")) continue;
-#endif
-#ifdef __APPLE__
-                if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("tty.usbmodem")) continue;
-#endif
+
+                    #ifdef __linux__ ////////////////////////////////////////
+                    if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("ttyACM")) continue;
+                    #endif //////////////////////////////////////////////////
+                    #ifdef __APPLE__ ////////////////////////////////////////
+                    if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("tty.usbmodem")) continue;
+                    #endif //////////////////////////////////////////////////
+
                     _serial->setPort(_serialPorts[_serialHandshakeIndex]);
                     LOG_D("Trying serial port " + _serial->portName());
                     if (_serial->open(QIODevice::ReadWrite)) {
@@ -276,19 +307,23 @@ namespace Soro {
                         _serial->setParity(QSerialPort::NoParity);
                         _serial->setStopBits(QSerialPort::OneStop);
                         _verified = false;
-                        sendMessage(NULL, 0, SERIAL_HANDSHAKE_HEADER);
-                        KILL_TIMER(_handshakeTimerId);
-                        START_TIMER(_watchdogTimerId, SERIAL_IDLE_CONNECTION_TIMEOUT);
+                        KILL_TIMER(_searchTimerId);
+                        START_TIMER(_handshakeTimerId, 100);
+                        START_TIMER(_watchdogTimerId, SERIAL_IDLE_CONNECTION_TIMEOUT / 3);
                         return;
                     }
+
                 }
+
+            }
+            else if (e->timerId() == _handshakeTimerId) {
+                sendMessage(NULL, 0, SERIAL_HANDSHAKE_HEADER);
             }
             else if (e->timerId() == _heartbeatTimerId) {
                 sendMessage(NULL, 0, SERIAL_HEARTBEAT_HEADER);
             }
             else if (e->timerId() == _watchdogTimerId) {
-
-                if (QDateTime::currentMSecsSinceEpoch() - _lastReadTime > SERIAL_IDLE_CONNECTION_TIMEOUT) {
+                if (QDateTime::currentMSecsSinceEpoch() - _lastReadTime >= SERIAL_IDLE_CONNECTION_TIMEOUT) {
                     if (_verified) {
                         LOG_I("Serial port " + _serial->portName() + " is not responding");
                     }
@@ -305,10 +340,10 @@ namespace Soro {
         }
 
 #endif
-/************************************************************
- ************************************************************
- ************************************************************
- ************************************************************/
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 #ifdef TARGET_LPC1768
 
     private:
@@ -318,6 +353,7 @@ namespace Soro {
         time_t _lastBeatTime;
         void (*_callback)(const char*, int);
         DigitalOut *_led;
+        bool _sentName;
         enum LogLevel {
             DebugLevel, InfoLevel, WarnLevel, ErrorLevel
         };
@@ -330,7 +366,7 @@ namespace Soro {
 
         SerialChannel3(const char *name, PinName tx, PinName rx, void(*callback)(const char*, int)) {
             _name = name;
-            _callback = callback;
+            _callback = callback; ////////////////////////////////////////////////////////
             _lastReadTime = time(NULL);
             _lastBeatTime = time(NULL);
             _loopHeartbeatCounter = 0;
@@ -338,17 +374,26 @@ namespace Soro {
             _messageAvailable = false;
             _led = new DigitalOut(LED4);
             _serial = new Serial(tx, rx);
+            _sentName = false;
             _serial->baud(115200);
             _serial->format(8, SerialBase::None, 1);
+            _serial->attach(this, &SerialChannel3::readSerial);
         }
 
-        void checkMessages() {
-            readSerial();
+        void log(const char* message) {
+            sendMessage(message, strlen(message) + 1, SERIAL_LOG_HEADER);
+        }
+
+        void checkConnection() {
             if (time(NULL) - _lastReadTime > SERIAL_IDLE_CONNECTION_TIMEOUT / 1000) {
                 //We have gone too long without receiving a message, reset and hope
                 //that fixes things
-                *_led = 1;
-                wait(1);
+                for (int i = 0; i < 5; i++) { //fancy blinky
+                    *_led = 1;
+                    wait_ms(50);
+                    *_led = 0;
+                    wait_ms(50);
+                }
                 mbed_reset();
             }
             if (time(NULL) - _lastBeatTime > SERIAL_HEARTBEAT_INTERVAL / 1000) {
@@ -357,6 +402,10 @@ namespace Soro {
             }
         }
 #endif
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
     };
 
 }

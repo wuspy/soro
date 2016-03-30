@@ -141,7 +141,6 @@ void RoverWorker::gimbalControllerChannelStateChanged(SerialChannel3::State stat
     }
 }
 
-.
 //observers for network channels message received
 
 void RoverWorker::armChannelStateChanged(Channel::State state) {

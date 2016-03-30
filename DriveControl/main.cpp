@@ -16,8 +16,10 @@ using namespace Soro;
 
 int _loopsWithoutMessage;
 
+SerialChannel3 *_serial;
+
 void serialMessageReceived(const char *message, int length) {
-    if (message == NULL || !DriveMessage::hasValidHeader(message)) return;
+    if ((length == 0) || !DriveMessage::hasValidHeader(message)) return;
     _loopsWithoutMessage = 0;
     signed char fl = DriveMessage::frontLeft(message);
     signed char fr = DriveMessage::frontRight(message);
@@ -35,9 +37,9 @@ void serialMessageReceived(const char *message, int length) {
 }
 
 int main() {
-    SerialChannel3 serial(DRIVE_SERIAL_CHANNEL_NAME, USBTX, USBRX, &serialMessageReceived);
+    _serial = new SerialChannel3(DRIVE_SERIAL_CHANNEL_NAME, USBTX, USBRX, &serialMessageReceived);
     while(1) {
-        serial.checkMessages();
+        _serial->checkConnection();
         if (_loopsWithoutMessage != 0) {
             if (_loopsWithoutMessage * INTERVAL > 1000) {
                 //stop after 1 second without instruction

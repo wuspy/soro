@@ -120,9 +120,9 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
                         map->reset();
                         map->ControllerName = controllerName;
                         QMessageBox(QMessageBox::Critical, "Unknown Controller",
-                                    "The controller you have just plugged in appears to be a differnt model than the last "
-                                    "one you were using. You will need to set up this controller's configuration, but know that this"
-                                    " will overwrite the saved configuration you had for any previous controllers.",
+                                    "The controller you have just plugged in appears to be a different model than the last "
+                                    "one you were using. You will need to set up this controller, but know that this"
+                                    " will overwrite the saved button mapping you had for any previous controller.",
                                     QMessageBox::Ok, this).exec();
                     }
                     //update ui
@@ -334,7 +334,7 @@ void McMainWindow::masterArmSerialStateChanged(SerialChannel3::State state) {
 }
 
 void McMainWindow::masterArmSerialMessageReceived(const char *message, int size) {
-    /*qDebug() << "yaw=" << ArmMessage::masterYaw(message)
+    qDebug() << "yaw=" << ArmMessage::masterYaw(message)
              << ", shldr=" << ArmMessage::masterShoulder(message)
              << ", elbow=" << ArmMessage::masterElbow(message)
              << ", wrist=" << ArmMessage::masterWrist(message)

@@ -55,9 +55,8 @@ public:
                           int axisCount, int buttonCount, DriveGlfwMap& mapping) {
         message[0] = DRIVE_MESSAGE_ID;
         if (mapping.forwardAxis().isMapped() & mapping.turnAxis().isMapped()) {
-            float y = (float)joyAxisToByte(mapping.forwardAxis().value(glfwAxes, axisCount));
+            float y = 1 - (float)joyAxisToByte(mapping.forwardAxis().value(glfwAxes, axisCount));
             float x = (float)joyAxisToByte(mapping.turnAxis().value(glfwAxes, axisCount));
-
             float right, left;
 
             // First hypotenuse
@@ -91,10 +90,19 @@ public:
                 left = 0 - left;
                 right = 0 - right;
             }
+            if (left > 100) left = 100;
+            else if (left < -100) left = -100;
+            if (right > 100) right = 100;
+            else if (right < -100) right = -100;
 
             float midScale = 0.6 * (qAbs(turn)/100.0);
 
-            qWarning() << "Left: " << QString::number(left) << ", Right: " << QString::number(right);
+            message[DRIVE_MESSAGE_FL_INDEX] = (signed char)left;
+            message[DRIVE_MESSAGE_FR_INDEX] = (signed char)right;
+            message[DRIVE_MESSAGE_ML_INDEX] = (signed char)(left - (midScale * left));
+            message[DRIVE_MESSAGE_MR_INDEX] = (signed char)(right - (midScale * right));
+            message[DRIVE_MESSAGE_BL_INDEX] = (signed char)left;
+            message[DRIVE_MESSAGE_BR_INDEX] = (signed char)right;
         }
         else {
             signed char leftDrive = joyAxisToByte(mapping.leftWheelsAxis().value(glfwAxes, axisCount));
