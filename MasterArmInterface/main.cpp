@@ -1,6 +1,6 @@
 #include "mbed.h"
 #include "Servo.h"
-#include "serialinterop.h"
+#include "serialchannel3.h"
 #include "armmessage.h"
 
 #define INTERVAL 30
@@ -14,12 +14,11 @@ AnalogIn bucket(p19);
 using namespace Soro;
 
 int main() {
-    SerialChannel serial(MASTER_ARM_SERIAL_CHANNEL_NAME, USBTX, USBRX, INTERVAL);
-    char buffer[ARM_MASTER_MESSAGE_SIZE];
+    SerialChannel3 serial(MASTER_ARM_SERIAL_CHANNEL_NAME, USBTX, USBRX, NULL);
+    char buffer[50];
     unsigned short shoulderVal, yawVal, elbowVal, wristVal, bucketVal;
-    
     while(1) {
-        serial.process();
+        serial.checkMessages();
         yawVal = yaw.read() * MAX_VALUE_14BIT;
         shoulderVal = shoulder.read() * MAX_VALUE_14BIT;
         elbowVal = elbow.read() * MAX_VALUE_14BIT;

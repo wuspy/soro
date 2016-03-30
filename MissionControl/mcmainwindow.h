@@ -20,7 +20,7 @@
 #include "armmessage.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
-#include "serialinterop.h"
+#include "serialchannel3.h"
 #include "armglfwmap.h"
 #include "driveglfwmap.h"
 #include "gimbalglfwmap.h"
@@ -82,7 +82,7 @@ namespace MissionControl {
         int _inputSelectorTimerId = TIMER_INACTIVE;
 
         //Arm specific stuff
-        SerialChannel *_masterArmSerial = NULL;
+        SerialChannel3 *_masterArmSerial = NULL;
         ArmMessage::MasterRanges _masterArmRanges;
 
         void loadMasterArmConfig();
@@ -99,7 +99,7 @@ namespace MissionControl {
         void controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                                 int rateUp, int rateDown);
         void masterArmSerialMessageReceived(const char *message, int size);
-        void masterArmSerialStateChanged(SerialChannel::State);
+        void masterArmSerialStateChanged(SerialChannel3::State);
         void settingsClicked();
 
     protected:

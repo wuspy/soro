@@ -14,6 +14,7 @@
 #include "commonini.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
+#include "gpsserver.h"
 
 #include <stdio.h>
 
@@ -40,6 +41,7 @@ namespace Rover {
         SerialChannel3 *_gimbalControllerSerial = NULL;
 
         SoroIniConfig _soroIniConfig;
+        GpsServer *_gpsServer = NULL;
 
         int _initTimerId = TIMER_INACTIVE;
 

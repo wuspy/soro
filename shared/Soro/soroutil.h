@@ -17,16 +17,17 @@
 
 namespace Soro {
 
-    static inline signed char joyAxisToByte(float val) {
-        return (signed char) (val * 100);
-    }
+static inline signed char joyAxisToByte(float val) {
+    return (signed char) (val * 100);
+}
 
-    static void configureMbedSerial(QSerialPort* port) {
-        port->setBaudRate(QSerialPort::Baud115200);
-        port->setDataBits(QSerialPort::Data8);
-        port->setParity(QSerialPort::NoParity);
-        port->setStopBits(QSerialPort::OneStop);
-    }
+static void configureMbedSerial(QSerialPort* port) {
+    port->setBaudRate(QSerialPort::Baud115200);
+    port->setDataBits(QSerialPort::Data8);
+    port->setParity(QSerialPort::NoParity);
+    port->setStopBits(QSerialPort::OneStop);
+}
+
 }
 
 #endif // SOROUTIL_H

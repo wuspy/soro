@@ -6,77 +6,78 @@
 
 namespace Soro {
 
-    /* A simple class to parse a tag-value formatted configuration file (INI format)
-     * from a QTextStream
+/* A simple class to parse a tag-value formatted configuration file (INI format)
+ * from a QTextStream
+ *
+ * - Call load(QTextStream) to read in a file
+ * - Call value(QString&), valueAsInt(QString&), etc to get a tag's value
+ */
+class IniParser {
+
+private:
+     QMap<QString, QString> _contents;
+
+public:
+     /* Loads a configuration file from a QTextStream.
      *
-     * - Call load(QTextStream) to read in a file
-     * - Call value(QString&), valueAsInt(QString&), etc to get a tag's value
+     * QTextStreams can be created from any QIODevice, such as
+     * QFile and QNetworkResponse.
+     *
+     * Returns true if the file was read in successfully, false otherwise.
+     *
+     * As soon as this completes, it is safe to close the original file/network
+     * resources as everything will be loaded locally.
      */
-    class IniParser {
+    bool load(QTextStream& fileStream);
 
-    private:
-         QMap<QString, QString> _contents;
+    /* Loads a configuration file from a file.
+     *
+     * Returns true if the file was read in successfully, false otherwise.
+     */
+    bool load(QFile& file);
 
-    public:
-         /* Loads a configuration file from a QTextStream.
-         *
-         * QTextStreams can be created from any QIODevice, such as
-         * QFile and QNetworkResponse.
-         *
-         * Returns true if the file was read in successfully, false otherwise.
-         *
-         * As soon as this completes, it is safe to close the original file/network
-         * resources as everything will be loaded locally.
-         */
-        bool load(QTextStream& fileStream);
+    bool write(QFile& file) const;
 
-        /* Loads a configuration file from a file.
-         *
-         * Returns true if the file was read in successfully, false otherwise.
-         */
-        bool load(QFile& file);
+    /* Gets a tag's value from the last file read in.
+     */
+    QString value(const QString &tag) const;
 
-        bool write(QFile& file) const;
+    /* Gets a tag's value from the last file read in as an integer,
+     * and returns true if the conversion was successful.
+     */
+    bool valueAsInt(const QString &tag, int *value) const;
 
-        /* Gets a tag's value from the last file read in.
-         */
-        QString value(const QString &tag) const;
+    /* Gets a tag's value from the last file read in as an boolean,
+     * and returns true if the conversion was successful.
+     */
+    bool valueAsBool(const QString &tag, bool *value) const;
 
-        /* Gets a tag's value from the last file read in as an integer,
-         * and returns true if the conversion was successful.
-         */
-        bool valueAsInt(const QString &tag, int *value) const;
+    /* Gets a tag's value from the last file read in as an QHostAddress,
+     * and returns true if the conversion was successful.
+     */
+    bool valueAsIP(const QString &tag, QHostAddress *value, bool allowV6) const;
 
-        /* Gets a tag's value from the last file read in as an boolean,
-         * and returns true if the conversion was successful.
-         */
-        bool valueAsBool(const QString &tag, bool *value) const;
+    /* Gets the list of tags from the last file read in.
+     */
+    QList<QString> tags() const;
 
-        /* Gets a tag's value from the last file read in as an QHostAddress,
-         * and returns true if the conversion was successful.
-         */
-        bool valueAsIP(const QString &tag, QHostAddress *value, bool allowV6) const;
+    /* Returns true if the tag was contained in the last file read in, false otherwise.
+     */
+    bool contains(const QString &tag) const;
 
-        /* Gets the list of tags from the last file read in.
-         */
-        QList<QString> tags() const;
+    /* Gets the number of tags/value pairs read in.
+     */
+    int count() const;
 
-        /* Returns true if the tag was contained in the last file read in, false otherwise.
-         */
-        bool contains(const QString &tag) const;
+    /* Removes a loaded tag/value pair. Does not modify the original file.
+     */
+    bool remove(const QString &tag);
 
-        /* Gets the number of tags/value pairs read in.
-         */
-        int count() const;
+    /* Inserts a tag/value pair
+     */
+    void insert(const QString& tag, const QString& value);
+};
 
-        /* Removes a loaded tag/value pair. Does not modify the original file.
-         */
-        bool remove(const QString &tag);
-
-        /* Inserts a tag/value pair
-         */
-        void insert(const QString& tag, const QString& value);
-    };
 }
 
 #endif // TAGVALUEPARSER_H

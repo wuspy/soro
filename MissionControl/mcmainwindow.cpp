@@ -62,7 +62,6 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
     ui->googleMapView->updateLocation(LatLng(lat, lng));
     ui->googleMapView->updateHeading(rand() % 360);*/
 
-
     if (e->timerId() == _controlSendTimerId) {
 
         /***************************************
@@ -192,12 +191,12 @@ void McMainWindow::timerEvent(QTimerEvent *e) {
                 LOG_I("Input mode F57F17set to Master Arm");
                 _inputMode = MasterArm;
                 loadMasterArmConfig();
-                _masterArmSerial = new SerialChannel(MASTER_ARM_SERIAL_CHANNEL_NAME, this, _log);
-                masterArmSerialStateChanged(SerialChannel::ConnectingState);
+                _masterArmSerial = new SerialChannel3(MASTER_ARM_SERIAL_CHANNEL_NAME, this, _log);
+                masterArmSerialStateChanged(SerialChannel3::ConnectingState);
                 connect(_masterArmSerial, SIGNAL(messageReceived(const char*,int)),
                         this, SLOT(masterArmSerialMessageReceived(const char*,int)));
-                connect(_masterArmSerial, SIGNAL(stateChanged(SerialChannel::State)),
-                        this, SLOT(masterArmSerialStateChanged(SerialChannel::State)));
+                connect(_masterArmSerial, SIGNAL(stateChanged(SerialChannel3::State)),
+                        this, SLOT(masterArmSerialStateChanged(SerialChannel3::State)));
             }
             else {
                 QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
@@ -319,14 +318,14 @@ void McMainWindow::initForGLFW(GlfwMap *map) {
     ui->comm_inputDeviceLabel->setText("No input devices");
 }
 
-void McMainWindow::masterArmSerialStateChanged(SerialChannel::State state) {
+void McMainWindow::masterArmSerialStateChanged(SerialChannel3::State state) {
     switch (state) {
-    case SerialChannel::ConnectedState:
+    case SerialChannel3::ConnectedState:
         ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_inputDeviceLabel->setText("Master arm connected");
         ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
         break;
-    case SerialChannel::ConnectingState:
+    case SerialChannel3::ConnectingState:
         ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_inputDeviceLabel->setText("Connecting to master arm...");
         ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
@@ -335,11 +334,11 @@ void McMainWindow::masterArmSerialStateChanged(SerialChannel::State state) {
 }
 
 void McMainWindow::masterArmSerialMessageReceived(const char *message, int size) {
-    qDebug() << "yaw=" << ArmMessage::masterYaw(message)
+    /*qDebug() << "yaw=" << ArmMessage::masterYaw(message)
              << ", shldr=" << ArmMessage::masterShoulder(message)
              << ", elbow=" << ArmMessage::masterElbow(message)
              << ", wrist=" << ArmMessage::masterWrist(message)
-             << ", bucket=" << ArmMessage::masterBucket(message);
+             << ", bucket=" << ArmMessage::masterBucket(message);/**/
 
     memcpy(_buffer, message, size);
     //control bucket with keyboard keys

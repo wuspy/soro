@@ -12,22 +12,18 @@
 #   include <iostream>
 #   include "soroutil.h"
 #   include "logger.h"
-#   define SERIAL_PRINTF(s, m) s.write(m)
-#   define SERIAL_READLN(s, m) s.readLine(m, 1000)
-#   define SERIAL_GETCHAR(s, c) s.getChar(&c)
-#   define SERIAL_PUTCHAR(s, c) s.putChar(c)
-#   define SERIAL_READABLE(s) s.bytesAvailable() > 0
-#   define SERIAL_WRITEABLE(s) s.isOpen()
+#   define SERIAL_GETCHAR(s, c) s->getChar(&c)
+#   define SERIAL_PUTCHAR(s, c) s->putChar(c)
+#   define SERIAL_READABLE(s) s->bytesAvailable() > 0
+#   define SERIAL_WRITEABLE(s) s->isOpen()
 #   define SERIAL_OBJECT QSerialPort
 #endif
 #ifdef TARGET_LPC1768
 #   include "mbed.h"
-#   define SERIAL_PRINTF(s, m) s.printf(m)
-#   define SERIAL_READLN(s, m) s.scanf("%s", m)
-#   define SERIAL_GETCHAR(s, c) c = s.getc()
-#   define SERIAL_PUTCHAR(s, c) s.putc(c)
-#   define SERIAL_READABLE(s) s.readable()
-#   define SERIAL_WRITEABLE(s) s.writeable()
+#   define SERIAL_GETCHAR(s, c) c = s->getc()
+#   define SERIAL_PUTCHAR(s, c) s->putc(c)
+#   define SERIAL_READABLE(s) s->readable()
+#   define SERIAL_WRITEABLE(s) s->writeable()
 #   define SERIAL_OBJECT Serial
 extern "C" void mbed_reset();
 #   define LOG_D(m) sendMessage(m, strlen(m) + 1, SERIAL_LOG_HEADER)
@@ -52,6 +48,8 @@ using namespace std;
 #include <cstdio>
 
 namespace Soro {
+
+    static const int MAX_VALUE_14BIT = 16383;
 
     /* Encodes a number into 14 bits (2 bytes whrere each byte is limited to 0x7F)
      * This is done to ensure the high bit of each byte is always 0 for frame alignment purposes
@@ -97,13 +95,13 @@ namespace Soro {
         SERIAL_OBJECT *_serial;
 
         void sendMessage(const char* message, int length, unsigned char header) {
-            if ((SERIAL_WRITEABLE((*_serial))) & (length < 253)) {
-                SERIAL_PUTCHAR((*_serial), (char)header);
-                SERIAL_PUTCHAR((*_serial), (char)((unsigned char)length + 3));
+            if ((SERIAL_WRITEABLE(_serial)) & (length < 253)) {
+                SERIAL_PUTCHAR(_serial, (char)header);
+                SERIAL_PUTCHAR(_serial, (char)((unsigned char)length + 3));
                 for (int i = 0; i < length; i++) {
-                    SERIAL_PUTCHAR((*_serial), message[i]);
+                    SERIAL_PUTCHAR(_serial, message[i]);
                 }
-                SERIAL_PUTCHAR((*_serial), (char)SERIAL_MESSAGE_FOOTER);
+                SERIAL_PUTCHAR(_serial, (char)SERIAL_MESSAGE_FOOTER);
             }
         }
 
@@ -111,8 +109,8 @@ namespace Soro {
     private slots:
 #endif
         void readSerial() {
-            while (SERIAL_READABLE((*_serial))) {
-                SERIAL_GETCHAR((*_serial), _buffer[_bufferLength]);
+            while (SERIAL_READABLE(_serial)) {
+                SERIAL_GETCHAR(_serial, _buffer[_bufferLength]);
                 _bufferLength++;
                 if (_bufferLength == 256) {
                     LOG_E("Buffer overflow while reading message");
@@ -126,7 +124,7 @@ namespace Soro {
                         break;
 #ifdef TARGET_LPC1768
                     case SERIAL_MESSAGE_HEADER:
-                        if (_bufferLength == (int)(unsigned char)_buffer[1]) { //verify length
+                        if (_callback != NULL & (_bufferLength == (int)(unsigned char)_buffer[1])) { //verify length
                             _callback(_buffer, _bufferLength);
                         }
                         break;
@@ -163,6 +161,7 @@ namespace Soro {
                         }
                         break;
                     case SERIAL_LOG_HEADER:
+                        LOG_I(_buffer + 2);
                         break;
                     default: return;
                     }
@@ -191,7 +190,7 @@ namespace Soro {
         SerialChannel3(const char *name, QObject *parent, Logger *log): QObject(parent) {
             _log = log;
             _name = name;
-            LOG_TAG = (QString)_name + "(Serial)";
+            LOG_TAG = (QString)_name;
             _messageAvailable = false;
             _serialHandshakeIndex = 0;
             _bufferLength = 0;
@@ -224,6 +223,7 @@ namespace Soro {
 
         void resetConnection() {
             if (_serial->isOpen()) _serial->close();
+            _bufferLength = 0;
             KILL_TIMER(_heartbeatTimerId);
             KILL_TIMER(_watchdogTimerId);
             START_TIMER(_handshakeTimerId, 100);
@@ -262,6 +262,9 @@ namespace Soro {
                 for (;_serialHandshakeIndex < _serialPorts.size(); _serialHandshakeIndex++) {
 #ifdef __linux__
                 if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("ttyACM")) continue;
+#endif
+#ifdef __APPLE__
+                if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("tty.usbmodem")) continue;
 #endif
                     _serial->setPort(_serialPorts[_serialHandshakeIndex]);
                     LOG_D("Trying serial port " + _serial->portName());
