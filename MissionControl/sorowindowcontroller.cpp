@@ -6,18 +6,6 @@
 
 //config
 #define MARINI_PATH "config/master_arm.ini"
-#define MCINI_PATH "config/mission_control.ini"
-#define GLFWINI_PATH "config/last_glfw_config.ini"
-#define MCINI_TAG_LAYOUT "Layout"
-#define MCINI_VALUE_LAYOUT_ARM "arm"
-#define MCINI_VALUE_LAYOUT_DRIVE "drive"
-#define MCINI_VALUE_LAYOUT_GIMBAL "gimbal"
-#define MCINI_VALUE_LAYOUT_SPECTATOR "spectator"
-#define MCINI_TAG_COMM_HOST_ADDRESS "MainHostAddress"
-#define MCINI_TAG_VIDEO_HOST_ADDRESS "VideoHostAddress"
-#define MCINI_TAG_INPUT_MODE "InputMode"
-#define MCINI_VALUE_USE_GLFW "glfw"
-#define MCINI_VALUE_USE_MASTER "masterarm"
 
 #define CONTROL_SEND_INTERVAL 50
 
@@ -27,6 +15,7 @@ using namespace Soro::MissionControl;
 SoroWindowController::SoroWindowController(QObject *parent) : QObject(parent) {
     _log = new Logger(this);
     _log->setLogfile(APPPATH + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
+    _log->RouteToQtLogger = true;
     //_log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -43,7 +32,7 @@ void SoroWindowController::settingsClicked() {
         GlfwMapDialog d(NULL, _controllerId, map);
         d.exec();
     }
-    else if (_inputMode == MasterArm) {
+    else if (_mcIniConfig.ControlInputMode == MissionControlIniConfig::MasterArm) {
         loadMasterArmConfig();
     }
 }
@@ -60,16 +49,16 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
             int axisCount, buttonCount;
             const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
             const unsigned char *buttons = glfwGetJoystickButtons(_controllerId, &buttonCount);
-            switch (_mode) {
-            case ArmLayoutMode:
+            switch (_mcIniConfig.Layout) {
+            case MissionControlIniConfig::ArmLayoutMode:
                 ArmMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_armInputMap);
                 _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, ArmMessage::size(_buffer)));
                 break;
-            case DriveLayoutMode:
+            case MissionControlIniConfig::DriveLayoutMode:
                 DriveMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_driveInputMap);
                 _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, DriveMessage::size(_buffer)));
                 break;
-            case GimbalLayoutMode:
+            case MissionControlIniConfig::GimbalLayoutMode:
                 GimbalMessage::setGlfwData(_buffer, axes, buttons, axisCount, buttonCount, *_gimbalInputMap);
                 _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, GimbalMessage::size(_buffer)));
                 break;
@@ -137,70 +126,70 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
                 _soroIniConfig.ServerSide == SoroIniConfig::MissionControlEndPoint ?
                     Channel::ServerEndPoint : Channel::ClientEndPoint;
 
-        //parse configuration
-        IniParser configParser;
-        QFile configFile(APPPATH + "/" + MCINI_PATH);
-        if (!configParser.load(configFile)) {
-            LOG_E("The configuration file " + APPPATH + "/" + MCINI_PATH + " is missing or invalid");
-            emit error("The configuration file " + APPPATH + "/" + MCINI_PATH + " missing or invalid");
+        //parse mission control configuration
+        if (!_mcIniConfig.load(&err)) {
+            LOG_E(err);
+            emit error(err);
             return;
         }
-        QHostAddress commHost, videoHost;
-        if (!configParser.valueAsIP(MCINI_TAG_COMM_HOST_ADDRESS, &commHost, true)) {
-            LOG_I("Using default host for main communication");
-            commHost = QHostAddress::Any;
-        }
-        if (!configParser.valueAsIP(MCINI_TAG_VIDEO_HOST_ADDRESS, &videoHost, true)) {
-            LOG_I("Using default host for video receiving");
-            videoHost = QHostAddress::Any;
-        }
-        QString modeStr = configParser.value(MCINI_TAG_LAYOUT);
-        if (QString::compare(modeStr, MCINI_VALUE_LAYOUT_ARM, Qt::CaseInsensitive) == 0) {
-            _mode = ArmLayoutMode;
-            QString inputMode = configParser.value(MCINI_TAG_INPUT_MODE);
-            if (QString::compare(inputMode, MCINI_VALUE_USE_GLFW, Qt::CaseInsensitive) == 0) {
-                //use gamepad to control the arm
+        switch (_mcIniConfig.Layout) {
+        case MissionControlIniConfig::ArmLayoutMode:
+            switch (_mcIniConfig.ControlInputMode) {
+            case MissionControlIniConfig::GLFW:
                 _armInputMap = new ArmGlfwMap();
                 initForGLFW(_armInputMap);
-            }
-            else if (QString::compare(inputMode, MCINI_VALUE_USE_MASTER, Qt::CaseInsensitive) == 0) {
-                //Use the master/slave arm input method
-                LOG_I("Input mode F57F17set to Master Arm");
-                _inputMode = MasterArm;
+                break;
+            case MissionControlIniConfig::MasterArm:
                 loadMasterArmConfig();
                 _masterArmSerial = new SerialChannel3(MASTER_ARM_SERIAL_CHANNEL_NAME, this, _log);
-            }
-            else {
-                emit error("The configuration file " + APPPATH + "/" + MCINI_PATH + " is invalid (can't determine input mode)");
-                return;
+                break;
             }
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
-                                      Channel::UdpProtocol, commEndPoint, commHost, _log);
-        }
-        else if ((QString::compare(modeStr, MCINI_VALUE_LAYOUT_DRIVE, Qt::CaseInsensitive) == 0)) {
-            _mode = DriveLayoutMode;
+                    Channel::UdpProtocol, commEndPoint, _mcIniConfig.CommHostAddress, _log);
+            break;
+        case MissionControlIniConfig::DriveLayoutMode:
             _driveInputMap = new DriveGlfwMap();
             initForGLFW(_driveInputMap);
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveChannelPort), CHANNEL_NAME_DRIVE,
-                                      Channel::UdpProtocol, commEndPoint, commHost, _log);
-        }
-        else if (QString::compare(modeStr, MCINI_VALUE_LAYOUT_GIMBAL, Qt::CaseInsensitive) == 0) {
-            _mode = GimbalLayoutMode;
+                    Channel::UdpProtocol, commEndPoint, _mcIniConfig.CommHostAddress, _log);
+            break;
+        case MissionControlIniConfig::GimbalLayoutMode:
             _gimbalInputMap = new GimbalGlfwMap();
             initForGLFW(_gimbalInputMap);
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
-                                      Channel::UdpProtocol, commEndPoint, commHost, _log);
+                    Channel::UdpProtocol, commEndPoint, _mcIniConfig.CommHostAddress, _log);
+            break;
+        case MissionControlIniConfig::SpectatorLayoutMode:
+            break;
         }
-        else if (QString::compare(modeStr, MCINI_VALUE_LAYOUT_SPECTATOR, Qt::CaseInsensitive) == 0) {
-            _mode = SpectatorLayoutMode;
+
+        if (_mcIniConfig.MasterNode) {
+            LOG_I("Setting up as master node");
+            //channel for the rover
+            _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
+                    Channel::TcpProtocol, commEndPoint, _mcIniConfig.CommHostAddress, _log);
+            connect(_sharedChannel, SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
+                    this, SLOT(sharedChannelStatsUpdate(int,quint64,quint64,int,int)));
+            //channel for other mission control computers to connect to
+            LOG_I("Hosting " + QString::number(_mcIniConfig.NodePorts[1] - _mcIniConfig.NodePorts[0]) + " mission control nodes");
+            for (int i = 0; i < _mcIniConfig.NodePorts[1] - _mcIniConfig.NodePorts[0]; i++) {
+                Channel *sc = new Channel(this, SocketAddress(QHostAddress::Any, _mcIniConfig.NodePorts[i]),
+                                          "MC_NODE_" + QString::number(_mcIniConfig.NodePorts[i]),
+                                          Channel::TcpProtocol, Channel::ServerEndPoint, _mcIniConfig.NodeHostAddress, _log);
+                _sharedChannelNodes.append(sc);
+
+                connect(sc, SIGNAL(messageReceived(QByteArray)),
+                        this, SLOT(sharedChannelNodeMessageReceived(QByteArray)));
+            }
         }
         else {
-            LOG_E("Unknown configuration value for MCINI_TAG_LAYOUT");
-            emit error("The configuration file " + APPPATH + "/" + MCINI_PATH + " is invalid (can't determine layout)");
-            return;
+            LOG_I("Setting up as normal node");
+            //channel to connect to the master mission control computer
+            _sharedChannel = new Channel(this, SocketAddress(_mcIniConfig.MasterNodeAddress.address, _mcIniConfig.MasterNodeAddress.port),
+                    "MC_NODE_" + QString::number(_mcIniConfig.MasterNodeAddress.port),
+                    Channel::TcpProtocol, Channel::ClientEndPoint, _mcIniConfig.NodeHostAddress, _log);
         }
-        _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
-                            Channel::TcpProtocol, commEndPoint, commHost, _log);
+
         connect(_sharedChannel, SIGNAL(messageReceived(QByteArray)),
                 this, SLOT(sharedChannelMessageReceived(QByteArray)));
 
@@ -213,25 +202,24 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
             return;
         }
         LOG_I("Configuration has been loaded successfully");
-        emit initialized(_soroIniConfig, _mode, _inputMode);
+        emit initialized(_soroIniConfig, _mcIniConfig);
 
         if (_controlChannel != NULL) _controlChannel->open();
         _sharedChannel->open();
 
         /***************************************
          ***************************************/
-
     }
 }
 
 GlfwMap* SoroWindowController::getInputMap() {
-    if (_inputMode == GLFW) {
-        switch(_mode) {
-        case ArmLayoutMode:
+    if (_mcIniConfig.ControlInputMode == MissionControlIniConfig::GLFW) {
+        switch(_mcIniConfig.Layout) {
+        case MissionControlIniConfig::ArmLayoutMode:
             return _armInputMap;
-        case DriveLayoutMode:
+        case MissionControlIniConfig::DriveLayoutMode:
             return _driveInputMap;
-        case GimbalLayoutMode:
+        case MissionControlIniConfig::GimbalLayoutMode:
             return _gimbalInputMap;
         }
     }
@@ -248,7 +236,6 @@ int SoroWindowController::firstGlfwControllerId() {
 void SoroWindowController::initForGLFW(GlfwMap *map) {
     LOG_I("Input mode set to use GLFW (joystick or gamepad)");
     glfwInit();
-    _inputMode = GLFW;
     _glfwInitialized = true;
     QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
     map->loadMapping(mapFile);
@@ -258,7 +245,7 @@ void SoroWindowController::initForGLFW(GlfwMap *map) {
 }
 
 void SoroWindowController::masterArmSerialMessageReceived(const char *message, int size) {
-    qDebug() << "yaw=" << ArmMessage::masterYaw(message)
+    /*qDebug() << "yaw=" << ArmMessage::masterYaw(message)
              << ", shldr=" << ArmMessage::masterShoulder(message)
              << ", elbow=" << ArmMessage::masterElbow(message)
              << ", wrist=" << ArmMessage::masterWrist(message)
@@ -288,12 +275,46 @@ void SoroWindowController::currentKeyChanged(char key) {
     _currentKey = key;
 }
 
+/* Receives TCP messages from the rover only (as master node) or from the rover
+ * and all other mission controls
+ */
 void SoroWindowController::sharedChannelMessageReceived(const QByteArray& message) {
-    //TODO
+    if (_mcIniConfig.MasterNode) {
+        //rebroadcast to othr mission controls
+        foreach (Channel *c, _sharedChannelNodes) {
+            c->sendMessage(message);
+        }
+    }
+    else {
+        //TODO
+    }
+}
+
+/* Receives TCP messages from other mission control computers (master node only)
+ */
+void SoroWindowController::sharedChannelNodeMessageReceived(const QByteArray& message) {
+    //forward to rover
+    _sharedChannel->sendMessage(message);
+    //rebroadcast to other mission control computers (including the sender)
+    foreach (Channel *c, _sharedChannelNodes) {
+        c->sendMessage(message);
+    }
+}
+
+/* Receives status updates from the shared channel to the rover (master node only)
+ */
+void SoroWindowController::sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
+                        int rateUp, int rateDown) {
+    if (_controlChannel != NULL) {
+        emit connectionQualityUpdate(rtt, rtt - _controlChannel->getLastRtt());
+    }
+    else {
+        emit connectionQualityUpdate(rtt, -1);
+    }
 }
 
 void SoroWindowController::loadMasterArmConfig() {
-    if (_mode == ArmLayoutMode) {
+    if (_mcIniConfig.Layout == MissionControlIniConfig::ArmLayoutMode) {
         QFile masterArmFile(APPPATH + "/" + MARINI_PATH);
         if (_masterArmRanges.load(masterArmFile)) {
             LOG_I("Loaded master arm configuration");
@@ -327,6 +348,9 @@ SoroWindowController::~SoroWindowController() {
             LOG_I("Writing glfw input map to " + APPPATH + (QString)"/" + GLFWINI_PATH);
         }
         delete map;
+    }
+    foreach (Channel *c, _sharedChannelNodes) {
+        delete c;
     }
     if (_controlChannel != NULL) delete _controlChannel;
     if (_sharedChannel != NULL) delete _sharedChannel;

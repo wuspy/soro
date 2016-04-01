@@ -11,6 +11,7 @@ GlfwMap::~GlfwMap() {
 }
 
 bool GlfwMap::loadMapping(QFile& file) {
+    if (!file.exists()) return false;
     IniParser parser;
     if (!parser.load(file)
             || (_classname != parser.value(CONFIG_TAG_CLASS_TYPE))) return false;

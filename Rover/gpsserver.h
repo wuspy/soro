@@ -6,7 +6,7 @@
 #include <QUdpSocket>
 
 #include "logger.h"
-#include "soroutil.h"
+#include "soro_global.h"
 #include "socketaddress.h"
 #include "latlng.h"
 

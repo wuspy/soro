@@ -63,23 +63,19 @@ void VideoPane::resizeEvent(QResizeEvent *e) {
 }
 
 void VideoPane::close() {
-    if (_media != NULL) {
-        ui->videoWidget->close();
-        delete _media;
-        _media = NULL;
-    }
+    ui->videoWidget->close();
 }
 
 void VideoPane::openLocalFile(QString path) {
-    if (_media != NULL) {
-        delete _media;
-    }
     _media = new VlcMedia(path, true, _instance);
     _player->open(_media);
 }
 
-void VideoPane::connectCameraStream(quint16 port, QHostAddress hostAddress){
-    //TODO
+void VideoPane::connectUdpStream(quint16 port, QHostAddress hostAddress) {
+    _media = new VlcMedia("udp://" + (hostAddress == QHostAddress::Any ? "@" : hostAddress.toString()) + ":" + QString::number(port),
+                          false,
+                          _instance);
+    _player->open(_media);
 }
 
 void VideoPane::setCameraName(QString name) {

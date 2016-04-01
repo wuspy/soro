@@ -35,7 +35,6 @@ HEADERS  += \
     ../shared/Soro/armglfwmap.h \
     ../shared/Soro/glfwmap.h \
     ../shared/Soro/armmessage.h \
-    ../shared/Soro/commonini.h \
     glfwmapdialog.h \
     googlemapview.h \
     videowindow.h \
@@ -47,7 +46,9 @@ HEADERS  += \
     ../shared/Soro/serialchannel3.h \
     soromainwindow.h \
     sorowindowcontroller.h \
-    ../shared/Soro/soro_global.h
+    ../shared/Soro/soro_global.h \
+    ../shared/Soro/soroini.h \
+    mcini.h
 
 FORMS    += \
     glfwmapdialog.ui \

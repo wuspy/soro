@@ -53,9 +53,8 @@ namespace MissionControl {
                                 int rateUp, int rateDown);
         void masterArmSerialStateChanged(SerialChannel3::State);
         void controllerGamepadChanged(QString name);
-        void controllerInitialized(const SoroIniConfig& config,
-                                   SoroWindowController::LayoutMode mode,
-                                   SoroWindowController::InputMode inputMode);
+        void controllerInitialized(const SoroIniConfig& soroConfig,
+                                   const MissionControlIniConfig& mcConfig);
         void controllerError(QString description);
         void controllerWarning(QString description);
 

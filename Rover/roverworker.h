@@ -9,14 +9,12 @@
 #include "channel.h"
 #include "logger.h"
 #include "armmessage.h"
-#include "soroutil.h"
+#include "soro_global.h"
 #include "serialchannel3.h"
-#include "commonini.h"
+#include "soroini.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
 #include "gpsserver.h"
-
-#include <stdio.h>
 
 using namespace Soro;
 
@@ -55,10 +53,6 @@ namespace Rover {
         void driveChannelStateChanged(Channel::State state);
         void gimbalChannelStateChanged(Channel::State state);
         void sharedChannelStateChanged(Channel::State state);
-
-        void armControllerChannelStateChanged(SerialChannel3::State state);
-        void driveControllerChannelStateChanged(SerialChannel3::State state);
-        void gimbalControllerChannelStateChanged(SerialChannel3::State state);
 
     protected:
         void timerEvent(QTimerEvent *e);

@@ -24,43 +24,41 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
             _controller, SLOT(settingsClicked()));
     connect(_controller, SIGNAL(gamepadChanged(QString)),
             this, SLOT(controllerGamepadChanged(QString)), Qt::DirectConnection);
-    connect(_controller, SIGNAL(initialized(SoroIniConfig,SoroWindowController::LayoutMode, SoroWindowController::InputMode)),
-            this, SLOT(controllerInitialized(SoroIniConfig,SoroWindowController::LayoutMode,  SoroWindowController::InputMode)),
-            Qt::DirectConnection);
+    connect(_controller, SIGNAL(initialized(SoroIniConfig,MissionControlIniConfig)),
+            this, SLOT(controllerInitialized(SoroIniConfig,MissionControlIniConfig)), Qt::DirectConnection);
     connect(_controller, SIGNAL(error(QString)),
             this, SLOT(controllerError(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(warning(QString)),
             this, SLOT(controllerWarning(QString)), Qt::DirectConnection);
 }
 
-void SoroMainWindow::controllerInitialized(const SoroIniConfig& config,
-                                           SoroWindowController::LayoutMode mode,
-                                           SoroWindowController::InputMode inputMode) {
-    switch (mode) {
-    case SoroWindowController::ArmLayoutMode:
+void SoroMainWindow::controllerInitialized(const SoroIniConfig& soroConfig,
+                                           const MissionControlIniConfig& mcConfig) {
+    switch (mcConfig.Layout) {
+    case MissionControlIniConfig::ArmLayoutMode:
         setWindowTitle("Mission Control - Arm");
         ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
         ui->videoPane2->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         _videoWindow->getVideoPane()->setCameraName(ARM_CAMERA_DISPLAY_NAME);
-        if (inputMode == SoroWindowController::MasterArm) {
+        if (mcConfig.ControlInputMode == MissionControlIniConfig::MasterArm) {
             masterArmSerialStateChanged(SerialChannel3::ConnectingState);
             connect(_controller->getMasterArmSerial(), SIGNAL(stateChanged(SerialChannel3::State)),
                     this, SLOT(masterArmSerialStateChanged(SerialChannel3::State)));
         }
         break;
-    case SoroWindowController::DriveLayoutMode:
+    case MissionControlIniConfig::DriveLayoutMode:
         setWindowTitle("Mission Control - Driver");
         ui->videoPane1->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
         _videoWindow->getVideoPane()->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
         break;
-    case SoroWindowController::GimbalLayoutMode:
+    case MissionControlIniConfig::GimbalLayoutMode:
         setWindowTitle("Mission Control - Gimbal");
         ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
         ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
         _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         break;
-    case SoroWindowController::SpectatorLayoutMode:
+    case MissionControlIniConfig::SpectatorLayoutMode:
         setWindowTitle("Mission Control - Spectating");
         ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
         ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);

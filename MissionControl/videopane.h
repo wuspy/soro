@@ -32,7 +32,7 @@ namespace MissionControl {
         ~VideoPane();
         void close();
         void openLocalFile(QString filePath);
-        void connectCameraStream(quint16 port, QHostAddress hostAddress = QHostAddress::Any);
+        void connectUdpStream(quint16 port, QHostAddress hostAddress = QHostAddress::Any);
         void setCameraName(QString name);
         void setVideoQuality(VideoQuality quality);
         void setShowFullscreenOption(bool showOption);

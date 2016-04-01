@@ -20,12 +20,12 @@ HEADERS += \
     ../shared/Soro/armmessage.h \
     ../shared/Soro/drivemessage.h \
     ../shared/Soro/gimbalmessage.h \
-    ../shared/Soro/soroutil.h \
+    ../shared/Soro/soro_global.h \
     ../shared/Soro/socketaddress.h \
     ../shared/Soro/channel.h \
     ../shared/Soro/logger.h \
     ../shared/Soro/iniparser.h \
-    ../shared/Soro/commonini.h \
+    ../shared/Soro/soroini.h \
     roverworker.h \
     ../shared/Soro/serialchannel3.h \
     gpsserver.h

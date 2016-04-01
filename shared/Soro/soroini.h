@@ -1,5 +1,5 @@
-#ifndef COMMONINI_H
-#define COMMONINI_H
+#ifndef SOROINI_H
+#define SOROINI_H
 
 #include <QtCore>
 
@@ -166,4 +166,4 @@ struct SoroIniConfig {
 
 }
 
-#endif // COMMONINI_H
+#endif // SOROINI_H

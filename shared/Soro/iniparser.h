@@ -47,6 +47,11 @@ public:
      */
     bool valueAsInt(const QString &tag, int *value) const;
 
+    /* Gets a tag's value from the last file read in as a range of integers
+     * and returns true if the conversion was successful
+     */
+    bool valueAsIntRange(const QString &tag, int *values) const;
+
     /* Gets a tag's value from the last file read in as an boolean,
      * and returns true if the conversion was successful.
      */

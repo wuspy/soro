@@ -18,7 +18,8 @@
 #include "glfwmapdialog.h"
 #include "videowindow.h"
 #include "latlng.h"
-#include "commonini.h"
+#include "soroini.h"
+#include "mcini.h"
 
 #define NO_CONTROLLER -1
 
@@ -29,13 +30,6 @@ class SoroWindowController : public QObject
 {
     Q_OBJECT
 public:
-    enum InputMode {
-        GLFW, MasterArm
-    };
-
-    enum LayoutMode {
-        ArmLayoutMode, DriveLayoutMode, GimbalLayoutMode, SpectatorLayoutMode
-    };
 
     explicit SoroWindowController(QObject *presenter = 0);
 
@@ -46,20 +40,20 @@ public:
     const SerialChannel3* getMasterArmSerial() const;
 
 private:
-    InputMode _inputMode = GLFW;
-    LayoutMode _mode = SpectatorLayoutMode;
     char _buffer[512];
     bool _glfwInitialized = false;
     Logger *_log = NULL;
     char _currentKey = '\0';
     int _initTimerId = TIMER_INACTIVE;
 
-    //shared configuration
+    //used to load configuration options
     SoroIniConfig _soroIniConfig;
+    MissionControlIniConfig _mcIniConfig;
 
     //internet communication channels
     Channel *_controlChannel = NULL;
     Channel *_sharedChannel = NULL;
+    QList<Channel*> _sharedChannelNodes;
 
     //for joystick control
     ArmGlfwMap *_armInputMap = NULL;
@@ -79,16 +73,19 @@ private:
     GlfwMap* getInputMap();
 
 signals:
-    void initialized(const SoroIniConfig& config,
-                     SoroWindowController::LayoutMode mode,
-                     SoroWindowController::InputMode inputMode);
+    void initialized(const SoroIniConfig& soroConfig,
+                     const MissionControlIniConfig& mcConfig);
     void gamepadChanged(QString name);
     void error(QString description);
     void warning(QString description);
+    void connectionQualityUpdate(int sharedRtt, int tcpLag);
 
 private slots:
     void sharedChannelMessageReceived(const QByteArray& message);
+    void sharedChannelNodeMessageReceived(const QByteArray& message);
     void masterArmSerialMessageReceived(const char *message, int size);
+    void sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
+                            int rateUp, int rateDown);
 
 public slots:
     void settingsClicked();

@@ -66,6 +66,16 @@ bool IniParser::valueAsInt(const QString &tag, int* value) const {
     return success;
 }
 
+bool IniParser::valueAsIntRange(const QString &tag, int *values) const {
+    bool success;
+    QStringList numbers = value(tag).split("-");
+    if (numbers.length() != 2) return false;
+    values[0] = numbers[0].toInt(&success);
+    if (!success) return false;
+    values[1] = numbers[1].toInt(&success);
+    return success;
+}
+
 bool IniParser::valueAsBool(const QString &tag, bool* value) const {
     QString rawValue = this->value(tag).toLower();
     if (rawValue == "true" || rawValue == "1") {
