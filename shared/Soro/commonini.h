@@ -137,16 +137,29 @@ struct SoroIniConfig {
      * null the logger!!!
      */
     void applyLogLevel(Logger*& log) {
+        if (log == NULL) return;
         switch (LogLevel) {
         case LOG_LEVEL_DISABLED:
-            if (log != NULL) {
-                if (log != NULL) log->i("SoroIniConfig", "The configuration file specifies to disable logging, goodbye!");
-                delete log;
-                log = NULL;
-            }
+            log->i("SoroIniConfig", "The configuration file specifies to disable logging, goodbye!");
+            delete log;
+            log = NULL;
             break;
-        default:
-            log->MaxLevel = LogLevel;
+        case LOG_LEVEL_DEBUG:
+            log->i("SoroIniConfig", "The maximum log level for this file is DEBUG");
+            log->MaxLevel = LOG_LEVEL_DEBUG;
+            break;
+        case LOG_LEVEL_INFORMATION:
+            log->i("SoroIniConfig", "The maximum log level for this file is INFORMATION");
+            log->MaxLevel = LOG_LEVEL_INFORMATION;
+            break;
+        case LOG_LEVEL_WARN:
+            log->i("SoroIniConfig", "The maximum log level for this file is WARNING");
+            log->MaxLevel = LOG_LEVEL_WARN;
+            break;
+        case LOG_LEVEL_ERROR:
+            log->i("SoroIniConfig", "The maximum log level for this file is ERROR");
+            log->MaxLevel = LOG_LEVEL_ERROR;
+            break;
         }
     }
 };

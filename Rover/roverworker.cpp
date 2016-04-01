@@ -88,12 +88,12 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         connect(_sharedChannel, SIGNAL(messageReceived(const QByteArray)),
                  this, SLOT(sharedChannelMessageReceived(const QByteArray)));
         //observers for serial (mbed) connectivity state changes
-        connect(_armControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
-                this, SLOT(armControllerChannelStateChanged(SerialChannel::State)));
-        connect(_driveControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
-                this, SLOT(driveControllerChannelStateChanged(SerialChannel::State)));
-        connect(_gimbalControllerSerial, SIGNAL(stateChanged(SerialChannel::State)),
-                this, SLOT(gimbalControllerChannelStateChanged(SerialChannel::State)));
+        connect(_armControllerSerial, SIGNAL(stateChanged(SerialChannel3::State)),
+                this, SLOT(armControllerChannelStateChanged(SerialChannel3::State)));
+        connect(_driveControllerSerial, SIGNAL(stateChanged(SerialChannel3::State)),
+                this, SLOT(driveControllerChannelStateChanged(SerialChannel3::State)));
+        connect(_gimbalControllerSerial, SIGNAL(stateChanged(SerialChannel3::State)),
+                this, SLOT(gimbalControllerChannelStateChanged(SerialChannel3::State)));
 
         _armChannel->open();
         _driveChannel->open();
@@ -197,4 +197,5 @@ RoverWorker::~RoverWorker() {
     if (_armControllerSerial != NULL) delete _armControllerSerial;
     if (_armControllerSerial != NULL) delete _driveControllerSerial;
     if (_armControllerSerial != NULL) delete _gimbalControllerSerial;
+    if (_gpsServer != NULL) delete _gpsServer;
 }
