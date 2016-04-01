@@ -497,59 +497,20 @@ void Channel::close(Channel::State closeState) {   //PRIVATE
 
 void Channel::connectionErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
     emit connectionError(err);
-    switch (err) {
-    case QAbstractSocket::SocketTimeoutError:    //non-fatal
-        LOG_E("A socket operation has timed out");
-        return;
-    case QAbstractSocket::TemporaryError:    //non-fatal
-        LOG_E("Temporary connection error: " + _socket->errorString());
-        return;
-    case QAbstractSocket::SocketAddressNotAvailableError:   //fatal
-        LOG_E("FATAL: The address is not availabfle to open on this device. Select a different host address");
-        close(ErrorState);
-        break;
-    case QAbstractSocket::AddressInUseError:    //fatal
-        LOG_E("FATAL: Address in use. Select a different port");
-        close(ErrorState);
-        break;
-    case QAbstractSocket::DatagramTooLargeError: //non-fatal, should never happen with the checks we have in place
-        LOG_E("Attempted to send a datagram that was too large");
-        break;
-    default:    //reset connection to be safe
-        LOG_E("Connection Error: " + _socket->errorString());
-        //Attempt to reconnect after RECOVERY_DELAY
-        //we should NOT directly call resetConnectio() here as that could
-        //potentially force an error loop
-        START_TIMER(_resetTimerID, RECOVERY_DELAY);
-        break;
-    }
+    LOG_E("Connection Error: " + _socket->errorString());
+    //Attempt to reconnect after RECOVERY_DELAY
+    //we should NOT directly call resetConnectio() here as that could
+    //potentially force an error loop
+    START_TIMER(_resetTimerID, RECOVERY_DELAY);
 }
 
 void Channel::serverErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
     emit connectionError(err);
-    switch (err) {
-    case QAbstractSocket::SocketTimeoutError:    //non-fatal
-        LOG_E("A server operation has timed out");
-        break;
-    case QAbstractSocket::TemporaryError:    //non-fatal
-        LOG_E("Temporary server error: " + _socket->errorString());
-        break;
-    case QAbstractSocket::SocketAddressNotAvailableError:
-        LOG_E("FATAL: The address is not available to open on this device. Select a different host address");
-        close(ErrorState);
-        break;
-    case QAbstractSocket::AddressInUseError:
-        LOG_E("FATAL: Address in use. Select a different port");
-        close(ErrorState);
-        break;
-    default:
-        LOG_E("Server Error: " + _tcpServer->errorString());
-        //don't automatically kill the connection if it's still active, only the listening server
-        //experienced the error
-        if (_tcpSocket == NULL || _tcpSocket->state() != QAbstractSocket::ConnectedState) {
-            START_TIMER(_resetTimerID, RECOVERY_DELAY);
-        }
-        break;
+    LOG_E("Server Error: " + _tcpServer->errorString());
+    //don't automatically kill the connection if it's still active, only the listening server
+    //experienced the error
+    if (_tcpSocket == NULL || _tcpSocket->state() != QAbstractSocket::ConnectedState) {
+        START_TIMER(_resetTimerID, RECOVERY_DELAY);
     }
 }
 
