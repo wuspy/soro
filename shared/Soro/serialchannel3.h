@@ -302,8 +302,10 @@ private slots:
             if (_serial->isOpen()) _serial->close();
             _verified = false;
             LOG_E("Serial " + _serial->portName() + " experienced an error: " + _serial->errorString());
-            //wait a little bit before doing anything else, to prevent error loop
-            START_TIMER(_resetConnectionTimerId, 50);
+            if (_searchTimerId == TIMER_INACTIVE) {
+                //wait a little bit before doing anything else, to prevent error loop
+                START_TIMER(_resetConnectionTimerId, 1000);
+            }
         }
     }
 
