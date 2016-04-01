@@ -1,7 +1,5 @@
-#ifndef SERIALCHANNEL2_H
-#define SERIALCHANNEL2_H
-
-#define SERIALCHANNEL_H
+#ifndef SERIALCHANNEL3_H
+#define SERIALCHANNEL3_H
 
 #ifdef QT_CORE_LIB
 #   include <QSerialPort>
@@ -10,7 +8,7 @@
 #   include <QtCore>
 #   include <QDebug>
 #   include <iostream>
-#   include "soroutil.h"
+#   include "soro_global.h"
 #   include "logger.h"
 #   define SERIAL_GETCHAR(s, c) s->getChar(&c)
 #   define SERIAL_PUTCHAR(s, c) s->putChar(c)
@@ -71,7 +69,7 @@ static inline void serialize_14bit(unsigned short us, char *arr, int index) {
  */
 static inline char joyFloatToByte(float val) {
     val = (val + 1) * 100;
-    unsigned char uc = static_cast<unsigned char>(val);
+    unsigned char uc = (unsigned char)val;
     return reinterpret_cast<char&>(uc);
 }
 
@@ -80,7 +78,7 @@ static inline char joyFloatToByte(float val) {
  */
 static inline char joyIntToByte(int val) {
     val += 100;
-    unsigned char uc = static_cast<unsigned char>(val + 100);
+    unsigned char uc = (unsigned char)val;
     return reinterpret_cast<char&>(uc);
 }
 
@@ -88,21 +86,21 @@ static inline char joyIntToByte(int val) {
  * ranging from 0 to 200
  */
 static inline int joyFloatToInt(float val) {
-    return val * 100;
+    return (int)(val * 100);
 }
 
 /* Converts a byte encoded joystick axis (see joyFloatToByte) back
  * into it's original float value
  */
 static inline float joyByteToFloat(char val) {
-    return (static_cast<float>(reinterpret_cast<unsigned char&>(val)) - 100.0) / 100.0;
+    return (float)(reinterpret_cast<unsigned char&>(val) - 100.0) / 100.0;
 }
 
 /* Converts a byte encoded joystick axis (see joyFloatToByte) into
  * an int ranging from -100 to 100
  */
 static inline int joyByteToInt(char val) {
-    return static_cast<int>(reinterpret_cast<unsigned char&>(val)) - 100;
+    return (int)reinterpret_cast<unsigned char&>(val) - 100;
 }
 
 /* Decodes a number encoded with the above function
@@ -497,4 +495,4 @@ public:
 
 }
 
-#endif // SERIALCHANNEL_H
+#endif // SERIALCHANNEL3_H

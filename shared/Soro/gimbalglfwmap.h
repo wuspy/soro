@@ -9,7 +9,6 @@ namespace Soro {
      */
     struct GimbalGlfwMap: public GlfwMap {
         GimbalGlfwMap();
-        ~GimbalGlfwMap();
 
         int axisCount() const;
         int buttonCount() const;

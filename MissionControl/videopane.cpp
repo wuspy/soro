@@ -8,7 +8,8 @@ VideoPane::VideoPane(QWidget *parent) :
     ui(new Ui::VideoPane) {
 
     ui->setupUi(this);
-    addShadow(ui->controlsWidget);
+    addWidgetShadow(ui->controlsWidget, 10, 0);
+
     //yes, you can forward signals in Qt
     connect(ui->fullscreenButton, SIGNAL(clicked(bool)),
             this, SIGNAL(fullscreenRequested()));

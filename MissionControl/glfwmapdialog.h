@@ -8,7 +8,7 @@
 #include <QTimerEvent>
 #include <QDebug>
 
-#include "soroutil.h"
+#include "soro_global.h"
 #include "glfwmap.h"
 
 #include "GLFW/glfw3.h"

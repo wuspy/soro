@@ -73,6 +73,7 @@ namespace Soro {
         ButtonMapItem* ButtonList = NULL;
         QString ControllerName = QString::null;
 
+        virtual ~GlfwMap();
         void reset();
         virtual int axisCount() const=0;
         virtual int buttonCount() const=0;

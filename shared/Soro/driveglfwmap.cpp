@@ -13,10 +13,6 @@ DriveGlfwMap::DriveGlfwMap() {
     };
 }
 
-DriveGlfwMap::~DriveGlfwMap() {
-    delete[] AxisList;
-}
-
 int DriveGlfwMap::axisCount() const {
     return 4;
 }

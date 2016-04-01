@@ -17,42 +17,43 @@ SOURCES += \
     ../shared/Soro/armglfwmap.cpp \
     ../shared/Soro/glfwmap.cpp \
     main.cpp \
-    mcmainwindow.cpp \
     glfwmapdialog.cpp \
     googlemapview.cpp \
     videowindow.cpp \
     videopane.cpp \
     ../shared/Soro/driveglfwmap.cpp \
-    ../shared/Soro/gimbalglfwmap.cpp
+    ../shared/Soro/gimbalglfwmap.cpp \
+    soromainwindow.cpp \
+    sorowindowcontroller.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
     ../shared/Soro/iniparser.h \
     ../shared/Soro/latlng.h \
     ../shared/Soro/logger.h \
-    ../shared/Soro/soroutil.h \
     ../shared/Soro/socketaddress.h \
     ../shared/Soro/armglfwmap.h \
     ../shared/Soro/glfwmap.h \
     ../shared/Soro/armmessage.h \
     ../shared/Soro/commonini.h \
-    mcmainwindow.h \
     glfwmapdialog.h \
     googlemapview.h \
     videowindow.h \
     videopane.h \
-    mcutil.h \
     ../shared/Soro/driveglfwmap.h \
     ../shared/Soro/drivemessage.h \
     ../shared/Soro/gimbalglfwmap.h \
     ../shared/Soro/gimbalmessage.h \
-    ../shared/Soro/serialchannel3.h
+    ../shared/Soro/serialchannel3.h \
+    soromainwindow.h \
+    sorowindowcontroller.h \
+    ../shared/Soro/soro_global.h
 
 FORMS    += \
-    mcmainwindow.ui \
     glfwmapdialog.ui \
     videopane.ui \
-    videowindow.ui
+    videowindow.ui \
+    soromainwindow.ui
 
 RESOURCES += \
     Resources/MissionControl.qrc

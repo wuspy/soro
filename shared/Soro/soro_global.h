@@ -1,5 +1,5 @@
-#ifndef SOROUTIL_H
-#define SOROUTIL_H
+#ifndef SORO_GLOBAL_H
+#define SORO_GLOBAL_H
 
 #include <QSerialPortInfo>
 #include <QSerialPort>
@@ -15,4 +15,18 @@
 #define CHANNEL_NAME_GIMBAL "Soro_GimbalChannel"
 #define CHANNEL_NAME_SHARED "Soro_SharedTcpChannel"
 
-#endif // SOROUTIL_H
+#ifdef QT_WIDGETS_LIB
+
+#include <QWidget>
+#include <QGraphicsDropShadowEffect>
+
+static inline void addWidgetShadow(QWidget *target, int radius, int offset) {
+    QGraphicsDropShadowEffect* ef = new QGraphicsDropShadowEffect;
+    ef->setBlurRadius(radius);
+    ef->setOffset(offset);
+    target->setGraphicsEffect(ef);
+}
+
+#endif
+
+#endif // SORO_GLOBAL_H

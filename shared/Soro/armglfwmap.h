@@ -9,7 +9,6 @@ namespace Soro {
      */
     struct ArmGlfwMap: public GlfwMap {
         ArmGlfwMap();
-        ~ArmGlfwMap();
         int axisCount() const;
         int buttonCount() const;
 

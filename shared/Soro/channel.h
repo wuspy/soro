@@ -8,7 +8,7 @@
 
 #include "logger.h"
 #include "iniparser.h"
-#include "soroutil.h"
+#include "soro_global.h"
 #include "socketaddress.h"
 
 namespace Soro {

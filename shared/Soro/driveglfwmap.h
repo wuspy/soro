@@ -9,7 +9,6 @@ namespace Soro {
      */
     struct DriveGlfwMap: public GlfwMap {
         DriveGlfwMap();
-        ~DriveGlfwMap();
 
         int axisCount() const;
         int buttonCount() const;

@@ -12,10 +12,6 @@ GimbalGlfwMap::GimbalGlfwMap() {
     };
 }
 
-GimbalGlfwMap::~GimbalGlfwMap() {
-    delete[] AxisList;
-}
-
 int GimbalGlfwMap::axisCount() const {
     return 3;
 }

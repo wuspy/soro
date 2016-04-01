@@ -1,13 +1,13 @@
 #include <QApplication>
 
-#include "mcmainwindow.h"
+#include "soromainwindow.h"
 
 using namespace Soro::MissionControl;
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
-    McMainWindow w;
+    SoroMainWindow w;
     w.show();
 
     return a.exec();

@@ -4,7 +4,7 @@
 #ifdef QT_CORE_LIB
 #   include <QByteArray>
 #   include <QSerialPort>
-#   include "soroutil.h"
+#   include "soro_global.h"
 #   include "gimbalglfwmap.h"
 #else
 #   include "mbed.h"

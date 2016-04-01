@@ -5,14 +5,14 @@
 #include <QResizeEvent>
 #include <QHostAddress>
 
-#include "mcutil.h"
-
 #include <VLCQtCore/Media.h>
 #include <VLCQtCore/Common.h>
 #include <VLCQtCore/Config.h>
 #include <VLCQtCore/Instance.h>
 #include <VLCQtCore/MediaPlayer.h>
 #include <VLCQtWidgets/WidgetVideo.h>
+
+#include "soro_global.h"
 
 namespace Ui {
     class VideoPane;

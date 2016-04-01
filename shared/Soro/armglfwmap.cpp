@@ -24,11 +24,6 @@ ArmGlfwMap::ArmGlfwMap() {
     };
 }
 
-ArmGlfwMap::~ArmGlfwMap() {
-    delete[] AxisList;
-    delete[] ButtonList;
-}
-
 int ArmGlfwMap::axisCount() const {
     return 5;
 }

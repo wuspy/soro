@@ -5,6 +5,11 @@
 
 using namespace Soro;
 
+GlfwMap::~GlfwMap() {
+    if (AxisList !=NULL) delete[] AxisList;
+    if (ButtonList != NULL) delete[] ButtonList;
+}
+
 bool GlfwMap::loadMapping(QFile& file) {
     IniParser parser;
     if (!parser.load(file)
