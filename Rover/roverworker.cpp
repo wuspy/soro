@@ -8,7 +8,7 @@ RoverWorker::RoverWorker(QObject *parent) : QObject(parent) {
     QString appPath = QCoreApplication::applicationDirPath();
 
     _log = new Logger(this);
-    _log->setLogfile(appPath + "/rover.log");
+    _log->setLogfile(appPath + "/rover_" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
     _log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -66,7 +66,7 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         //create serial (mbed) channels
         _armControllerSerial = new SerialChannel3(ARM_SERIAL_CHANNEL_NAME, this, _log);
         _driveControllerSerial = new SerialChannel3(DRIVE_SERIAL_CHANNEL_NAME, this, _log);
-        _gimbalControllerSerial = new SerialChannel3(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
+        //_gimbalControllerSerial = new SerialChannel3(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
         LOG_I("All serial channels initialized successfully");
 
         //observers for network channels message received
@@ -87,13 +87,6 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
                  this, SLOT(gimbalChannelMessageReceived(const QByteArray)));
         connect(_sharedChannel, SIGNAL(messageReceived(const QByteArray)),
                  this, SLOT(sharedChannelMessageReceived(const QByteArray)));
-        //observers for serial (mbed) connectivity state changes
-        connect(_armControllerSerial, SIGNAL(stateChanged(SerialChannel3::State)),
-                this, SLOT(armControllerChannelStateChanged(SerialChannel3::State)));
-        connect(_driveControllerSerial, SIGNAL(stateChanged(SerialChannel3::State)),
-                this, SLOT(driveControllerChannelStateChanged(SerialChannel3::State)));
-        connect(_gimbalControllerSerial, SIGNAL(stateChanged(SerialChannel3::State)),
-                this, SLOT(gimbalControllerChannelStateChanged(SerialChannel3::State)));
 
         _armChannel->open();
         _driveChannel->open();
@@ -103,41 +96,6 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, 5499), _log);
 
         LOG_I("Waiting for connections...");
-    }
-}
-
-//observers for serial (mbed) connectivity state changes
-
-void RoverWorker::armControllerChannelStateChanged(SerialChannel3::State state) {
-    switch (state) {
-    case SerialChannel3::ConnectedState:
-        LOG_I("Arm controller (mbed) is trying to connect...");
-        break;
-    case SerialChannel3::ConnectingState:
-        LOG_I("Arm controller (mbed) is connected");
-        break;
-    }
-}
-
-void RoverWorker::driveControllerChannelStateChanged(SerialChannel3::State state) {
-    switch (state) {
-    case SerialChannel3::ConnectedState:
-        LOG_I("Drive controller (mbed) is trying to connect...");
-        break;
-    case SerialChannel3::ConnectingState:
-        LOG_I("Drive controller (mbed) is connected");
-        break;
-    }
-}
-
-void RoverWorker::gimbalControllerChannelStateChanged(SerialChannel3::State state) {
-    switch (state) {
-    case SerialChannel3::ConnectedState:
-        LOG_I("Gimbal controller (mbed) is trying to connect...");
-        break;
-    case SerialChannel3::ConnectingState:
-        LOG_I("Gimbal controller (mbed) is connected");
-        break;
     }
 }
 
