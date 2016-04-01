@@ -286,7 +286,7 @@ private:
         KILL_TIMER(_watchdogTimerId);
         KILL_TIMER(_handshakeTimerId);
         KILL_TIMER(_searchTimerId);
-        START_TIMER(_searchTimerId, 100);
+        START_TIMER(_searchTimerId, 500);
         _verified = false;
         if (_state != ConnectingState) {
             _state = ConnectingState;
