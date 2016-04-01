@@ -69,36 +69,40 @@ static inline void serialize_14bit(unsigned short us, char *arr, int index) {
 /* Converts a float ranging from -1 to 1 into an unsigned char,
  * ranging from 0 to 200
  */
-static inline unsigned char joyFloatToByte(float val) {
-    return (unsigned char) ((val + 1) * 100);
+static inline char joyFloatToByte(float val) {
+    val = (val + 1) * 100;
+    unsigned char uc = static_cast<unsigned char>(val);
+    return reinterpret_cast<char&>(uc);
 }
 
 /* Converts an int ranging from -100 to 100 into an unsigned char,
  * ranging from 0 to 200
  */
-static inline unsigned char joyIntToByte(int val) {
-    return (unsigned char)(val + 100);
+static inline char joyIntToByte(int val) {
+    val += 100;
+    unsigned char uc = static_cast<unsigned char>(val + 100);
+    return reinterpret_cast<char&>(uc);
 }
 
 /* Converts an int ranging from -100 to 100 into an unsigned char,
  * ranging from 0 to 200
  */
-static inline int joyFloatToInt(int val) {
+static inline int joyFloatToInt(float val) {
     return val * 100;
 }
 
 /* Converts a byte encoded joystick axis (see joyFloatToByte) back
  * into it's original float value
  */
-static inline float joyByteToFloat(unsigned char val) {
-    return ((float)val - 100.0) / 100.0;
+static inline float joyByteToFloat(char val) {
+    return (static_cast<float>(reinterpret_cast<unsigned char&>(val)) - 100.0) / 100.0;
 }
 
 /* Converts a byte encoded joystick axis (see joyFloatToByte) into
  * an int ranging from -100 to 100
  */
-static inline int joyByteToInt(unsigned char val) {
-    return (int)val - 100;
+static inline int joyByteToInt(char val) {
+    return static_cast<int>(reinterpret_cast<unsigned char&>(val)) - 100;
 }
 
 /* Decodes a number encoded with the above function

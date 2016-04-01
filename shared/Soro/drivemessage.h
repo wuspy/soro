@@ -107,24 +107,26 @@ public:
 
             float midScale = 0.6 * (qAbs(x)/1.0);
 
-            message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * joyFloatToByte(left);
-            message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * joyFloatToByte(right);
-            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * joyFloatToByte(left - (midScale * left));
-            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * joyFloatToByte(right - (midScale * right));
-            message[DRIVE_MESSAGE_BL_INDEX] = DRIVE_BL_SIGN * joyFloatToByte(left);
-            message[DRIVE_MESSAGE_BR_INDEX] = DRIVE_BR_SIGN * joyFloatToByte(right);
+            message[DRIVE_MESSAGE_FL_INDEX] = joyFloatToByte(DRIVE_FL_SIGN * left);
+            message[DRIVE_MESSAGE_FR_INDEX] = joyFloatToByte(DRIVE_FR_SIGN * right);
+            message[DRIVE_MESSAGE_ML_INDEX] = joyFloatToByte(DRIVE_ML_SIGN * (left - (midScale * left)));
+            message[DRIVE_MESSAGE_MR_INDEX] = joyFloatToByte(DRIVE_MR_SIGN * (right - (midScale * right)));
+            message[DRIVE_MESSAGE_BL_INDEX] = joyFloatToByte(DRIVE_BL_SIGN * left);
+            message[DRIVE_MESSAGE_BR_INDEX] = joyFloatToByte(DRIVE_BR_SIGN * right);
         }
         else {
-            unsigned char leftDrive = joyFloatToByte(mapping.leftWheelsAxis().value(glfwAxes, axisCount));
-            unsigned char rightDrive = joyFloatToByte(mapping.rightWheelsAxis().value(glfwAxes, axisCount));
+            float left = mapping.leftWheelsAxis().value(glfwAxes, axisCount);
+            float right = mapping.rightWheelsAxis().value(glfwAxes, axisCount);
             //scale the middle wheels by 0.6 at full turn
-            float midScale = 0.6 * (qAbs((int)leftDrive - (int)rightDrive)/200.0);
-            message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * leftDrive;
-            message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * rightDrive;
-            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * (unsigned char)(leftDrive - (midScale * leftDrive));
-            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * (unsigned char)(rightDrive - (midScale * rightDrive));
-            message[DRIVE_MESSAGE_BL_INDEX] = DRIVE_BL_SIGN * leftDrive;
-            message[DRIVE_MESSAGE_BR_INDEX] = DRIVE_BR_SIGN * rightDrive;
+            float midScale = 0.6 * (qAbs(left - right)/2.0);
+            message[DRIVE_MESSAGE_FL_INDEX] = joyFloatToByte(DRIVE_FL_SIGN * left);
+            message[DRIVE_MESSAGE_FR_INDEX] = joyFloatToByte(DRIVE_FR_SIGN * right);
+            message[DRIVE_MESSAGE_ML_INDEX] = joyFloatToByte(DRIVE_ML_SIGN * (left - (midScale * left)));
+            message[DRIVE_MESSAGE_MR_INDEX] = joyFloatToByte(DRIVE_MR_SIGN * (right - (midScale * right)));
+            message[DRIVE_MESSAGE_BL_INDEX] = joyFloatToByte(DRIVE_BL_SIGN * left);
+            message[DRIVE_MESSAGE_BR_INDEX] = joyFloatToByte(DRIVE_BR_SIGN * right);
+
+            qDebug() << QString::number(frontLeft(message)) << ", " << QString::number(frontRight(message));
         }
     }
 #endif
