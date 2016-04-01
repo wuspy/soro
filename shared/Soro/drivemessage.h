@@ -97,7 +97,6 @@ public:
             if(y < 0) {
                 left = -left;
                 right = -right;
-                midScale = -midScale;
             }
             if (left > 100) left = 100;
             else if (left < -100) left = -100;
