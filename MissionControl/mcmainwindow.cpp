@@ -39,7 +39,7 @@ McMainWindow::McMainWindow(QWidget *parent) :
             this, SLOT(settingsClicked()));
 
     _log = new Logger(this);
-    _log->setLogfile(APPPATH + "/mission_control.log");
+    _log->setLogfile(APPPATH + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
     //_log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");

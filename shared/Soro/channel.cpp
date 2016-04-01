@@ -673,8 +673,10 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
         int time = _lastReceiveTime - _lastAckReceiveTime;
         _lastAckReceiveTime = _lastReceiveTime;
-        _dataRateUp = (_bytesUp * (100000 / time)) / 100;
-        _dataRateDown = (_bytesDown * (100000 / time)) / 100;
+        if (time != 0) {
+            _dataRateUp = (_bytesUp * (100000 / time)) / 100;
+            _dataRateDown = (_bytesDown * (100000 / time)) / 100;
+        }
         _bytesUp = 0;
         _bytesDown = 0;
         QDataStream stream(message);
