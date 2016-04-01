@@ -280,7 +280,8 @@ public:
         ConnectingState, ConnectedState
     };
 
-    SerialChannel3(const char *name, QObject *parent, Logger *log): QObject(parent) {
+    SerialChannel3(const char *name, QObject *parent, Logger *log = NULL):
+        QObject(parent) {
         _log = log;
         _name = name;
         LOG_TAG = (QString)_name;
@@ -295,6 +296,29 @@ public:
                 this, SLOT(serialError(QSerialPort::SerialPortError)));
         //begin looking for the correct serial port
         resetConnection();
+    }
+
+    /* Add another serial channel as a competitor to this one, so that both may
+     * work to avoid interrupting each others communication.
+     *
+     * This only needs to be called with one of the two serial channels.
+     */
+    void addCompetitor(SerialChannel3* competitor) {
+        if (!_competitors.contains(competitor)) {
+            _competitors.append(competitor);
+            competitor->_competitors.append(this);
+        }
+    }
+
+    void removeCompetitor(SerialChannel3* competitor) {
+        int index = _competitors.indexOf(competitor);
+        if (index >= 0) {
+            _competitors.removeAt(index);
+            int cIndex = competitor->_competitors.indexOf(this);
+            if (cIndex >= 0) {
+                competitor->_competitors.removeAt(cIndex);
+            }
+        }
     }
 
     inline State getState() const {
@@ -314,6 +338,7 @@ private:
     State _state;
     qint64 _lastReadTime = 0;
     QString LOG_TAG;
+    QList<SerialChannel3*> _competitors;
 
     void resetConnection() {
         LOG_I("Attempting to reset the serial connection...");
@@ -363,6 +388,10 @@ protected:
             if (_serial->isOpen()) _serial->close();
 
             for (;_serialHandshakeIndex < _serialPorts.size(); _serialHandshakeIndex++) {
+
+                foreach (SerialChannel3 *sc, _competitors) {
+                    if (sc->_serial->portName() == _serialPorts[_serialHandshakeIndex].portName()) continue;
+                }
 
                 #ifdef __linux__ ////////////////////////////////////////
                 if (!_serialPorts[_serialHandshakeIndex].portName().startsWith("ttyACM")) continue;
