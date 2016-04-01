@@ -61,7 +61,7 @@ public:
      */
     static void setGlfwData(char *message, const float *glfwAxes, const unsigned char *glfwButtons,
                           int axisCount, int buttonCount, DriveGlfwMap& mapping) {
-        message[0] = DRIVE_MESSAGE_ID;
+        message[0] = (char)DRIVE_MESSAGE_ID;
         if (mapping.forwardAxis().isMapped() & mapping.turnAxis().isMapped()) {
             float y = (float)joyAxisToByte(mapping.forwardAxis().value(glfwAxes, axisCount));
             float x = 1 - (float)joyAxisToByte(mapping.turnAxis().value(glfwAxes, axisCount));
@@ -95,15 +95,16 @@ public:
 
             // Reverse polarity
             if(y < 0) {
-                left = 0 - left;
-                right = 0 - right;
+                left = -left;
+                right = -right;
+                midScale = -midScale;
             }
             if (left > 100) left = 100;
             else if (left < -100) left = -100;
             if (right > 100) right = 100;
             else if (right < -100) right = -100;
 
-            float midScale = 0.6 * (qAbs(turn)/100.0);
+            float midScale = 0.6 * (qAbs(x)/100.0);
 
             message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * (signed char)left;
             message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * (signed char)right;
