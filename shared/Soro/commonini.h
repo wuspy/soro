@@ -145,19 +145,19 @@ struct SoroIniConfig {
             log = NULL;
             break;
         case LOG_LEVEL_DEBUG:
-            LOG_I("The maximum log level for this file is DEBUG");
+            log->i("SoroIniConfig", "The maximum log level for this file is DEBUG");
             log->MaxLevel = LOG_LEVEL_DEBUG;
             break;
         case LOG_LEVEL_INFORMATION:
-            LOG_I("The maximum log level for this file is INFORMATION");
+            log->i("SoroIniConfig", "The maximum log level for this file is INFORMATION");
             log->MaxLevel = LOG_LEVEL_INFORMATION;
             break;
-        case LOG_LEVEL_WARNING:
-            LOG_I("The maximum log level for this file is WARNING");
-            log->MaxLevel = LOG_LEVEL_WARNING;
+        case LOG_LEVEL_WARN:
+            log->i("SoroIniConfig", "The maximum log level for this file is WARNING");
+            log->MaxLevel = LOG_LEVEL_WARN;
             break;
         case LOG_LEVEL_ERROR:
-            LOG_I("The maximum log level for this file is ERROR");
+            log->i("SoroIniConfig", "The maximum log level for this file is ERROR");
             log->MaxLevel = LOG_LEVEL_ERROR;
             break;
         }
