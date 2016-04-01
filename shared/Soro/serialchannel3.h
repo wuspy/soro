@@ -66,6 +66,34 @@ static inline void serialize_14bit(unsigned short us, char *arr, int index) {
     arr[index + 1] = us & 0x7F; //low 7 bits of first byte
 }
 
+/* Converts a float ranging from -1 to 1 into an unsigned char,
+ * ranging from 0 to 200
+ */
+static inline unsigned char joyFloatToByte(float val) {
+    return (unsigned char) ((val + 1) * 100);
+}
+
+/* Converts an int ranging from -100 to 100 into an unsigned char,
+ * ranging from 0 to 200
+ */
+static inline unsigned char joyIntToByte(int val) {
+    return (unsigned char)(val + 100);
+}
+
+/* Converts a byte encoded joystick axis (see joyFloatToByte) back
+ * into it's original float value
+ */
+static inline float joyByteToFloat(unsigned char val) {
+    return ((float)val - 100.0) / 100.0;
+}
+
+/* Converts a byte encoded joystick axis (see joyFloatToByte) into
+ * an int ranging from -100 to 100
+ */
+static inline int joyByteToInt(unsigned char val) {
+    return (int)val - 100;
+}
+
 /* Decodes a number encoded with the above function
  *
  * Range 0-16383
@@ -200,16 +228,16 @@ private slots:
                     if (_verified) {
                         switch (_buffer[1]) {
                         case SERIAL_LOG_DEBUG_ID:
-                            LOG_D(_buffer + 3);
+                            LOG_D("MBED: " + QString(_buffer + 3));
                             break;
                         case SERIAL_LOG_INFO_ID:
-                            LOG_I(_buffer + 3);
+                            LOG_I("MBED: " + QString(_buffer + 3));
                             break;
                         case SERIAL_LOG_WARNING_ID:
-                            LOG_W(_buffer + 3);
+                            LOG_W("MBED: " + QString(_buffer + 3));
                             break;
                         case SERIAL_LOG_ERROR_ID:
-                            LOG_E(_buffer + 3);
+                            LOG_E("MBED: " + QString(_buffer + 3));
                             break;
                         }
                         resetMessageWatchdog();

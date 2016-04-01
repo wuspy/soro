@@ -18,7 +18,7 @@ int main() {
     char buffer[50];
     unsigned short shoulderVal, yawVal, elbowVal, wristVal, bucketVal;
     while(1) {
-        serial.checkConnection();
+        serial.check();
         yawVal = yaw.read() * MAX_VALUE_14BIT;
         shoulderVal = shoulder.read() * MAX_VALUE_14BIT;
         elbowVal = elbow.read() * MAX_VALUE_14BIT;

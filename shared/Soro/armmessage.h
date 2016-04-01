@@ -123,11 +123,11 @@ public:
     static void setGlfwData(char *message, const float *glfwAxes, const unsigned char *glfwButtons,
                           int axisCount, int buttonCount, ArmGlfwMap& mapping) {
         message[0] = ARM_JOY_MESSAGE_BLOCK_START;  //identify this message as glfw and not master
-        message[ARM_JOY_MESSAGE_X_INDEX] = joyAxisToByte(mapping.xAxis().value(glfwAxes, axisCount));
-        message[ARM_JOY_MESSAGE_Y_INDEX] = joyAxisToByte(mapping.yAxis().value(glfwAxes, axisCount));
-        message[ARM_JOY_MESSAGE_YAW_INDEX] = joyAxisToByte(mapping.yawAxis().value(glfwAxes, axisCount));
-        message[ARM_JOY_MESSAGE_WRIST_INDEX] = joyAxisToByte(mapping.wristAxis().value(glfwAxes, axisCount));
-        message[ARM_JOY_MESSAGE_BUCKET_INDEX] = joyAxisToByte(mapping.bucketAxis().value(glfwAxes, axisCount));
+        message[ARM_JOY_MESSAGE_X_INDEX] = joyFloatToByte(mapping.xAxis().value(glfwAxes, axisCount));
+        message[ARM_JOY_MESSAGE_Y_INDEX] = joyFloatToByte(mapping.yAxis().value(glfwAxes, axisCount));
+        message[ARM_JOY_MESSAGE_YAW_INDEX] = joyFloatToByte(mapping.yawAxis().value(glfwAxes, axisCount));
+        message[ARM_JOY_MESSAGE_WRIST_INDEX] = joyFloatToByte(mapping.wristAxis().value(glfwAxes, axisCount));
+        message[ARM_JOY_MESSAGE_BUCKET_INDEX] = joyFloatToByte(mapping.bucketAxis().value(glfwAxes, axisCount));
         if (mapping.wristUpButton().isPressed(glfwButtons, buttonCount)) {
             message[ARM_JOY_MESSAGE_WRIST_INDEX] = 0.7;
         }
@@ -211,24 +211,24 @@ public:
         }
     }
 
-    static inline signed char joyX(const char *message) {
-        return (signed char)message[ARM_JOY_MESSAGE_X_INDEX];
+    static inline int joyX(const char *message) {
+        return joyByteToInt(message[ARM_JOY_MESSAGE_X_INDEX]);
     }
 
-    static inline signed char joyY(const char *message) {
-        return (signed char)message[ARM_JOY_MESSAGE_Y_INDEX];
+    static inline int joyY(const char *message) {
+        return joyByteToInt(message[ARM_JOY_MESSAGE_Y_INDEX]);
     }
 
-    static inline signed char joyYaw(const char *message) {
-        return (signed char)message[ARM_JOY_MESSAGE_YAW_INDEX];
+    static inline int joyYaw(const char *message) {
+        return joyByteToInt(message[ARM_JOY_MESSAGE_YAW_INDEX]);
     }
 
-    static inline signed char joyWrist(const char *message) {
-        return (signed char)message[ARM_JOY_MESSAGE_WRIST_INDEX];
+    static inline int joyWrist(const char *message) {
+        return joyByteToInt(message[ARM_JOY_MESSAGE_WRIST_INDEX]);
     }
 
-    static inline signed char joyBucket(const char *message) {
-        return (signed char)message[ARM_JOY_MESSAGE_BUCKET_INDEX];
+    static inline int joyBucket(const char *message) {
+        return joyByteToInt(message[ARM_JOY_MESSAGE_BUCKET_INDEX]);
     }
 
     static inline unsigned short masterYaw(const char *message) {

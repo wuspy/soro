@@ -10,6 +10,8 @@
 #   include "mbed.h"
 #endif  //QT_CORE_LIB
 
+#include "serialchannel3.h"
+
 //Indicies and info for the structure of a drive serial message
 #define GIMBAL_MESSAGE_SIZE 4
 #define GIMBAL_MESSAGE_ID (unsigned char)246
@@ -51,9 +53,9 @@ public:
     static void setGlfwData(char *message, const float *glfwAxes, const unsigned char *glfwButtons,
                           int axisCount, int buttonCount, GimbalGlfwMap& mapping) {
         message[0] = GIMBAL_MESSAGE_ID;
-        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyAxisToByte(mapping.pitchAxis().value(glfwAxes, axisCount));
-        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyAxisToByte(mapping.rollAxis().value(glfwAxes, axisCount));
-        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyAxisToByte(mapping.yawAxis().value(glfwAxes, axisCount));
+        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyFloatToByte(mapping.pitchAxis().value(glfwAxes, axisCount));
+        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyFloatToByte(mapping.rollAxis().value(glfwAxes, axisCount));
+        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyFloatToByte(mapping.yawAxis().value(glfwAxes, axisCount));
     }
 #endif
 
@@ -66,16 +68,16 @@ public:
         return -1;
     }
 
-    static inline signed char pitch(const char *message) {
-        return (signed char)message[GIMBAL_MESSAGE_PITCH_INDEX];
+    static inline int pitch(const char *message) {
+        return joyByteToInt(message[GIMBAL_MESSAGE_PITCH_INDEX]);
     }
 
-    static inline signed char roll(const char *message) {
-        return (signed char)message[GIMBAL_MESSAGE_ROLL_INDEX];
+    static inline int roll(const char *message) {
+        return joyByteToInt(message[GIMBAL_MESSAGE_ROLL_INDEX]);
     }
 
-    static inline signed char yaw(const char *message) {
-        return (signed char)message[GIMBAL_MESSAGE_YAW_INDEX];
+    static inline int yaw(const char *message) {
+        return joyByteToInt(message[GIMBAL_MESSAGE_YAW_INDEX]);
     }
 };
 }

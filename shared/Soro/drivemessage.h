@@ -10,6 +10,8 @@
 #   include "mbed.h"
 #endif  //QT_CORE_LIB
 
+#include "serialchannel3.h"
+
 //Indicies and info for the structure of a drive serial message
 #define DRIVE_MESSAGE_SIZE 7
 #define DRIVE_MESSAGE_ID (unsigned char)247
@@ -63,8 +65,8 @@ public:
                           int axisCount, int buttonCount, DriveGlfwMap& mapping) {
         message[0] = (char)DRIVE_MESSAGE_ID;
         if (mapping.forwardAxis().isMapped() & mapping.turnAxis().isMapped()) {
-            float y = (float)joyAxisToByte(mapping.forwardAxis().value(glfwAxes, axisCount));
-            float x = 1 - (float)joyAxisToByte(mapping.turnAxis().value(glfwAxes, axisCount));
+            float y = (float)joyFloatToByte(mapping.forwardAxis().value(glfwAxes, axisCount));
+            float x = 1 - (float)joyFloatToByte(mapping.turnAxis().value(glfwAxes, axisCount));
             float right, left;
 
             // First hypotenuse
@@ -105,23 +107,23 @@ public:
 
             float midScale = 0.6 * (qAbs(x)/100.0);
 
-            message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * (signed char)left;
-            message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * (signed char)right;
-            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * (signed char)(left - (midScale * left));
-            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * (signed char)(right - (midScale * right));
-            message[DRIVE_MESSAGE_BL_INDEX] = DRIVE_BL_SIGN * (signed char)left;
-            message[DRIVE_MESSAGE_BR_INDEX] = DRIVE_BR_SIGN * (signed char)right;
+            message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * joyIntToByte(left);
+            message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * joyIntToByte(right);
+            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * joyIntToByte(left - (midScale * left));
+            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * joyIntToByte(right - (midScale * right));
+            message[DRIVE_MESSAGE_BL_INDEX] = DRIVE_BL_SIGN * joyIntToByte(left);
+            message[DRIVE_MESSAGE_BR_INDEX] = DRIVE_BR_SIGN * joyIntToByte(right);
         }
         else {
-            signed char leftDrive = joyAxisToByte(mapping.leftWheelsAxis().value(glfwAxes, axisCount));
-            signed char rightDrive = joyAxisToByte(mapping.rightWheelsAxis().value(glfwAxes, axisCount));
+            unsigned char leftDrive = joyFloatToByte(mapping.leftWheelsAxis().value(glfwAxes, axisCount));
+            unsigned char rightDrive = joyFloatToByte(mapping.rightWheelsAxis().value(glfwAxes, axisCount));
             //scale the middle wheels by 0.6 at full turn
-            int diff = qAbs((int)(leftDrive - rightDrive));
+            int diff = qAbs((int)leftDrive - (int)rightDrive);
             float midScale = 0.6 * (diff/200.0);
             message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * leftDrive;
             message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * rightDrive;
-            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * (signed char)(leftDrive - (midScale * leftDrive));
-            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * (signed char)(rightDrive - (midScale * rightDrive));
+            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * (unsigned char)(leftDrive - (midScale * leftDrive));
+            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * (unsigned char)(rightDrive - (midScale * rightDrive));
             message[DRIVE_MESSAGE_BL_INDEX] = DRIVE_BL_SIGN * leftDrive;
             message[DRIVE_MESSAGE_BR_INDEX] = DRIVE_BR_SIGN * rightDrive;
         }
@@ -137,28 +139,28 @@ public:
         return -1;
     }
 
-    static inline signed char frontLeft(const char *message) {
-        return (signed char)message[DRIVE_MESSAGE_FL_INDEX];
+    static inline int frontLeft(const char *message) {
+        return joyByteToInt(message[DRIVE_MESSAGE_FL_INDEX]);
     }
 
-    static inline signed char frontRight(const char *message) {
-        return (signed char)message[DRIVE_MESSAGE_FR_INDEX];
+    static inline int frontRight(const char *message) {
+        return joyByteToInt(message[DRIVE_MESSAGE_FR_INDEX]);
     }
 
-    static inline signed char middleLeft(const char *message) {
-        return (signed char)message[DRIVE_MESSAGE_ML_INDEX];
+    static inline int middleLeft(const char *message) {
+        return joyByteToInt(message[DRIVE_MESSAGE_ML_INDEX]);
     }
 
-    static inline signed char middleRight(const char *message) {
-        return (signed char)message[DRIVE_MESSAGE_MR_INDEX];
+    static inline int middleRight(const char *message) {
+        return joyByteToInt(message[DRIVE_MESSAGE_MR_INDEX]);
     }
 
-    static inline signed char backLeft(const char *message) {
-        return (signed char)message[DRIVE_MESSAGE_BL_INDEX];
+    static inline int backLeft(const char *message) {
+        return joyByteToInt(message[DRIVE_MESSAGE_BL_INDEX]);
     }
 
-    static inline signed char backRight(const char *message) {
-        return (signed char)message[DRIVE_MESSAGE_BR_INDEX];
+    static inline int backRight(const char *message) {
+        return joyByteToInt(message[DRIVE_MESSAGE_BR_INDEX]);
     }
 };
 

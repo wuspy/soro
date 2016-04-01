@@ -48,7 +48,7 @@
 #include "mbed.h"
 #include "Servo.h"
 #include "armmessage.h"
-#include "serialinterop.h"
+#include "serialchannel3.h"
 
 //DO NOT CHANGE THESE THE PROGRAM WILL NOT WORK CORRECTLY
 #define PI 3.1415926
@@ -102,15 +102,27 @@
 #define YAW_MIN 0
 #define YAW_MAX 1
 
-#define INTERVAL 20
+#define INTERVAL 30
 
 using namespace Soro;
 
-Servo yaw(p23);
-Servo shoulder(p22);
-Servo elbow(p21);
-Servo wrist(p24);
-Servo bucket(p25);
+Servo _yawServo(p23);
+Servo _shoulderServo(p22);
+Servo _elbowServo(p21);
+Servo _wristServo(p24);
+Servo _bucketServo(p25);
+
+SerialChannel3 *_serial;
+
+float _yawRangeRatio;
+float _shoulderRangeRatio;
+float _elbowRangeRatio;
+float _wristRangeRatio;
+float _bucketRangeRatio;
+
+int _x;
+int _y;
+float _t;
 
 inline void setShoulder(float percent) {
     if(percent > SHOULDER_MAX){
@@ -118,7 +130,7 @@ inline void setShoulder(float percent) {
     }else if(percent < SHOULDER_MIN){
         percent = SHOULDER_MIN;
     }
-    shoulder = percent;
+    _shoulderServo = percent;
 }
 
 inline void setElbow(float percent) {
@@ -127,7 +139,7 @@ inline void setElbow(float percent) {
     }else if(percent < ELBOW_MIN){
         percent = ELBOW_MIN;
     }
-    elbow = percent;
+    _elbowServo = percent;
 }
 
 inline void setWrist(float percent) {
@@ -136,7 +148,7 @@ inline void setWrist(float percent) {
     }else if(percent < WRIST_MIN){
         percent = WRIST_MIN;
     }
-    wrist = percent;
+    _wristServo = percent;
 }
 
 inline void setBucket(float percent){
@@ -145,7 +157,7 @@ inline void setBucket(float percent){
     }else if(percent < BUCKET_MIN){
         percent = BUCKET_MIN;
     }
-    wrist = percent;
+    _bucketServo = percent;
 }
 
 inline void setYaw(float percent) {
@@ -154,7 +166,7 @@ inline void setYaw(float percent) {
     }else if(percent < YAW_MIN){
         percent = YAW_MIN;
     }
-    yaw = percent;
+    _yawServo = percent;
 }
 
 void setElbowAngle(int angle){
@@ -245,82 +257,82 @@ int newX(int newx, int newy){
 }
 
 void stow() {
+    setYaw(0.25);
+    //NEED TO DELAY THESE VVV
     setWrist(0.5);
     setBucket(0.08);
-    setYaw(0.25);
     setElbow(0.05);
     setShoulder(0.05);
 }
 
-int main() {
-    SerialChannel serial(ARM_SERIAL_CHANNEL_NAME, USBTX, USBRX, INTERVAL);
-    char *message;
-    int messageSize;
-    //used to calculate positions in master/slave control
-    float yawRangeRatio = (YAW_MAX - YAW_MIN) / (float)MAX_VALUE_14BIT;
-    float shoulderRangeRatio = (SHOULDER_MAX - SHOULDER_MIN) / (float)MAX_VALUE_14BIT;
-    float elbowRangeRatio = (ELBOW_MAX - ELBOW_MIN) / (float)MAX_VALUE_14BIT;
-    float wristRangeRatio = (WRIST_MAX - WRIST_MIN) / (float)MAX_VALUE_14BIT;
-    float bucketRangeRatio = (BUCKET_MAX - BUCKET_MIN) / (float)MAX_VALUE_14BIT;
-    //constructs messages to send through the serial connection
-
-    int x = 50;    //extend/retract
-    int y = 50;    //elevation
-    float t = 0;    //wrist
-    
-    //calcAngles(x,y, t);
-
-    while(1){
-        serial.process();
-        if (serial.getAvailableMessage(message, messageSize)) {
-            switch (ArmMessage::messageType(message)) {
-            case ArmMessage::JOYSTICK:
-                //TODO - this is very rough. Needs cleaning up and more adding wrist, bucket functionality.
-                x -= ((int)ArmMessage::joyX(message) * 8) / 100;
-                y -= ((int)ArmMessage::joyY(message) * 8) / 100;
-                setYaw(yaw - ((float)ArmMessage::joyYaw(message) * 0.008) / 100.0);
-                if (ArmMessage::bucketFullOpen(message)) {
-                    setBucket(BUCKET_MAX);
-                }
-                else if (ArmMessage::bucketFullClose(message)) {
-                    setBucket(BUCKET_MIN);
-                }
-                else {
-                    setBucket(bucket - ((float)ArmMessage::joyBucket(message) * 0.008) / 100);
-                }
-                if ((t < 1) & (t > -1)) {
-                    t = t - ((float)ArmMessage::joyWrist(message) * 0.008) / 100;    
-                }
-                if (ArmMessage::stowMacro(message)) {
-                    stow();
-                }
-                else {
-                    x = newX(x,y);
-                    y = newY(x,y);
-                    calcAngles(x,y, t);
-                }
-                break;
-            case ArmMessage::MASTER_SLAVE:
-                if (ArmMessage::stowMacro(message)) {
-                    stow();
-                }
-                else {
-                    setYaw(ArmMessage::masterYaw(message) * yawRangeRatio + YAW_MIN);
-                    setShoulder(ArmMessage::masterShoulder(message) * shoulderRangeRatio + SHOULDER_MIN);
-                    setElbow(ArmMessage::masterElbow(message) * elbowRangeRatio + ELBOW_MIN);
-                    setWrist(ArmMessage::masterWrist(message) * wristRangeRatio + WRIST_MIN);
-                    if (ArmMessage::bucketFullOpen(message)) {
-                        setBucket(BUCKET_MAX);
-                    }
-                    else if (ArmMessage::bucketFullClose(message)) {
-                        setBucket(BUCKET_MIN);
-                    }
-                    else {
-                        setBucket(ArmMessage::masterBucket(message) * bucketRangeRatio + BUCKET_MIN);
-                    }
-                }
-                break;
+void serialMessageReceived(const char *message, int length) {
+    switch (ArmMessage::messageType(message)) {
+    case ArmMessage::JOYSTICK: ///////////////////////////////////////////
+        //TODO - this is very rough. Needs cleaning up and more adding wrist, bucket functionality.
+        _x -= (ArmMessage::joyX(message) * 8) / 100;
+        _y -= (ArmMessage::joyY(message) * 8) / 100;
+        setYaw(_yawServo - ((float)ArmMessage::joyYaw(message) * 0.008) / 100.0);
+        if (ArmMessage::bucketFullOpen(message)) {
+            setBucket(BUCKET_MAX);
+        }
+        else if (ArmMessage::bucketFullClose(message)) {
+            setBucket(BUCKET_MIN);
+        }
+        else {
+            setBucket(_bucketServo - ((float)ArmMessage::joyBucket(message) * 0.008) / 100);
+        }
+        if ((_t < 1) & (_t > -1)) {
+            _t = _t - ((float)ArmMessage::joyWrist(message) * 0.008) / 100;    
+        }
+        if (ArmMessage::stowMacro(message)) {
+            stow();
+        }
+        else {
+            _x = newX(_x,_y);
+            _y = newY(_x,_y);
+            calcAngles(_x, _y, _t);
+        }
+        break;
+    case ArmMessage::MASTER_SLAVE: //////////////////////////////////////////
+        if (ArmMessage::stowMacro(message)) {
+            stow();
+        }
+        else {
+            setYaw(ArmMessage::masterYaw(message) * _yawRangeRatio + YAW_MIN);
+            setShoulder(ArmMessage::masterShoulder(message) * _shoulderRangeRatio + SHOULDER_MIN);
+            setElbow(ArmMessage::masterElbow(message) * _elbowRangeRatio + ELBOW_MIN);
+            setWrist(ArmMessage::masterWrist(message) * _wristRangeRatio + WRIST_MIN);
+            if (ArmMessage::bucketFullOpen(message)) {
+                setBucket(BUCKET_MAX);
             }
-        } else wait_ms(INTERVAL);
+            else if (ArmMessage::bucketFullClose(message)) {
+                setBucket(BUCKET_MIN);
+            }
+            else {
+                setBucket(ArmMessage::masterBucket(message) * _bucketRangeRatio + BUCKET_MIN);
+            }
+        }
+        break;
+    }
+}
+
+int main() {
+    _serial = new SerialChannel3(ARM_SERIAL_CHANNEL_NAME, USBTX, USBRX, &serialMessageReceived);
+    //used to calculate positions in master/slave control
+    _yawRangeRatio = (YAW_MAX - YAW_MIN) / (float)MAX_VALUE_14BIT;
+    _shoulderRangeRatio = (SHOULDER_MAX - SHOULDER_MIN) / (float)MAX_VALUE_14BIT;
+    _elbowRangeRatio = (ELBOW_MAX - ELBOW_MIN) / (float)MAX_VALUE_14BIT;
+    _wristRangeRatio = (WRIST_MAX - WRIST_MIN) / (float)MAX_VALUE_14BIT;
+    _bucketRangeRatio = (BUCKET_MAX - BUCKET_MIN) / (float)MAX_VALUE_14BIT;
+    
+    _x = 50;    //extend/retract
+    _y = 50;    //elevation
+    _t = 0;    //wrist
+    
+    //calcAngles(_x, _y, _t);
+
+    while(1) {
+        _serial->check();
+        wait_ms(5);
     }
 }
