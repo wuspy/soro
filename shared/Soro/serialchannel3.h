@@ -80,6 +80,13 @@ static inline unsigned char joyIntToByte(int val) {
     return (unsigned char)(val + 100);
 }
 
+/* Converts an int ranging from -100 to 100 into an unsigned char,
+ * ranging from 0 to 200
+ */
+static inline int joyFloatToInt(int val) {
+    return val * 100;
+}
+
 /* Converts a byte encoded joystick axis (see joyFloatToByte) back
  * into it's original float value
  */

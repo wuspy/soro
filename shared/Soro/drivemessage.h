@@ -65,8 +65,8 @@ public:
                           int axisCount, int buttonCount, DriveGlfwMap& mapping) {
         message[0] = (char)DRIVE_MESSAGE_ID;
         if (mapping.forwardAxis().isMapped() & mapping.turnAxis().isMapped()) {
-            float y = (float)joyFloatToByte(mapping.forwardAxis().value(glfwAxes, axisCount));
-            float x = 1 - (float)joyFloatToByte(mapping.turnAxis().value(glfwAxes, axisCount));
+            float y = (mapping.forwardAxis().value(glfwAxes, axisCount));
+            float x =  -(mapping.turnAxis().value(glfwAxes, axisCount));
             float right, left;
 
             // First hypotenuse
@@ -100,26 +100,25 @@ public:
                 left = -left;
                 right = -right;
             }
-            if (left > 100) left = 100;
-            else if (left < -100) left = -100;
-            if (right > 100) right = 100;
-            else if (right < -100) right = -100;
+            if (left > 1) left = 1;
+            else if (left < -1) left = -1;
+            if (right > 1) right = 1;
+            else if (right < -1) right = -1;
 
-            float midScale = 0.6 * (qAbs(x)/100.0);
+            float midScale = 0.6 * (qAbs(x)/1.0);
 
-            message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * joyIntToByte(left);
-            message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * joyIntToByte(right);
-            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * joyIntToByte(left - (midScale * left));
-            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * joyIntToByte(right - (midScale * right));
-            message[DRIVE_MESSAGE_BL_INDEX] = DRIVE_BL_SIGN * joyIntToByte(left);
-            message[DRIVE_MESSAGE_BR_INDEX] = DRIVE_BR_SIGN * joyIntToByte(right);
+            message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * joyFloatToByte(left);
+            message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * joyFloatToByte(right);
+            message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * joyFloatToByte(left - (midScale * left));
+            message[DRIVE_MESSAGE_MR_INDEX] = DRIVE_MR_SIGN * joyFloatToByte(right - (midScale * right));
+            message[DRIVE_MESSAGE_BL_INDEX] = DRIVE_BL_SIGN * joyFloatToByte(left);
+            message[DRIVE_MESSAGE_BR_INDEX] = DRIVE_BR_SIGN * joyFloatToByte(right);
         }
         else {
             unsigned char leftDrive = joyFloatToByte(mapping.leftWheelsAxis().value(glfwAxes, axisCount));
             unsigned char rightDrive = joyFloatToByte(mapping.rightWheelsAxis().value(glfwAxes, axisCount));
             //scale the middle wheels by 0.6 at full turn
-            int diff = qAbs((int)leftDrive - (int)rightDrive);
-            float midScale = 0.6 * (diff/200.0);
+            float midScale = 0.6 * (qAbs((int)leftDrive - (int)rightDrive)/200.0);
             message[DRIVE_MESSAGE_FL_INDEX] = DRIVE_FL_SIGN * leftDrive;
             message[DRIVE_MESSAGE_FR_INDEX] = DRIVE_FR_SIGN * rightDrive;
             message[DRIVE_MESSAGE_ML_INDEX] = DRIVE_ML_SIGN * (unsigned char)(leftDrive - (midScale * leftDrive));

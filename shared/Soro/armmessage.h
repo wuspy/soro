@@ -129,16 +129,16 @@ public:
         message[ARM_JOY_MESSAGE_WRIST_INDEX] = joyFloatToByte(mapping.wristAxis().value(glfwAxes, axisCount));
         message[ARM_JOY_MESSAGE_BUCKET_INDEX] = joyFloatToByte(mapping.bucketAxis().value(glfwAxes, axisCount));
         if (mapping.wristUpButton().isPressed(glfwButtons, buttonCount)) {
-            message[ARM_JOY_MESSAGE_WRIST_INDEX] = 0.7;
+            message[ARM_JOY_MESSAGE_WRIST_INDEX] = joyFloatToByte(0.7);
         }
         else if (mapping.wristDownButton().isPressed(glfwButtons, buttonCount)) {
-            message[ARM_JOY_MESSAGE_WRIST_INDEX] = -0.7;
+            message[ARM_JOY_MESSAGE_WRIST_INDEX] = joyFloatToByte(-0.7);
         }
         if (mapping.bucketOpenButton().isPressed(glfwButtons, buttonCount)) {
-            message[ARM_JOY_MESSAGE_BUCKET_INDEX] = 0.7;
+            message[ARM_JOY_MESSAGE_BUCKET_INDEX] = joyFloatToByte(0.7);
         }
         else if (mapping.bucketCloseButton().isPressed(glfwButtons, buttonCount)) {
-            message[ARM_JOY_MESSAGE_BUCKET_INDEX] = -0.7;
+            message[ARM_JOY_MESSAGE_BUCKET_INDEX] = joyFloatToByte(-0.7);
         }
         message[ARM_MESSAGE_BUCKET_FULL_OPEN_INDEX] =
                 mapping.bucketFullOpenButton().isPressed(glfwButtons, buttonCount) ? 1 : 0;
