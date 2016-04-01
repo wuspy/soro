@@ -125,8 +125,6 @@ public:
             message[DRIVE_MESSAGE_MR_INDEX] = joyFloatToByte(DRIVE_MR_SIGN * (right - (midScale * right)));
             message[DRIVE_MESSAGE_BL_INDEX] = joyFloatToByte(DRIVE_BL_SIGN * left);
             message[DRIVE_MESSAGE_BR_INDEX] = joyFloatToByte(DRIVE_BR_SIGN * right);
-
-            qDebug() << QString::number(frontLeft(message)) << ", " << QString::number(frontRight(message));
         }
     }
 #endif

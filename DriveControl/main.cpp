@@ -18,14 +18,14 @@ int _loopsWithoutMessage;
 
 SerialChannel3 *_serial;
 
-char _debugBuf[200];
+//char _debugBuf[200];
 
 void serialMessageReceived(const char *message, int length) {
     if ((length == 0) || !DriveMessage::hasValidHeader(message)) return;
     _loopsWithoutMessage = 0;
     
-    sprintf(_debugBuf, "L: %d, R: %d", DriveMessage::middleLeft(message), DriveMessage::middleRight(message));
-    _serial->log(_debugBuf, SERIAL_LOG_INFO_ID); 
+    //sprintf(_debugBuf, "L: %d, R: %d", DriveMessage::middleLeft(message), DriveMessage::middleRight(message));
+    //_serial->log(_debugBuf, SERIAL_LOG_INFO_ID); 
     
     int fl = DriveMessage::frontLeft(message);
     int fr = DriveMessage::frontRight(message);
