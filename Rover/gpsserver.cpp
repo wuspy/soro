@@ -2,6 +2,8 @@
 
 #define LOG_TAG "GpsServer"
 
+#define RECOVERY_DELAY 500
+
 using namespace Soro;
 
 GpsServer::GpsServer(QObject *parent, SocketAddress hostAddress, Logger *log) : QObject(parent) {
@@ -11,8 +13,13 @@ GpsServer::GpsServer(QObject *parent, SocketAddress hostAddress, Logger *log) : 
             this, SLOT(socketReadyRead()));
     connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(sockeError(QAbstractSocket::SocketError)));
-    _socket->bind(hostAddress.address, hostAddress.port);
-    _socket->open(QIODevice::ReadWrite);
+    LOG_I("Creating GPS server with host address " + hostAddress.toString());
+    _hostAddress = hostAddress;
+    resetConnection();
+}
+
+GpsServer::~GpsServer() {
+    delete _socket;
 }
 
 void GpsServer::socketReadyRead() {
@@ -36,11 +43,16 @@ void GpsServer::socketReadyRead() {
 }
 
 void GpsServer::sockeError(QAbstractSocket::SocketError err) {
-
+    emit connectionError(err);
+    LOG_E("Server Error: " + _socket->errorString());
+    START_TIMER(_resetConnectionTimerId, RECOVERY_DELAY);
 }
 
 void GpsServer::resetConnection() {
-    if (_socket->isOpen()) _socket->close();
+    _socket->abort();
+    _socket->bind(_hostAddress.address, _hostAddress.port);
+    _socket->open(QIODevice::ReadWrite);
+
 }
 
 void GpsServer::timerEvent(QTimerEvent *e) {

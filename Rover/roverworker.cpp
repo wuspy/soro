@@ -7,9 +7,9 @@ using namespace Soro::Rover;
 RoverWorker::RoverWorker(QObject *parent) : QObject(parent) {
     QString appPath = QCoreApplication::applicationDirPath();
 
-    _log = new Logger(this);
-    _log->setLogfile(appPath + "/rover.log");
-    _log->RouteToQtLogger = true;
+    //_log = new Logger(this);
+    //_log->setLogfile(appPath + "/rover.log");
+    //_log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -64,9 +64,9 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         LOG_I("All network channels initialized successfully");
 
         //create serial (mbed) channels
-        //_armControllerSerial = new SerialChannel3(ARM_SERIAL_CHANNEL_NAME, this, _log);
+        _armControllerSerial = new SerialChannel3(ARM_SERIAL_CHANNEL_NAME, this, _log);
         _driveControllerSerial = new SerialChannel3(DRIVE_SERIAL_CHANNEL_NAME, this, _log);
-        //_gimbalControllerSerial = new SerialChannel3(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
+        _gimbalControllerSerial = new SerialChannel3(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
         LOG_I("All serial channels initialized successfully");
 
         //observers for network channels message received
@@ -197,4 +197,5 @@ RoverWorker::~RoverWorker() {
     if (_armControllerSerial != NULL) delete _armControllerSerial;
     if (_armControllerSerial != NULL) delete _driveControllerSerial;
     if (_armControllerSerial != NULL) delete _gimbalControllerSerial;
+    if (_gpsServer != NULL) delete _gpsServer;
 }

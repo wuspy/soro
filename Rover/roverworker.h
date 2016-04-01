@@ -39,9 +39,9 @@ namespace Rover {
         SerialChannel3 *_armControllerSerial = NULL;
         SerialChannel3 *_driveControllerSerial = NULL;
         SerialChannel3 *_gimbalControllerSerial = NULL;
+        GpsServer *_gpsServer = NULL;
 
         SoroIniConfig _soroIniConfig;
-        GpsServer *_gpsServer = NULL;
 
         int _initTimerId = TIMER_INACTIVE;
 
