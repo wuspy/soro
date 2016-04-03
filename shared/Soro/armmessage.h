@@ -41,21 +41,26 @@
 #define ARM_MASTER_MESSAGE_WRIST_INDEX 15
 #define ARM_MASTER_MESSAGE_BUCKET_INDEX 17
 
-#define MARINI_TAG_YAWMIN "yawmin"
-#define MARINI_TAG_YAWMAX "yawmax"
-#define MARINI_TAG_YAWADD "yawadd"
-#define MARINI_TAG_SHOULDERMIN "shouldermin"
-#define MARINI_TAG_SHOULDERMAX "shouldermax"
-#define MARINI_TAG_SHOULDERADD "shoulderadd"
-#define MARINI_TAG_ELBOWMIN "elbowmin"
-#define MARINI_TAG_ELBOWMAX "elbowmax"
-#define MARINI_TAG_ELBOWADD "elbowadd"
-#define MARINI_TAG_WRISTMIN "wristmin"
-#define MARINI_TAG_WRISTMAX "wristmax"
-#define MARINI_TAG_WRISTADD "wristadd"
-#define MARINI_TAG_BUCKETMIN "bucketmin"
-#define MARINI_TAG_BUCKETMAX "bucketmax"
-#define MARINI_TAG_BUCKETADD "bucketadd"
+#define MARINI_TAG_YAWMIN "YawMin"
+#define MARINI_TAG_YAWMAX "YawMax"
+#define MARINI_TAG_YAWADD "YawAdd"
+#define MARINI_TAG_YAWREVERSE "YawReverse"
+#define MARINI_TAG_SHOULDERMIN "ShoulderMin"
+#define MARINI_TAG_SHOULDERMAX "ShoulderMax"
+#define MARINI_TAG_SHOULDERADD "ShoulderAdd"
+#define MARINI_TAG_SHOULDERREVERSE "ShoulderReverse"
+#define MARINI_TAG_ELBOWMIN "ElbowMin"
+#define MARINI_TAG_ELBOWMAX "ElbowMax"
+#define MARINI_TAG_ELBOWADD "ElbowAdd"
+#define MARINI_TAG_ELBOWREVERSE "ElbowReverse"
+#define MARINI_TAG_WRISTMIN "WristMin"
+#define MARINI_TAG_WRISTMAX "WristMax"
+#define MARINI_TAG_WRISTADD "WristAdd"
+#define MARINI_TAG_WRISTREVERSE "WristReverse"
+#define MARINI_TAG_BUCKETMIN "BucketMin"
+#define MARINI_TAG_BUCKETMAX "BucketMax"
+#define MARINI_TAG_BUCKETADD "BucketAdd"
+#define MARINI_TAG_BUCKETREVERSE "BucketReverse"
 
 #define ARM_SERIAL_CHANNEL_NAME "arm-serial-channel"
 #define MASTER_ARM_SERIAL_CHANNEL_NAME "master-arm-serial-channel"
@@ -102,18 +107,34 @@ public:
         int wristMax, wristMin, wristAdd;
         int bucketMax, bucketMin, bucketAdd;
 
+        bool yawReverse, shoulderReverse, elbowReverse, wristReverse, bucketReverse;
+
         bool load(QFile& file) {
             IniParser parser;
             if (!parser.load(file)) return false;
+            //parse min/max values
             bool success = parser.valueAsInt(MARINI_TAG_YAWMIN, &yawMin);
             success &= parser.valueAsInt(MARINI_TAG_YAWMAX, &yawMax);
-            success &= parser.valueAsInt(MARINI_TAG_YAWADD, &yawAdd);
             success &= parser.valueAsInt(MARINI_TAG_SHOULDERMIN, &shoulderMin);
             success &= parser.valueAsInt(MARINI_TAG_SHOULDERMAX, &shoulderMax);
-            success &= parser.valueAsInt(MARINI_TAG_SHOULDERADD, &shoulderAdd);
             success &= parser.valueAsInt(MARINI_TAG_ELBOWMIN, &elbowMin);
             success &= parser.valueAsInt(MARINI_TAG_ELBOWMAX, &elbowMax);
-            success &= parser.valueAsInt(MARINI_TAG_ELBOWADD, &elbowAdd);
+            success &= parser.valueAsInt(MARINI_TAG_WRISTMIN, &wristMin);
+            success &= parser.valueAsInt(MARINI_TAG_WRISTMAX, &wristMax);
+            success &= parser.valueAsInt(MARINI_TAG_BUCKETMIN, &bucketMin);
+            success &= parser.valueAsInt(MARINI_TAG_BUCKETMAX, &bucketMax);
+            //parse add values
+            if (!parser.valueAsInt(MARINI_TAG_YAWADD, &yawAdd)) yawAdd = 0;
+            if (!parser.valueAsInt(MARINI_TAG_SHOULDERADD, &shoulderAdd)) shoulderAdd = 0;
+            if (!parser.valueAsInt(MARINI_TAG_ELBOWADD, &elbowAdd)) elbowAdd = 0;
+            if (!parser.valueAsInt(MARINI_TAG_WRISTADD, &wristAdd)) wristAdd = 0;
+            if (!parser.valueAsInt(MARINI_TAG_BUCKETADD, &bucketAdd)) bucketAdd = 0;
+            //parse reverse values
+            if (!parser.valueAsBool(MARINI_TAG_YAWREVERSE, &yawReverse)) yawReverse = false;
+            if (!parser.valueAsBool(MARINI_TAG_SHOULDERREVERSE, &shoulderReverse)) shoulderReverse = false;
+            if (!parser.valueAsBool(MARINI_TAG_ELBOWREVERSE, &elbowReverse)) elbowReverse = false;
+            if (!parser.valueAsBool(MARINI_TAG_WRISTREVERSE, &wristReverse)) wristReverse = false;
+            if (!parser.valueAsBool(MARINI_TAG_BUCKETREVERSE, &bucketReverse)) bucketReverse = false;
             return success;
         }
     };
@@ -152,20 +173,41 @@ public:
      */
     static void translateMasterArmValues(char *message, const MasterRanges& ranges) {
         //yaw
-        int yaw = ranges.yawAdd + MAX_VALUE_14BIT * (((float)deserialize_14bit(message, ARM_MASTER_MESSAGE_YAW_INDEX) - (float)ranges.yawMin) / (float)(ranges.yawMax - ranges.yawMin));
+        int raw_yaw = deserialize_14bit(message, ARM_MASTER_MESSAGE_YAW_INDEX) - ranges.yawMin;
+        int yaw = ranges.yawAdd + MAX_VALUE_14BIT * ((float)(raw_yaw) / (float)(ranges.yawMax - ranges.yawMin));
         if (yaw > MAX_VALUE_14BIT) yaw = MAX_VALUE_14BIT;
         if (yaw < 0) yaw = 0;
+        if (ranges.yawReverse) yaw = MAX_VALUE_14BIT - yaw;
         serialize_14bit((unsigned short)yaw, message, ARM_MASTER_MESSAGE_YAW_INDEX);
         //shoulder
-        int shoulder = ranges.shoulderAdd + MAX_VALUE_14BIT * (((float)deserialize_14bit(message, ARM_MASTER_MESSAGE_SHOULDER_INDEX) - (float)ranges.shoulderMin) / (float)(ranges.shoulderMax - ranges.shoulderMin));
+        int raw_shoulder = deserialize_14bit(message, ARM_MASTER_MESSAGE_SHOULDER_INDEX) - ranges.shoulderMin;
+        int shoulder = ranges.shoulderAdd + MAX_VALUE_14BIT * ((float)(raw_shoulder) / (float)(ranges.shoulderMax - ranges.shoulderMin));
         if (shoulder > MAX_VALUE_14BIT) shoulder = MAX_VALUE_14BIT;
         if (shoulder < 0) shoulder = 0;
+        if (ranges.shoulderReverse) shoulder = MAX_VALUE_14BIT - shoulder;
         serialize_14bit((unsigned short)shoulder, message, ARM_MASTER_MESSAGE_SHOULDER_INDEX);
         //elbow
-        int elbow = ranges.elbowAdd + MAX_VALUE_14BIT * (((float)deserialize_14bit(message, ARM_MASTER_MESSAGE_ELBOW_INDEX) - (float)ranges.elbowMin) / (float)(ranges.elbowMax - ranges.elbowMin));
+        int raw_elbow = deserialize_14bit(message, ARM_MASTER_MESSAGE_ELBOW_INDEX) - ranges.elbowMin;
+        int elbow = ranges.elbowAdd + MAX_VALUE_14BIT * ((float)(raw_elbow) / (float)(ranges.elbowMax - ranges.elbowMin));
         if (elbow > MAX_VALUE_14BIT) elbow = MAX_VALUE_14BIT;
         if (elbow < 0) elbow = 0;
+        if (ranges.elbowReverse) elbow = MAX_VALUE_14BIT - elbow;
         serialize_14bit((unsigned short)elbow, message, ARM_MASTER_MESSAGE_ELBOW_INDEX);
+        //wrist
+        int raw_wrist = deserialize_14bit(message, ARM_MASTER_MESSAGE_WRIST_INDEX) - ranges.wristMin;
+        int wrist = ranges.wristAdd + MAX_VALUE_14BIT * ((float)(raw_wrist) / (float)(ranges.wristMax - ranges.wristMin));
+        if (wrist > MAX_VALUE_14BIT) wrist = MAX_VALUE_14BIT;
+        if (wrist < 0) wrist = 0;
+        if (ranges.wristReverse) wrist = MAX_VALUE_14BIT - wrist;
+        serialize_14bit((unsigned short)wrist, message, ARM_MASTER_MESSAGE_WRIST_INDEX);
+        //bucket
+        int raw_bucket = deserialize_14bit(message, ARM_MASTER_MESSAGE_BUCKET_INDEX) - ranges.bucketMin;
+        int bucket = ranges.bucketAdd + MAX_VALUE_14BIT * ((float)(raw_bucket) / (float)(ranges.bucketMax - ranges.bucketMin));
+        if (bucket > MAX_VALUE_14BIT) bucket = MAX_VALUE_14BIT;
+        if (bucket < 0) bucket = 0;
+        if (ranges.bucketReverse) bucket = MAX_VALUE_14BIT - bucket;
+        serialize_14bit((unsigned short)bucket, message, ARM_MASTER_MESSAGE_BUCKET_INDEX);
+
         serialize_14bit((unsigned short)3000, message, ARM_MASTER_MESSAGE_WRIST_INDEX); //TODO bill build the fucking master arm
         serialize_14bit((unsigned short)8000, message, ARM_MASTER_MESSAGE_BUCKET_INDEX);
     }

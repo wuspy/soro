@@ -15,7 +15,7 @@ using namespace Soro::MissionControl;
 SoroWindowController::SoroWindowController(QObject *parent) : QObject(parent) {
     _log = new Logger(this);
     _log->setLogfile(APPPATH + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
-    _log->RouteToQtLogger = true;
+    //_log->RouteToQtLogger = true;
     //_log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -44,7 +44,6 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
         /***************************************
          * This code sends gamepad data to the rover at a regular interval
          */
-
         if (glfwJoystickPresent(_controllerId)) {
             int axisCount, buttonCount;
             const float *axes = glfwGetJoystickAxes(_controllerId, &axisCount);
@@ -142,6 +141,8 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
             case MissionControlIniConfig::MasterArm:
                 loadMasterArmConfig();
                 _masterArmSerial = new SerialChannel3(MASTER_ARM_SERIAL_CHANNEL_NAME, this, _log);
+                connect(_masterArmSerial, SIGNAL(messageReceived(const char*,int)),
+                        this, SLOT(masterArmSerialMessageReceived(const char*,int)));
                 break;
             }
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
@@ -234,27 +235,25 @@ int SoroWindowController::firstGlfwControllerId() {
 }
 
 void SoroWindowController::initForGLFW(GlfwMap *map) {
-    LOG_I("Input mode set to use GLFW (joystick or gamepad)");
-    glfwInit();
-    _glfwInitialized = true;
-    QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
-    map->loadMapping(mapFile);
-    START_TIMER(_inputSelectorTimerId, 1000);
-    //update ui
-    emit gamepadChanged(QString::null);
+    if (!_glfwInitialized) {
+        LOG_I("Input mode set to use GLFW (joystick or gamepad)");
+        glfwInit();
+        _glfwInitialized = true;
+        QFile mapFile(APPPATH + (QString)"/" + GLFWINI_PATH);
+        map->loadMapping(mapFile);
+        START_TIMER(_inputSelectorTimerId, 1000);
+        //update ui
+        emit gamepadChanged(QString::null);
+    }
 }
 
 void SoroWindowController::masterArmSerialMessageReceived(const char *message, int size) {
-    /*qDebug() << "yaw=" << ArmMessage::masterYaw(message)
-             << ", shldr=" << ArmMessage::masterShoulder(message)
-             << ", elbow=" << ArmMessage::masterElbow(message)
-             << ", wrist=" << ArmMessage::masterWrist(message)
-             << ", bucket=" << ArmMessage::masterBucket(message);/**/
 
     memcpy(_buffer, message, size);
     //control bucket with keyboard keys
     //TODO bill build the fucking master arm
     if (_currentKey == 'x') {
+        qDebug() << "HELLOOO";
         _buffer[ARM_MESSAGE_BUCKET_FULL_OPEN_INDEX] = 1;
         _buffer[ARM_MESSAGE_BUCKET_FULL_CLOSE_INDEX] = 0;
     }
@@ -268,6 +267,11 @@ void SoroWindowController::masterArmSerialMessageReceived(const char *message, i
     }
     //translate message from master pot values to slave servo values
     ArmMessage::translateMasterArmValues(_buffer, _masterArmRanges);
+    qDebug() << "yaw=" << ArmMessage::masterYaw(_buffer)
+             << ", shldr=" << ArmMessage::masterShoulder(_buffer)
+             << ", elbow=" << ArmMessage::masterElbow(_buffer)
+             << ", wrist=" << ArmMessage::masterWrist(_buffer)
+             << ", bucket=" << ArmMessage::masterBucket(_buffer);/**/
     _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, size));
 }
 

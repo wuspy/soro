@@ -405,7 +405,7 @@ protected:
                 if (_serial->open(QIODevice::ReadWrite)) {
                     LOG_I("Connected to serial port " + _serial->portName());
                     _lastReadTime = QDateTime::currentMSecsSinceEpoch();
-                    _serial->setBaudRate(QSerialPort::Baud9600);
+                    _serial->setBaudRate(QSerialPort::Baud115200);
                     _serial->setDataBits(QSerialPort::Data8);
                     _serial->setParity(QSerialPort::NoParity);
                     _serial->setStopBits(QSerialPort::OneStop);
@@ -478,7 +478,7 @@ public:
         _led = new DigitalOut(LED4);
         _serial = new Serial(tx, rx);
         _receivedFirstHeartbeat = false;
-        _serial->baud(9600);
+        _serial->baud(115200);
         _serial->format(8, SerialBase::None, 1);
         //using an interrupt may be cauing the pwm delay issues
         _serial->attach(this, &SerialChannel3::readSerial);

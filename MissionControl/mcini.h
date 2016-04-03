@@ -104,6 +104,7 @@ struct MissionControlIniConfig {
             MasterNodeAddress.port = (quint16)port;
         }
         QString modeStr = configParser.value(MCINI_TAG_LAYOUT);
+        ControlInputMode = GLFW; //default
         if (QString::compare(modeStr, MCINI_VALUE_LAYOUT_ARM, Qt::CaseInsensitive) == 0) {
             Layout = ArmLayoutMode;
             QString inputMode = configParser.value(MCINI_TAG_INPUT_MODE);

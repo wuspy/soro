@@ -30,6 +30,8 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
             this, SLOT(controllerError(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(warning(QString)),
             this, SLOT(controllerWarning(QString)), Qt::DirectConnection);
+    connect(_controller, SIGNAL(connectionQualityUpdate(int,int)),
+            this, SLOT(controllerConnectionQualityUpdate(int,int)));
 }
 
 void SoroMainWindow::controllerInitialized(const SoroIniConfig& soroConfig,
@@ -205,9 +207,8 @@ void SoroMainWindow::controlChannelStatsUpdate(int rtt, quint64 messagesUp, quin
     }
 }
 
-void SoroMainWindow::sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
-                                       int rateUp, int rateDown) {
-    //TODO
+void SoroMainWindow::controllerConnectionQualityUpdate(int sharedRtt, int tcpLag) {
+    ui->comm_qualityLabel->setText(QString::number(tcpLag));
 }
 
 void SoroMainWindow::controllerError(QString description) {

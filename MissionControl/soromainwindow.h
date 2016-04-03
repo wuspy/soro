@@ -46,8 +46,6 @@ namespace MissionControl {
 
     private slots:
         void sharedChannelStateChanged(Channel::State state);
-        void sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
-                                int rateUp, int rateDown);
         void controlChannelStateChanged(Channel::State state);
         void controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                                 int rateUp, int rateDown);
@@ -57,6 +55,7 @@ namespace MissionControl {
                                    const MissionControlIniConfig& mcConfig);
         void controllerError(QString description);
         void controllerWarning(QString description);
+        void controllerConnectionQualityUpdate(int sharedRtt, int tcpLag);
 
     protected:
         void keyPressEvent(QKeyEvent *e);

@@ -64,13 +64,13 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         LOG_I("All network channels initialized successfully");
 
         //create serial (mbed) channels
-        _armControllerSerial = new SerialChannel3(ARM_SERIAL_CHANNEL_NAME, this, _log);
+        //_armControllerSerial = new SerialChannel3(ARM_SERIAL_CHANNEL_NAME, this, _log);
         _driveControllerSerial = new SerialChannel3(DRIVE_SERIAL_CHANNEL_NAME, this, _log);
-        _gimbalControllerSerial = new SerialChannel3(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
+        //_gimbalControllerSerial = new SerialChannel3(GIMBAL_SERIAL_CHANNEL_NAME, this, _log);
 
-        _armControllerSerial->addCompetitor(_driveControllerSerial);
-        _armControllerSerial->addCompetitor(_gimbalControllerSerial);
-        _driveControllerSerial->addCompetitor(_gimbalControllerSerial);
+        //_armControllerSerial->addCompetitor(_driveControllerSerial);
+        //_armControllerSerial->addCompetitor(_gimbalControllerSerial);
+        //_driveControllerSerial->addCompetitor(_gimbalControllerSerial);
 
         LOG_I("All serial channels initialized successfully");
 

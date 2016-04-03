@@ -1,9 +1,6 @@
 #ifndef SORO_GLOBAL_H
 #define SORO_GLOBAL_H
 
-#include <QSerialPortInfo>
-#include <QSerialPort>
-
 //QObject timer macros to make shit easier
 #define TIMER_INACTIVE -1
 #define START_TIMER(X,Y) if (X == TIMER_INACTIVE) X = startTimer(Y)
