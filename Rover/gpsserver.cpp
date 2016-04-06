@@ -28,7 +28,7 @@ void GpsServer::socketReadyRead() {
     qint64 status;
     while (_socket->hasPendingDatagrams()) {
         //read in a datagram
-        status = _socket->readDatagram(_buffer, 1024, &address.address, &address.port);
+        status = _socket->readDatagram(_buffer, 1024, &address.host, &address.port);
         if (status < 0) {
             //an error occurred reading from the socket, the onSocketError slot will handle it
             return;
@@ -50,7 +50,7 @@ void GpsServer::sockeError(QAbstractSocket::SocketError err) {
 
 void GpsServer::resetConnection() {
     _socket->abort();
-    _socket->bind(_hostAddress.address, _hostAddress.port);
+    _socket->bind(_hostAddress.host, _hostAddress.port);
     _socket->open(QIODevice::ReadWrite);
 
 }

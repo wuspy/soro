@@ -41,7 +41,7 @@ Channel::Channel (QObject *parent, const QString &configFile, Logger *log) : QOb
     QFile file(configFile, this);
     if (!file.open(QIODevice::ReadOnly)) {
         LOG_E("Cannot open configuration file " + configFile + " for read access");
-        setState(ErrorState, false);
+        setChannelState(ErrorState, false);
         return;
     }
 
@@ -67,7 +67,7 @@ Channel::Channel(QObject *parent, SocketAddress serverAddress, QString name, Pro
     _name = name;
     _protocol = protocol;
     _isServer = endPoint == ServerEndPoint;
-    _hostAddress.address = hostAddress;
+    _hostAddress.host = hostAddress;
 
     init();
 }
@@ -144,7 +144,7 @@ void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
     IniParser parser;
     if (!parser.load(stream)) {
         LOG_E("The configuration file is not properly formatted");
-        setState(ErrorState, false);
+        setChannelState(ErrorState, false);
         return;
     }
 
@@ -155,7 +155,7 @@ void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
     parser.remove(CONFIG_TAG_CHANNEL_NAME);
     if (_name.isEmpty()) {
         LOG_E(parseErrorString.arg(CONFIG_TAG_CHANNEL_NAME));
-        setState(ErrorState, false);
+        setChannelState(ErrorState, false);
         return;
     }
     QString endpoint = parser.value(CONFIG_TAG_ENDPOINT).toLower();
@@ -168,18 +168,18 @@ void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
     }
     else {
         LOG_E(parseErrorString.arg(CONFIG_TAG_ENDPOINT));
-        setState(ErrorState, false);
+        setChannelState(ErrorState, false);
         return;
     }
-    success = parser.valueAsIP(CONFIG_TAG_SERVER_ADDRESS, &_serverAddress.address, true);
+    success = parser.valueAsIP(CONFIG_TAG_SERVER_ADDRESS, &_serverAddress.host, true);
     parser.remove(CONFIG_TAG_SERVER_ADDRESS);
     if (!success) {
         if (_isServer) {      //Server address is not mandatory if we are the server
-            _serverAddress.address = QHostAddress::Any;
+            _serverAddress.host = QHostAddress::Any;
         }
         else {
             LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
-            setState(ErrorState, false);
+            setChannelState(ErrorState, false);
             return;
         }
     }
@@ -188,7 +188,7 @@ void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
     parser.remove(CONFIG_TAG_SERVER_PORT);
     if (!success) {
         LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_PORT));
-        setState(ErrorState, false);
+        setChannelState(ErrorState, false);
         return;
     }
     _serverAddress.port = port;
@@ -202,17 +202,17 @@ void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
     }
     else {
         LOG_E(parseErrorString.arg(CONFIG_TAG_PROTOCOL));
-        setState(ErrorState, false);
+        setChannelState(ErrorState, false);
         return;
     }
 
     //These values are optional
 
-    success = parser.valueAsIP(CONFIG_TAG_HOST_ADDRESS, &_hostAddress.address, true);
+    success = parser.valueAsIP(CONFIG_TAG_HOST_ADDRESS, &_hostAddress.host, true);
     parser.remove(CONFIG_TAG_HOST_ADDRESS);
     if (!success) {
         LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_HOST_ADDRESS, "-any-"));
-        _hostAddress.address = QHostAddress::Any;
+        _hostAddress.host = QHostAddress::Any;
     }
     success = parser.valueAsBool(CONFIG_TAG_DROP_OLD_PACKETS, &_dropOldPackets);
     parser.remove(CONFIG_TAG_DROP_OLD_PACKETS);
@@ -275,7 +275,7 @@ void Channel::init() {  //PRIVATE
         configureNewTcpSocket(); //This is its own function, as it must be called every time a new
                                  //TCP client connects in a server scenario
     }
-    setState(ReadyState, false); //now safe to call open()
+    setChannelState(ReadyState, false); //now safe to call open()
 }
 
 /*  Connection lifecycle management
@@ -285,7 +285,7 @@ void Channel::init() {  //PRIVATE
 
 void Channel::open() {
     LOG_D("open() called");
-    setState(_state, true); //force emit the stateChanged signal
+    setChannelState(_state, true); //force emit the stateChanged signal
     switch (_state) {
     case ReadyState:
         //If this is the server, we will bind to the server port
@@ -295,7 +295,7 @@ void Channel::open() {
         }
         else {
             _hostAddress.port = 0;
-            LOG_I("Attempting to bind to an available port on " + _hostAddress.address.toString());
+            LOG_I("Attempting to bind to an available port on " + _hostAddress.host.toString());
         }
         if (_tcpServer != NULL) {
             _tcpServer->setMaxPendingConnections(1);
@@ -336,7 +336,7 @@ void Channel::resetConnectionVars() {   //PRIVATE
 
 void Channel::resetConnection() {   //PRIVATE
     LOG_I("Attempting to connect to other side of channel...");
-    setState(ConnectingState, false);
+    setChannelState(ConnectingState, false);
     resetConnectionVars();
     KILL_TIMER(_connectionMonitorTimerID);
     KILL_TIMER(_handshakeTimerID);
@@ -360,20 +360,20 @@ void Channel::resetConnection() {   //PRIVATE
         }
         else {
             LOG_D("Trying to establish TCP connection with server " + _serverAddress.toString());
-            _tcpSocket->bind(_hostAddress.address, _hostAddress.port);
-            _tcpSocket->connectToHost(_serverAddress.address, _serverAddress.port);
+            _tcpSocket->bind(_hostAddress.host, _hostAddress.port);
+            _tcpSocket->connectToHost(_serverAddress.host, _serverAddress.port);
         }
     }
     else if (_udpSocket != NULL) {
         LOG_D("Cancelling any previous UDP operations...");
         _udpSocket->abort();
-        _udpSocket->bind(_hostAddress.address, _hostAddress.port);
+        _udpSocket->bind(_hostAddress.host, _hostAddress.port);
         if (!_isServer) START_TIMER(_handshakeTimerID, HANDSHAKE_FREQUENCY);
     }
     if (_tcpServer != NULL) {
         if (!_tcpServer->isListening()) {
             LOG_D("Waiting for TCP client to connect on port " + QString::number(_hostAddress.port));
-            _tcpServer->listen(_hostAddress.address, _hostAddress.port);
+            _tcpServer->listen(_hostAddress.host, _hostAddress.port);
         }
         if (_tcpServer->hasPendingConnections()) {
             //allow the next pending connection since we just dropped the old one
@@ -432,7 +432,7 @@ void Channel::tcpConnected() {  //PRIVATE SLOT
     //Both sides of the channel must send handshakes to each other to verify identity.
     //If this message is not sent timely (within a few seconds), both sides will disconnect
     //and attempt the whole thing over again
-    setState(ConnectingState, false);
+    setChannelState(ConnectingState, false);
     setPeerAddress(SocketAddress(_tcpSocket->peerAddress(), _tcpSocket->peerPort()));
     sendHandshake();
     //Close the connection if it is not verified in time
@@ -448,7 +448,7 @@ void Channel::newTcpClient() {  //PRIVATE SLOT
     }
 }
 
-inline void Channel::setState(Channel::State state, bool forceUpdate) {   //PRIVATE
+inline void Channel::setChannelState(Channel::State state, bool forceUpdate) {   //PRIVATE
     //signals the stateChanged event
      if ((_state != state) | forceUpdate) {
          LOG_D("Setting state to " + QString::number(state));
@@ -487,7 +487,7 @@ void Channel::close(Channel::State closeState) {   //PRIVATE
     KILL_TIMER(_resetTimerID);
     KILL_TIMER(_handshakeTimerID);
     resetConnectionVars();
-    setState(closeState, false);
+    setChannelState(closeState, false);
 }
 
 /*  Socket error handling
@@ -528,7 +528,7 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
     qint64 status;
     while (_udpSocket->hasPendingDatagrams()) {
         //read in a datagram
-        status = _udpSocket->readDatagram(_buffer, MAX_MESSAGE_LENGTH, &address.address, &address.port);
+        status = _udpSocket->readDatagram(_buffer, MAX_MESSAGE_LENGTH, &address.host, &address.port);
         if (status < 0) {
             //an error occurred reading from the socket, the onSocketError slot will handle it
             return;
@@ -627,7 +627,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
                 KILL_TIMER(_resetTcpTimerID);
                 _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
-                setState(ConnectedState, false);
+                setChannelState(ConnectedState, false);
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_D("Received handshake response from server " + _serverAddress.toString());
             }
@@ -650,7 +650,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
                 }
                 _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
-                setState(ConnectedState, false);
+                setChannelState(ConnectedState, false);
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_D("Received handshake request from client " + _peerAddress.toString());
             }
@@ -752,7 +752,7 @@ bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {   //PR
         stream << (MESSAGE_TYPE)type;
         stream << (MESSAGE_ID)qToBigEndian(_nextSendID);
         arr.append(message);
-        status = _udpSocket->writeDatagram(arr, _peerAddress.address, _peerAddress.port);
+        status = _udpSocket->writeDatagram(arr, _peerAddress.host, _peerAddress.port);
     }
     else if (_tcpSocket != NULL) {
         MESSAGE_LENGTH size = message.size() + TCP_HEADER_BYTES;

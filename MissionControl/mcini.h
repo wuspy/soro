@@ -92,7 +92,7 @@ struct MissionControlIniConfig {
             delete[] nodePorts;
         }
         else {
-            if (!configParser.valueAsIP(MCINI_TAG_MASTER_NODE_ADDRESS, &MasterNodeAddress.address, true)) {
+            if (!configParser.valueAsIP(MCINI_TAG_MASTER_NODE_ADDRESS, &MasterNodeAddress.host, true)) {
                 *err = "The configuration file " + appPath + "/" + MCINI_PATH + " is invalid (can't determine master node address)";
                 return false;
             }

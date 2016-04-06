@@ -4,13 +4,12 @@
 #ifdef QT_CORE_LIB
 #   include <QByteArray>
 #   include <QSerialPort>
-#   include "soro_global.h"
 #   include "gimbalglfwmap.h"
 #else
 #   include "mbed.h"
 #endif  //QT_CORE_LIB
 
-#include "serialchannel3.h"
+#include "soro_global.h"
 
 //Indicies and info for the structure of a drive serial message
 #define GIMBAL_MESSAGE_SIZE 4

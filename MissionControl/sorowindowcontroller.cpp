@@ -140,9 +140,9 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
                 break;
             case MissionControlIniConfig::MasterArm:
                 loadMasterArmConfig();
-                _masterArmSerial = new SerialChannel3(MASTER_ARM_SERIAL_CHANNEL_NAME, this, _log);
-                connect(_masterArmSerial, SIGNAL(messageReceived(const char*,int)),
-                        this, SLOT(masterArmSerialMessageReceived(const char*,int)));
+                _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, 5491), 'm', _log);
+                connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
+                        this, SLOT(masterArmMessageReceived(const char*,int)));
                 break;
             }
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
@@ -186,7 +186,7 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
         else {
             LOG_I("Setting up as normal node");
             //channel to connect to the master mission control computer
-            _sharedChannel = new Channel(this, SocketAddress(_mcIniConfig.MasterNodeAddress.address, _mcIniConfig.MasterNodeAddress.port),
+            _sharedChannel = new Channel(this, SocketAddress(_mcIniConfig.MasterNodeAddress.host, _mcIniConfig.MasterNodeAddress.port),
                     "MC_NODE_" + QString::number(_mcIniConfig.MasterNodeAddress.port),
                     Channel::TcpProtocol, Channel::ClientEndPoint, _mcIniConfig.NodeHostAddress, _log);
         }
@@ -247,7 +247,7 @@ void SoroWindowController::initForGLFW(GlfwMap *map) {
     }
 }
 
-void SoroWindowController::masterArmSerialMessageReceived(const char *message, int size) {
+void SoroWindowController::masterArmMessageReceived(const char *message, int size) {
 
     memcpy(_buffer, message, size);
     //control bucket with keyboard keys
@@ -339,8 +339,8 @@ const Channel *SoroWindowController::getSharedChannel() const {
     return _sharedChannel;
 }
 
-const SerialChannel3* SoroWindowController::getMasterArmSerial() const {
-    return _masterArmSerial;
+const MbedChannel* SoroWindowController::getMasterArmChannel() const {
+    return _masterArmChannel;
 }
 
 SoroWindowController::~SoroWindowController() {
@@ -358,7 +358,7 @@ SoroWindowController::~SoroWindowController() {
     }
     if (_controlChannel != NULL) delete _controlChannel;
     if (_sharedChannel != NULL) delete _sharedChannel;
-    if (_masterArmSerial != NULL) delete _masterArmSerial;
+    if (_masterArmChannel != NULL) delete _masterArmChannel;
     if (_log != NULL) delete _log;
     if (_glfwInitialized) glfwTerminate();
 }

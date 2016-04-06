@@ -225,7 +225,7 @@ private:
     qint64 _lastAckReceiveTime = QDateTime::currentMSecsSinceEpoch();
     qint64 _lastAckSendTime = QDateTime::currentMSecsSinceEpoch();
 
-    inline void setState(State state, bool forceUpdate);  //Internal method to set the channel status and
+    inline void setChannelState(State state, bool forceUpdate);  //Internal method to set the channel status and
                                                           //emit the statusChanged signal
 
     inline void setPeerAddress(SocketAddress address); //Internal method to set the channel peer

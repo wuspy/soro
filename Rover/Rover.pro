@@ -28,7 +28,9 @@ HEADERS += \
     ../shared/Soro/soroini.h \
     roverworker.h \
     ../shared/Soro/serialchannel3.h \
-    gpsserver.h
+    gpsserver.h \
+    ../shared/Soro/mbedchannel.h \
+    mbedupdater.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro

@@ -4,14 +4,13 @@
 #ifdef QT_CORE_LIB
 #   include <QByteArray>
 #   include <QSerialPort>
-#   include "soro_global.h"
 #   include "armglfwmap.h"
 #   include "iniparser.h"
 #else
 #   include "mbed.h"
 #endif  //QT_CORE_LIB
 
-#include "serialchannel3.h"
+#include "soro_global.h"
 
 //Indicies for data specified in BOTH joystick and master/slave movement messages
 #define ARM_MESSAGE_BUCKET_FULL_OPEN_INDEX 1
@@ -173,43 +172,43 @@ public:
      */
     static void translateMasterArmValues(char *message, const MasterRanges& ranges) {
         //yaw
-        int raw_yaw = deserialize_14bit(message, ARM_MASTER_MESSAGE_YAW_INDEX) - ranges.yawMin;
+        int raw_yaw = deserialize_14bit(message + ARM_MASTER_MESSAGE_YAW_INDEX) - ranges.yawMin;
         int yaw = ranges.yawAdd + MAX_VALUE_14BIT * ((float)(raw_yaw) / (float)(ranges.yawMax - ranges.yawMin));
         if (yaw > MAX_VALUE_14BIT) yaw = MAX_VALUE_14BIT;
         if (yaw < 0) yaw = 0;
         if (ranges.yawReverse) yaw = MAX_VALUE_14BIT - yaw;
-        serialize_14bit((unsigned short)yaw, message, ARM_MASTER_MESSAGE_YAW_INDEX);
+        serialize_14bit((unsigned short)yaw, message + ARM_MASTER_MESSAGE_YAW_INDEX);
         //shoulder
-        int raw_shoulder = deserialize_14bit(message, ARM_MASTER_MESSAGE_SHOULDER_INDEX) - ranges.shoulderMin;
+        int raw_shoulder =   deserialize_14bit(message + ARM_MASTER_MESSAGE_SHOULDER_INDEX) - ranges.shoulderMin;
         int shoulder = ranges.shoulderAdd + MAX_VALUE_14BIT * ((float)(raw_shoulder) / (float)(ranges.shoulderMax - ranges.shoulderMin));
         if (shoulder > MAX_VALUE_14BIT) shoulder = MAX_VALUE_14BIT;
         if (shoulder < 0) shoulder = 0;
         if (ranges.shoulderReverse) shoulder = MAX_VALUE_14BIT - shoulder;
-        serialize_14bit((unsigned short)shoulder, message, ARM_MASTER_MESSAGE_SHOULDER_INDEX);
+        serialize_14bit((unsigned short)shoulder, message + ARM_MASTER_MESSAGE_SHOULDER_INDEX);
         //elbow
-        int raw_elbow = deserialize_14bit(message, ARM_MASTER_MESSAGE_ELBOW_INDEX) - ranges.elbowMin;
+        int raw_elbow =   deserialize_14bit(message + ARM_MASTER_MESSAGE_ELBOW_INDEX) - ranges.elbowMin;
         int elbow = ranges.elbowAdd + MAX_VALUE_14BIT * ((float)(raw_elbow) / (float)(ranges.elbowMax - ranges.elbowMin));
         if (elbow > MAX_VALUE_14BIT) elbow = MAX_VALUE_14BIT;
         if (elbow < 0) elbow = 0;
         if (ranges.elbowReverse) elbow = MAX_VALUE_14BIT - elbow;
-        serialize_14bit((unsigned short)elbow, message, ARM_MASTER_MESSAGE_ELBOW_INDEX);
+        serialize_14bit((unsigned short)elbow, message + ARM_MASTER_MESSAGE_ELBOW_INDEX);
         //wrist
-        int raw_wrist = deserialize_14bit(message, ARM_MASTER_MESSAGE_WRIST_INDEX) - ranges.wristMin;
+        int raw_wrist =   deserialize_14bit(message + ARM_MASTER_MESSAGE_WRIST_INDEX) - ranges.wristMin;
         int wrist = ranges.wristAdd + MAX_VALUE_14BIT * ((float)(raw_wrist) / (float)(ranges.wristMax - ranges.wristMin));
         if (wrist > MAX_VALUE_14BIT) wrist = MAX_VALUE_14BIT;
         if (wrist < 0) wrist = 0;
         if (ranges.wristReverse) wrist = MAX_VALUE_14BIT - wrist;
-        serialize_14bit((unsigned short)wrist, message, ARM_MASTER_MESSAGE_WRIST_INDEX);
+        serialize_14bit((unsigned short)wrist, message + ARM_MASTER_MESSAGE_WRIST_INDEX);
         //bucket
-        int raw_bucket = deserialize_14bit(message, ARM_MASTER_MESSAGE_BUCKET_INDEX) - ranges.bucketMin;
+        int raw_bucket =   deserialize_14bit(message + ARM_MASTER_MESSAGE_BUCKET_INDEX) - ranges.bucketMin;
         int bucket = ranges.bucketAdd + MAX_VALUE_14BIT * ((float)(raw_bucket) / (float)(ranges.bucketMax - ranges.bucketMin));
         if (bucket > MAX_VALUE_14BIT) bucket = MAX_VALUE_14BIT;
         if (bucket < 0) bucket = 0;
         if (ranges.bucketReverse) bucket = MAX_VALUE_14BIT - bucket;
-        serialize_14bit((unsigned short)bucket, message, ARM_MASTER_MESSAGE_BUCKET_INDEX);
+        serialize_14bit((unsigned short)bucket, message + ARM_MASTER_MESSAGE_BUCKET_INDEX);
 
-        serialize_14bit((unsigned short)3000, message, ARM_MASTER_MESSAGE_WRIST_INDEX); //TODO bill build the fucking master arm
-        serialize_14bit((unsigned short)8000, message, ARM_MASTER_MESSAGE_BUCKET_INDEX);
+        serialize_14bit((unsigned short)3000, message + ARM_MASTER_MESSAGE_WRIST_INDEX); //TODO bill build the fucking master arm
+        serialize_14bit((unsigned short)8000, message + ARM_MASTER_MESSAGE_BUCKET_INDEX);
     }
 
 #endif
@@ -274,23 +273,23 @@ public:
     }
 
     static inline unsigned short masterYaw(const char *message) {
-        return deserialize_14bit(message, ARM_MASTER_MESSAGE_YAW_INDEX);
+        return deserialize_14bit(message + ARM_MASTER_MESSAGE_YAW_INDEX);
     }
 
     static inline unsigned short masterShoulder(const char *message) {
-        return deserialize_14bit(message, ARM_MASTER_MESSAGE_SHOULDER_INDEX);
+        return deserialize_14bit(message + ARM_MASTER_MESSAGE_SHOULDER_INDEX);
     }
 
     static inline unsigned short masterElbow(const char *message) {
-        return deserialize_14bit(message, ARM_MASTER_MESSAGE_ELBOW_INDEX);
+        return deserialize_14bit(message + ARM_MASTER_MESSAGE_ELBOW_INDEX);
     }
 
     static inline unsigned short masterWrist(const char *message) {
-        return deserialize_14bit(message, ARM_MASTER_MESSAGE_WRIST_INDEX);
+        return deserialize_14bit(message + ARM_MASTER_MESSAGE_WRIST_INDEX);
     }
 
     static inline unsigned short masterBucket(const char *message) {
-        return deserialize_14bit(message, ARM_MASTER_MESSAGE_BUCKET_INDEX);
+        return deserialize_14bit(message + ARM_MASTER_MESSAGE_BUCKET_INDEX);
     }
 
     static inline bool bucketFullOpen(const char *message) {

@@ -8,7 +8,6 @@
 #   include <QtCore>
 #   include <QDebug>
 #   include <iostream>
-#   include "soro_global.h"
 #   include "logger.h"
 #   define SERIAL_GETCHAR(s, c) s->getChar(&c)
 #   define SERIAL_PUTCHAR(s, c) s->putChar(c)
@@ -49,67 +48,9 @@ using namespace std;
 
 #include <cstring>
 #include <cstdio>
+#include "soro_global.h"
 
 namespace Soro {
-
-static const int MAX_VALUE_14BIT = 16383;
-
-/* Encodes a number into 14 bits (2 bytes whrere each byte is limited to 0x7F)
- * This is done to ensure the high bit of each byte is always 0 for frame alignment purposes
- *
- * Range 0-16383
- */
-static inline void serialize_14bit(unsigned short us, char *arr, int index) {
-    arr[index] = (us >> 7) & 0x7F; /* low 7 bits of second byte, high bit of first byte */
-    arr[index + 1] = us & 0x7F; //low 7 bits of first byte
-}
-
-/* Converts a float ranging from -1 to 1 into an unsigned char,
- * ranging from 0 to 200
- */
-static inline char joyFloatToByte(float val) {
-    val = (val + 1) * 100;
-    unsigned char uc = (unsigned char)val;
-    return reinterpret_cast<char&>(uc);
-}
-
-/* Converts an int ranging from -100 to 100 into an unsigned char,
- * ranging from 0 to 200
- */
-static inline char joyIntToByte(int val) {
-    val += 100;
-    unsigned char uc = (unsigned char)val;
-    return reinterpret_cast<char&>(uc);
-}
-
-/* Converts an int ranging from -100 to 100 into an unsigned char,
- * ranging from 0 to 200
- */
-static inline int joyFloatToInt(float val) {
-    return (int)(val * 100);
-}
-
-/* Converts a byte encoded joystick axis (see joyFloatToByte) back
- * into it's original float value
- */
-static inline float joyByteToFloat(char val) {
-    return (float)(reinterpret_cast<unsigned char&>(val) - 100.0) / 100.0;
-}
-
-/* Converts a byte encoded joystick axis (see joyFloatToByte) into
- * an int ranging from -100 to 100
- */
-static inline int joyByteToInt(char val) {
-    return (int)reinterpret_cast<unsigned char&>(val) - 100;
-}
-
-/* Decodes a number encoded with the above function
- *
- * Range 0-16383
- */
-static inline unsigned short deserialize_14bit(const char *arr, int index) {
-    return (arr[index] << 7) | arr[index + 1];
-}
 
 /* This class handles everything about communication between a Qt and mbed enviornment over a serial port.
  * It will handle finding the correct tty device (Qt side) and monitoring the connection to ensure it is still

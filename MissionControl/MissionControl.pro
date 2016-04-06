@@ -43,7 +43,7 @@ HEADERS  += \
     ../shared/Soro/drivemessage.h \
     ../shared/Soro/gimbalglfwmap.h \
     ../shared/Soro/gimbalmessage.h \
-    ../shared/Soro/serialchannel3.h \
+    ../shared/Soro/mbedchannel.h \
     soromainwindow.h \
     sorowindowcontroller.h \
     ../shared/Soro/soro_global.h \

@@ -122,7 +122,7 @@ void RoverWorker::sharedChannelStateChanged(Channel::State state) {
     if ((state == Channel::ConnectedState) && (_soroIniConfig.VideoServerAddress == QHostAddress::Null)) {
         //If the rover acts as a server, the only way we can deduce where to send the video stream is by waiting
         //for mission control to connect
-        _soroIniConfig.VideoServerAddress = _sharedChannel->getPeerAddress().address;
+        _soroIniConfig.VideoServerAddress = _sharedChannel->getPeerAddress().host;
     }
     //TODO
 }

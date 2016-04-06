@@ -43,9 +43,9 @@ void SoroMainWindow::controllerInitialized(const SoroIniConfig& soroConfig,
         ui->videoPane2->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         _videoWindow->getVideoPane()->setCameraName(ARM_CAMERA_DISPLAY_NAME);
         if (mcConfig.ControlInputMode == MissionControlIniConfig::MasterArm) {
-            masterArmSerialStateChanged(SerialChannel3::ConnectingState);
-            connect(_controller->getMasterArmSerial(), SIGNAL(stateChanged(SerialChannel3::State)),
-                    this, SLOT(masterArmSerialStateChanged(SerialChannel3::State)));
+            masterArmStateChanged(MbedChannel::ConnectingState);
+            connect(_controller->getMasterArmChannel(), SIGNAL(stateChanged(MbedChannel::State)),
+                    this, SLOT(masterArmStateChanged(MbedChannel::State)));
         }
         break;
     case MissionControlIniConfig::DriveLayoutMode:
@@ -182,14 +182,14 @@ void SoroMainWindow::controlChannelStateChanged(Channel::State state) {
     }
 }
 
-void SoroMainWindow::masterArmSerialStateChanged(SerialChannel3::State state) {
+void SoroMainWindow::masterArmStateChanged(MbedChannel::State state) {
     switch (state) {
-    case SerialChannel3::ConnectedState:
+    case MbedChannel::ConnectedState:
         ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_inputDeviceLabel->setText("Master arm connected");
         ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
         break;
-    case SerialChannel3::ConnectingState:
+    case MbedChannel::ConnectingState:
         ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_inputDeviceLabel->setText("Connecting to master arm...");
         ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");

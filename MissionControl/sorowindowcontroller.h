@@ -11,7 +11,7 @@
 #include "armmessage.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
-#include "serialchannel3.h"
+#include "mbedchannel.h"
 #include "armglfwmap.h"
 #include "driveglfwmap.h"
 #include "gimbalglfwmap.h"
@@ -37,7 +37,7 @@ public:
 
     const Channel *getControlChannel() const;
     const Channel *getSharedChannel() const;
-    const SerialChannel3* getMasterArmSerial() const;
+    const MbedChannel* getMasterArmChannel() const;
 
 private:
     char _buffer[512];
@@ -64,7 +64,7 @@ private:
     int _inputSelectorTimerId = TIMER_INACTIVE;
 
     //Arm specific stuff
-    SerialChannel3 *_masterArmSerial = NULL;
+    MbedChannel *_masterArmChannel = NULL;
     ArmMessage::MasterRanges _masterArmRanges;
 
     void loadMasterArmConfig();
@@ -83,7 +83,7 @@ signals:
 private slots:
     void sharedChannelMessageReceived(const QByteArray& message);
     void sharedChannelNodeMessageReceived(const QByteArray& message);
-    void masterArmSerialMessageReceived(const char *message, int size);
+    void masterArmMessageReceived(const char *message, int size);
     void sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                             int rateUp, int rateDown);
 

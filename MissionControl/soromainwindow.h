@@ -14,7 +14,7 @@
 
 #include "channel.h"
 #include "soro_global.h"
-#include "serialchannel3.h"
+#include "mbedchannel.h"
 #include "glfwmapdialog.h"
 #include "videowindow.h"
 #include "latlng.h"
@@ -49,7 +49,7 @@ namespace MissionControl {
         void controlChannelStateChanged(Channel::State state);
         void controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                                 int rateUp, int rateDown);
-        void masterArmSerialStateChanged(SerialChannel3::State);
+        void masterArmStateChanged(MbedChannel::State);
         void controllerGamepadChanged(QString name);
         void controllerInitialized(const SoroIniConfig& soroConfig,
                                    const MissionControlIniConfig& mcConfig);
