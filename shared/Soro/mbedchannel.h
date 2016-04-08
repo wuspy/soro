@@ -12,6 +12,8 @@
 #   include "mbed.h"
 #   include "EthernetInterface.h"
 #   include "UDPSocket.h"
+#   include "lpc_phy.h"
+extern "C" void mbed_reset();
 #endif
 
 #include <cstring>
@@ -61,10 +63,12 @@ private slots:
         qint64 length;
         while (_socket->hasPendingDatagrams()) {
             length = _socket->readDatagram(&_buffer[0], 512, &_peer.host, &_peer.port);
-            if (length < 5) continue;
+            LOG_I("Got message with length " + QString::number(length));
+            if ((length < 5) | (length == 512)) continue;
             if (_buffer[0] != reinterpret_cast<char&>(_mbedId)) {
                 LOG_W("Recieved message from incorrect mbed ID "
                       + QString::number(reinterpret_cast<unsigned char&>(_buffer[0])));
+                continue;
             }
             unsigned int sequence;
             deserialize<unsigned int>(_buffer + 1, sequence);
@@ -83,23 +87,30 @@ private slots:
 
     void resetConnection() {
         LOG_I("Connection is resetting...");
+        setChannelState(ConnectingState);
         _lastReceiveId = 0;
         _active = false;
         _peer.host = QHostAddress::Null;
         _peer.port = 0;
         _socket->abort();
+        if (_socket->isOpen()) _socket->close();
         if (_socket->bind(_host.host, _host.port)) {
+            LOG_I("Listening on UDP port " + _host.toString());
             _socket->open(QIODevice::ReadWrite);
+        }
+        else {
+            LOG_E("Failed to bind to " + _host.toString());
         }
     }
 
 public:
-    MbedChannel(SocketAddress host, char mbedId, Logger *log = NULL) {
+    MbedChannel(SocketAddress host, unsigned char mbedId, Logger *log = NULL) {
         _host = host;
         _socket = new QUdpSocket(this);
-        _mbedId = mbedId;
+        _mbedId = reinterpret_cast<char&>(mbedId);
         _log = log;
-        LOG_TAG = "Mbed(" + QString::fromLatin1(&mbedId, 1) + ")";
+        LOG_TAG = "Mbed(" + QString::number(mbedId) + ")";
+        LOG_I("Creating new mbed channel");
         connect(_socket, SIGNAL(readyRead()),
                 this, SLOT(socketReadyRead()));
         connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
@@ -136,6 +147,10 @@ protected:
             }
             _active = false;
         }
+        else if (e->timerId() == _resetConnectionTimerId) {
+            resetConnection();
+            KILL_TIMER(_resetConnectionTimerId); //single shot
+        }
     }
 
 };
@@ -151,25 +166,89 @@ private:
     Endpoint _server;
     time_t _lastSendTime;
     unsigned int _nextSendId;
+    unsigned int _lastReceiveId;
     char _mbedId;
     char _buffer[512];
 
+    void panic() {
+        DigitalOut led1(LED1);
+        DigitalOut led2(LED2);
+        DigitalOut led3(LED3);
+        DigitalOut led4(LED4);
+        while (1) {
+            led1 = 1;
+            led2 = 0;
+            led3 = 0;
+            led4 = 1;
+            wait_ms(150);
+            led1 = 0;
+            led2 = 1;
+            led3 = 1;
+            led4 = 0;
+            wait_ms(150);
+        }
+    }
+
+    void loadConfig() {
+        Serial pc(USBTX, USBRX);
+        LocalFileSystem local("local");
+        FILE *configFile = fopen("/local/server.txt", "r");
+        if (configFile != NULL) {
+            char *line = new char[64];
+            fgets(line, 64, configFile);
+            fclose(configFile);
+            for (int i = 0; line[i] != '\0'; i++) {
+                if (line[i] == ':') {
+                    char *ip = new char[i + 1];
+                    strncpy(ip, line, i);
+                    ip[i] = '\0';
+                    unsigned int port = (unsigned int)atoi(line + i + 1);
+                    if ((port == 0) | (port > 65535)) break;
+                    _server.set_address(ip, port);
+                    return;
+                }
+            }
+        }
+        //an error occurred
+        panic();
+    }
+
+    inline void initConnection() {
+        while (_eth->init() != 0) {
+             *_led = 1; wait_ms(100);
+             *_led = 0; wait_ms(100);
+        }
+        while (_eth->connect() != 0) {
+            *_led = 1; wait_ms(100);
+            *_led = 0; wait_ms(50);
+            *_led = 1; wait_ms(100);
+            *_led = 0; wait_ms(50);
+        }
+        while (_socket->init() != 0) {
+            *_led = 1; wait_ms(100);
+            *_led = 0; wait_ms(50);
+            *_led = 1; wait_ms(100);
+            *_led = 0; wait_ms(50);
+            *_led = 1; wait_ms(100);
+            *_led = 0; wait_ms(50);
+        }
+    }
+
+    inline bool isEthernetActive () {
+        return (lpc_mii_read_data() & (1 << 0)) ? true : false;
+    }
+
 public:
-    MbedChannel(const char *serverHost, int serverPort, char mbedId, bool manageEthernet) {
-        _mbedId = mbedId;
-        _server.set_address(serverHost, serverPort);
+    MbedChannel(unsigned char mbedId) {
         _led = new DigitalOut(LED4);
-        if (manageEthernet) {
-            _eth = new EthernetInterface;
-            while (_eth->init() < 0) { wait(1); }
-            while (!_eth->connect() < 0) { wait(1); }
-        }
-        else {
-            _eth = NULL;
-        }
+        loadConfig();
+        _mbedId = reinterpret_cast<char&>(mbedId);
+        _eth = new EthernetInterface;
         _socket = new UDPSocket;
-        while (_socket->init() < 0) { wait(1); }
+        initConnection();
         _lastSendTime = time(NULL);
+        _lastReceiveId = 0;
+        _nextSendId = 0;
         *_led = 1;
     }
 
@@ -178,32 +257,34 @@ public:
         delete _led;
         _socket->close();
         delete _socket;
-        if (_eth != NULL) {
-            //this class is managing the ethernet
-            _eth->disconnect();
-            delete _eth;
-        }
+        //this class is managing the ethernet
+        _eth->disconnect();
+        delete _eth;
     }
 
     void sendMessage(char *message, int length) {
+        if (!isEthernetActive()) mbed_reset();
         _buffer[0] = _mbedId;
         serialize<unsigned int>(_buffer + 1, _nextSendId++);
         memcpy(_buffer + 5, message, length);
-        _socket->sendTo(_server, message, length + 5);
+        _socket->sendTo(_server, _buffer, length + 5);
         _lastSendTime = time(NULL);
     }
 
-    int read(char *buffer, int maxLength) {
+    int read(char *outMessage, int maxLength) {
+        if (!isEthernetActive()) mbed_reset();
         Endpoint peer;
-        int len = _socket->receiveFrom(peer, buffer, maxLength);
         if (time(NULL) - _lastSendTime >= 1) {
             //send heartbeat
             sendMessage(NULL, 0);
         }
-        if (peer.get_port() == _server.get_port()) {
-            return len;
-        }
-        return -1;
+        int len = _socket->receiveFrom(peer, _buffer, maxLength);
+        unsigned int sequence;
+        deserialize<unsigned int>(_buffer + 1, sequence);
+        if ((len < 5) || (sequence < _lastReceiveId) || (peer.get_port() != _server.get_port())) return -1;
+        _lastReceiveId = sequence;
+        memcpy(outMessage, _buffer + 5, len - 5);
+        return len - 5;
     }
 };
 

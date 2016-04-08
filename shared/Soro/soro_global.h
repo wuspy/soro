@@ -30,6 +30,11 @@ static inline void addWidgetShadow(QWidget *target, int radius, int offset) {
 
 #endif // QT_CORE_LIB
 
+#define MBED_ID_MASTER_ARM 1
+#define MBED_ID_ARM 2
+#define MBED_ID_DRIVE 3
+#define MBED_ID_GIMBAL 4
+
 static const int MAX_VALUE_14BIT = 16383;
 
 /* Encodes a number into 14 bits (2 bytes whrere each byte is limited to 0x7F)
@@ -54,16 +59,14 @@ template <typename T>
 static inline void serialize(char *arr, T data) {
     int max = sizeof(T) - 1;
     for (int i = 0; i <= max; i++) {
-        arr[max - i] = (data >> (i * 8));
+        arr[max - i] = (data >> (i * 8)) & 0xFF;
     }
 }
 
 template <typename T>
 static inline void deserialize(const char *arr, T& result) {
-    int max = sizeof(T) - 1;
-    result = (T)0x0;
-    for (int i = max; i >= 0; i++) {
-        result |= (arr[max - i] >> (i * 8));
+    for (unsigned int i = 0; i < sizeof(T); i++) {
+        result = (result << 8) + reinterpret_cast<const unsigned char&>(arr[i]);
     }
 }
 
@@ -105,6 +108,5 @@ static inline float joyByteToFloat(char val) {
 static inline int joyByteToInt(char val) {
     return (int)reinterpret_cast<unsigned char&>(val) - 100;
 }
-
 
 #endif // SORO_GLOBAL_H

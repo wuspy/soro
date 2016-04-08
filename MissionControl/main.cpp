@@ -1,6 +1,7 @@
 #include <QApplication>
 
 #include "soromainwindow.h"
+#include "soro_global.h"
 
 using namespace Soro::MissionControl;
 

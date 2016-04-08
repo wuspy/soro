@@ -16,7 +16,6 @@ SoroWindowController::SoroWindowController(QObject *parent) : QObject(parent) {
     _log = new Logger(this);
     _log->setLogfile(APPPATH + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
     //_log->RouteToQtLogger = true;
-    //_log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -140,7 +139,7 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
                 break;
             case MissionControlIniConfig::MasterArm:
                 loadMasterArmConfig();
-                _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, 5491), 'm', _log);
+                _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, 5400), MBED_ID_MASTER_ARM, _log);
                 connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
                         this, SLOT(masterArmMessageReceived(const char*,int)));
                 break;
