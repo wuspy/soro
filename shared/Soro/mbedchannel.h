@@ -104,7 +104,8 @@ private slots:
     }
 
 public:
-    MbedChannel(SocketAddress host, unsigned char mbedId, Logger *log = NULL) {
+    MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent, Logger *log = NULL)
+        : QObject(parent) {
         _host = host;
         _socket = new QUdpSocket(this);
         _mbedId = reinterpret_cast<char&>(mbedId);
