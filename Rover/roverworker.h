@@ -10,10 +10,11 @@
 #include "logger.h"
 #include "armmessage.h"
 #include "soro_global.h"
-#include "serialchannel3.h"
+#include "mbedchannel.h"
 #include "soroini.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
+#include "socketaddress.h"
 #include "gpsserver.h"
 
 using namespace Soro;
@@ -34,9 +35,9 @@ namespace Rover {
         Channel *_driveChannel = NULL;
         Channel *_gimbalChannel = NULL;
         Channel *_sharedChannel = NULL;
-        SerialChannel3 *_armControllerSerial = NULL;
-        SerialChannel3 *_driveControllerSerial = NULL;
-        SerialChannel3 *_gimbalControllerSerial = NULL;
+        MbedChannel *_armControllerMbed = NULL;
+        MbedChannel *_driveControllerMbed = NULL;
+        MbedChannel *_gimbalControllerMbed = NULL;
         GpsServer *_gpsServer = NULL;
 
         SoroIniConfig _soroIniConfig;

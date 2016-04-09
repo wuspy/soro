@@ -25,6 +25,9 @@
 #define SOROINI_VALUE_LOG_LEVEL_WARN "Warning"
 #define SOROINI_VALUE_LOG_LEVEL_ERROR "Error"
 #define SOROINI_VALUE_LOG_LEVEL_DISABLED "Disabled"
+#define SOROINI_TAG_ARM_MBED_PORT "ArmMbedPort"
+#define SOROINI_TAG_DRIVE_MBED_PORT "DriveMbedPort"
+#define SOROINI_TAG_GIMBAL_MBED_PORT "GimbalMbedPort"
 
 namespace Soro {
 
@@ -44,6 +47,7 @@ struct SoroIniConfig {
     int LogLevel;
     quint16 ArmChannelPort, DriveChannelPort, GimbalChannelPort, SharedChannelPort;
     quint16 ArmVideoPort, DriveVideoPort, GimbalVideoPort;
+    quint16 ArmMbedPort, DriveMbedPort, GimbalMbedPort;
 
     /* Loads the configuration from the default path, and returns true if successful.
      * If there is an error, err will contain a summary of what went wrong.
@@ -120,15 +124,30 @@ struct SoroIniConfig {
         }
         ArmVideoPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_DRIVE_VIDEO_PORT, &tmp)) {
-            *err = "No drive video  port found in configuration file";
+            *err = "No drive video port found in configuration file";
             return false;
         }
         DriveVideoPort = tmp;
         if (!configParser.valueAsInt(SOROINI_TAG_GIMBAL_VIDEO_PORT, &tmp)) {
-            *err = "No gimbal video  port found in configuration file";
+            *err = "No gimbal video port found in configuration file";
             return false;
         }
         GimbalVideoPort = tmp;
+        if (!configParser.valueAsInt(SOROINI_TAG_ARM_MBED_PORT, &tmp)) {
+            *err = "No arm mbed port found in configuration file";
+            return false;
+        }
+        ArmMbedPort = tmp;
+        if (!configParser.valueAsInt(SOROINI_TAG_DRIVE_MBED_PORT, &tmp)) {
+            *err = "No drive mbed port found in configuration file";
+            return false;
+        }
+        DriveMbedPort = tmp;
+        if (!configParser.valueAsInt(SOROINI_TAG_GIMBAL_MBED_PORT, &tmp)) {
+            *err = "No gimbal mbed port found in configuration file";
+            return false;
+        }
+        GimbalMbedPort = tmp;
         return true;
     }
 
