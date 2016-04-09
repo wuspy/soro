@@ -104,8 +104,7 @@ private slots:
     }
 
 public:
-    MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent = NULL, Logger *log = NULL)
-        : QObject(parent) {
+    MbedChannel(SocketAddress host, unsigned char mbedId, Logger *log = NULL) {
         _host = host;
         _socket = new QUdpSocket(this);
         _mbedId = reinterpret_cast<char&>(mbedId);
@@ -130,7 +129,7 @@ public:
             _buffer[0] = '\0';
             serialize<unsigned int>(_buffer + 1, _nextSendId++);
             memcpy(_buffer + 5, message, length);
-            _socket->writeDatagram(message, length + 5, _peer.host, _peer.port);
+            _socket->writeDatagram(_buffer, length + 5, _peer.host, _peer.port);
         }
     }
 
@@ -153,6 +152,7 @@ protected:
             KILL_TIMER(_resetConnectionTimerId); //single shot
         }
     }
+
 };
 
 #endif
@@ -260,6 +260,10 @@ public:
         //this class is managing the ethernet
         _eth->disconnect();
         delete _eth;
+    }
+
+    void setTimeout(unsigned int millis) {
+        _socket->set_blocking(false, millis);
     }
 
     void sendMessage(char *message, int length) {
