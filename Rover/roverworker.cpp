@@ -66,7 +66,7 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         //create mbed channels
         _armControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.ArmMbedPort), MBED_ID_ARM, this, _log);
         _driveControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.DriveMbedPort), MBED_ID_DRIVE, this, _log);
-        _gimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.ArmMbedPort), MBED_ID_GIMBAL, this, _log);
+        _gimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalMbedPort), MBED_ID_GIMBAL, this, _log);
 
         //observers for network channels message received
         connect(_armChannel, SIGNAL(messageReceived(const QByteArray)),
