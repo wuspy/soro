@@ -104,8 +104,7 @@ private slots:
     }
 
 public:
-    MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent, Logger *log = NULL)
-        : QObject(parent) {
+    MbedChannel(SocketAddress host, unsigned char mbedId, Logger *log = NULL) {
         _host = host;
         _socket = new QUdpSocket(this);
         _mbedId = reinterpret_cast<char&>(mbedId);
@@ -130,7 +129,7 @@ public:
             _buffer[0] = '\0';
             serialize<unsigned int>(_buffer + 1, _nextSendId++);
             memcpy(_buffer + 5, message, length);
-            _socket->writeDatagram(_buffer, length + 5, _peer.host, _peer.port);
+            _socket->writeDatagram(message, length + 5, _peer.host, _peer.port);
         }
     }
 
@@ -170,6 +169,7 @@ private:
     unsigned int _lastReceiveId;
     char _mbedId;
     char _buffer[512];
+    void (*_resetCallback)(void);
 
     void panic() {
         DigitalOut led1(LED1);
@@ -240,7 +240,15 @@ private:
     }
 
 public:
+    /* Creates a new channel for ethernet communication.
+     *
+     * This will read from a file on local storage (server.txt) to
+     * determine the address it should communicate with.
+     *
+     * Blocks until completion, often for several seconds.
+     */
     MbedChannel(unsigned char mbedId) {
+        _resetCallback = NULL;
         _led = new DigitalOut(LED4);
         loadConfig();
         _mbedId = reinterpret_cast<char&>(mbedId);
@@ -263,12 +271,19 @@ public:
         delete _eth;
     }
 
+    /* Sets the timeout for blocking socket operations in milliseconds.
+    */
     void setTimeout(unsigned int millis) {
         _socket->set_blocking(false, millis);
     }
 
     void sendMessage(char *message, int length) {
-        if (!isEthernetActive()) mbed_reset();
+        if (!isEthernetActive()) {
+            if (_resetCallback != NULL) {
+                _resetCallback();
+            }
+            mbed_reset();
+        }
         _buffer[0] = _mbedId;
         serialize<unsigned int>(_buffer + 1, _nextSendId++);
         memcpy(_buffer + 5, message, length);
@@ -276,11 +291,30 @@ public:
         _lastSendTime = time(NULL);
     }
 
+    /* Adds a listener to be notified if the ethernet
+     * becomes disconnected, which will result in the mbed
+     * resetting. This gives you a chance to clean up
+     * or perform any necessary operations before a reset.
+     */
+    void setResetListener(void (*callback)(void)) {
+        _resetCallback = callback;
+    }
+
+    /* Reads a pending message (if available) and stores it in outMessage.
+     *
+     * Returns the length of the message, or -1 if none is available or
+     * an error occurred.
+     */
     int read(char *outMessage, int maxLength) {
-        if (!isEthernetActive()) mbed_reset();
+        if (!isEthernetActive()) {
+            if (_resetCallback != NULL) {
+                _resetCallback();
+            }
+            mbed_reset();
+        }
         Endpoint peer;
+        //Check if a heartbeat should be sent
         if (time(NULL) - _lastSendTime >= 1) {
-            //send heartbeat
             sendMessage(NULL, 0);
         }
         int len = _socket->receiveFrom(peer, _buffer, maxLength);
