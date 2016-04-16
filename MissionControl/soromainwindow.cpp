@@ -16,9 +16,6 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
 
-    _videoWindow = new VideoWindow(this);
-    _videoWindow->show();
-
     _controller = new SoroWindowController(this);
     connect(ui->settingsButton, SIGNAL(clicked(bool)),
             _controller, SLOT(settingsClicked()));
@@ -39,9 +36,6 @@ void SoroMainWindow::controllerInitialized(const SoroIniConfig& soroConfig,
     switch (mcConfig.Layout) {
     case MissionControlIniConfig::ArmLayoutMode:
         setWindowTitle("Mission Control - Arm");
-        ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
-        ui->videoPane2->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
-        _videoWindow->getVideoPane()->setCameraName(ARM_CAMERA_DISPLAY_NAME);
         if (mcConfig.ControlInputMode == MissionControlIniConfig::MasterArm) {
             masterArmStateChanged(MbedChannel::ConnectingState);
             connect(_controller->getMasterArmChannel(), SIGNAL(stateChanged(MbedChannel::State)),
@@ -50,21 +44,12 @@ void SoroMainWindow::controllerInitialized(const SoroIniConfig& soroConfig,
         break;
     case MissionControlIniConfig::DriveLayoutMode:
         setWindowTitle("Mission Control - Driver");
-        ui->videoPane1->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
-        ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
-        _videoWindow->getVideoPane()->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
         break;
     case MissionControlIniConfig::GimbalLayoutMode:
         setWindowTitle("Mission Control - Gimbal");
-        ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
-        ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
-        _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         break;
     case MissionControlIniConfig::SpectatorLayoutMode:
         setWindowTitle("Mission Control - Spectating");
-        ui->videoPane1->setCameraName(DRIVE_CAMERA_DISPLAY_NAME);
-        ui->videoPane2->setCameraName(ARM_CAMERA_DISPLAY_NAME);
-        _videoWindow->getVideoPane()->setCameraName(GIMBAL_CAMERA_DISPLAY_NAME);
         break;
     }
     sharedChannelStateChanged(Channel::ConnectingState);
@@ -233,13 +218,11 @@ void SoroMainWindow::timerEvent(QTimerEvent *e) {
 
 void SoroMainWindow::resizeEvent(QResizeEvent* event) {
    QMainWindow::resizeEvent(event);
-   ui->videoContainerWidget->resize(height() / 2 * 1.77777, height());
-   ui->infoContainer->resize(width() - ui->videoContainerWidget->width(), ui->infoContainer->height());
-   ui->videoContainerWidget->move(width() - ui->videoContainerWidget->width(), 0);
+   ui->infoContainer->resize(width(), ui->infoContainer->height());
    ui->googleMapView->move(0, ui->infoContainer->height());
-   ui->statusBarWidget->resize(width() - ui->videoContainerWidget->width(), 30);
+   ui->statusBarWidget->resize(width(), 30);
    ui->statusBarWidget->move(0, height() - 30);
-   ui->googleMapView->resize(width() - ui->videoContainerWidget->width() + 2,
+   ui->googleMapView->resize(width() + 2,
                              height() - ui->statusBarWidget->height() - ui->infoContainer->height() + 1);
 }
 
@@ -265,6 +248,5 @@ void SoroMainWindow::keyReleaseEvent(QKeyEvent *e) {
 
 SoroMainWindow::~SoroMainWindow() {
     delete ui;
-    if (_videoWindow != NULL) delete _videoWindow;
     if (_controller != NULL) delete _controller;
 }

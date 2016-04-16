@@ -16,7 +16,6 @@
 #include "soro_global.h"
 #include "mbedchannel.h"
 #include "glfwmapdialog.h"
-#include "videowindow.h"
 #include "latlng.h"
 #include "sorowindowcontroller.h"
 
@@ -37,7 +36,6 @@ namespace MissionControl {
     private:
         Ui::SoroMainWindow *ui;
         SoroWindowController *_controller;
-        VideoWindow *_videoWindow = NULL;
         bool _fullscreen = false;
         char _currentKey = '\0';
 

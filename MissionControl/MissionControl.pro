@@ -19,8 +19,6 @@ SOURCES += \
     main.cpp \
     glfwmapdialog.cpp \
     googlemapview.cpp \
-    videowindow.cpp \
-    videopane.cpp \
     ../shared/Soro/driveglfwmap.cpp \
     ../shared/Soro/gimbalglfwmap.cpp \
     soromainwindow.cpp \
@@ -37,8 +35,6 @@ HEADERS  += \
     ../shared/Soro/armmessage.h \
     glfwmapdialog.h \
     googlemapview.h \
-    videowindow.h \
-    videopane.h \
     ../shared/Soro/driveglfwmap.h \
     ../shared/Soro/drivemessage.h \
     ../shared/Soro/gimbalglfwmap.h \
@@ -52,8 +48,6 @@ HEADERS  += \
 
 FORMS    += \
     glfwmapdialog.ui \
-    videopane.ui \
-    videowindow.ui \
     soromainwindow.ui
 
 RESOURCES += \
@@ -80,4 +74,4 @@ macx: {
 else:unix: LIBS += -lglfw
 
 #vlc-qt (ppa:ntadej/tano libvlc-qt-core2 libvlc-qt-widgets2 libvlc-qt-dbg libvlc-qt-dev on ubuntu)
-unix: LIBS += -lvlc -lVLCQtCore -lVLCQtWidgets
+#unix: LIBS += -lvlc -lVLCQtCore -lVLCQtWidgets

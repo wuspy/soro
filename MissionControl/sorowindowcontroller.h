@@ -16,7 +16,6 @@
 #include "driveglfwmap.h"
 #include "gimbalglfwmap.h"
 #include "glfwmapdialog.h"
-#include "videowindow.h"
 #include "latlng.h"
 #include "soroini.h"
 #include "mcini.h"
