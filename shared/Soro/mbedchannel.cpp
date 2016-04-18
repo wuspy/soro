@@ -38,7 +38,7 @@ void MbedChannel::socketReadyRead() {
         else if (sequence < _lastReceiveId) continue;
         _lastReceiveId = sequence;
         _active = true;
-        switch (_buffer[1]) {
+        switch (reinterpret_cast<unsigned char&>(_buffer[1])) {
         case _MBED_MSG_TYPE_NORMAL:
             if (length > 6) {
                 emit messageReceived(_buffer + 6, length - 6);
@@ -46,6 +46,9 @@ void MbedChannel::socketReadyRead() {
             break;
         case _MBED_MSG_TYPE_LOG:
             LOG_I("Mbed:" + QString(_buffer + 6));
+            break;
+        default:
+            LOG_E("Got message with unknown type");
             break;
         }
     }
@@ -210,7 +213,7 @@ void MbedChannel::setTimeout(unsigned int millis) {
     _socket->set_blocking(false, millis);
 }
 
-void MbedChannel::sendMessage(char *message, int length, char type) {
+void MbedChannel::sendMessage(char *message, int length, unsigned char type) {
     if (!isEthernetActive()) {
         if (_resetCallback != NULL) {
             _resetCallback();
@@ -218,7 +221,7 @@ void MbedChannel::sendMessage(char *message, int length, char type) {
         mbed_reset();
     }
     _buffer[0] = _mbedId;
-    _buffer[1] = type;
+    _buffer[1] = reinterpret_cast<char&>(type);
     serialize<unsigned int>(_buffer + 2, _nextSendId++);
     memcpy(_buffer + 6, message, length);
     _socket->sendTo(_server, _buffer, length + 6);

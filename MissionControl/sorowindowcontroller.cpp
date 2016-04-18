@@ -15,7 +15,7 @@ namespace MissionControl {
 SoroWindowController::SoroWindowController(QObject *parent) : QObject(parent) {
     _log = new Logger(this);
     _log->setLogfile(QCoreApplication::applicationDirPath() + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm_AP") + ".log");
-    //_log->RouteToQtLogger = true;
+    _log->RouteToQtLogger = true;
 }
 
 void SoroWindowController::init() {
