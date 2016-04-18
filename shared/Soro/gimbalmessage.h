@@ -1,84 +1,58 @@
+/*********************************************************
+ * This code can be compiled on a Qt or mbed enviornment *
+ *********************************************************/
+
 #ifndef GIMBALMESSAGE_H
 #define GIMBALMESSAGE_H
 
-#ifdef QT_CORE_LIB
-#   include <QByteArray>
-#   include <QSerialPort>
-#   include "gimbalglfwmap.h"
-#else
+#ifdef TARGET_LPC1768
 #   include "mbed.h"
 #endif  //QT_CORE_LIB
 
 #include "soro_global.h"
 
-//Indicies and info for the structure of a drive serial message
-#define GIMBAL_MESSAGE_SIZE 4
-#define GIMBAL_MESSAGE_ID (unsigned char)246
-#define GIMBAL_MESSAGE_ROLL_INDEX 1
-#define GIMBAL_MESSAGE_PITCH_INDEX 2
-#define GIMBAL_MESSAGE_YAW_INDEX 3
-
-#define GIMBAL_SERIAL_CHANNEL_NAME "gimbal-serial-channel"
-
 namespace Soro {
 
 /* Defines the structure of a gimbal movement command for the rover
- *
- * This is not an instanced class, it only contains static methods that can be used to
- * manipulate and read from char arrays.
- *
- * This header can be compiled on a Qt or mbed enviornment, and is intended to
- * be shared between the two to have the same code handling communication on both ends
- * of the serial connection.
- *
- * If compiled with Qt, it can also be used to translate glfw joystick information and
- * extends QByteArray for sending and receiving across a network.
- *
- * Compiled on an mbed enviornment, it will still mimic a byte array with the at(i)
- * function and provides a function to read from a serial port.
- *
- * To read the input from glfw, you will need to supply a controller map specifying
- * the index in glfw output arrays corresponding to each command.
- *
- * Joystick messages are quite different than master/slave ones, but they can be
- * identified by different header bytes and message length.
  */
-class GimbalMessage  {
-public:
+namespace GimbalMessage  {
+
+    /* This identifies a char array as a gimbal message.
+     * It should be unique between drive/arm/gimbal messages
+     * to avoid unfortunate mistakes
+     */
+    const char Header = 4;
+    /* The size a gimbal message should be
+     */
+    const int RequiredSize = 3;
+    /* These list the indicies of values in a gimbal message
+     */
+    const int Index_Yaw = 1;
+    const int Index_Pitch = 2;
+
 #ifdef QT_CORE_LIB
 
-    /* Fills a message with instructions based on data from glfw joystick data and an input map
+    /* Fills a gimbal message with SDL gamepad data
      */
-    static void setGlfwData(char *message, const float *glfwAxes, const unsigned char *glfwButtons,
-                          int axisCount, int buttonCount, GimbalGlfwMap& mapping) {
-        message[0] = GIMBAL_MESSAGE_ID;
-        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyFloatToByte(mapping.pitchAxis().value(glfwAxes, axisCount));
-        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyFloatToByte(mapping.rollAxis().value(glfwAxes, axisCount));
-        message[GIMBAL_MESSAGE_PITCH_INDEX] = joyFloatToByte(mapping.yawAxis().value(glfwAxes, axisCount));
-    }
+    void setGamepadData(char *message, short XAxis, short YAxis);
+
 #endif
 
-    static inline bool hasValidHeader(const char *message) {
-        return (unsigned char)message[0] == GIMBAL_MESSAGE_ID;
+    /* Gets the pitch value in a gimbal message and
+     * converts it to a float ranging from -1 to 1
+     */
+    inline float getPitch(const char *message) {
+        return axisByteToAxisFloat(message[Index_Pitch]);
     }
 
-    static inline int size(const char *message) {
-        if (hasValidHeader(message)) return GIMBAL_MESSAGE_SIZE;
-        return -1;
+    /* Gets the yaw value in a gimbal message and
+     * converts it to a float ranging from -1 to 1
+     */
+    inline float getYaw(const char *message) {
+        return axisByteToAxisFloat(message[Index_Yaw]);
     }
 
-    static inline int pitch(const char *message) {
-        return joyByteToInt(message[GIMBAL_MESSAGE_PITCH_INDEX]);
-    }
-
-    static inline int roll(const char *message) {
-        return joyByteToInt(message[GIMBAL_MESSAGE_ROLL_INDEX]);
-    }
-
-    static inline int yaw(const char *message) {
-        return joyByteToInt(message[GIMBAL_MESSAGE_YAW_INDEX]);
-    }
-};
+}
 }
 
 

@@ -11,11 +11,14 @@
 #include <QFile>
 #include <QSerialPort>
 #include <QSerialPortInfo>
+#include <QtCore/qmath.h>
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_gamecontroller.h>
 
 #include "channel.h"
 #include "soro_global.h"
 #include "mbedchannel.h"
-#include "glfwmapdialog.h"
 #include "latlng.h"
 #include "sorowindowcontroller.h"
 
@@ -37,7 +40,9 @@ namespace MissionControl {
         Ui::SoroMainWindow *ui;
         SoroWindowController *_controller;
         bool _fullscreen = false;
-        char _currentKey = '\0';
+        int _initTimerId = TIMER_INACTIVE;
+
+        void updateGamepadLabel(SDL_GameController *controller);
 
     signals:
         void settingsClicked();
@@ -48,16 +53,13 @@ namespace MissionControl {
         void controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                                 int rateUp, int rateDown);
         void masterArmStateChanged(MbedChannel::State);
-        void controllerGamepadChanged(QString name);
-        void controllerInitialized(const SoroIniConfig& soroConfig,
-                                   const MissionControlIniConfig& mcConfig);
         void controllerError(QString description);
         void controllerWarning(QString description);
         void controllerConnectionQualityUpdate(int sharedRtt, int tcpLag);
+        void controllerGamepadChanged(SDL_GameController *controller);
 
     protected:
         void keyPressEvent(QKeyEvent *e);
-        void keyReleaseEvent(QKeyEvent *e);
         void resizeEvent(QResizeEvent *e);
         void timerEvent(QTimerEvent *e);
     };

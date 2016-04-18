@@ -33,7 +33,7 @@
  ***************************************************************************
  ***************************************************************************/
 
-using namespace Soro;
+namespace Soro {
 
 Channel::Channel (QObject *parent, const QString &configFile, Logger *log) : QObject(parent) {
     _log = log;
@@ -853,4 +853,6 @@ void Channel::setLowDelaySocketOption(bool lowDelay) {
     if (_tcpSocket != NULL) {
         _tcpSocket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
     }
+}
+
 }

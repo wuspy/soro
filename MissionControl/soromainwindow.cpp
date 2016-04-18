@@ -5,8 +5,8 @@
 #define DRIVE_CAMERA_DISPLAY_NAME "Drive Camera"
 #define GIMBAL_CAMERA_DISPLAY_NAME "Gimbal Camera"
 
-using namespace Soro;
-using namespace Soro::MissionControl;
+namespace Soro {
+namespace MissionControl {
 
 SoroMainWindow::SoroMainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -17,65 +17,29 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     addWidgetShadow(ui->infoContainer, 10, 0);
 
     _controller = new SoroWindowController(this);
-    connect(ui->settingsButton, SIGNAL(clicked(bool)),
-            _controller, SLOT(settingsClicked()));
-    connect(_controller, SIGNAL(gamepadChanged(QString)),
-            this, SLOT(controllerGamepadChanged(QString)), Qt::DirectConnection);
-    connect(_controller, SIGNAL(initialized(SoroIniConfig,MissionControlIniConfig)),
-            this, SLOT(controllerInitialized(SoroIniConfig,MissionControlIniConfig)), Qt::DirectConnection);
     connect(_controller, SIGNAL(error(QString)),
             this, SLOT(controllerError(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(warning(QString)),
             this, SLOT(controllerWarning(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(connectionQualityUpdate(int,int)),
             this, SLOT(controllerConnectionQualityUpdate(int,int)));
+    connect(_controller, SIGNAL(gamepadChanged(SDL_GameController*)),
+            this, SLOT(controllerGamepadChanged(SDL_GameController*)));
+    //initialize in the event loop
+    START_TIMER(_initTimerId, 1);
+
 }
 
-void SoroMainWindow::controllerInitialized(const SoroIniConfig& soroConfig,
-                                           const MissionControlIniConfig& mcConfig) {
-    switch (mcConfig.Layout) {
-    case MissionControlIniConfig::ArmLayoutMode:
-        setWindowTitle("Mission Control - Arm");
-        if (mcConfig.ControlInputMode == MissionControlIniConfig::MasterArm) {
-            masterArmStateChanged(MbedChannel::ConnectingState);
-            connect(_controller->getMasterArmChannel(), SIGNAL(stateChanged(MbedChannel::State)),
-                    this, SLOT(masterArmStateChanged(MbedChannel::State)));
-        }
-        break;
-    case MissionControlIniConfig::DriveLayoutMode:
-        setWindowTitle("Mission Control - Driver");
-        break;
-    case MissionControlIniConfig::GimbalLayoutMode:
-        setWindowTitle("Mission Control - Gimbal");
-        break;
-    case MissionControlIniConfig::SpectatorLayoutMode:
-        setWindowTitle("Mission Control - Spectating");
-        break;
+void SoroMainWindow::controllerGamepadChanged(SDL_GameController *controller) {
+    if (controller && SDL_GameControllerGetAttached(controller)) {
+        ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
+        ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
+        ui->comm_inputDeviceLabel->setText(SDL_GameControllerName(controller));
     }
-    sharedChannelStateChanged(Channel::ConnectingState);
-    if (_controller->getControlChannel() != NULL) {
-        controlChannelStateChanged(Channel::ConnectingState);
-    }
-    connect(_controller->getSharedChannel(), SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(sharedChannelStateChanged(Channel::State)));
-    connect (_controller->getSharedChannel(), SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
-             this, SLOT(sharedChannelStatsUpdate(int,quint64,quint64,int,int)));
-    connect (_controller->getControlChannel(), SIGNAL(stateChanged(Channel::State)),
-             this, SLOT(controlChannelStateChanged(Channel::State)));
-    connect(_controller->getControlChannel(), SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
-            this, SLOT(controlChannelStatsUpdate(int,quint64,quint64,int,int)));
-}
-
-void SoroMainWindow::controllerGamepadChanged(QString name) {
-    if (name.isNull()) {
+    else {
         ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
         ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->comm_inputDeviceLabel->setText("No input devices");
-    }
-    else {
-        ui->comm_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
-        ui->comm_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
-        ui->comm_inputDeviceLabel->setText(name);
     }
 }
 
@@ -204,11 +168,47 @@ void SoroMainWindow::controllerError(QString description) {
 
 void SoroMainWindow::controllerWarning(QString description) {
     QMessageBox(QMessageBox::Warning, "Mission Control",description,
-        QMessageBox::Ok, this).exec();
+        QMessageBox::Ok, this).show(); //do not block
 }
 
 void SoroMainWindow::timerEvent(QTimerEvent *e) {
     QMainWindow::timerEvent(e);
+    if (e->timerId() == _initTimerId) {
+        KILL_TIMER(_initTimerId);
+        _controller->init();
+        const MissionControlIniLoader *mcConfig = _controller->getMissionControlIniConfig();
+        switch (mcConfig->Layout) {
+        case MissionControlIniLoader::ArmLayoutMode:
+            setWindowTitle("Mission Control - Arm");
+            if (mcConfig->ControlInputMode == MissionControlIniLoader::MasterArm) {
+                masterArmStateChanged(MbedChannel::ConnectingState);
+                connect(_controller->arm_getMasterArmChannel(), SIGNAL(stateChanged(MbedChannel::State)),
+                        this, SLOT(masterArmStateChanged(MbedChannel::State)));
+            }
+            break;
+        case MissionControlIniLoader::DriveLayoutMode:
+            setWindowTitle("Mission Control - Driver");
+            break;
+        case MissionControlIniLoader::GimbalLayoutMode:
+            setWindowTitle("Mission Control - Gimbal");
+            break;
+        case MissionControlIniLoader::SpectatorLayoutMode:
+            setWindowTitle("Mission Control - Spectating");
+            break;
+        }
+        sharedChannelStateChanged(Channel::ConnectingState);
+        if (_controller->getControlChannel() != NULL) {
+            controlChannelStateChanged(Channel::ConnectingState);
+        }
+        connect(_controller->getSharedChannel(), SIGNAL(stateChanged(Channel::State)),
+                this, SLOT(sharedChannelStateChanged(Channel::State)));
+        connect (_controller->getSharedChannel(), SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
+                 this, SLOT(sharedChannelStatsUpdate(int,quint64,quint64,int,int)));
+        connect (_controller->getControlChannel(), SIGNAL(stateChanged(Channel::State)),
+                 this, SLOT(controlChannelStateChanged(Channel::State)));
+        connect(_controller->getControlChannel(), SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
+                this, SLOT(controlChannelStatsUpdate(int,quint64,quint64,int,int)));
+    }
     //JUST TESTING SHIT
     /*float lat = 29.564844 + qrand() % 1000 * 0.000001;
     float lng = -95.081317 + qrand() % 1000 * 0.000001;
@@ -232,21 +232,12 @@ void SoroMainWindow::keyPressEvent(QKeyEvent *e) {
         if (_fullscreen) showNormal(); else showFullScreen();
         _fullscreen = !_fullscreen;
     }
-    else {
-        _currentKey = QChar(e->key()).toLower().toLatin1();
-        _controller->currentKeyChanged(_currentKey);
-    }
-}
-
-void SoroMainWindow::keyReleaseEvent(QKeyEvent *e) {
-    QMainWindow::keyReleaseEvent(e);
-    if (QChar(e->key()).toLower().toLatin1() == _currentKey) {
-        _currentKey = '\0';
-        _controller->currentKeyChanged(_currentKey);
-    }
 }
 
 SoroMainWindow::~SoroMainWindow() {
     delete ui;
-    if (_controller != NULL) delete _controller;
+    delete _controller;
+}
+
+}
 }

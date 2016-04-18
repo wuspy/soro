@@ -1,6 +1,6 @@
 #include "logger.h"
 
-using namespace Soro;
+namespace Soro {
 
 const QString Logger::_levelFormatters[4] = {
     "[E]\t%1\t%2:\t%3",
@@ -92,4 +92,6 @@ void Logger::closeLogfile() {
 
 Logger::~Logger() {
     closeLogfile();
+}
+
 }

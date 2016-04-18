@@ -2,7 +2,8 @@
 
 #define MIN_UPDATE_DISTANCE 5
 
-using namespace Soro::MissionControl;
+namespace Soro {
+namespace MissionControl {
 
 GoogleMapView::GoogleMapView(QWidget *parent) : QWebEngineView(parent) {
     setUrl(QUrl("qrc:/map.html")); //load from resources
@@ -26,4 +27,7 @@ void GoogleMapView::updateHeading(int degrees) {
 
 const Soro::LatLng& GoogleMapView::getLastLocation() const {
     return _lastLocation;
+}
+
+}
 }

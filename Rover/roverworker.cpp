@@ -32,7 +32,7 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         _soroIniConfig.applyLogLevel(_log);
         LOG_I("Configuration has been loaded successfully");
         Channel::EndPoint commEndPoint =
-                _soroIniConfig.ServerSide == SoroIniConfig::RoverEndPoint ?
+                _soroIniConfig.ServerSide == SoroIniLoader::RoverEndPoint ?
                     Channel::ServerEndPoint : Channel::ClientEndPoint;
 
         //create network channels
@@ -124,20 +124,32 @@ void RoverWorker::sharedChannelStateChanged(Channel::State state) {
 //observers for network channels message received
 
 void RoverWorker::armChannelMessageReceived(const QByteArray &message) {
-    if (ArmMessage::messageType(message) != ArmMessage::INVALID) {
-        _armControllerMbed->sendMessage(message.constData(), ArmMessage::size(message.constData()));
+    switch (message[0]) {
+    case ArmMessage::Header_Gamepad:
+    case ArmMessage::Header_Master:
+        _armControllerMbed->sendMessage(message.constData(), message.size());
+        break;
+    default:
+        LOG_E("Received invalid message from mission control on arm control channel");
+        break;
     }
 }
 
 void RoverWorker::driveChannelMessageReceived(const QByteArray &message) {
-    if (DriveMessage::hasValidHeader(message.constData())) {
-        _driveControllerMbed->sendMessage(message.constData(), DriveMessage::size(message.constData()));
+    if (message[0] == DriveMessage::Header) {
+        _driveControllerMbed->sendMessage(message.constData(), message.size());
+    }
+    else {
+        LOG_E("Received invalid message from mission control on drive control channel");
     }
 }
 
 void RoverWorker::gimbalChannelMessageReceived(const QByteArray &message) {
-    if (GimbalMessage::hasValidHeader(message.constData())) {
-        _gimbalControllerMbed->sendMessage(message.constData(), GimbalMessage::size(message.constData()));
+    if (message[0] == GimbalMessage::Header) {
+        _gimbalControllerMbed->sendMessage(message.constData(), message.size());
+    }
+    else {
+        LOG_E("Received invalid message from mission control on gimbal control channel");
     }
 }
 

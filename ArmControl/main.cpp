@@ -252,11 +252,11 @@ void preResetListener() {
 
 int main() {
     //used to calculate positions in master/slave control
-    _yawRangeRatio = (YAW_MAX - YAW_MIN) / (float)MAX_VALUE_14BIT;
-    _shoulderRangeRatio = (SHOULDER_MAX - SHOULDER_MIN) / (float)MAX_VALUE_14BIT;
-    _elbowRangeRatio = (ELBOW_MAX - ELBOW_MIN) / (float)MAX_VALUE_14BIT;
-    _wristRangeRatio = (WRIST_MAX - WRIST_MIN) / (float)MAX_VALUE_14BIT;
-    _bucketRangeRatio = (BUCKET_MAX - BUCKET_MIN) / (float)MAX_VALUE_14BIT;
+    _yawRangeRatio = (YAW_MAX - YAW_MIN) / 32767.0;
+    _shoulderRangeRatio = (SHOULDER_MAX - SHOULDER_MIN) / 32767.0;
+    _elbowRangeRatio = (ELBOW_MAX - ELBOW_MIN) / 32767.0;
+    _wristRangeRatio = (WRIST_MAX - WRIST_MIN) / 32767.0;
+    _bucketRangeRatio = (BUCKET_MAX - BUCKET_MIN) / 32767.0;
     
     MbedChannel ethernet(MBED_ID_ARM);   
     ethernet.setResetListener(&preResetListener);

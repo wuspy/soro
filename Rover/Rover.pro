@@ -13,8 +13,10 @@ SOURCES += main.cpp \
     ../shared/Soro/channel.cpp \
     ../shared/Soro/logger.cpp \
     ../shared/Soro/iniparser.cpp \
+    ../shared/Soro/soroini.cpp \
     roverworker.cpp \
-    gpsserver.cpp
+    gpsserver.cpp \
+    ../shared/Soro/mbedchannel.cpp
 
 HEADERS += \
     ../shared/Soro/armmessage.h \
@@ -27,7 +29,6 @@ HEADERS += \
     ../shared/Soro/iniparser.h \
     ../shared/Soro/soroini.h \
     roverworker.h \
-    ../shared/Soro/serialchannel3.h \
     gpsserver.h \
     ../shared/Soro/mbedchannel.h
 

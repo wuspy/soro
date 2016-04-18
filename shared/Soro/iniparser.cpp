@@ -9,7 +9,7 @@
 //This char/string denotes a line as a comment
 #define COMMENT '#'
 
-using namespace Soro;
+namespace Soro {
 
 bool IniParser::load(QTextStream& stream) {
     _contents.clear();
@@ -112,4 +112,6 @@ void IniParser::insert(const QString& tag, const QString& value) {
 
 QList<QString> IniParser::tags() const {
     return _contents.keys();
+}
+
 }

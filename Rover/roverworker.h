@@ -40,7 +40,7 @@ namespace Rover {
         MbedChannel *_gimbalControllerMbed = NULL;
         GpsServer *_gpsServer = NULL;
 
-        SoroIniConfig _soroIniConfig;
+        SoroIniLoader _soroIniConfig;
 
         int _initTimerId = TIMER_INACTIVE;
 

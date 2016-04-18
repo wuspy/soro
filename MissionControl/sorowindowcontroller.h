@@ -4,6 +4,9 @@
 #include <QtCore>
 #include <QObject>
 
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_gamecontroller.h>
+
 #include "channel.h"
 #include "logger.h"
 #include "iniparser.h"
@@ -12,15 +15,10 @@
 #include "drivemessage.h"
 #include "gimbalmessage.h"
 #include "mbedchannel.h"
-#include "armglfwmap.h"
-#include "driveglfwmap.h"
-#include "gimbalglfwmap.h"
-#include "glfwmapdialog.h"
 #include "latlng.h"
+#include "masterarmconfig.h"
 #include "soroini.h"
 #include "mcini.h"
-
-#define NO_CONTROLLER -1
 
 namespace Soro {
 namespace MissionControl {
@@ -29,6 +27,9 @@ class SoroWindowController : public QObject
 {
     Q_OBJECT
 public:
+    enum DriveGamepadMode {
+        SingleStick, DualStick
+    };
 
     explicit SoroWindowController(QObject *presenter = 0);
 
@@ -36,18 +37,25 @@ public:
 
     const Channel *getControlChannel() const;
     const Channel *getSharedChannel() const;
-    const MbedChannel* getMasterArmChannel() const;
+    const MbedChannel* arm_getMasterArmChannel() const;
+    const SoroIniLoader *getSoroIniConfig() const;
+    const MissionControlIniLoader *getMissionControlIniConfig() const;
+    SDL_GameController *getGamepad();
+    void drive_setMiddleSkidSteerFactor(float factor);
+    void drive_setGamepadMode(DriveGamepadMode mode);
+    float drive_getMiddleSkidSteerFactor() const;
+    SoroWindowController::DriveGamepadMode drive_getGamepadMode() const;
 
 private:
     char _buffer[512];
-    bool _glfwInitialized = false;
+    bool _sdlInitialized = false;
+    DriveGamepadMode _driveGamepadMode = DualStick;
+    float _driveMiddleSkidSteerFactor = 0.4;
     Logger *_log = NULL;
-    char _currentKey = '\0';
-    int _initTimerId = TIMER_INACTIVE;
 
     //used to load configuration options
-    SoroIniConfig _soroIniConfig;
-    MissionControlIniConfig _mcIniConfig;
+    SoroIniLoader _soroIniConfig;
+    MissionControlIniLoader _mcIniConfig;
 
     //internet communication channels
     Channel *_controlChannel = NULL;
@@ -55,40 +63,34 @@ private:
     QList<Channel*> _sharedChannelNodes;
 
     //for joystick control
-    ArmGlfwMap *_armInputMap = NULL;
-    DriveGlfwMap *_driveInputMap = NULL;
-    GimbalGlfwMap *_gimbalInputMap = NULL;
-    int _controllerId = NO_CONTROLLER;
+    SDL_GameController *_gameController = NULL;
     int _controlSendTimerId = TIMER_INACTIVE;
     int _inputSelectorTimerId = TIMER_INACTIVE;
 
     //Arm specific stuff
     MbedChannel *_masterArmChannel = NULL;
-    ArmMessage::MasterRanges _masterArmRanges;
+    MasterArmConfig _masterArmRanges;
 
-    void loadMasterArmConfig();
-    void initForGLFW(GlfwMap *map);
-    int firstGlfwControllerId();
-    GlfwMap* getInputMap();
+    void arm_loadMasterArmConfig();
+    void initSDL();
+    void quitSDL();
 
 signals:
-    void initialized(const SoroIniConfig& soroConfig,
-                     const MissionControlIniConfig& mcConfig);
-    void gamepadChanged(QString name);
+    void initializedSDL();
     void error(QString description);
     void warning(QString description);
+    void gamepadChanged(SDL_GameController *controller);
     void connectionQualityUpdate(int sharedRtt, int tcpLag);
 
 private slots:
     void sharedChannelMessageReceived(const QByteArray& message);
     void sharedChannelNodeMessageReceived(const QByteArray& message);
-    void masterArmMessageReceived(const char *message, int size);
+    void arm_masterArmMessageReceived(const char *message, int size);
     void sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                             int rateUp, int rateDown);
 
 public slots:
-    void settingsClicked();
-    void currentKeyChanged(char key);
+    void init();
 
 protected:
     void timerEvent(QTimerEvent *e);

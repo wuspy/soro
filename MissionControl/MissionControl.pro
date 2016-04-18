@@ -14,15 +14,17 @@ SOURCES += \
     ../shared/Soro/channel.cpp \
     ../shared/Soro/iniparser.cpp \
     ../shared/Soro/logger.cpp \
-    ../shared/Soro/armglfwmap.cpp \
-    ../shared/Soro/glfwmap.cpp \
     main.cpp \
-    glfwmapdialog.cpp \
     googlemapview.cpp \
-    ../shared/Soro/driveglfwmap.cpp \
-    ../shared/Soro/gimbalglfwmap.cpp \
     soromainwindow.cpp \
-    sorowindowcontroller.cpp
+    sorowindowcontroller.cpp \
+    ../shared/Soro/soroini.cpp \
+    mcini.cpp \
+    ../shared/Soro/masterarmconfig.cpp \
+    ../shared/Soro/armmessage.cpp \
+    ../shared/Soro/drivemessage.cpp \
+    ../shared/Soro/gimbalmessage.cpp \
+    ../shared/Soro/mbedchannel.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -30,24 +32,19 @@ HEADERS  += \
     ../shared/Soro/latlng.h \
     ../shared/Soro/logger.h \
     ../shared/Soro/socketaddress.h \
-    ../shared/Soro/armglfwmap.h \
-    ../shared/Soro/glfwmap.h \
     ../shared/Soro/armmessage.h \
-    glfwmapdialog.h \
     googlemapview.h \
-    ../shared/Soro/driveglfwmap.h \
     ../shared/Soro/drivemessage.h \
-    ../shared/Soro/gimbalglfwmap.h \
     ../shared/Soro/gimbalmessage.h \
     ../shared/Soro/mbedchannel.h \
     soromainwindow.h \
     sorowindowcontroller.h \
     ../shared/Soro/soro_global.h \
     ../shared/Soro/soroini.h \
-    mcini.h
+    mcini.h \
+    ../shared/Soro/masterarmconfig.h
 
 FORMS    += \
-    glfwmapdialog.ui \
     soromainwindow.ui
 
 RESOURCES += \
@@ -57,21 +54,27 @@ RESOURCES += \
 INCLUDEPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro
 
-#glfw (libglfw3 libglfw3-dev on ubuntu)
+#glfw (libglfw3-dev)
 
+#win32: {
+#    LIBS += -L$$PWD/../build-glfw-3.1.2.bin.WIN32/lib-vc2015/ -lglfw3
+#    INCLUDEPATH += $$PWD/../glfw-3.1.2/include
+#    DEPENDPATH += $$PWD/../glfw-3.1.2/include
+#    #necessary libs
+#    LIBS += -lkernel32 -luser32 -lwinspool -lshell32 -lglu32 -lgdi32 -lopengl32
+#}
+#macx: {
+#    LIBS += -L$$PWD/../build-glfw-3.1.2.bin.MACX/ -lglfw
+#    INCLUDEPATH += $$PWD/../glfw-3.1.2/include
+#    DEPENDPATH += $$PWD/../glfw-3.1.2/include
+#}
+#else:unix: LIBS += -lglfw
+
+#SDL (libsdl2-dev)
 win32: {
-    LIBS += -L$$PWD/../build-glfw-3.1.2.bin.WIN32/lib-vc2015/ -lglfw3
-    INCLUDEPATH += $$PWD/../glfw-3.1.2/include
-    DEPENDPATH += $$PWD/../glfw-3.1.2/include
-    #necessary libs
     LIBS += -lkernel32 -luser32 -lwinspool -lshell32 -lglu32 -lgdi32 -lopengl32
 }
-macx: {
-    LIBS += -L$$PWD/../build-glfw-3.1.2.bin.MACX/ -lglfw
-    INCLUDEPATH += $$PWD/../glfw-3.1.2/include
-    DEPENDPATH += $$PWD/../glfw-3.1.2/include
-}
-else:unix: LIBS += -lglfw
+LIBS += -lSDL2
 
 #vlc-qt (ppa:ntadej/tano libvlc-qt-core2 libvlc-qt-widgets2 libvlc-qt-dbg libvlc-qt-dev on ubuntu)
 #unix: LIBS += -lvlc -lVLCQtCore -lVLCQtWidgets

@@ -1,7 +1,9 @@
 #ifndef SORO_GLOBAL_H
 #define SORO_GLOBAL_H
 
-#ifdef QT_CORE_LIB
+#include <climits>
+
+#ifdef QT_CORE_LIB ///////////////////////////////////////////////////////////////////////////////
 
 //QObject timer macros to make shit easier
 #define TIMER_INACTIVE -1
@@ -14,49 +16,35 @@
 #define CHANNEL_NAME_GIMBAL "Soro_GimbalChannel"
 #define CHANNEL_NAME_SHARED "Soro_SharedTcpChannel"
 
-#ifdef QT_WIDGETS_LIB
+#ifdef QT_WIDGETS_LIB ///////////////////////////////////////////////////////////////////////////////
 
 #include <QWidget>
 #include <QGraphicsDropShadowEffect>
 
-static inline void addWidgetShadow(QWidget *target, int radius, int offset) {
+namespace Soro {
+
+inline void addWidgetShadow(QWidget *target, int radius, int offset) {
     QGraphicsDropShadowEffect* ef = new QGraphicsDropShadowEffect;
     ef->setBlurRadius(radius);
     ef->setOffset(offset);
     target->setGraphicsEffect(ef);
 }
 
-#endif // QT_WIDGETS_LIB
+}
 
-#endif // QT_CORE_LIB
+#endif // QT_WIDGETS_LIB ///////////////////////////////////////////////////////////////////////////////
+
+#endif // QT_CORE_LIB ///////////////////////////////////////////////////////////////////////////////
 
 #define MBED_ID_MASTER_ARM 1
 #define MBED_ID_ARM 2
 #define MBED_ID_DRIVE 3
 #define MBED_ID_GIMBAL 4
 
-static const int MAX_VALUE_14BIT = 16383;
-
-/* Encodes a number into 14 bits (2 bytes whrere each byte is limited to 0x7F)
- * This is done to ensure the high bit of each byte is always 0 for frame alignment purposes
- *
- * Range 0-16383
- */
-static inline void serialize_14bit(unsigned short us, char *arr) {
-    arr[0] = (us >> 7) & 0x7F; /* low 7 bits of second byte, high bit of first byte */
-    arr[1] = us & 0x7F; //low 7 bits of first byte
-}
-
-/* Decodes a number encoded with the above function
- *
- * Range 0-16383
- */
-static inline unsigned short deserialize_14bit(const char *arr) {
-    return (arr[0] << 7) | arr[1];
-}
+namespace Soro {
 
 template <typename T>
-static inline void serialize(char *arr, T data) {
+inline void serialize(char *arr, T data) {
     int max = sizeof(T) - 1;
     for (int i = 0; i <= max; i++) {
         arr[max - i] = (data >> (i * 8)) & 0xFF;
@@ -64,16 +52,32 @@ static inline void serialize(char *arr, T data) {
 }
 
 template <typename T>
-static inline void deserialize(const char *arr, T& result) {
+inline T deserialize(const char *arr) {
+    T result;
     for (unsigned int i = 0; i < sizeof(T); i++) {
         result = (result << 8) + reinterpret_cast<const unsigned char&>(arr[i]);
     }
+    return result;
+}
+
+/* Converts a 16 bit signed integer ranging from -32768 to 32767
+ * into an unsigned char, ranging from 0 to 200
+ *
+ * This is designed for converting SDL axis values.
+ */
+inline char axisShortToAxisByte(short val) {
+    val /= (USHRT_MAX / 100);
+    val += 100;
+    unsigned char uc = (unsigned char)val;
+    return reinterpret_cast<char&>(uc);
 }
 
 /* Converts a float ranging from -1 to 1 into an unsigned char,
  * ranging from 0 to 200
+ *
+ * This is designed for converting GLFW axis values.
  */
-static inline char joyFloatToByte(float val) {
+inline char axisFloatToAxisByte(float val) {
     val = (val + 1) * 100;
     unsigned char uc = (unsigned char)val;
     return reinterpret_cast<char&>(uc);
@@ -82,7 +86,7 @@ static inline char joyFloatToByte(float val) {
 /* Converts an int ranging from -100 to 100 into an unsigned char,
  * ranging from 0 to 200
  */
-static inline char joyIntToByte(int val) {
+inline char axisIntToAxisByte(int val) {
     val += 100;
     unsigned char uc = (unsigned char)val;
     return reinterpret_cast<char&>(uc);
@@ -91,22 +95,28 @@ static inline char joyIntToByte(int val) {
 /* Converts an int ranging from -100 to 100 into an unsigned char,
  * ranging from 0 to 200
  */
-static inline int joyFloatToInt(float val) {
+inline int axisFloatToAxisInt(float val) {
     return (int)(val * 100);
 }
 
 /* Converts a byte encoded joystick axis (see joyFloatToByte) back
  * into it's original float value
  */
-static inline float joyByteToFloat(char val) {
+inline float axisByteToAxisFloat(char val) {
     return (float)(reinterpret_cast<unsigned char&>(val) - 100.0) / 100.0;
 }
 
 /* Converts a byte encoded joystick axis (see joyFloatToByte) into
  * an int ranging from -100 to 100
  */
-static inline int joyByteToInt(char val) {
+inline int axisByteToAxisInt(char val) {
     return (int)reinterpret_cast<unsigned char&>(val) - 100;
+}
+
+inline float axisShortToAxisFloat(short val) {
+    return (float)val / (float)SHRT_MAX;
+}
+
 }
 
 #endif // SORO_GLOBAL_H
