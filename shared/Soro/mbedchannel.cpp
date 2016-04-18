@@ -99,7 +99,7 @@ void MbedChannel::sendMessage(const char *message, int length) {
         _buffer[0] = '\0';
         serialize<unsigned int>(_buffer + 1, _nextSendId++);
         memcpy(_buffer + 5, message, length);
-        _socket->writeDatagram(message, length + 5, _peer.host, _peer.port);
+        _socket->writeDatagram(_buffer, length + 5, _peer.host, _peer.port);
     }
 }
 
