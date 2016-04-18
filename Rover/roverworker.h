@@ -45,10 +45,10 @@ namespace Rover {
         int _initTimerId = TIMER_INACTIVE;
 
     private slots:
-        void armChannelMessageReceived(const QByteArray &message);
-        void driveChannelMessageReceived(const QByteArray &message);
-        void gimbalChannelMessageReceived(const QByteArray &message);
-        void sharedChannelMessageReceived(const QByteArray &message);
+        void armChannelMessageReceived(const char *message, Channel::MessageSize size);
+        void driveChannelMessageReceived(const char *message, Channel::MessageSize size);
+        void gimbalChannelMessageReceived(const char *message, Channel::MessageSize size);
+        void sharedChannelMessageReceived(const char *message, Channel::MessageSize size);
 
         void armChannelStateChanged(Channel::State state);
         void driveChannelStateChanged(Channel::State state);

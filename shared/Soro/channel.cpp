@@ -24,10 +24,6 @@
 #define CONFIG_TAG_LOW_DELAY "lowdelay"
 #define CONFIG_TAG_SEND_ACKS "sendacks"
 
-//Macros for the size of UDP and TCP headers
-#define UDP_HEADER_BYTES 5
-#define TCP_HEADER_BYTES 7
-
 /*  Constructors and destructor
  ***************************************************************************
  ***************************************************************************
@@ -64,7 +60,7 @@ Channel::Channel(QObject *parent, SocketAddress serverAddress, QString name, Pro
                  EndPoint endPoint, QHostAddress hostAddress, Logger *log) : QObject(parent) {
     _log = log;
     _serverAddress = serverAddress;
-    _name = name;
+    setName(name);
     _protocol = protocol;
     _isServer = endPoint == ServerEndPoint;
     _hostAddress.host = hostAddress;
@@ -73,9 +69,6 @@ Channel::Channel(QObject *parent, SocketAddress serverAddress, QString name, Pro
 }
 
 Channel::~Channel() {
-    if (_buffer != NULL) {
-        delete [] _buffer;
-    }
     if (_sentTimeLog != NULL) {
         delete [] _sentTimeLog;
     }
@@ -137,6 +130,18 @@ void Channel::netConfigRequestError() {  //PRIVATE SLOT
  ***************************************************************************
  ***************************************************************************/
 
+void Channel::setName(QString name) {   //PRIVATE
+    _name = name;
+    QByteArray toUtf8 = name.toUtf8();
+    _nameUtf8 = new char[toUtf8.size() + 1];
+    strcpy(_nameUtf8, toUtf8.constData());
+    _nameUtf8Size = strlen(_nameUtf8) + 1; //include \0 char
+    if (_nameUtf8Size > 64) {
+        LOG_E("Name is too long (max 64 characters)");
+        setChannelState(ErrorState, true);
+    }
+}
+
 void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
     const QString usingDefaultWarningString = "%1 was either not found or invalid while loading configuration, using default value %2";
     const QString parseErrorString = "%1 was either not found or invalid while loading configuration";
@@ -151,13 +156,14 @@ void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
     //These values must be in the file
 
     bool success;
-    _name = parser.value(CONFIG_TAG_CHANNEL_NAME);
+    QString name = parser.value(CONFIG_TAG_CHANNEL_NAME);
     parser.remove(CONFIG_TAG_CHANNEL_NAME);
-    if (_name.isEmpty()) {
+    if (name.isEmpty()) {
         LOG_E(parseErrorString.arg(CONFIG_TAG_CHANNEL_NAME));
         setChannelState(ErrorState, false);
         return;
     }
+    setName(name);
     QString endpoint = parser.value(CONFIG_TAG_ENDPOINT).toLower();
     parser.remove(CONFIG_TAG_ENDPOINT);
     if (endpoint == "server") {
@@ -246,7 +252,6 @@ void Channel::init() {  //PRIVATE
     LOG_TAG = _name + (_isServer ? "(S)" : "(C)");
 
     //create a buffer for storing received messages
-    _buffer = new char[1024];
     _sentTimeLog = new qint64[SENT_LOG_CAP];
 
     LOG_I("Initializing with serverAddress=" + _serverAddress.toString()
@@ -317,7 +322,7 @@ void Channel::open() {
 
 void Channel::resetConnectionVars() {   //PRIVATE
     LOG_D("resetConnectionVars() called");
-    _bufferLength = 0;
+    _receiveBufferLength = 0;
     _lastReceiveID = 0;
     _lastRtt = -1;
     _lastAckSendTime = 0;
@@ -523,19 +528,18 @@ void Channel::serverErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE 
 void Channel::udpReadyRead() {  //PRIVATE SLOT
     LOG_D("udpReadyRead() called");
     SocketAddress address;
-    MESSAGE_ID ID;
-    MESSAGE_TYPE type;
+    MessageID ID;
+    MessageType type;
     qint64 status;
     while (_udpSocket->hasPendingDatagrams()) {
         //read in a datagram
-        status = _udpSocket->readDatagram(_buffer, MAX_MESSAGE_LENGTH, &address.host, &address.port);
+        status = _udpSocket->readDatagram(_receiveBuffer, MAX_MESSAGE_LENGTH, &address.host, &address.port);
         if (status < 0) {
             //an error occurred reading from the socket, the onSocketError slot will handle it
             return;
         }
-        _bufferLength = status;
-        QDataStream stream(QByteArray::fromRawData(_buffer, _bufferLength));
-        stream >> type;
+        _receiveBufferLength = status;
+        type = reinterpret_cast<MessageType&>(_receiveBuffer[0]);
         //ensure the datagram either came from the correct address, or is marked as a handshake
         if (_isServer) {
             if ((address != _peerAddress) & (type != MSGTYPE_CLIENT_HANDSHAKE)) {
@@ -548,10 +552,8 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
             continue;
         }
         _bytesDown += status;
-        stream >> ID;
-        ID = qFromBigEndian(ID);
-        QByteArray message = QByteArray::fromRawData(_buffer + UDP_HEADER_BYTES, _bufferLength - UDP_HEADER_BYTES);
-        processBufferedMessage(type, ID, message, address);
+        ID = deserialize<MessageID>(_receiveBuffer + 1);
+        processBufferedMessage(type, ID, _receiveBuffer + UDP_HEADER_SIZE, _receiveBufferLength - UDP_HEADER_SIZE, address);
     }
 }
 
@@ -559,51 +561,44 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
     LOG_D("tcpReadyRead() called");
     qint64 status;
     while (_tcpSocket->bytesAvailable() > 0) {
-        if (_bufferLength < TCP_HEADER_BYTES) {
+        if (_receiveBufferLength < TCP_HEADER_SIZE) {
             //read the header in first so we know how long the message should be
-            status = _tcpSocket->read(_buffer + _bufferLength, TCP_HEADER_BYTES - _bufferLength);
+            status = _tcpSocket->read(_receiveBuffer + _receiveBufferLength, TCP_HEADER_SIZE - _receiveBufferLength);
             if (status < 0) {
                 //an error occurred reading from the socket, the onSocketError slot will handle it
                 return;
             }
-            _bufferLength += status;
+            _receiveBufferLength += status;
         }
-        if (_bufferLength >= TCP_HEADER_BYTES) {
+        if (_receiveBufferLength >= TCP_HEADER_SIZE) {
             //The header is in the buffer, so we know how long the packet is
-            MESSAGE_LENGTH length;
-            QDataStream stream(QByteArray::fromRawData(_buffer, TCP_HEADER_BYTES));
-            stream >> length;
-            length = qFromBigEndian(length);
-            if (length > MAX_MESSAGE_LENGTH + TCP_HEADER_BYTES) {
+            MessageSize length = deserialize<MessageSize>(_receiveBuffer);
+            if (length > MAX_MESSAGE_LENGTH + TCP_HEADER_SIZE) {
                 LOG_W("TCP peer sent a message with an invalid header (length=" + QString::number(length) + ")");
                 resetConnection();
                 return;
             }
             //read the rest of the message (if it's all there)
-            status = _tcpSocket->read(_buffer + _bufferLength, length - _bufferLength);
+            status = _tcpSocket->read(_receiveBuffer + _receiveBufferLength, length - _receiveBufferLength);
             if (status < 0) {
                 //an error occurred reading from the socket, the onSocketError slot will handle it
-                _bufferLength = 0;
+                _receiveBufferLength = 0;
                 return;
             }
-            _bufferLength += status;
-            if (_bufferLength == length) {
+            _receiveBufferLength += status;
+            if (_receiveBufferLength == length) {
                 //we have the whole message
                 _bytesDown += length;
-                MESSAGE_TYPE type;
-                MESSAGE_ID ID;
-                stream >> type;
-                stream >> ID;
-                ID = qFromBigEndian(ID);
-                QByteArray message = QByteArray::fromRawData(_buffer + TCP_HEADER_BYTES, _bufferLength - TCP_HEADER_BYTES);
-                _bufferLength = 0;
-                processBufferedMessage(type, ID, message, _peerAddress);
+                MessageType type = reinterpret_cast<MessageType&>(_receiveBuffer[sizeof(MessageSize)]);
+                MessageID ID = deserialize<MessageID>(_receiveBuffer + sizeof(MessageSize) + 1);
+                processBufferedMessage(type, ID, _receiveBuffer + TCP_HEADER_SIZE, _receiveBufferLength - TCP_HEADER_SIZE, _peerAddress);
+                _receiveBufferLength = 0;
             }
         }
     }
 }
 
-void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QByteArray &message, const SocketAddress &address) {
+void Channel::processBufferedMessage(MessageType type, MessageID ID, const char *message, MessageSize size, const SocketAddress &address) {
     switch (type) {
     case MSGTYPE_NORMAL:
         //normal data packet
@@ -612,14 +607,14 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
             LOG_D("Received normal packet " + QString::number(ID));
             _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
             _lastReceiveID = ID;
-            emit messageReceived(message);
+            emit messageReceived(message, size);
         }
         break;
     case MSGTYPE_SERVER_HANDSHAKE:
         //this packet is a handshake request
         LOG_D("Received server handshake packet " + QString::number(ID));
         if (!_isServer) {
-            if (compareHandshake(message)) {
+            if (compareHandshake(message, size)) {
                 //we are the client, and we got a respoonse from the server (yay)
                 resetConnectionVars();
                 setPeerAddress(address);
@@ -639,7 +634,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
     case MSGTYPE_CLIENT_HANDSHAKE:
         if (_isServer) {
             LOG_D("Received client handshake packet " + QString::number(ID));
-            if (compareHandshake(message)) {
+            if (compareHandshake(message, size)) {
                 //We are the server getting a new (valid) handshake request, respond back and record the address
                 resetConnectionVars();
                 setPeerAddress(address);
@@ -679,10 +674,7 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
         }
         _bytesUp = 0;
         _bytesDown = 0;
-        QDataStream stream(message);
-        MESSAGE_ID ackID;
-        stream >> ackID;
-        ackID = qFromBigEndian(ackID);
+        MessageID ackID = deserialize<MessageID>(message);
         if (ackID >= _nextSendID) break;
         int logIndex = _sentTimeLogIndex - (_nextSendID - ackID);
         if (logIndex < 0) {
@@ -701,16 +693,15 @@ void Channel::processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID, const QBy
     //send one so the other side can calculate RTT
     if (_sendAcks && (QDateTime::currentMSecsSinceEpoch() - _lastAckSendTime >= STATISTICS_INTERVAL)) {
         _lastAckSendTime = _lastReceiveTime;
-        QByteArray ack("", sizeof(MESSAGE_ID));
-        QDataStream stream(&ack, QIODevice::WriteOnly);
-        stream << qToBigEndian(ID);
-        sendMessage(ack, MSGTYPE_ACK);
+        char* ack = new char[sizeof(MessageID)];
+        serialize<MessageID>(ack, ID);
+        sendMessage(ack, sizeof(MessageID), MSGTYPE_ACK);
     }
 }
 
-inline bool Channel::compareHandshake(const QByteArray &message)  const { //PRIVATE
-    if (message.size() != _nameUtf8.size()) return false;
-    return _nameUtf8.startsWith(message);
+inline bool Channel::compareHandshake(const char *message, MessageSize size)  const { //PRIVATE
+    if ((int)size != _nameUtf8Size) return false; //size + 1 to account for \0
+    return strncmp(_nameUtf8, message, _nameUtf8Size) == 0;
 }
 
 /*  Sending methods
@@ -720,22 +711,20 @@ inline bool Channel::compareHandshake(const QByteArray &message)  const { //PRIV
 
 inline void Channel::sendHandshake() {   //PRIVATE SLOT
     LOG_D("Sending handshake to " + _peerAddress.toString());
-    sendMessage(_nameUtf8, (_isServer ? MSGTYPE_SERVER_HANDSHAKE : MSGTYPE_CLIENT_HANDSHAKE));
+    sendMessage(_nameUtf8, (MessageSize)_nameUtf8Size, (_isServer ? MSGTYPE_SERVER_HANDSHAKE : MSGTYPE_CLIENT_HANDSHAKE));
 }
 
 inline void Channel::sendHeartbeat() {   //PRIVATE SLOT
-    sendMessage(QByteArray(), MSGTYPE_HEARTBEAT);
+    sendMessage("\0", MSGTYPE_HEARTBEAT);
 }
 
-bool Channel::sendMessage(const QByteArray &message) {
+bool Channel::sendMessage(const char *message, MessageSize size) {
     if (_state == ConnectedState) {
-        if (message.size() > MAX_MESSAGE_LENGTH) {
-            LOG_W("Attempting to send a message that is too long, it will be truncated");
-            QByteArray truncated(message);
-            truncated.truncate(MAX_MESSAGE_LENGTH);
-            return sendMessage(truncated, MSGTYPE_NORMAL);
+        if (size > MAX_MESSAGE_LENGTH) {
+            LOG_W("Attempted to send a message that is too long, it will be truncated");
+            return sendMessage(message, MAX_MESSAGE_LENGTH, MSGTYPE_NORMAL);
         }
-        return sendMessage(message, MSGTYPE_NORMAL);
+        return sendMessage(message, size, MSGTYPE_NORMAL);
     }
     else {
         LOG_W("Channel not connected, a message was not sent");
@@ -743,26 +732,22 @@ bool Channel::sendMessage(const QByteArray &message) {
     }
 }
 
-bool Channel::sendMessage(const QByteArray &message, MESSAGE_TYPE type) {   //PRIVATE
+bool Channel::sendMessage(const char *message, MessageSize size, MessageType type) {   //PRIVATE
     qint64 status;
-    LOG_D("Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
+    //LOG_D("Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
     if (_protocol == UdpProtocol) {
-        QByteArray arr("", UDP_HEADER_BYTES);
-        QDataStream stream(&arr, QIODevice::WriteOnly);
-        stream << (MESSAGE_TYPE)type;
-        stream << (MESSAGE_ID)qToBigEndian(_nextSendID);
-        arr.append(message);
-        status = _udpSocket->writeDatagram(arr, _peerAddress.host, _peerAddress.port);
+        _sendBuffer[0] = reinterpret_cast<char&>(type);
+        serialize<MessageID>(_sendBuffer + 1, _nextSendID);
+        memcpy(_sendBuffer + sizeof(MessageID) + 1, message, (size_t)size);
+        status = _udpSocket->writeDatagram(_sendBuffer, size + UDP_HEADER_SIZE, _peerAddress.host, _peerAddress.port);
     }
     else if (_tcpSocket != NULL) {
-        MESSAGE_LENGTH size = message.size() + TCP_HEADER_BYTES;
-        QByteArray arr("", TCP_HEADER_BYTES);
-        QDataStream stream(&arr, QIODevice::WriteOnly);
-        stream << (MESSAGE_LENGTH)qToBigEndian(size);
-        stream << (MESSAGE_TYPE)type;
-        stream << (MESSAGE_ID)qToBigEndian(_nextSendID);
-        arr.append(message);
-        status = _tcpSocket->write(arr);
+        MessageSize newSize = size + TCP_HEADER_SIZE;
+        serialize<MessageSize>(_sendBuffer, newSize);
+        _sendBuffer[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
+        serialize<MessageID>(_sendBuffer + sizeof(MessageSize) + 1, _nextSendID);
+        memcpy(_sendBuffer + sizeof(MessageID) + sizeof(MessageSize) + 1, message, size);
+        status = _tcpSocket->write(_sendBuffer, newSize);
     }
     else {
         LOG_E("Attempted to send a message through a null TCP socket");

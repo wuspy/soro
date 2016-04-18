@@ -5,10 +5,8 @@
 using namespace Soro::Rover;
 
 RoverWorker::RoverWorker(QObject *parent) : QObject(parent) {
-    QString appPath = QCoreApplication::applicationDirPath();
-
     _log = new Logger(this);
-    _log->setLogfile(appPath + "/rover_" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
+    _log->setLogfile(QCoreApplication::applicationDirPath() + "/rover_" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
     _log->RouteToQtLogger = true;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -69,23 +67,23 @@ void RoverWorker::timerEvent(QTimerEvent *e) {
         _gimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalMbedPort), MBED_ID_GIMBAL, this, _log);
 
         //observers for network channels message received
-        connect(_armChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(armChannelMessageReceived(const QByteArray)));
-        connect(_driveChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(driveChannelMessageReceived(const QByteArray)));
-        connect(_gimbalChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(gimbalChannelMessageReceived(const QByteArray)));
-        connect(_sharedChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(sharedChannelMessageReceived(const QByteArray)));
+        connect(_armChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(armChannelMessageReceived(const char*, Channel::MessageSize)));
+        connect(_driveChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(driveChannelMessageReceived(const char*, Channel::MessageSize)));
+        connect(_gimbalChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(gimbalChannelMessageReceived(const char*, Channel::MessageSize)));
+        connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
         //observers for network connectivity changes
-        connect(_armChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(armChannelMessageReceived(const QByteArray)));
-        connect(_driveChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(driveChannelMessageReceived(const QByteArray)));
-        connect(_gimbalChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(gimbalChannelMessageReceived(const QByteArray)));
-        connect(_sharedChannel, SIGNAL(messageReceived(const QByteArray)),
-                 this, SLOT(sharedChannelMessageReceived(const QByteArray)));
+        connect(_armChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(armChannelMessageReceived(const char*, Channel::MessageSize)));
+        connect(_driveChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(driveChannelMessageReceived(const char*, Channel::MessageSize)));
+        connect(_gimbalChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(gimbalChannelMessageReceived(const char*, Channel::MessageSize)));
+        connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                 this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
 
         _armChannel->open();
         _driveChannel->open();
@@ -123,11 +121,11 @@ void RoverWorker::sharedChannelStateChanged(Channel::State state) {
 
 //observers for network channels message received
 
-void RoverWorker::armChannelMessageReceived(const QByteArray &message) {
+void RoverWorker::armChannelMessageReceived(const char *message, Channel::MessageSize size) {
     switch (message[0]) {
     case ArmMessage::Header_Gamepad:
     case ArmMessage::Header_Master:
-        _armControllerMbed->sendMessage(message.constData(), message.size());
+        _armControllerMbed->sendMessage(message, (int)size);
         break;
     default:
         LOG_E("Received invalid message from mission control on arm control channel");
@@ -135,25 +133,25 @@ void RoverWorker::armChannelMessageReceived(const QByteArray &message) {
     }
 }
 
-void RoverWorker::driveChannelMessageReceived(const QByteArray &message) {
+void RoverWorker::driveChannelMessageReceived(const char *message, Channel::MessageSize size) {
     if (message[0] == DriveMessage::Header) {
-        _driveControllerMbed->sendMessage(message.constData(), message.size());
+        _driveControllerMbed->sendMessage(message, (int)size);
     }
     else {
         LOG_E("Received invalid message from mission control on drive control channel");
     }
 }
 
-void RoverWorker::gimbalChannelMessageReceived(const QByteArray &message) {
+void RoverWorker::gimbalChannelMessageReceived(const char *message, Channel::MessageSize size) {
     if (message[0] == GimbalMessage::Header) {
-        _gimbalControllerMbed->sendMessage(message.constData(), message.size());
+        _gimbalControllerMbed->sendMessage(message, (int)size);
     }
     else {
         LOG_E("Received invalid message from mission control on gimbal control channel");
     }
 }
 
-void RoverWorker::sharedChannelMessageReceived(const QByteArray &message) {
+void RoverWorker::sharedChannelMessageReceived(const char *message, Channel::MessageSize size) {
     //TODO
 }
 

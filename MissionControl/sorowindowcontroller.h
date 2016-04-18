@@ -83,8 +83,8 @@ signals:
     void connectionQualityUpdate(int sharedRtt, int tcpLag);
 
 private slots:
-    void sharedChannelMessageReceived(const QByteArray& message);
-    void sharedChannelNodeMessageReceived(const QByteArray& message);
+    void sharedChannelMessageReceived(const char *message, Channel::MessageSize size);
+    void sharedChannelNodeMessageReceived(const char *message, Channel::MessageSize size);
     void arm_masterArmMessageReceived(const char *message, int size);
     void sharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                             int rateUp, int rateDown);

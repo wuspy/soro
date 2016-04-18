@@ -90,8 +90,8 @@ void SoroWindowController::init() {
                                       Channel::TcpProtocol, Channel::ServerEndPoint, _mcIniConfig.NodeHostAddress, _log);
             _sharedChannelNodes.append(sc);
 
-            connect(sc, SIGNAL(messageReceived(QByteArray)),
-                    this, SLOT(sharedChannelNodeMessageReceived(QByteArray)));
+            connect(sc, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+                    this, SLOT(sharedChannelNodeMessageReceived(const char*, Channel::MessageSize)));
         }
     }
     else {
@@ -102,8 +102,8 @@ void SoroWindowController::init() {
                 Channel::TcpProtocol, Channel::ClientEndPoint, _mcIniConfig.NodeHostAddress, _log);
     }
 
-    connect(_sharedChannel, SIGNAL(messageReceived(QByteArray)),
-            this, SLOT(sharedChannelMessageReceived(QByteArray)));
+    connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+            this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
 
     if ((_controlChannel != NULL) && (_controlChannel->getState() == Channel::ErrorState)) {
         emit error("The control channel experienced a fatal error. This is most likely due to a configuration problem.");
@@ -145,7 +145,7 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
                                            SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER),
                                            SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER),
                                            SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y));
-                _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, ArmMessage::RequiredSize_Gamepad));
+                _controlChannel->sendMessage(_buffer, ArmMessage::RequiredSize_Gamepad);
                 break;
             case MissionControlIniLoader::DriveLayoutMode:
                 switch (_driveGamepadMode) {
@@ -162,13 +162,13 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
                                                  _driveMiddleSkidSteerFactor);
                     break;
                 }
-                _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, DriveMessage::RequiredSize));
+                _controlChannel->sendMessage(_buffer, DriveMessage::RequiredSize);
                 break;
             case MissionControlIniLoader::GimbalLayoutMode:
                 GimbalMessage::setGamepadData(_buffer,
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY));
-                _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, GimbalMessage::RequiredSize));
+                _controlChannel->sendMessage(_buffer, GimbalMessage::RequiredSize);
                 break;
             }
         }
@@ -232,17 +232,17 @@ void SoroWindowController::arm_masterArmMessageReceived(const char *message, int
              << ", shldr=" << ArmMessage::getMasterShoulder(_buffer)
              << ", elbow=" << ArmMessage::getMasterElbow(_buffer)
              << ", wrist=" << ArmMessage::getMasterWrist(_buffer); /**/
-    _controlChannel->sendMessage(QByteArray::fromRawData(_buffer, size));
+    _controlChannel->sendMessage(_buffer, size);
 }
 
 /* Receives TCP messages from the rover only (as master node) or from the rover
  * and all other mission controls
  */
-void SoroWindowController::sharedChannelMessageReceived(const QByteArray& message) {
+void SoroWindowController::sharedChannelMessageReceived(const char *message, Channel::MessageSize size) {
     if (_mcIniConfig.MasterNode) {
         //rebroadcast to othr mission controls
         foreach (Channel *c, _sharedChannelNodes) {
-            c->sendMessage(message);
+            c->sendMessage(message, size);
         }
     }
     else {
@@ -252,12 +252,12 @@ void SoroWindowController::sharedChannelMessageReceived(const QByteArray& messag
 
 /* Receives TCP messages from other mission control computers (master node only)
  */
-void SoroWindowController::sharedChannelNodeMessageReceived(const QByteArray& message) {
+void SoroWindowController::sharedChannelNodeMessageReceived(const char *message, Channel::MessageSize size) {
     //forward to rover
-    _sharedChannel->sendMessage(message);
+    _sharedChannel->sendMessage(message, size);
     //rebroadcast to other mission control computers (including the sender)
     foreach (Channel *c, _sharedChannelNodes) {
-        c->sendMessage(message);
+        c->sendMessage(message, size);
     }
 }
 

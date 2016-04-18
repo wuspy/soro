@@ -41,21 +41,25 @@ namespace Soro {
  */
 class Channel: public QObject {
     Q_OBJECT
+public:
+    //data types used for header information
+    typedef quint32 MessageID;     //4 bytes, unsigned 32-bit int
+    typedef quint8 MessageType;    //1 byte, unsigned byte
+    typedef quint16 MessageSize; //2 bytes, unsigned 16-bit int
 
 private:
-    //data types used for header information
-    typedef quint32 MESSAGE_ID;     //4 bytes, unsigned 32-bit int
-    typedef quint8 MESSAGE_TYPE;    //1 byte, unsigned byte
-    typedef quint16 MESSAGE_LENGTH; //2 bytes, unsigned 16-bit int
-
     //Message type identifiers
-    static const MESSAGE_TYPE MSGTYPE_NORMAL = 0;
-    static const MESSAGE_TYPE MSGTYPE_CLIENT_HANDSHAKE = 1;
-    static const MESSAGE_TYPE MSGTYPE_SERVER_HANDSHAKE = 2;
-    static const MESSAGE_TYPE MSGTYPE_HEARTBEAT = 3;
-    static const MESSAGE_TYPE MSGTYPE_ACK = 4;
+    static const MessageType MSGTYPE_NORMAL = 0;
+    static const MessageType MSGTYPE_CLIENT_HANDSHAKE = 1;
+    static const MessageType MSGTYPE_SERVER_HANDSHAKE = 2;
+    static const MessageType MSGTYPE_HEARTBEAT = 3;
+    static const MessageType MSGTYPE_ACK = 4;
+
+    static const MessageSize TCP_HEADER_SIZE = sizeof(MessageSize) + sizeof(MessageID) + 1;
+    static const MessageSize UDP_HEADER_SIZE = sizeof(MessageID) + 1;
 
 public:
+
     /* Protocol modes supported by a channel
      */
     enum Protocol {
@@ -84,7 +88,7 @@ public:
 
     //The maximum size of a sent message (the header may make the actual message
     //slighty larger)
-    static const MESSAGE_LENGTH MAX_MESSAGE_LENGTH = 500;
+    static const MessageSize MAX_MESSAGE_LENGTH = 500;
 
     /* Creates a new Channel with a local configuration file
      */
@@ -125,7 +129,7 @@ public:
 
     /* Sends a message to the other side of the channel
      */
-    bool sendMessage(const QByteArray &message);
+    bool sendMessage(const char *message, Channel::MessageSize size);
 
     /* Returns true if this channel object acts as the server side
      */
@@ -163,15 +167,17 @@ public:
     void setLowDelaySocketOption(bool lowDelay);
 
 private:
-    char *_buffer = NULL;  //buffer for received messages
-    MESSAGE_LENGTH _bufferLength;
+    char _receiveBuffer[1024];  //buffer for received messages
+    char _sendBuffer[1024]; //buffer for constructing messages to send
+    MessageSize _receiveBufferLength; //length of currently stored data in the receive buffer
 
     QString _name;  //The name of the channel, also as a UTF8 byte array for handshaking
-    QByteArray _nameUtf8;
+    char *_nameUtf8;
+    int _nameUtf8Size;
 
     State _state = UnconfiguredState;   //current state the channel is in
 
-    qint64 *_sentTimeLog = NULL;   //Used for statistic calculation
+    qint64 *_sentTimeLog;   //Used for statistic calculation
     int _sentTimeLogIndex;
     qint64 _connectionEstablishedTime;
     int _lastRtt;
@@ -205,8 +211,8 @@ private:
     QUdpSocket *_udpSocket = NULL; //Currently active UDP socket
     QAbstractSocket *_socket = NULL;   //Pointer to either the TCP or UDP socket, depending on the configuration
 
-    MESSAGE_ID _nextSendID; //ID to mark the next message with
-    MESSAGE_ID _lastReceiveID;  //ID the most recent inbound message was marked with
+    MessageID _nextSendID; //ID to mark the next message with
+    MessageID _lastReceiveID;  //ID the most recent inbound message was marked with
     quint64 _messagesUp;    //Total number of sent messages
     quint64 _messagesDown;  //Total number of received messages
     quint64 _bytesUp;
@@ -231,18 +237,18 @@ private:
     inline void setPeerAddress(SocketAddress address); //Internal method to set the channel peer
                                                                 //address and emit the peerAddressChanged signal
 
-    inline bool sendMessage(const QByteArray &message, MESSAGE_TYPE type);  //Internal method to send a message with
+    inline bool sendMessage(const char *message, MessageSize size, MessageType type);  //Internal method to send a message with
                                                                             //a specific type field
 
-    bool sendMessage(const QByteArray &message, MESSAGE_TYPE type, MESSAGE_ID ID);  //Internal method to send a message with
+    bool sendMessage(const char *message, MessageSize size, MessageType type, MessageID ID);  //Internal method to send a message with
                                                                                     //a specific type field and ID field
 
     void close(State closeState);   //Internal method to close the channel and set the closed state
 
-    inline bool compareHandshake(const QByteArray &message) const;  //Compares a received handshake message with the correct one
+    inline bool compareHandshake(const char *message, MessageSize size) const;  //Compares a received handshake message with the correct one
 
-    void processBufferedMessage(MESSAGE_TYPE type, MESSAGE_ID ID,
-                                const QByteArray &message, const SocketAddress &address);   //Processes a received message
+    void processBufferedMessage(MessageType type, MessageID ID,
+                                const char *message, MessageSize size, const SocketAddress &address);   //Processes a received message
 
     void configureNewTcpSocket();   //Sets up a newly created TCP socket
 
@@ -264,6 +270,8 @@ private:
 
     void fetchNetworkConfigFile();
 
+    void setName(QString name); //sets the name of the channel
+
 private slots:
     void udpReadyRead();
     void tcpReadyRead();
@@ -278,7 +286,7 @@ signals: //Always public
 
     /* Signal to notify an observer that a message has been received
      */
-    void messageReceived(const QByteArray &message);
+    void messageReceived(const char *message, Channel::MessageSize size);
 
     /* Signal to notify an observer that the state of the channel has changed
      */
