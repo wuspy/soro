@@ -93,7 +93,7 @@ private:
     void panic();
     void loadConfig();
     inline void initConnection();
-    void sendMessage(char *message, int size, char type);
+    void sendMessage(char *message, int size, unsigned char type);
 
     inline bool isEthernetActive () {
         return (lpc_mii_read_data() & (1 << 0)) ? true : false;

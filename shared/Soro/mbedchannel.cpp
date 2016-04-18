@@ -4,6 +4,8 @@
 
 #include "mbedchannel.h"
 
+#define IDLE_CONNECTION_TIMEOUT 2000
+
 namespace Soro {
 
 #ifdef QT_CORE_LIB
@@ -84,7 +86,7 @@ MbedChannel::MbedChannel(SocketAddress host, unsigned char mbedId, QObject *pare
     connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(socketError(QAbstractSocket::SocketError)));
     resetConnection();
-    START_TIMER(_watchdogTimerId, 2000);
+    START_TIMER(_watchdogTimerId, IDLE_CONNECTION_TIMEOUT);
 }
 
 MbedChannel::~MbedChannel() {
@@ -193,6 +195,7 @@ MbedChannel::MbedChannel(unsigned char mbedId) {
     _eth = new EthernetInterface;
     _socket = new UDPSocket;
     initConnection();
+    setTimeout(IDLE_CONNECTION_TIMEOUT / 3);
     _lastSendTime = time(NULL);
     _lastReceiveId = 0;
     _nextSendId = 0;
@@ -210,7 +213,8 @@ MbedChannel::~MbedChannel() {
 }
 
 void MbedChannel::setTimeout(unsigned int millis) {
-    _socket->set_blocking(false, millis);
+    if (millis < IDLE_CONNECTION_TIMEOUT / 2)
+        _socket->set_blocking(false, millis);
 }
 
 void MbedChannel::sendMessage(char *message, int length, unsigned char type) {
