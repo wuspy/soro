@@ -22,6 +22,9 @@
 #include <cstring>
 #include "soro_global.h"
 
+#define _MBED_MSG_TYPE_NORMAL 1
+#define _MBED_MSG_TYPE_LOG 2
+
 namespace Soro {
 
 #ifdef QT_CORE_LIB
@@ -90,6 +93,7 @@ private:
     void panic();
     void loadConfig();
     inline void initConnection();
+    void sendMessage(char *message, int size, char type);
 
     inline bool isEthernetActive () {
         return (lpc_mii_read_data() & (1 << 0)) ? true : false;
@@ -111,7 +115,13 @@ public:
     */
     void setTimeout(unsigned int millis);
 
-    void sendMessage(char *message, int length);
+    inline void sendMessage(char *message, int length) {
+        sendMessage(message, length, _MBED_MSG_TYPE_NORMAL);
+    }
+
+    inline void log(char *message) {
+        sendMessage(message, strlen(message) + 1, _MBED_MSG_TYPE_LOG);
+    }
 
     /* Adds a listener to be notified if the ethernet
      * becomes disconnected, which will result in the mbed

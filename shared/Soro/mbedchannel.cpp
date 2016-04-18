@@ -24,13 +24,13 @@ void MbedChannel::socketReadyRead() {
     qint64 length;
     while (_socket->hasPendingDatagrams()) {
         length = _socket->readDatagram(&_buffer[0], 512, &_peer.host, &_peer.port);
-        if ((length < 5) | (length == 512)) continue;
+        if ((length < 6) | (length == 512)) continue;
         if (_buffer[0] != reinterpret_cast<char&>(_mbedId)) {
             LOG_W("Recieved message from incorrect mbed ID "
                   + QString::number(reinterpret_cast<unsigned char&>(_buffer[0])));
             continue;
         }
-        unsigned int sequence = deserialize<unsigned int>(_buffer + 1);
+        unsigned int sequence = deserialize<unsigned int>(_buffer + 2);
         if (_state == ConnectingState) {
             LOG_I("Connected to mbed client");
             setChannelState(ConnectedState);
@@ -38,8 +38,15 @@ void MbedChannel::socketReadyRead() {
         else if (sequence < _lastReceiveId) continue;
         _lastReceiveId = sequence;
         _active = true;
-        if (length > 5) {
-            emit messageReceived(_buffer + 5, length - 5);
+        switch (_buffer[1]) {
+        case _MBED_MSG_TYPE_NORMAL:
+            if (length > 6) {
+                emit messageReceived(_buffer + 6, length - 6);
+            }
+            break;
+        case _MBED_MSG_TYPE_LOG:
+            LOG_I("Mbed:" + QString(_buffer + 6));
+            break;
         }
     }
 }
@@ -203,7 +210,7 @@ void MbedChannel::setTimeout(unsigned int millis) {
     _socket->set_blocking(false, millis);
 }
 
-void MbedChannel::sendMessage(char *message, int length) {
+void MbedChannel::sendMessage(char *message, int length, char type) {
     if (!isEthernetActive()) {
         if (_resetCallback != NULL) {
             _resetCallback();
@@ -211,9 +218,10 @@ void MbedChannel::sendMessage(char *message, int length) {
         mbed_reset();
     }
     _buffer[0] = _mbedId;
-    serialize<unsigned int>(_buffer + 1, _nextSendId++);
-    memcpy(_buffer + 5, message, length);
-    _socket->sendTo(_server, _buffer, length + 5);
+    _buffer[1] = type;
+    serialize<unsigned int>(_buffer + 2, _nextSendId++);
+    memcpy(_buffer + 6, message, length);
+    _socket->sendTo(_server, _buffer, length + 6);
     _lastSendTime = time(NULL);
 }
 

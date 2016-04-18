@@ -209,6 +209,7 @@ void SoroWindowController::initSDL() {
             return;
         }
         START_TIMER(_controlSendTimerId, CONTROL_SEND_INTERVAL);
+        START_TIMER(_inputSelectorTimerId, 1000);
         emit initializedSDL();
         emit gamepadChanged(NULL);
     }
