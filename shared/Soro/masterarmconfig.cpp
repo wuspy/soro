@@ -26,7 +26,7 @@ bool MasterArmConfig::load(QFile& file) {
     bool success = parser.valueAsInt(_tag_YawMin, &yawMin);
     success &= parser.valueAsInt(_tag_YawMax, &yawMax);
     success &= parser.valueAsInt(_tag_ShoulderMin, &shoulderMin);
-    success &= parser.valueAsInt(_tag_ShoulderMin, &shoulderMax);
+    success &= parser.valueAsInt(_tag_ShoulderMax, &shoulderMax);
     success &= parser.valueAsInt(_tag_ElbowMin, &elbowMin);
     success &= parser.valueAsInt(_tag_ElbowMax, &elbowMax);
     success &= parser.valueAsInt(_tag_WristMin, &wristMin);

@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network widgets serialport webenginewidgets
+QT       += core gui network widgets webenginewidgets
 CONFIG   += c++11
 
 TARGET = MissionControl

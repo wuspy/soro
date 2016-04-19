@@ -13,13 +13,6 @@
 
 #include "soro_global.h"
 
-#define DRIVE_FL_SIGN 1
-#define DRIVE_FR_SIGN -1
-#define DRIVE_ML_SIGN 1
-#define DRIVE_MR_SIGN -1
-#define DRIVE_BL_SIGN 1
-#define DRIVE_BR_SIGN -1
-
 namespace Soro {
 
 /* Defines the structure of a drive movement command.
@@ -30,7 +23,7 @@ namespace DriveMessage  {
      * It should be unique between drive/arm/gimbal messages
      * to avoid unfortunate mistakes
      */
-    const char Header = 3;
+    const unsigned char Header = 3;
     /* The size a drive message should be
      */
     const int RequiredSize = 7;

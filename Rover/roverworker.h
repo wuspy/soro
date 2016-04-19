@@ -3,7 +3,6 @@
 
 #include <QtCore>
 #include <QCoreApplication>
-#include <QSerialPort>
 #include <QTimerEvent>
 
 #include "channel.h"

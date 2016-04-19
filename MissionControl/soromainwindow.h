@@ -9,8 +9,6 @@
 #include <QtWebEngineWidgets>
 #include <QDebug>
 #include <QFile>
-#include <QSerialPort>
-#include <QSerialPortInfo>
 #include <QtCore/qmath.h>
 
 #include <SDL2/SDL.h>

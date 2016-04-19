@@ -55,7 +55,7 @@ void SoroWindowController::init() {
             arm_loadMasterArmConfig();
             _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, _mcIniConfig.MasterArmPort), MBED_ID_MASTER_ARM, _log);
             connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
-                    this, SLOT(masterArmMessageReceived(const char*,int)));
+                    this, SLOT(arm_masterArmMessageReceived(const char*,int)));
             break;
         }
         _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
@@ -157,7 +157,7 @@ void SoroWindowController::timerEvent(QTimerEvent *e) {
                     break;
                 case DualStick:
                     DriveMessage::setGamepadData_DualStick(_buffer,
-                                                 SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
+                                                 SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY),
                                                  SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY),
                                                  _driveMiddleSkidSteerFactor);
                     break;

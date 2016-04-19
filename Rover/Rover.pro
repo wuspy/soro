@@ -1,4 +1,4 @@
-QT += core network serialport
+QT += core network
 QT -= gui
 
 CONFIG += c++11
