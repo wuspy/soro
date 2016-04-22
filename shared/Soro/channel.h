@@ -82,10 +82,6 @@ public:
                     //This is usually do to invalid configuration (specifying an unbindable port or host)
     };
 
-    enum EndPoint {
-        ServerEndPoint, ClientEndPoint
-    };
-
     //The maximum size of a sent message (the header may make the actual message
     //slighty larger)
     static const MessageSize MAX_MESSAGE_LENGTH = 500;
@@ -98,10 +94,15 @@ public:
      */
     Channel (QObject *parent, const QUrl &configUrl, Logger *log = NULL);
 
-    /* Creates a new channel with manual configuration
+    /* Creates a new channel to act as the server end point for communication
+     */
+    Channel (QObject *parent, quint16 port, QString name, Protocol protocol,
+             QHostAddress hostAddress = QHostAddress::Any, Logger *log = NULL);
+
+    /* Creates a new channel to act as the client end point for communication
      */
     Channel (QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
-             EndPoint endPoint, QHostAddress hostAddress = QHostAddress::Any, Logger *log = NULL);
+             QHostAddress hostAddress = QHostAddress::Any, Logger *log = NULL);
 
     ~Channel();
 
@@ -159,6 +160,10 @@ public:
     int getDataRateUp() const;
 
     int getDataRateDown() const;
+
+    SocketAddress getHostAddress() const;
+
+    SocketAddress getProvidedServerAddress() const;
 
     void setSendAcks(bool sendAcks);
 

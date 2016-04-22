@@ -24,11 +24,17 @@
 
 #define _MBED_MSG_TYPE_NORMAL 1
 #define _MBED_MSG_TYPE_LOG 2
+#define _MBED_MSG_TYPE_BROADCAST 3
+#define _MBED_MSG_TYPE_HEARTBEAT 4
 
 namespace Soro {
 
 #ifdef QT_CORE_LIB
 
+/* Qt implementation.
+ * The Qt side acts as the server and waits for the
+ * Mbed to connect.
+ */
 class MbedChannel: public QObject {
     Q_OBJECT
 
@@ -51,7 +57,6 @@ private:
     unsigned int _nextSendId = 0;
     int _watchdogTimerId = TIMER_INACTIVE;
     int _resetConnectionTimerId = TIMER_INACTIVE;
-
     void setChannelState(MbedChannel::State state);
 
 private slots:
@@ -77,10 +82,13 @@ protected:
 #endif
 #ifdef TARGET_LPC1768
 
+/* Mbed implementation.
+ * The Mbed acts as a client, and attempts to locate the server through
+ * UDP broadcasting.
+ */
 class MbedChannel {
 private:
     EthernetInterface *_eth;
-    DigitalOut *_led;
     UDPSocket *_socket;
     Endpoint _server;
     time_t _lastSendTime;
@@ -90,35 +98,49 @@ private:
     char _buffer[512];
     void (*_resetCallback)(void);
 
+    /* Called in the event of an invalid or missing config file
+     */
     void panic();
-    void loadConfig();
+    /* Loads the config file containg the communication port
+     */
+    int loadPort();
+    /* Resets the mbed after calling the reset listener (if it is set)
+     */
+    void reset();
+    /* Initializes etherent and attempts to find the server through a UDP broadcast.
+     * Blocks until completion.
+     */
     inline void initConnection();
+
     void sendMessage(char *message, int size, unsigned char type);
 
     inline bool isEthernetActive () {
-        return (lpc_mii_read_data() & (1 << 0)) ? true : false;
+        return (lpc_mii_read_data() & (1 << 0));
     }
 
 public:
     /* Creates a new channel for ethernet communication.
      *
      * This will read from a file on local storage (server.txt) to
-     * determine the address it should communicate with.
+     * determine the port used for communication.
      *
-     * Blocks until completion, often for several seconds.
+     * Blocks until completion, usually for several seconds.
      */
     MbedChannel(unsigned char mbedId);
 
     ~MbedChannel();
 
     /* Sets the timeout for blocking socket operations in milliseconds.
-    */
+     * Does not allow no timeout or timeouts greater than IDLE_CONNECTION_TIMEOUT / 2.
+     */
     void setTimeout(unsigned int millis);
 
     inline void sendMessage(char *message, int length) {
         sendMessage(message, length, _MBED_MSG_TYPE_NORMAL);
     }
 
+    /* Sends a log message to the server.
+     */
     inline void log(char *message) {
         sendMessage(message, strlen(message) + 1, _MBED_MSG_TYPE_LOG);
     }

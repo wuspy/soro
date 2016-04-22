@@ -57,14 +57,27 @@ Channel::Channel (QObject *parent, const QUrl &configUrl, Logger *log) : QObject
 }
 
 Channel::Channel(QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
-                 EndPoint endPoint, QHostAddress hostAddress, Logger *log) : QObject(parent) {
+                 QHostAddress hostAddress, Logger *log) : QObject(parent) {
     _log = log;
     _serverAddress = serverAddress;
-    setName(name);
     _protocol = protocol;
-    _isServer = endPoint == ServerEndPoint;
+    _isServer = false;
     _hostAddress.host = hostAddress;
 
+    setName(name);
+    init();
+}
+
+Channel::Channel(QObject *parent, quint16 port, QString name, Protocol protocol,
+                 QHostAddress hostAddress, Logger *log) : QObject(parent) {
+    _log = log;
+    _serverAddress.host = QHostAddress::Any;
+    _serverAddress.port = port;
+    _protocol = protocol;
+    _isServer = true;
+    _hostAddress.host = hostAddress;
+
+    setName(name);
     init();
 }
 
@@ -366,19 +379,24 @@ void Channel::resetConnection() {   //PRIVATE
         else {
             LOG_D("Trying to establish TCP connection with server " + _serverAddress.toString());
             _tcpSocket->bind(_hostAddress.host, _hostAddress.port);
+            if (!_tcpSocket->isOpen()) _tcpSocket->open(QIODevice::ReadWrite);
             _tcpSocket->connectToHost(_serverAddress.host, _serverAddress.port);
+            LOG_I("Bound to TCP port " + QString::number(_tcpSocket->localPort()));
         }
     }
     else if (_udpSocket != NULL) {
         LOG_D("Cancelling any previous UDP operations...");
         _udpSocket->abort();
         _udpSocket->bind(_hostAddress.host, _hostAddress.port);
+        if (!_udpSocket->isOpen()) _udpSocket->open(QIODevice::ReadWrite);
         if (!_isServer) START_TIMER(_handshakeTimerID, HANDSHAKE_FREQUENCY);
+        LOG_I("Bound to UDP port " + QString::number(_udpSocket->localPort()));
     }
     if (_tcpServer != NULL) {
         if (!_tcpServer->isListening()) {
             LOG_D("Waiting for TCP client to connect on port " + QString::number(_hostAddress.port));
             _tcpServer->listen(_hostAddress.host, _hostAddress.port);
+            LOG_I("Listenign to TCP port " + QString::number(_tcpServer->serverPort()));
         }
         if (_tcpServer->hasPendingConnections()) {
             //allow the next pending connection since we just dropped the old one
@@ -824,6 +842,23 @@ int Channel::getDataRateDown() const {
 
 void Channel::setSendAcks(bool sendAcks) {
     _sendAcks = sendAcks;
+}
+
+SocketAddress Channel::getHostAddress() const {
+    if (_udpSocket != NULL) {
+        return SocketAddress(_udpSocket->localAddress(), _udpSocket->localPort());
+    }
+    if (_tcpServer != NULL) {
+        return SocketAddress(_tcpServer->serverAddress(), _tcpServer->serverPort());
+    }
+    if (_tcpSocket != NULL) {
+        return SocketAddress(_tcpSocket->localAddress(), _tcpSocket->localPort());
+    }
+    return SocketAddress(QHostAddress::Null, 0);
+}
+
+SocketAddress Channel::getProvidedServerAddress() const {
+    return _serverAddress;
 }
 
 void Channel::setUdpDropOldPackets(bool dropOldPackets) {

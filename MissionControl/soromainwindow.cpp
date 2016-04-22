@@ -16,7 +16,7 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
 
-    _controller = new SoroWindowController(this);
+    _controller = new MissionControlProcess(this);
     connect(_controller, SIGNAL(error(QString)),
             this, SLOT(controllerError(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(warning(QString)),
@@ -25,9 +25,17 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
             this, SLOT(controllerConnectionQualityUpdate(int,int)));
     connect(_controller, SIGNAL(gamepadChanged(SDL_GameController*)),
             this, SLOT(controllerGamepadChanged(SDL_GameController*)));
+    connect(_controller, SIGNAL(arm_masterArmStateChanged(MbedChannel::State)),
+            this, SLOT(masterArmStateChanged(MbedChannel::State)));
+    connect(_controller, SIGNAL(sharedChannelStateChanged(Channel::State)),
+            this, SLOT(sharedChannelStateChanged(Channel::State)));
+    connect(_controller, SIGNAL(controlChannelStateChanged(Channel::State)),
+            this, SLOT(controlChannelStateChanged(Channel::State)));
+    connect(_controller, SIGNAL(controlChannelStatsUpdate(int,quint64,quint64,int,int)),
+            this, SLOT(controlChannelStatsUpdate(int,quint64,quint64,int,int)));
+
     //initialize in the event loop
     START_TIMER(_initTimerId, 1);
-
 }
 
 void SoroMainWindow::controllerGamepadChanged(SDL_GameController *controller) {
@@ -149,7 +157,7 @@ void SoroMainWindow::masterArmStateChanged(MbedChannel::State state) {
 void SoroMainWindow::controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
                                        int rateUp, int rateDown) {
     if (rtt == -1) {
-        ui->comm_mainPingLabel->setText("---");
+        ui->comm_mainPingLabel->setText("N/A");
     }
     else {
         ui->comm_mainPingLabel->setText(QString::number(rtt));
@@ -182,32 +190,34 @@ void SoroMainWindow::timerEvent(QTimerEvent *e) {
             setWindowTitle("Mission Control - Arm");
             if (mcConfig->ControlInputMode == MissionControlIniLoader::MasterArm) {
                 masterArmStateChanged(MbedChannel::ConnectingState);
-                connect(_controller->arm_getMasterArmChannel(), SIGNAL(stateChanged(MbedChannel::State)),
-                        this, SLOT(masterArmStateChanged(MbedChannel::State)));
             }
+            else {
+                controllerGamepadChanged(NULL);
+            }
+            controlChannelStateChanged(Channel::ConnectingState);
+            controlChannelStatsUpdate(-1, 0, 0, 0, 0);
             break;
         case MissionControlIniLoader::DriveLayoutMode:
             setWindowTitle("Mission Control - Driver");
+            controllerGamepadChanged(NULL);
+            controlChannelStateChanged(Channel::ConnectingState);
+            controlChannelStatsUpdate(-1, 0, 0, 0, 0);
             break;
         case MissionControlIniLoader::GimbalLayoutMode:
             setWindowTitle("Mission Control - Gimbal");
+            controllerGamepadChanged(NULL);
+            controlChannelStateChanged(Channel::ConnectingState);
+            controlChannelStatsUpdate(-1, 0, 0, 0, 0);
             break;
         case MissionControlIniLoader::SpectatorLayoutMode:
             setWindowTitle("Mission Control - Spectating");
+            ui->comm_controlStateLabel->setText("Not Available");
+            ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
+            ui->comm_controlStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
+            controlChannelStatsUpdate(-1, 0, 0, 0, 0);
             break;
         }
         sharedChannelStateChanged(Channel::ConnectingState);
-        if (_controller->getControlChannel() != NULL) {
-            controlChannelStateChanged(Channel::ConnectingState);
-        }
-        connect(_controller->getSharedChannel(), SIGNAL(stateChanged(Channel::State)),
-                this, SLOT(sharedChannelStateChanged(Channel::State)));
-        connect (_controller->getSharedChannel(), SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
-                 this, SLOT(sharedChannelStatsUpdate(int,quint64,quint64,int,int)));
-        connect (_controller->getControlChannel(), SIGNAL(stateChanged(Channel::State)),
-                 this, SLOT(controlChannelStateChanged(Channel::State)));
-        connect(_controller->getControlChannel(), SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
-                this, SLOT(controlChannelStatsUpdate(int,quint64,quint64,int,int)));
     }
     //JUST TESTING SHIT
     /*float lat = 29.564844 + qrand() % 1000 * 0.000001;

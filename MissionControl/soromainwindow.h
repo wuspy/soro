@@ -18,7 +18,7 @@
 #include "soro_global.h"
 #include "mbedchannel.h"
 #include "latlng.h"
-#include "sorowindowcontroller.h"
+#include "missioncontrolprocess.h"
 
 namespace Ui {
     class SoroMainWindow;
@@ -36,7 +36,7 @@ namespace MissionControl {
 
     private:
         Ui::SoroMainWindow *ui;
-        SoroWindowController *_controller;
+        MissionControlProcess *_controller;
         bool _fullscreen = false;
         int _initTimerId = TIMER_INACTIVE;
 

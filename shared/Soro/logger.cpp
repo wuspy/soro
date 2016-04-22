@@ -36,23 +36,7 @@ bool Logger::setLogfile(QString file) {
     return false;
 }
 
-void Logger::d(QString tag, QString message) {
-    publish(LOG_LEVEL_DEBUG, tag, message);
-}
-
-void Logger::i(QString tag, QString message) {
-    publish(LOG_LEVEL_INFORMATION, tag, message);
-}
-
-void Logger::w(QString tag, QString message) {
-    publish(LOG_LEVEL_WARN, tag, message);
-}
-
-void Logger::e(QString tag, QString message) {
-    publish(LOG_LEVEL_ERROR, tag, message);
-}
-
-inline void Logger::publish(int level, QString tag, QString message) { //PRIVATE
+void Logger::publish(int level, QString tag, QString message) { //PRIVATE
     if (level <= MaxLevel) {
         emit logMessagePublished(level, tag, message);
         QString formatted = _levelFormatters[level].arg(QTime::currentTime().toString(), tag, message);

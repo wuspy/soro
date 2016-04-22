@@ -1,13 +1,13 @@
 #include <QCoreApplication>
 
-#include "roverworker.h"
+#include "roverprocess.h"
 
 using namespace Soro::Rover;
 
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
 
-    RoverWorker worker(&a);
+    RoverProcess worker(&a);
 
     return a.exec();
 }

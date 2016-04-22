@@ -27,6 +27,7 @@ struct SoroIniLoader {
     quint16 ArmChannelPort, DriveChannelPort, GimbalChannelPort, SharedChannelPort;
     quint16 ArmVideoPort, DriveVideoPort, GimbalVideoPort;
     quint16 ArmMbedPort, DriveMbedPort, GimbalMbedPort;
+    quint16 McBroadcastPort;
 
     /* Loads the configuration from the default path, and returns true if successful.
      * If there is an error, err will contain a summary of what went wrong.

@@ -26,17 +26,10 @@ struct MissionControlIniLoader {
         ArmLayoutMode, DriveLayoutMode, GimbalLayoutMode, SpectatorLayoutMode
     };
 
-    QHostAddress CommHostAddress;
-    QHostAddress VideoHostAddress;
-    QHostAddress NodeHostAddress;
     InputMode ControlInputMode;
     LayoutMode Layout;
     bool MasterNode;
-    quint16 *NodePorts = NULL;
     quint16 MasterArmPort;
-    SocketAddress MasterNodeAddress;
-
-    ~MissionControlIniLoader();
 
     /* Loads the configuration from the default path, and returns true if successful.
      * If there is an error, err will contain a summary of what went wrong.

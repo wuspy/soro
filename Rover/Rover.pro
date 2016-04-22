@@ -14,9 +14,9 @@ SOURCES += main.cpp \
     ../shared/Soro/logger.cpp \
     ../shared/Soro/iniparser.cpp \
     ../shared/Soro/soroini.cpp \
-    roverworker.cpp \
     gpsserver.cpp \
-    ../shared/Soro/mbedchannel.cpp
+    ../shared/Soro/mbedchannel.cpp \
+    roverprocess.cpp
 
 HEADERS += \
     ../shared/Soro/armmessage.h \
@@ -28,9 +28,9 @@ HEADERS += \
     ../shared/Soro/logger.h \
     ../shared/Soro/iniparser.h \
     ../shared/Soro/soroini.h \
-    roverworker.h \
     gpsserver.h \
-    ../shared/Soro/mbedchannel.h
+    ../shared/Soro/mbedchannel.h \
+    roverprocess.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro

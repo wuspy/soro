@@ -21,6 +21,7 @@ const char *_value_LogDisabled = "Disabled";
 const char *_tag_ArmMbedPort = "ArmMbedPort";
 const char *_tag_DriveMbedPort = "DriveMbedPort";
 const char *_tag_GimbalMbedPort = "GimbalMbedPort";
+const char *_tag_McSubnetBroadcastPort = "McSubnetBroadcastPort";
 
 namespace Soro {
 
@@ -119,6 +120,11 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     GimbalMbedPort = tmp;
+    if (!configParser.valueAsInt(_tag_McSubnetBroadcastPort, &tmp)) {
+        *err = "No mission control subnet broadcast port found in configuration file";
+        return false;
+    }
+    McBroadcastPort = tmp;
     return true;
 }
 

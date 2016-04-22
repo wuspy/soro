@@ -17,14 +17,14 @@ SOURCES += \
     main.cpp \
     googlemapview.cpp \
     soromainwindow.cpp \
-    sorowindowcontroller.cpp \
     ../shared/Soro/soroini.cpp \
     mcini.cpp \
     ../shared/Soro/masterarmconfig.cpp \
     ../shared/Soro/armmessage.cpp \
     ../shared/Soro/drivemessage.cpp \
     ../shared/Soro/gimbalmessage.cpp \
-    ../shared/Soro/mbedchannel.cpp
+    ../shared/Soro/mbedchannel.cpp \
+    missioncontrolprocess.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -38,11 +38,11 @@ HEADERS  += \
     ../shared/Soro/gimbalmessage.h \
     ../shared/Soro/mbedchannel.h \
     soromainwindow.h \
-    sorowindowcontroller.h \
     ../shared/Soro/soro_global.h \
     ../shared/Soro/soroini.h \
     mcini.h \
-    ../shared/Soro/masterarmconfig.h
+    ../shared/Soro/masterarmconfig.h \
+    missioncontrolprocess.h
 
 FORMS    += \
     soromainwindow.ui

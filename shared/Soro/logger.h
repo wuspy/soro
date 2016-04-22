@@ -29,15 +29,14 @@ namespace Soro {
  * This class is reentrant, because QTextStream is reentrant and mutexes are expensive.
  * Create separate logger instances for separate threads.
  */
-class Logger: public QObject
-{
+class Logger: public QObject {
     Q_OBJECT
 
 private:
     static const QString _levelFormatters[];
     QFile* _file = NULL;
     QTextStream* _fileStream = NULL;
-    inline void publish(int level, QString tag, QString message);
+    void publish(int level, QString tag, QString message);
 
 public:
     Logger(QObject *parent);
@@ -45,10 +44,23 @@ public:
 
     bool setLogfile(QString fileName);
     void closeLogfile();
-    void d(QString tag, QString message);
-    void i(QString tag, QString message);
-    void w(QString tag, QString message);
-    void e(QString tag, QString message);
+
+    inline void d(QString tag, QString message) {
+        publish(LOG_LEVEL_DEBUG, tag, message);
+    }
+
+    inline void i(QString tag, QString message) {
+        publish(LOG_LEVEL_INFORMATION, tag, message);
+    }
+
+    inline void w(QString tag, QString message) {
+        publish(LOG_LEVEL_WARN, tag, message);
+    }
+
+    inline void e(QString tag, QString message) {
+        publish(LOG_LEVEL_ERROR, tag, message);
+    }
+
     int MaxLevel;
     int MaxQtLoggerLevel;
     bool RouteToQtLogger;
