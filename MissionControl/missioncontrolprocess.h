@@ -60,7 +60,7 @@ private:
     bool _masterNode;
     MissionControlProcess::Role _role;
     DriveGamepadMode _driveGamepadMode = DualStick;
-    float _driveMiddleSkidSteerFactor = 0.4;
+    float _driveMiddleSkidSteerFactor = 0.2; //lower is faster, higher is slower
     Logger *_log = NULL;
     //used to connect to other mission control computers on the same subnet
     QUdpSocket *_broadcastSocket = NULL;

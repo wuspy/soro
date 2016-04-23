@@ -53,7 +53,6 @@ void MissionControlProcess::init() {
                 this, SLOT(arm_masterArmMessageReceived(const char*,int)));
         connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel::State)),
                 this, SIGNAL(arm_masterArmStateChanged(MbedChannel::State)));
-        break;
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _controlChannel = new Channel(this, _soroIniConfig.ArmChannelPort, CHANNEL_NAME_ARM,
                     Channel::UdpProtocol, _mainHost, _log);
@@ -150,15 +149,15 @@ void MissionControlProcess::init() {
     connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
             this, SIGNAL(sharedChannelStateChanged(Channel::State)));
     if (_controlChannel != NULL) {
+        connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
+                this, SIGNAL(controlChannelStateChanged(Channel::State)));
+        connect(_controlChannel, SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
+                this, SIGNAL(controlChannelStatsUpdate(int, quint16, quint64, int, int)));
         _controlChannel->open();
         if (_controlChannel->getState() == Channel::ErrorState) {
             emit error("The control channel experienced a fatal error. This is most likely due to a configuration problem.");
             return;
         }
-        connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
-                this, SIGNAL(controlChannelStateChanged(Channel::State)));
-        connect(_controlChannel, SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
-                this, SIGNAL(controlChannelStatsUpdate(int, quint16, quint64, int, int)));
     }
 
     if (_sharedChannel->getState() == Channel::ErrorState) {

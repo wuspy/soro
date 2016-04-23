@@ -67,7 +67,7 @@ inline T deserialize(const char *arr) {
  * This is designed for converting SDL axis values.
  */
 inline char axisShortToAxisByte(short val) {
-    val /= (USHRT_MAX / 100);
+    val /= (SHRT_MAX / 100);
     val += 100;
     unsigned char uc = (unsigned char)val;
     return reinterpret_cast<char&>(uc);
@@ -104,7 +104,7 @@ inline int axisFloatToAxisInt(float val) {
  * into it's original float value
  */
 inline float axisByteToAxisFloat(char val) {
-    return (float)(reinterpret_cast<unsigned char&>(val) - 100.0) / 100.0;
+    return (float)((int)reinterpret_cast<unsigned char&>(val) - 100.0) / 100.0;
 }
 
 /* Converts a byte encoded joystick axis (see joyFloatToByte) into
