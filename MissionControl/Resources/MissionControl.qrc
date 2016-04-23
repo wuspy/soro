@@ -10,11 +10,16 @@
         <file>minus_circle_black_18px.png</file>
         <file>gamepad_yellow_18px.png</file>
         <file>gamepad_green_18px.png</file>
-    </qresource>
-    <qresource prefix="/images">
-        <file>vlc_logo.png</file>
+        <file>arm_operator_red_96px.png</file>
+        <file>camera_red_96px.png</file>
+        <file>driver_red_96px.png</file>
+        <file>spectator_red_96px.png</file>
+        <file>info_white_24px.png</file>
     </qresource>
     <qresource prefix="/">
         <file>map.html</file>
+    </qresource>
+    <qresource prefix="/images">
+        <file>splash.jpg</file>
     </qresource>
 </RCC>

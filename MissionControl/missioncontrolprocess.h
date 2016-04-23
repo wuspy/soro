@@ -20,7 +20,6 @@
 #include "latlng.h"
 #include "masterarmconfig.h"
 #include "soroini.h"
-#include "mcini.h"
 
 namespace Soro {
 namespace MissionControl {
@@ -32,7 +31,12 @@ public:
         SingleStick, DualStick
     };
 
-    explicit MissionControlProcess(QMainWindow *presenter = 0);
+    enum Role {
+        ArmOperator, Driver, CameraOperator, Spectator
+    };
+
+    explicit MissionControlProcess(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHosst, QHostAddress masterArmHost,
+                                   bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter = 0);
 
     ~MissionControlProcess();
 
@@ -40,27 +44,30 @@ public:
     const Channel *getSharedChannel() const;
     const MbedChannel *arm_getMasterArmChannel() const;
     const SoroIniLoader *getSoroIniConfig() const;
-    const MissionControlIniLoader *getMissionControlIniConfig() const;
     SDL_GameController *getGamepad();
     void drive_setMiddleSkidSteerFactor(float factor);
     void drive_setGamepadMode(DriveGamepadMode mode);
     float drive_getMiddleSkidSteerFactor() const;
     MissionControlProcess::DriveGamepadMode drive_getGamepadMode() const;
+    MissionControlProcess::Role getRole() const;
+    bool isMasterSubnetNode() const;
 
 private:
     //used as scratch space for reading gamepad data, master arm data,
     //subnet broadcasts, etc
     char _buffer[512];
     bool _sdlInitialized = false;
+    bool _masterNode;
+    MissionControlProcess::Role _role;
     DriveGamepadMode _driveGamepadMode = DualStick;
     float _driveMiddleSkidSteerFactor = 0.4;
     Logger *_log = NULL;
     //used to connect to other mission control computers on the same subnet
     QUdpSocket *_broadcastSocket = NULL;
+    QHostAddress _mainHost, _videoHost, _localLanHost, _masterArmHost;
 
     //used to load configuration options
     SoroIniLoader _soroIniConfig;
-    MissionControlIniLoader _mcIniConfig;
 
     //internet communication channels
     Channel *_controlChannel = NULL;

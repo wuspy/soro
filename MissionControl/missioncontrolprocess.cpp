@@ -9,12 +9,19 @@
 
 #define CONTROL_SEND_INTERVAL 50
 
-#define BROADCAST_ID "Soro_MissionControlChannel"
+#define CHANNEL_NAME_SUBNET_SHARED "Soro_MissionControlChannel"
 
 namespace Soro {
 namespace MissionControl {
 
-MissionControlProcess::MissionControlProcess(QMainWindow *presenter) : QObject(presenter) {
+MissionControlProcess::MissionControlProcess(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHost, QHostAddress masterArmHost,
+             bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter) : QObject(presenter) {
+    _masterNode = masterSubnetNode;
+    _mainHost = mainHost;
+    _videoHost = videoHost;
+    _localLanHost = localLanHost;
+    _masterArmHost = masterArmHost;
+    _role = role;
     _log = new Logger(this);
     _log->setLogfile(QCoreApplication::applicationDirPath() + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm_AP") + ".log");
     _log->RouteToQtLogger = true;
@@ -38,74 +45,62 @@ void MissionControlProcess::init() {
     }
     _soroIniConfig.applyLogLevel(_log);
 
-    //parse mission control configuration
-    if (!_mcIniConfig.load(&err)) {
-        LOG_E(err);
-        emit error(err);
-        return;
-    }
-    switch (_mcIniConfig.Layout) {
-    case MissionControlIniLoader::ArmLayoutMode:
-        switch (_mcIniConfig.ControlInputMode) {
-        case MissionControlIniLoader::Gamepad:
-            initSDL();
-            break;
-        case MissionControlIniLoader::MasterArm:
-            arm_loadMasterArmConfig();
-            _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, _mcIniConfig.MasterArmPort), MBED_ID_MASTER_ARM, _log);
-            connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
-                    this, SLOT(arm_masterArmMessageReceived(const char*,int)));
-            connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel::State)),
-                    this, SIGNAL(arm_masterArmStateChanged(MbedChannel::State)));
-            break;
-        }
+    switch (_role) {
+    case ArmOperator:
+        arm_loadMasterArmConfig();
+        _masterArmChannel = new MbedChannel(SocketAddress(_masterArmHost, _soroIniConfig.MasterArmPort), MBED_ID_MASTER_ARM, _log);
+        connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
+                this, SLOT(arm_masterArmMessageReceived(const char*,int)));
+        connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel::State)),
+                this, SIGNAL(arm_masterArmStateChanged(MbedChannel::State)));
+        break;
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _controlChannel = new Channel(this, _soroIniConfig.ArmChannelPort, CHANNEL_NAME_ARM,
-                    Channel::UdpProtocol, QHostAddress::Any, _log);
+                    Channel::UdpProtocol, _mainHost, _log);
         }
         else {
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
-                    Channel::UdpProtocol, QHostAddress::Any, _log);
+                    Channel::UdpProtocol, _mainHost, _log);
         }
         break;
-    case MissionControlIniLoader::DriveLayoutMode:
+    case Driver:
         initSDL();
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _controlChannel = new Channel(this, _soroIniConfig.DriveChannelPort, CHANNEL_NAME_DRIVE,
-                    Channel::UdpProtocol, QHostAddress::Any, _log);
+                    Channel::UdpProtocol, _mainHost, _log);
         }
         else {
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveChannelPort), CHANNEL_NAME_DRIVE,
-                    Channel::UdpProtocol, QHostAddress::Any, _log);
+                    Channel::UdpProtocol, _mainHost, _log);
         }
         break;
-    case MissionControlIniLoader::GimbalLayoutMode:
+    case CameraOperator:
         initSDL();
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _controlChannel = new Channel(this, _soroIniConfig.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
-                    Channel::UdpProtocol, QHostAddress::Any, _log);
+                    Channel::UdpProtocol, _mainHost, _log);
         }
         else {
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
-                    Channel::UdpProtocol, QHostAddress::Any, _log);
+                    Channel::UdpProtocol, _mainHost, _log);
         }
         break;
-    case MissionControlIniLoader::SpectatorLayoutMode:
+    case Spectator:
         //no control connections to create since spectators don't control anything
         break;
     }
 
     _broadcastSocket = new QUdpSocket(this);
-    if (_mcIniConfig.MasterNode) {
+    if (_masterNode) {
         LOG_I("Setting up as master subnet node");
         //create the main shared channel to connect to the rover
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _sharedChannel = new Channel(this, _soroIniConfig.SharedChannelPort, CHANNEL_NAME_SHARED,
-                    Channel::TcpProtocol, QHostAddress::Any, _log);
+                    Channel::TcpProtocol, _mainHost, _log);
         }
         else {
             _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
-                    Channel::TcpProtocol, QHostAddress::Any, _log);
+                    Channel::TcpProtocol, _mainHost, _log);
         }
         _sharedChannel->open();
         connect(_sharedChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
@@ -113,7 +108,7 @@ void MissionControlProcess::init() {
         connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
                 this, SLOT(roverSharedChannelStateChanged(Channel::State)));
         //create the udp broadcast receive port to listen to other mission control nodes trying to connect
-        if (!_broadcastSocket->bind(_soroIniConfig.McBroadcastPort)) {
+        if (!_broadcastSocket->bind(_localLanHost, _soroIniConfig.McBroadcastPort)) {
             emit error("Unable to bind subnet broadcast port on " + QString::number(_soroIniConfig.McBroadcastPort));
             return;
         }
@@ -131,14 +126,14 @@ void MissionControlProcess::init() {
         //create a tcp channel on a random port to act as a server, and
         //create a udp socket on the same port to send out broadcasts with the
         //server's information so the master node can connect
-        _sharedChannel = new Channel(this, 0, BROADCAST_ID,
-                Channel::TcpProtocol, QHostAddress::Any, _log);
+        _sharedChannel = new Channel(this, 0, CHANNEL_NAME_SUBNET_SHARED,
+                Channel::TcpProtocol, _localLanHost, _log);
         _sharedChannel->open();
         connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
                 this, SLOT(slaveSharedChannelStateChanged(Channel::State)));
         connect(_sharedChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
                 this, SLOT(handleSharedChannelMessage(const char*,Channel::MessageSize)));
-        if (!_broadcastSocket->bind(_sharedChannel->getHostAddress().port)) {
+        if (!_broadcastSocket->bind(_localLanHost, _sharedChannel->getHostAddress().port)) {
             emit error("Unable to bind subnet broadcast port on " + QString::number(_sharedChannel->getHostAddress().port));
             return;
         }
@@ -176,9 +171,9 @@ void MissionControlProcess::init() {
 void MissionControlProcess::broadcastSocketReadyRead() {
     SocketAddress peer;
     while (_broadcastSocket->hasPendingDatagrams()) {
-        int len = _broadcastSocket->readDatagram(_buffer, strlen(BROADCAST_ID) + 1, &peer.host, &peer.port);
-        if (len < strlen(BROADCAST_ID) + 1) continue;
-        if (strcmp(_buffer, BROADCAST_ID) == 0) {
+        int len = _broadcastSocket->readDatagram(_buffer, strlen(CHANNEL_NAME_SUBNET_SHARED) + 1, &peer.host, &peer.port);
+        if ((size_t)len < strlen(CHANNEL_NAME_SUBNET_SHARED) + 1) continue;
+        if (strcmp(_buffer, CHANNEL_NAME_SUBNET_SHARED) == 0) {
             //found a new mission control trying to connect
             //make sure they're not already added (delayed UDP packet or something)
             bool added = false;
@@ -191,7 +186,8 @@ void MissionControlProcess::broadcastSocketReadyRead() {
             if (!added) {
                 //not already added, create a channel for them
                 LOG_I("Creating new channel for node " + peer.toString());
-                Channel *channel = new Channel(this, peer, BROADCAST_ID, Channel::TcpProtocol, _broadcastSocket->localAddress(), _log);
+                Channel *channel = new Channel(this, peer, CHANNEL_NAME_SUBNET_SHARED,
+                                   Channel::TcpProtocol, _broadcastSocket->localAddress(), _log);
                 channel->open();
                 _sharedChannelNodes.append(channel);
                 connect(channel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
@@ -202,6 +198,7 @@ void MissionControlProcess::broadcastSocketReadyRead() {
 }
 
 void MissionControlProcess::roverSharedChannelStateChanged(Channel::State state) {
+    //broadcast to other mission controls that the rover isn't connected
     //TODO
 }
 
@@ -263,8 +260,8 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 emit gamepadChanged(NULL);
                 return;
             }
-            switch (_mcIniConfig.Layout) {
-            case MissionControlIniLoader::ArmLayoutMode:
+            switch (_role) {
+            case ArmOperator:
                 //send the rover an arm gamepad packet
                 ArmMessage::setGamepadData(_buffer,
                                            SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
@@ -277,7 +274,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                                            SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y));
                 _controlChannel->sendMessage(_buffer, ArmMessage::RequiredSize_Gamepad);
                 break;
-            case MissionControlIniLoader::DriveLayoutMode:
+            case Driver:
                 //send the rover a drive gamepad packet
                 switch (_driveGamepadMode) {
                 case SingleStick:
@@ -295,7 +292,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 }
                 _controlChannel->sendMessage(_buffer, DriveMessage::RequiredSize);
                 break;
-            case MissionControlIniLoader::GimbalLayoutMode:
+            case CameraOperator:
                 //send the rover a gimbal gamepad packet
                 GimbalMessage::setGamepadData(_buffer,
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
@@ -333,25 +330,8 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
          */
         LOG_I("Broadcasting shared channel information on address "
               + SocketAddress(_broadcastSocket->localAddress(), _broadcastSocket->localPort()).toString());
-        _broadcastSocket->writeDatagram(BROADCAST_ID, strlen(BROADCAST_ID) + 1, QHostAddress::Broadcast, _soroIniConfig.McBroadcastPort);
-    }
-    else if (e->timerId() == _pruneSharedChannelsTimerId) {
-        /***************************************
-         * This timer monitors the state of all shared channel connections to other
-         * mission controls (master node only) and deletes any that are no longer connected
-         */
-        QList<Channel*> deleted;
-        foreach (Channel *c, _sharedChannelNodes) {
-            if (c->getState() != Channel::ConnectedState) {
-                LOG_I("Deleting inactive shared channel node");
-                c->close();
-                delete c;
-                deleted.append(c);
-            }
-        }
-        foreach (Channel *c, deleted) {
-            _sharedChannelNodes.removeAll(c);
-        }
+        _broadcastSocket->writeDatagram(CHANNEL_NAME_SUBNET_SHARED, strlen(CHANNEL_NAME_SUBNET_SHARED) + 1,
+                                        QHostAddress::Broadcast, _soroIniConfig.McBroadcastPort);
     }
 }
 
@@ -396,12 +376,17 @@ void MissionControlProcess::arm_masterArmMessageReceived(const char *message, in
              << ", shldr=" << ArmMessage::getMasterShoulder(_buffer)
              << ", elbow=" << ArmMessage::getMasterElbow(_buffer)
              << ", wrist=" << ArmMessage::getMasterWrist(_buffer); /**/
-    _controlChannel->sendMessage(_buffer, size);
+    if (_controlChannel != NULL) {
+        _controlChannel->sendMessage(_buffer, size);
+    }
+    else {
+        LOG_E("Got message from master arm with null control channel");
+    }
 }
 
 
 void MissionControlProcess::arm_loadMasterArmConfig() {
-    if (_mcIniConfig.Layout == MissionControlIniLoader::ArmLayoutMode) {
+    if (_role == ArmOperator) {
         QFile masterArmFile(MASTER_ARM_INI_PATH);
         if (_masterArmRanges.load(masterArmFile)) {
             LOG_I("Loaded master arm configuration");
@@ -418,10 +403,6 @@ SDL_GameController *MissionControlProcess::getGamepad() {
 
 const SoroIniLoader *MissionControlProcess::getSoroIniConfig() const {
     return &_soroIniConfig;
-}
-
-const MissionControlIniLoader *MissionControlProcess::getMissionControlIniConfig() const {
-    return &_mcIniConfig;
 }
 
 const Channel *MissionControlProcess::getControlChannel() const {
@@ -450,6 +431,14 @@ float MissionControlProcess::drive_getMiddleSkidSteerFactor() const {
 
 MissionControlProcess::DriveGamepadMode MissionControlProcess::drive_getGamepadMode() const {
     return _driveGamepadMode;
+}
+
+MissionControlProcess::Role MissionControlProcess::getRole() const {
+    return _role;
+}
+
+bool MissionControlProcess::isMasterSubnetNode() const {
+    return _masterNode;
 }
 
 MissionControlProcess::~MissionControlProcess() {

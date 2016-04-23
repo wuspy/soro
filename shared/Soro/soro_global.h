@@ -10,7 +10,7 @@
 #define START_TIMER(X,Y) if (X == TIMER_INACTIVE) X = startTimer(Y)
 #define KILL_TIMER(X) if (X != TIMER_INACTIVE) { killTimer(X); X = TIMER_INACTIVE; }
 
-//shared channel names, must be the same on the rover and mission control builds
+//channel names, must be the same on the rover and mission control builds
 #define CHANNEL_NAME_ARM "Soro_ArmChannel"
 #define CHANNEL_NAME_DRIVE "Soro_DriveChannel"
 #define CHANNEL_NAME_GIMBAL "Soro_GimbalChannel"
@@ -26,6 +26,7 @@ namespace Soro {
 inline void addWidgetShadow(QWidget *target, int radius, int offset) {
     QGraphicsDropShadowEffect* ef = new QGraphicsDropShadowEffect;
     ef->setBlurRadius(radius);
+    ef->setColor(QColor::fromHsv(0, 0, 0, 255));
     ef->setOffset(offset);
     target->setGraphicsEffect(ef);
 }

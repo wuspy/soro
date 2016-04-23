@@ -8,7 +8,8 @@
 namespace Soro {
 namespace MissionControl {
 
-SoroMainWindow::SoroMainWindow(QWidget *parent) :
+SoroMainWindow::SoroMainWindow(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHost, QHostAddress masterArmHost,
+                               bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SoroMainWindow) {
 
@@ -16,7 +17,7 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
 
-    _controller = new MissionControlProcess(this);
+    _controller = new MissionControlProcess(mainHost, videoHost, localLanHost, masterArmHost, masterSubnetNode, role, this);
     connect(_controller, SIGNAL(error(QString)),
             this, SLOT(controllerError(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(warning(QString)),
@@ -184,32 +185,26 @@ void SoroMainWindow::timerEvent(QTimerEvent *e) {
     if (e->timerId() == _initTimerId) {
         KILL_TIMER(_initTimerId);
         _controller->init();
-        const MissionControlIniLoader *mcConfig = _controller->getMissionControlIniConfig();
-        switch (mcConfig->Layout) {
-        case MissionControlIniLoader::ArmLayoutMode:
+        switch (_controller->getRole()) {
+        case MissionControlProcess::ArmOperator:
             setWindowTitle("Mission Control - Arm");
-            if (mcConfig->ControlInputMode == MissionControlIniLoader::MasterArm) {
-                masterArmStateChanged(MbedChannel::ConnectingState);
-            }
-            else {
-                controllerGamepadChanged(NULL);
-            }
+            masterArmStateChanged(MbedChannel::ConnectingState);
             controlChannelStateChanged(Channel::ConnectingState);
             controlChannelStatsUpdate(-1, 0, 0, 0, 0);
             break;
-        case MissionControlIniLoader::DriveLayoutMode:
+        case MissionControlProcess::Driver:
             setWindowTitle("Mission Control - Driver");
             controllerGamepadChanged(NULL);
             controlChannelStateChanged(Channel::ConnectingState);
             controlChannelStatsUpdate(-1, 0, 0, 0, 0);
             break;
-        case MissionControlIniLoader::GimbalLayoutMode:
-            setWindowTitle("Mission Control - Gimbal");
+        case MissionControlProcess::CameraOperator:
+            setWindowTitle("Mission Control - Camera Operator");
             controllerGamepadChanged(NULL);
             controlChannelStateChanged(Channel::ConnectingState);
             controlChannelStatsUpdate(-1, 0, 0, 0, 0);
             break;
-        case MissionControlIniLoader::SpectatorLayoutMode:
+        case MissionControlProcess::Spectator:
             setWindowTitle("Mission Control - Spectating");
             ui->comm_controlStateLabel->setText("Not Available");
             ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #F57F17; }");

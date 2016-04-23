@@ -8,6 +8,7 @@
 #include <QWebEngineView>
 #include <QtWebEngineWidgets>
 #include <QDebug>
+#include <QHostAddress>
 #include <QFile>
 #include <QtCore/qmath.h>
 
@@ -31,7 +32,8 @@ namespace MissionControl {
         Q_OBJECT
 
     public:
-        explicit SoroMainWindow(QWidget *parent = 0);
+        explicit SoroMainWindow(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHost, QHostAddress masterArmHost,
+                                bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent = 0);
         ~SoroMainWindow();
 
     private:

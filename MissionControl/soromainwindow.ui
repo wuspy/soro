@@ -420,7 +420,7 @@ background: rgba(0, 0, 0, 0);</string>
       </rect>
      </property>
      <property name="styleSheet">
-      <string notr="true">color: #dddddd</string>
+      <string notr="true">color: #dddddd;</string>
      </property>
      <property name="frameShadow">
       <enum>QFrame::Plain</enum>

@@ -21,6 +21,7 @@ const char *_value_LogDisabled = "Disabled";
 const char *_tag_ArmMbedPort = "ArmMbedPort";
 const char *_tag_DriveMbedPort = "DriveMbedPort";
 const char *_tag_GimbalMbedPort = "GimbalMbedPort";
+const char *_tag_MasterArmPort = "MasterArmPort";
 const char *_tag_McSubnetBroadcastPort = "McSubnetBroadcastPort";
 
 namespace Soro {
@@ -125,6 +126,11 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     McBroadcastPort = tmp;
+    if (!configParser.valueAsInt(_tag_MasterArmPort, &tmp)) {
+        *err = "No master arm port found in configuration file";
+        return false;
+    }
+    MasterArmPort = tmp;
     return true;
 }
 

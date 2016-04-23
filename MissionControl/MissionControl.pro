@@ -18,13 +18,14 @@ SOURCES += \
     googlemapview.cpp \
     soromainwindow.cpp \
     ../shared/Soro/soroini.cpp \
-    mcini.cpp \
     ../shared/Soro/masterarmconfig.cpp \
     ../shared/Soro/armmessage.cpp \
     ../shared/Soro/drivemessage.cpp \
     ../shared/Soro/gimbalmessage.cpp \
     ../shared/Soro/mbedchannel.cpp \
-    missioncontrolprocess.cpp
+    missioncontrolprocess.cpp \
+    setupdialog.cpp \
+    clickablelabel.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -40,12 +41,14 @@ HEADERS  += \
     soromainwindow.h \
     ../shared/Soro/soro_global.h \
     ../shared/Soro/soroini.h \
-    mcini.h \
     ../shared/Soro/masterarmconfig.h \
-    missioncontrolprocess.h
+    missioncontrolprocess.h \
+    setupdialog.h \
+    clickablelabel.h
 
 FORMS    += \
-    soromainwindow.ui
+    soromainwindow.ui \
+    setupdialog.ui
 
 RESOURCES += \
     Resources/MissionControl.qrc
