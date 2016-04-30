@@ -464,11 +464,16 @@ void Channel::tcpConnected() {  //PRIVATE SLOT
 }
 
 void Channel::newTcpClient() {  //PRIVATE SLOT
-    if (_tcpSocket == NULL) { //don't accept the connection if we already have one
-        _socket = _tcpSocket = _tcpServer->nextPendingConnection();
-        configureNewTcpSocket();
-        tcpConnected();
+    if (_tcpSocket != NULL) {
+        _tcpSocket->abort();
+        if (_tcpSocket->isOpen()) {
+            _tcpSocket->close();
+        }
+        delete _tcpSocket;
     }
+    _socket = _tcpSocket = _tcpServer->nextPendingConnection();
+    configureNewTcpSocket();
+    tcpConnected();
 }
 
 inline void Channel::setChannelState(Channel::State state, bool forceUpdate) {   //PRIVATE

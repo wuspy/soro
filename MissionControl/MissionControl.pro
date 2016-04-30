@@ -25,7 +25,9 @@ SOURCES += \
     ../shared/Soro/mbedchannel.cpp \
     missioncontrolprocess.cpp \
     setupdialog.cpp \
-    clickablelabel.cpp
+    clickablelabel.cpp \
+    ../shared/Soro/flycapcamerasource.cpp
+    ../shared/Soro/videoserver.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -44,7 +46,10 @@ HEADERS  += \
     ../shared/Soro/masterarmconfig.h \
     missioncontrolprocess.h \
     setupdialog.h \
-    clickablelabel.h
+    clickablelabel.h \
+    ../shared/Soro/videoserver.h \
+    ../shared/Soro/videoencoding.h \
+    ../shared/Soro/flycapcamerasource.h
 
 FORMS    += \
     soromainwindow.ui \
@@ -57,27 +62,9 @@ RESOURCES += \
 INCLUDEPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro
 
-#glfw (libglfw3-dev)
-
-#win32: {
-#    LIBS += -L$$PWD/../build-glfw-3.1.2.bin.WIN32/lib-vc2015/ -lglfw3
-#    INCLUDEPATH += $$PWD/../glfw-3.1.2/include
-#    DEPENDPATH += $$PWD/../glfw-3.1.2/include
-#    #necessary libs
-#    LIBS += -lkernel32 -luser32 -lwinspool -lshell32 -lglu32 -lgdi32 -lopengl32
-#}
-#macx: {
-#    LIBS += -L$$PWD/../build-glfw-3.1.2.bin.MACX/ -lglfw
-#    INCLUDEPATH += $$PWD/../glfw-3.1.2/include
-#    DEPENDPATH += $$PWD/../glfw-3.1.2/include
-#}
-#else:unix: LIBS += -lglfw
-
-#SDL (libsdl2-dev)
+#Ubuntu dependencies: libsdl2-dev gstreamer-1.0* libqt5gstreamer*
 win32: {
     LIBS += -lkernel32 -luser32 -lwinspool -lshell32 -lglu32 -lgdi32 -lopengl32
 }
-LIBS += -lSDL2
+LIBS += -lSDL2 -lflycapture -lQt5GStreamer -lQt5GStreamerUi -lQt5GStreamerUtils
 
-#vlc-qt (ppa:ntadej/tano libvlc-qt-core2 libvlc-qt-widgets2 libvlc-qt-dbg libvlc-qt-dev on ubuntu)
-#unix: LIBS += -lvlc -lVLCQtCore -lVLCQtWidgets
