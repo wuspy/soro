@@ -23,6 +23,9 @@ const char *_tag_DriveMbedPort = "DriveMbedPort";
 const char *_tag_GimbalMbedPort = "GimbalMbedPort";
 const char *_tag_MasterArmPort = "MasterArmPort";
 const char *_tag_McSubnetBroadcastPort = "McSubnetBroadcastPort";
+const char *_tag_ArmCameraDevice = "ArmCameraDevice";
+const char *_tag_ArmCameraDevice = "DriveCameraDevice";
+const char *_tag_ArmCameraDevice = "GimbalCameraDevice";
 
 namespace Soro {
 
@@ -131,6 +134,9 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     MasterArmPort = tmp;
+    armCameraDevice = configParser.value(_tag_ArmCameraDevice);
+    driveCameraDevice = configParser.value(_tag_DriveCameraDevice);
+    gimbalCameraDevice = configParser.value(_tag_GimbalCameraDevice);
     return true;
 }
 

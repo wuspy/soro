@@ -13,7 +13,9 @@ RoverProcess::RoverProcess(QObject *parent) : QObject(parent) {
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
     LOG_I("Starting up...");
-
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
     //Must initialize from the event loop
     START_TIMER(_initTimerId, 1);
 }
@@ -23,6 +25,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
     if (e->timerId() == _initTimerId) {
         KILL_TIMER(_initTimerId); //single shot
 
+        LOG_I("**************Loading configuration from soro.ini****************");
         QString err = QString::null;
         if (!_soroIniConfig.load(&err)) {
             LOG_E(err);
@@ -32,6 +35,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         LOG_I("Configuration has been loaded successfully");
 
         if (_soroIniConfig.ServerSide == SoroIniLoader::RoverEndPoint) {
+            LOG_I("***********Initializing core network system as server**************");
             //we are the server
             _armChannel = new Channel(this, _soroIniConfig.ArmChannelPort, CHANNEL_NAME_ARM,
                                       Channel::UdpProtocol, QHostAddress::Any, _log);
@@ -43,6 +47,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                                       Channel::TcpProtocol, QHostAddress::Any, _log);
         }
         else {
+            LOG_I("***********Initializing core network system as client**************");
             //mission control is the server
             _armChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
                                       Channel::UdpProtocol, QHostAddress::Any, _log);
@@ -72,6 +77,13 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         }
         LOG_I("All network channels initialized successfully");
 
+        _armChannel->open();
+        _driveChannel->open();
+        _gimbalChannel->open();
+        _sharedChannel->open();
+
+        LOG_I("*****************Initializing MBED systems*******************");
+
         //create mbed channels
         _armControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.ArmMbedPort), MBED_ID_ARM, this, _log);
         _driveControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.DriveMbedPort), MBED_ID_DRIVE, this, _log);
@@ -96,12 +108,31 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
                  this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
 
-        _armChannel->open();
-        _driveChannel->open();
-        _gimbalChannel->open();
-        _sharedChannel->open();
+        LOG_I("*****************Initializing GPS system*******************");
 
         _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, 5499), _log);
+
+        LOG_I("*****************Initializing Video system*******************");
+
+        LOG_I("Searching for flycapture cameras");
+        FlycapEnumerator flycapEnum;
+        int count = flycapEnum.loadCameras(_log);
+        if (count > 0) {
+            if (_soroIniConfig.armCameraDevice.startsWith("FlyCapture2"), Qt::CaseInsensitive) {
+                bool success;
+                unsigned int serial = _soroIniConfig.armCameraDevice.mid(_soroIniConfig.armCameraDevice.indexOf("/") + 1).toUInt(&success);
+                if (!success) {
+                    LOG_E("Cannot parse flycapture serial number for ArmCameraDevice");
+                }
+            }
+            else if (_soroIniConfig.armCameraDevice.startsWith("UVD", Qt::CaseInsensitive)) {
+
+            }
+        }
+        else {
+            LOG_E("No flycapture cameras were found, video will NOT WORK!!!!!");
+        }
+
 
         LOG_I("Waiting for connections...");
     }

@@ -17,6 +17,8 @@
 #include "gpsserver.h"
 #include "videoserver.h"
 #include "videoencoding.h"
+#include "flycapenumerator.h"
+#include "flycapsource.h"
 
 #include <Qt5GStreamer/QGst/Element>
 #include <Qt5GStreamer/QGst/ElementFactory>
@@ -35,16 +37,22 @@ public:
 
 private:
     Logger *_log = NULL;
+
     Channel *_armChannel = NULL;
     Channel *_driveChannel = NULL;
     Channel *_gimbalChannel = NULL;
     Channel *_sharedChannel = NULL;
-    VideoServer *_video1Server = NULL;
-    VideoServer *_video2Server = NULL;
+
+    VideoServer *_armVideoServer = NULL;
+    VideoServer *_driveVideoServer = NULL;
+    VideoServer *_gimbalVideoServer = NULL;
 
     MbedChannel *_armControllerMbed = NULL;
     MbedChannel *_driveControllerMbed = NULL;
     MbedChannel *_gimbalControllerMbed = NULL;
+
+    QList<FlycapSource*> _flycaptureCameras;
+
     GpsServer *_gpsServer = NULL;
 
     SoroIniLoader _soroIniConfig;
