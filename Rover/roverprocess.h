@@ -15,6 +15,11 @@
 #include "gimbalmessage.h"
 #include "socketaddress.h"
 #include "gpsserver.h"
+#include "videoserver.h"
+#include "videoencoding.h"
+
+#include <Qt5GStreamer/QGst/Element>
+#include <Qt5GStreamer/QGst/ElementFactory>
 
 using namespace Soro;
 
@@ -34,6 +39,9 @@ private:
     Channel *_driveChannel = NULL;
     Channel *_gimbalChannel = NULL;
     Channel *_sharedChannel = NULL;
+    VideoServer *_video1Server = NULL;
+    VideoServer *_video2Server = NULL;
+
     MbedChannel *_armControllerMbed = NULL;
     MbedChannel *_driveControllerMbed = NULL;
     MbedChannel *_gimbalControllerMbed = NULL;
@@ -53,7 +61,7 @@ protected:
     void timerEvent(QTimerEvent *e);
 };
 
-}
-}
+} // namespace Rover
+} // namespace Soro
 
 #endif // ARMNETWORKINTERFACE_H

@@ -4,10 +4,13 @@
 #include "setupdialog.h"
 #include "soro_global.h"
 
+#include <Qt5GStreamer/QGst/Init>
+
 using namespace Soro::MissionControl;
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
+    QGst::init();
 
     SetupDialog dialog;
     if (dialog.exec() == QDialog::Accepted) {

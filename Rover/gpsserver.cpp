@@ -4,7 +4,8 @@
 
 #define RECOVERY_DELAY 500
 
-using namespace Soro;
+namespace Soro {
+namespace Rover {
 
 GpsServer::GpsServer(QObject *parent, SocketAddress hostAddress, Logger *log) : QObject(parent) {
     _socket = new QUdpSocket(this);
@@ -63,3 +64,5 @@ void GpsServer::timerEvent(QTimerEvent *e) {
     }
 }
 
+} // namespace Rover
+} // namespace Soro

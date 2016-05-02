@@ -16,7 +16,11 @@ SOURCES += main.cpp \
     ../shared/Soro/soroini.cpp \
     gpsserver.cpp \
     ../shared/Soro/mbedchannel.cpp \
-    roverprocess.cpp
+    roverprocess.cpp \
+    flycapenumerator.cpp \
+    cameraenumerator.cpp \
+    flycapsource.cpp \
+    videoserver.cpp
 
 HEADERS += \
     ../shared/Soro/armmessage.h \
@@ -30,8 +34,14 @@ HEADERS += \
     ../shared/Soro/soroini.h \
     gpsserver.h \
     ../shared/Soro/mbedchannel.h \
-    roverprocess.h
+    roverprocess.h \
+    ../shared/Soro/videoencoding.h \
+    flycapenumerator.h \
+    cameraenumerator.h \
+    flycapsource.h \
+    videoserver.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro
 
+LIBS += -lflycapture -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0

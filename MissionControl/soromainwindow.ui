@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>550</width>
+    <width>950</width>
     <height>597</height>
    </rect>
   </property>
@@ -432,9 +432,43 @@ background: rgba(0, 0, 0, 0);</string>
     <zorder>line</zorder>
     <zorder>connectionStatusWidget</zorder>
    </widget>
+   <widget class="QWidget" name="videoContainer" native="true">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>0</y>
+      <width>401</width>
+      <height>601</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="Soro::MissionControl::VideoStreamWidget" name="topVideoWidget" native="true"/>
+     </item>
+     <item>
+      <widget class="Soro::MissionControl::VideoStreamWidget" name="bottomVideoWidget" native="true"/>
+     </item>
+    </layout>
+   </widget>
    <zorder>googleMapView</zorder>
    <zorder>statusBarWidget</zorder>
    <zorder>infoContainer</zorder>
+   <zorder>videoContainer</zorder>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
@@ -443,6 +477,12 @@ background: rgba(0, 0, 0, 0);</string>
    <class>Soro::MissionControl::GoogleMapView</class>
    <extends>QWidget</extends>
    <header>googlemapview.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Soro::MissionControl::VideoStreamWidget</class>
+   <extends>QWidget</extends>
+   <header>videostreamwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

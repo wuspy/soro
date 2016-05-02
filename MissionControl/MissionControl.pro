@@ -26,8 +26,8 @@ SOURCES += \
     missioncontrolprocess.cpp \
     setupdialog.cpp \
     clickablelabel.cpp \
-    ../shared/Soro/flycapcamerasource.cpp
-    ../shared/Soro/videoserver.cpp
+    videostreamwidget.cpp \
+    videoclient.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -47,9 +47,9 @@ HEADERS  += \
     missioncontrolprocess.h \
     setupdialog.h \
     clickablelabel.h \
-    ../shared/Soro/videoserver.h \
     ../shared/Soro/videoencoding.h \
-    ../shared/Soro/flycapcamerasource.h
+    videostreamwidget.h \
+    videoclient.h
 
 FORMS    += \
     soromainwindow.ui \
@@ -66,5 +66,5 @@ DEPENDPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro
 win32: {
     LIBS += -lkernel32 -luser32 -lwinspool -lshell32 -lglu32 -lgdi32 -lopengl32
 }
-LIBS += -lSDL2 -lflycapture -lQt5GStreamer -lQt5GStreamerUi -lQt5GStreamerUtils
+LIBS += -lSDL2 -lflycapture -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
 

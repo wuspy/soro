@@ -1,0 +1,106 @@
+#ifndef VIDEOSERVER_H
+#define VIDEOSERVER_H
+
+#include <QObject>
+#include <QUdpSocket>
+
+#include <Qt5GStreamer/QGst/Ui/VideoWidget>
+#include <Qt5GStreamer/QGst/Pipeline>
+#include <Qt5GStreamer/QGst/Element>
+#include <Qt5GStreamer/QGst/ElementFactory>
+#include <Qt5GStreamer/QGst/Bin>
+#include <Qt5GStreamer/QGst/Bus>
+#include <Qt5GStreamer/QGlib/RefPointer>
+#include <Qt5GStreamer/QGlib/Error>
+#include <Qt5GStreamer/QGlib/Connect>
+#include <Qt5GStreamer/QGst/Message>
+
+#include "socketaddress.h"
+#include "soro_global.h"
+#include "videoencoding.h"
+#include "logger.h"
+#include "channel.h"
+
+namespace Soro {
+namespace Rover {
+
+class VideoServer : public QObject {
+    Q_OBJECT
+public:
+    enum State {
+        /* The server is not configured to send any video stream. This
+         * is the initial state and will be the state again after a call to stop().
+         * A client may or may not be connected at this point, but there is no
+         * video to send in either case.
+         */
+        UnconfiguredState,
+
+        /* The server is configured for a video stream and is waiting for a client
+         * to connect so it can receive the stream. No pipeline or stream will
+         * be created until after a client is successfully connected.
+         */
+        WaitingState,
+
+        /* The server is configured and currently streaming video to a client.
+         */
+        StreamingState
+    };
+
+    explicit VideoServer(QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+
+    /* Configure the server for a new video stream. The stream will begin as soon as a
+     * client connects, and will begin again for any subsequent connections in the event
+     * a client disconnects.
+     */
+    void configure(QGst::ElementPtr cameraSource, const StreamFormat *format);
+
+    /* Stop and unconfigure the video server. A client can still remain connected,
+     * however it will receive no video until configure() is called again.
+     */
+    void stop();
+
+private:
+
+    Logger *_log = NULL;
+    QString _name;
+    SocketAddress _host;
+    QGst::PipelinePtr _pipeline;
+    QGst::ElementPtr _camera;
+    QGst::BinPtr _streamer;
+    Channel *_controlChannel = NULL;
+    QUdpSocket *_videoSocket = NULL;
+    const StreamFormat *_format = NULL;
+    State _state = UnconfiguredState;
+    int _sendStreamReadyTimerId = TIMER_INACTIVE;
+
+    /* Begins streaming video to the provided address.
+     * This will fail if the stream is not in WaitingState
+     */
+    void beginStream(SocketAddress address);
+    /* Resets the stream pipeline and releases all elements
+     * except the source camera. This does not alter the server
+     * state in itself.
+     */
+    void resetPipeline();
+    /* Internal state change method
+     */
+    void setState(VideoServer::State state);
+
+private slots:
+    void onBusMessage(const QGst::MessagePtr & message);
+    void videoSocketReadyRead();
+    void clientChanged(SocketAddress client);
+
+signals:
+    void stateChanged(VideoServer::State state);
+    void eos();
+    void error(QString message);
+
+protected:
+    void timerEvent(QTimerEvent *e);
+};
+
+} // namespace Rover
+} // namespace Soro
+
+#endif // VIDEOSERVER_H

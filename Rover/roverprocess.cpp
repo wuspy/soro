@@ -2,7 +2,8 @@
 
 #define LOG_TAG "Rover"
 
-using namespace Soro::Rover;
+namespace Soro {
+namespace Rover {
 
 RoverProcess::RoverProcess(QObject *parent) : QObject(parent) {
     _log = new Logger(this);
@@ -153,3 +154,6 @@ RoverProcess::~RoverProcess() {
     if (_armControllerMbed != NULL) delete _gimbalControllerMbed;
     if (_gpsServer != NULL) delete _gpsServer;
 }
+
+} // namespace Rover
+} // namespace Soro

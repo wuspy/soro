@@ -16,6 +16,7 @@ SoroMainWindow::SoroMainWindow(QHostAddress mainHost, QHostAddress videoHost, QH
     ui->setupUi(this);
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
+    addWidgetShadow(ui->videoContainer, 10, 0);
 
     _controller = new MissionControlProcess(mainHost, videoHost, localLanHost, masterArmHost, masterSubnetNode, role, this);
     connect(_controller, SIGNAL(error(QString)),
@@ -223,12 +224,14 @@ void SoroMainWindow::timerEvent(QTimerEvent *e) {
 
 void SoroMainWindow::resizeEvent(QResizeEvent* event) {
    QMainWindow::resizeEvent(event);
-   ui->infoContainer->resize(width(), ui->infoContainer->height());
+   ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
    ui->googleMapView->move(0, ui->infoContainer->height());
-   ui->statusBarWidget->resize(width(), 30);
+   ui->statusBarWidget->resize(width() / 2, 30);
    ui->statusBarWidget->move(0, height() - 30);
-   ui->googleMapView->resize(width() + 2,
+   ui->googleMapView->resize(width() / 2 + 2,
                              height() - ui->statusBarWidget->height() - ui->infoContainer->height() + 1);
+   ui->videoContainer->move(width() / 2, 0);
+   ui->videoContainer->resize(width() / 2, height());
 }
 
 void SoroMainWindow::keyPressEvent(QKeyEvent *e) {

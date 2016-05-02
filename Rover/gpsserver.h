@@ -11,6 +11,7 @@
 #include "latlng.h"
 
 namespace Soro {
+namespace Rover {
 
 class GpsServer : public QObject {
     Q_OBJECT
@@ -38,6 +39,7 @@ protected:
     void timerEvent(QTimerEvent *e);
 };
 
-}
+} // namespace Rover
+} // namespace Soro
 
 #endif // GPSSERVER_H
