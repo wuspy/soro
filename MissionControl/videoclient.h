@@ -7,6 +7,7 @@
 
 #include "soro_global.h"
 #include "channel.h"
+#include "socketaddress.h"
 #include "videoencoding.h"
 
 namespace Soro {
@@ -28,26 +29,31 @@ public:
 
     /* Gets the format of the stream currently being received
      */
-    const StreamFormat* getStreamFormat();
+    VideoEncoding getEncoding();
 
     VideoClient::State getState();
 
 signals:
     void stateChanged(VideoClient::State state);
     void serverEos();
-    void serverError(QString description);
+    void serverError();
+    void statisticsUpdate(long bitrate);
+    void stopped();
 
 private:
-    char _buffer[65536];
+    char *_buffer;
     QString _name;
     SocketAddress _server;
     Logger *_log;
     State _state = ConnectingState;
-    StreamFormat *_streamFormat = NULL;
+    VideoEncoding _encoding = UNKNOWN;
     QUdpSocket *_videoSocket;
     Channel *_controlChannel;
     int _punchTimerId = TIMER_INACTIVE;
+    int _calculateBitrateTimerId = TIMER_INACTIVE;
     QList<SocketAddress> _forwardAddresses;
+    long _bitCount = 0;
+    int _lastBitrate = 0;
 
     void setState(State state);
 

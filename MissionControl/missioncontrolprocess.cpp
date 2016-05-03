@@ -23,6 +23,7 @@ MissionControlProcess::MissionControlProcess(VideoStreamWidget *topVideo, VideoS
     _log = new Logger(this);
     _log->setLogfile(QCoreApplication::applicationDirPath() + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm_AP") + ".log");
     _log->RouteToQtLogger = true;
+    _log->MaxQtLoggerLevel = LOG_LEVEL_DEBUG;
 }
 
 void MissionControlProcess::init() {
@@ -171,17 +172,48 @@ void MissionControlProcess::init() {
 
     if (_masterNode) {
         LOG_I("Creating video clients");
-        _armVideoClient = new VideoClient(VIDEOSTREAM_NAME_ARM, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.ArmVideoPort), QHostAddress::Any, _log, this);
-        _driveVideoClient = new VideoClient(VIDEOSTREAM_NAME_DRIVE, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.DriveVideoPort), QHostAddress::Any, _log, this);
-        _gimbalVideoClient = new VideoClient(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.GimbalVideoPort), QHostAddress::Any, _log, this);
-        _fisheyeVideoClient = new VideoClient(VIDEOSTREAM_NAME_FISHEYE, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FisheyeVideoPort), QHostAddress::Any, _log, this);
+        _armVideoClient = new VideoClient(VIDEOSTREAM_NAME_ARM, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmVideoPort), QHostAddress::Any, _log, this);
+        _driveVideoClient = new VideoClient(VIDEOSTREAM_NAME_DRIVE, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveVideoPort), QHostAddress::Any, _log, this);
+        _gimbalVideoClient = new VideoClient(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalVideoPort), QHostAddress::Any, _log, this);
+        _fisheyeVideoClient = new VideoClient(VIDEOSTREAM_NAME_FISHEYE, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.FisheyeVideoPort), QHostAddress::Any, _log, this);
 
-        //_topVideoWidget->configure(SocketAddress(QHostAddress::LocalHost, _soroIniConfig.GimbalVideoPort), VideoEncoding::MJPEG);
+        connect(_gimbalVideoClient, SIGNAL(serverError()),
+                this, SLOT(gimbalVideoClientError()));
+        connect(_gimbalVideoClient, SIGNAL(serverEos()),
+                this, SLOT(gimbalVideoClientEos()));
+        connect(_gimbalVideoClient, SIGNAL(stateChanged(VideoClient::State)),
+                this, SLOT(gimbalVideoClientStateChanged(VideoClient::State)));
+        connect(_gimbalVideoClient, SIGNAL(stopped()),
+                this, SLOT(gimbalVideoClientStop()));
+
         _gimbalVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _soroIniConfig.GimbalVideoPort));
     }
     else {
 
     }
+}
+
+void MissionControlProcess::gimbalVideoClientEos() {
+     _topVideoWidget->endStream("This stream is over.");
+}
+
+void MissionControlProcess::gimbalVideoClientError() {
+     _topVideoWidget->endStream("This rover experienced an error.");
+}
+
+void MissionControlProcess::gimbalVideoClientStateChanged(VideoClient::State state) {
+    switch (state) {
+    case VideoClient::StreamingState:
+        _topVideoWidget->configure(SocketAddress(QHostAddress::LocalHost, _soroIniConfig.GimbalVideoPort), VideoEncoding::MJPEG);
+        break;
+    case VideoClient::ConnectingState:
+        _topVideoWidget->endStream("Connection to the rover has been lost.");
+        break;
+    }
+}
+
+void MissionControlProcess::gimbalVideoClientStop() {
+    _topVideoWidget->endStream("This stream has been turned off.");
 }
 
 void MissionControlProcess::broadcastSocketReadyRead() {
@@ -244,6 +276,7 @@ void MissionControlProcess::nodeSharedChannelMessageReceived(const char *message
 }
 
 void MissionControlProcess::slaveSharedChannelStateChanged(Channel::State state) {
+    LOG_D("slaveSharedChannelStateChanged()");
     switch (state) {
     case Channel::ConnectedState:
         //connected to the master mission control, stop broadcasting
@@ -355,6 +388,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
  * the gamepad map file.
  */
 void MissionControlProcess::initSDL() {
+    LOG_D("initSDL()");
     if (!_sdlInitialized) {
         LOG_I("Input mode set to use SDL");
         if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
@@ -377,6 +411,7 @@ void MissionControlProcess::initSDL() {
 /* Facade for SDL_Quit that cleans up some things here as well
  */
 void MissionControlProcess::quitSDL() {
+    LOG_D("quitSDL()");
     if (_sdlInitialized) {
         SDL_Quit();
         _gameController = NULL;
@@ -385,6 +420,7 @@ void MissionControlProcess::quitSDL() {
 }
 
 void MissionControlProcess::arm_masterArmMessageReceived(const char *message, int size) {
+    LOG_D("arm_masterArmMessageReceived()");
     memcpy(_buffer, message, size);
     //translate message from master pot values to slave servo values
     ArmMessage::translateMasterArmValues(_buffer, _masterArmRanges);
@@ -402,6 +438,7 @@ void MissionControlProcess::arm_masterArmMessageReceived(const char *message, in
 
 
 void MissionControlProcess::arm_loadMasterArmConfig() {
+    LOG_D("loadMasterArmConfig()");
     if (_role == ArmOperator) {
         QFile masterArmFile(MASTER_ARM_INI_PATH);
         if (_masterArmRanges.load(masterArmFile)) {

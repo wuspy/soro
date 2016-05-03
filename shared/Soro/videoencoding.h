@@ -6,6 +6,7 @@
 namespace Soro {
 
 enum VideoEncoding {
+    UNKNOWN,
     MJPEG,
     MPEG2
 };
