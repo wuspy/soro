@@ -3,8 +3,7 @@
 namespace Soro {
 namespace Rover {
 
-FlycapSource::FlycapSource(FlyCapture2::PGRGuid guid, int framerate, Logger *log, QObject *parent) : QObject(parent) {
-    _framerate = framerate;
+FlycapSource::FlycapSource(FlyCapture2::PGRGuid guid, Logger *log, QObject *parent) : QObject(parent) {
     _log = log;
     LOG_TAG = "FlycapSource(*-" + QString::number(guid.value[3]) + ")";
 
@@ -29,14 +28,6 @@ FlycapSource::FlycapSource(FlyCapture2::PGRGuid guid, int framerate, Logger *log
 
     LOG_I("Camera sensor is " + QString(info.sensorResolution) + " " +  QString(info.sensorInfo));
 
-    // create caps string
-    QString caps = "video/x-raw,format=RGB,"
-                    "width=(int)" + QString::number(_width) + ","
-                    "height=(int)" + QString::number(_height) + ","
-                    "framerate=(fraction)" + QString::number(_framerate) + "/1";
-
-    // configure application source
-    setCaps(QGst::Caps::fromString(caps));
     setLatency(-1, -1);
     setLive(true);
     setStreamType(QGst::AppStreamTypeStream);
@@ -45,7 +36,8 @@ FlycapSource::FlycapSource(FlyCapture2::PGRGuid guid, int framerate, Logger *log
     // start flycapture camera
     _camera.StartCapture();
     _enabled = false;
-    startTimer(1000 / _framerate, Qt::PreciseTimer);
+
+    setFramerate(30); // default
 }
 
 FlycapSource::~FlycapSource() {
@@ -53,6 +45,21 @@ FlycapSource::~FlycapSource() {
         _camera.StopCapture();
         _camera.Disconnect();
     }
+}
+
+void FlycapSource::setFramerate(int framerate) {
+    _framerate = framerate;
+    KILL_TIMER(_captureTimerId);
+    START_TIMER(_captureTimerId, 1000 / _framerate);
+
+    // create caps string
+    QString caps = "video/x-raw,format=RGB,"
+                    "width=(int)" + QString::number(_width) + ","
+                    "height=(int)" + QString::number(_height) + ","
+                    "framerate=(fraction)" + QString::number(_framerate) + "/1";
+
+    // configure application source
+    setCaps(QGst::Caps::fromString(caps));
 }
 
 void FlycapSource::timerEvent(QTimerEvent *e) {

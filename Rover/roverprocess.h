@@ -36,7 +36,7 @@ public:
     ~RoverProcess();
 
 private:
-    const MjpegStreamFormat* MJPEG_FULLRES_15FPS_30Q = new MjpegStreamFormat(0, 0, 15, 30);
+    const MjpegStreamFormat* STREAMFORMAT_720_MJPEG_Q30 = new MjpegStreamFormat(1080, 720, 0, 30);
 
     Logger *_log = NULL;
 

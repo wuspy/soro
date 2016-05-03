@@ -28,13 +28,7 @@ class VideoServer : public QObject {
     Q_OBJECT
 public:
     enum State {
-        /* The server is not configured to send any video stream. This
-         * is the initial state and will be the state again after a call to stop().
-         * A client may or may not be connected at this point, but there is no
-         * video to send in either case.
-         */
-        UnconfiguredState,
-
+        IdleState,
         /* The server is configured for a video stream and is waiting for a client
          * to connect so it can receive the stream. No pipeline or stream will
          * be created until after a client is successfully connected.
@@ -48,16 +42,11 @@ public:
 
     explicit VideoServer(QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
 
-    /* Configure the server for a new video stream. The stream will begin as soon as a
-     * client connects, and will begin again for any subsequent connections in the event
-     * a client disconnects.
-     */
-    void configure(QGst::ElementPtr cameraSource, const StreamFormat *format);
-
-    /* Stop and unconfigure the video server. A client can still remain connected,
-     * however it will receive no video until configure() is called again.
-     */
     void stop();
+
+    void start(QGst::ElementPtr source, const StreamFormat *format);
+
+    ~VideoServer();
 
 private:
 
@@ -66,12 +55,11 @@ private:
     SocketAddress _host;
     QGst::PipelinePtr _pipeline;
     QGst::ElementPtr _camera;
-    QGst::BinPtr _streamer;
     Channel *_controlChannel = NULL;
     QUdpSocket *_videoSocket = NULL;
     const StreamFormat *_format = NULL;
-    State _state = UnconfiguredState;
-    int _sendStreamReadyTimerId = TIMER_INACTIVE;
+    State _state = IdleState;
+    int _startTimerId = TIMER_INACTIVE;
 
     /* Begins streaming video to the provided address.
      * This will fail if the stream is not in WaitingState
@@ -86,10 +74,11 @@ private:
      */
     void setState(VideoServer::State state);
 
+
 private slots:
     void onBusMessage(const QGst::MessagePtr & message);
     void videoSocketReadyRead();
-    void clientChanged(SocketAddress client);
+    void controlChannelStateChanged(Channel::State state);
 
 signals:
     void stateChanged(VideoServer::State state);

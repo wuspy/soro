@@ -2,8 +2,10 @@
 #define FLYCAPSOURCE_H
 
 #include <QObject>
+
 #include <QTimerEvent>
 #include <Qt5GStreamer/QGst/Buffer>
+#include <Qt5GStreamer/QGst/Caps>
 #include <Qt5GStreamer/QGst/Utils/ApplicationSource>
 #include <flycapture/FlyCapture2.h>
 #include <cstring>
@@ -23,7 +25,7 @@ class FlycapSource : public QObject, public QGst::Utils::ApplicationSource {
     Q_OBJECT
 public:
 
-    explicit FlycapSource(FlyCapture2::PGRGuid guid, int framerate, Logger *log = 0, QObject *parent = 0);
+    explicit FlycapSource(FlyCapture2::PGRGuid guid, Logger *log = 0, QObject *parent = 0);
     ~FlycapSource();
 
     const FlyCapture2::Camera* getCamera() const;
@@ -31,11 +33,13 @@ public:
     int getVideoHeight() const;
     int getFramerate() const;
 
+    void setFramerate(int framerate);
+
 private:
     FlyCapture2::CameraInfo _cameraInfo;
     FlyCapture2::Camera _camera;
     int _framerate, _width, _height;
-    int _captureTimerId = -1;
+    int _captureTimerId = TIMER_INACTIVE;
     bool _enabled;
     QString LOG_TAG;
     Logger *_log;

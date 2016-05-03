@@ -7,63 +7,79 @@ namespace Rover {
 
 VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject *parent) : QObject(parent) {
     _name = name;
-    _host = host;
     _log = log;
+    _host = host;
 
     LOG_I("Creating new video server");
 
     _controlChannel = new Channel(this, host.port, name, Channel::TcpProtocol, host.host);
 
-    connect(_controlChannel, SIGNAL(peerAddressChanged(SocketAddress)),
-            this, SLOT(clientChanged(SocketAddress)));
+    connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(controlChannelStateChanged(Channel::State)));
 
-    _controlChannel->setSendAcks(false); // no need for latency calculations
     _controlChannel->open();
 
-    _state = UnconfiguredState;
+    _state = IdleState;
 }
 
-void VideoServer::configure(QGst::ElementPtr cameraSource, const StreamFormat *format) {
-    resetPipeline();
-    if (_camera) {
-        // release any existing camera source
-        _camera.clear();
-    }
-    _camera = cameraSource;
-    _format = format;
-    setState(WaitingState);
-    if (_controlChannel->getState() == Channel::ConnectedState) {
-        LOG_I("Got new stream configuration, beginning pre-stream handshake");
-        START_TIMER(_sendStreamReadyTimerId, 1);
-    }
-    else {
-        LOG_I("Got new stream configuration but no client has connected yet");
-    }
+VideoServer::~VideoServer() {
+    stop();
 }
 
 void VideoServer::stop() {
-    if ((_state == WaitingState) | (_state == StreamingState)) {
-        if (_controlChannel->getState() == Channel::ConnectedState) {
-            LOG_I("Stopping stream by request and notifying client");
-            // notify client of EOS
-            QString message("[eos]");
-            _controlChannel->sendMessage(message.toLatin1().constData(), message.length() + 1);
+    LOG_I("stop() called");
+    resetPipeline();
+    if (_controlChannel->getState() == Channel::ConnectedState) {
+        const char *message = "[stop]";
+        _controlChannel->sendMessage(message, strlen(message) + 1);
+    }
+    if (_videoSocket) {
+        _videoSocket->abort();
+        delete _videoSocket;
+        _videoSocket = NULL;
+    }
+    setState(IdleState);
+}
+
+void VideoServer::start(QGst::ElementPtr source, const StreamFormat *format) {
+    LOG_I("start() called");
+    resetPipeline();
+    _camera = source;
+    _format = format;
+    setState(WaitingState);
+    if (_controlChannel->getState() == Channel::ConnectedState) {
+        if (!_videoSocket) {
+            // create a temporary socket which we will use to determine the client's address
+            _videoSocket = new QUdpSocket(this);
+            if (!_videoSocket->bind(_host.host, _host.port)) {
+                LOG_E("Cannot bind to video port, retrying...");
+                delete _videoSocket;
+                _videoSocket = NULL;
+                START_TIMER(_startTimerId, 500);
+                return;
+            }
+            connect(_videoSocket, SIGNAL(readyRead()),
+                    this, SLOT(videoSocketReadyRead()));
         }
-        resetPipeline();
-        if (_camera) {
-            // release any existing camera source
-            _camera.clear();
-        }
-        _format = NULL;
-        setState(UnconfiguredState);
+        // notify a connected client that there is about to be a stream change
+        // and they should verify their UDP address
+        LOG_I("Sending stream configuration to client");
+        const char *message = "[start]";
+        _controlChannel->sendMessage(message, strlen(message) + 1);
+        // client must respond within a certain time or the process will start again
+        START_TIMER(_startTimerId, 3000);
+    }
+    else {
+        LOG_W("Waiting for client to connect...");
+        START_TIMER(_startTimerId, 500);
     }
 }
 
 void VideoServer::beginStream(SocketAddress address) {
+    LOG_I("Starting stream NOW");
     if (_videoSocket) {
         // unbind and delete the video socket before creating the udpsink
-        LOG_D("Unbinding temporary socket in preparation for new stream");
-        _videoSocket->close();
+        _videoSocket->abort();
         delete _videoSocket;
         _videoSocket = NULL;
     }
@@ -83,7 +99,6 @@ void VideoServer::beginStream(SocketAddress address) {
         caps += ",width=" + QString::number(_format->Width) + ",height=" + QString::number(_format->Height);
     }
     if (_format->Framerate > 0) {
-        binStr += "videorate ! ";
         caps += ",framerate=" + QString::number(_format->Framerate) + "/1";
     }
     binStr += caps;
@@ -98,11 +113,11 @@ void VideoServer::beginStream(SocketAddress address) {
 
     binStr += "udpsink host=" + address.host.toString() + " port=" + QString::number(address.port);
 
-    _streamer = QGst::Bin::fromDescription(binStr);
+    QGst::BinPtr streamer = QGst::Bin::fromDescription(binStr);
 
     // link elements
-    _pipeline->add(_camera, _streamer);
-    _camera->link(_streamer);
+    _pipeline->add(_camera, streamer);
+    _camera->link(streamer);
 
     // play
     LOG_I("Beginning stream");
@@ -110,141 +125,74 @@ void VideoServer::beginStream(SocketAddress address) {
 }
 
 void VideoServer::resetPipeline() {
-    LOG_D("Resetting pipeline...");
     if (_pipeline) {
-        if (_camera && _streamer) {
-            // preserve the camera source element
-            _camera->unlink(_streamer);
-            _pipeline->remove(_camera);
-        }
+        LOG_I("Resetting gstreamer pipeline");
         _pipeline->setState(QGst::StateNull);
-        _streamer->setState(QGst::StateNull);
         _pipeline.clear();
-        _streamer.clear();
     }
+    _camera.clear();
 }
 
 void VideoServer::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
-    if (e->timerId() == _sendStreamReadyTimerId) {
-        if (_state != WaitingState) {
-            LOG_E("sendStreamReadyTimer not started in WaitingState");
-            KILL_TIMER(_sendStreamReadyTimerId);
-            return;
-        }
-        if (!_videoSocket) {
-            // create a temporary socket which we will use to determine the client's address
-            LOG_D("Creating temporary socket to receive client address");
-            _videoSocket = new QUdpSocket(this);
-            if (!_videoSocket->bind(_host.host, _host.port)) {
-                LOG_E("Cannot bind to video port");
-                return;
-            }
-            connect(_videoSocket, SIGNAL(readyRead()),
-                    this, SLOT(videoSocketReadyRead()));
-        }
-        // notify a connected client that there is about to be a stream change
-        // and they should verify their UDP address
-        QString message;
-        switch (_format->encoding()) {
-        case MJPEG:
-            message = QString("[ready]enc=MJPEG,w=%1,h=%2,fps=%3,q=%4")
-                    .arg(_format->Width)
-                    .arg(_format->Height)
-                    .arg(_format->Framerate)
-                    .arg(((MjpegStreamFormat*)_format)->Quality);
-            break;
-        case MPEG2:
-            message = QString("[ready]enc=MPEG2,w=%1,h=%2,fps=%3,q=%4")
-                    .arg(_format->Width)
-                    .arg(_format->Height)
-                    .arg(_format->Framerate)
-                    .arg(((Mpeg2StreamFormat*)_format)->Bitrate);
-            break;
-        }
-        _controlChannel->sendMessage(message.toLatin1().constData(), message.length() + 1);
-        // kill this timer now that the message has been successfully sent
-        KILL_TIMER(_sendStreamReadyTimerId);
-    }
-}
-
-void VideoServer::clientChanged(SocketAddress client) {
-    switch (_state) {
-    case StreamingState:
-        resetPipeline();
-        setState(WaitingState);
-        if (client.host != QHostAddress::Null) {
-            LOG_I("Client has changed while already streaming, starting pre-stream handshake with new client");
-            START_TIMER(_sendStreamReadyTimerId, 500);
-        }
-        else {
-            LOG_I("Client has disconnected mid-stream");
-        }
-        break;
-    case WaitingState:
-        if (client.host != QHostAddress::Null) {
-            LOG_I("Client is connected, starting pre-stream handshake");
-            START_TIMER(_sendStreamReadyTimerId, 500);
-        }
-        else {
-            LOG_I("Client has disconnected");
-        }
-        break;
-    case UnconfiguredState:
-        LOG_I("Client has connected but we have nothing to give them");
-        break;
+    if (e->timerId() == _startTimerId) {
+        KILL_TIMER(_startTimerId);
+        start(_camera, _format);
     }
 }
 
 void VideoServer::videoSocketReadyRead() {
-    if (_state != WaitingState) {
-        LOG_E("Receiving UDP client handshake not in WaitingState");
-        return;
-    }
     SocketAddress peer;
     char buffer[100];
     _videoSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
     if ((strcmp(buffer, _name.toLatin1().constData()) == 0) && _format != NULL) {
         LOG_I("Client has completed handshake on its UDP address");
-        // send the client a message letting them know we are now streaming to their address
-        QString message("[streaming]");
-        _controlChannel->sendMessage(message.toLatin1().constData(), message.length() + 1);
+        KILL_TIMER(_startTimerId);
+        // send the client a message letting them know we are now streaming to their address,
+        // and tell them the encoding we're using also
+        const char *response;
+        switch (_format->encoding()) {
+        case MJPEG:
+            response = "[streaming]enc=MJPEG";
+            break;
+        case MPEG2:
+            response = "[streaming]enc=MPEG2";
+            break;
+        }
+        LOG_I("Sending stream configuration to client");
+        _controlChannel->sendMessage(response, strlen(response) + 1);
         beginStream(peer);
     }
 }
 
-void VideoServer::onBusMessage(const QGst::MessagePtr & message) {
-    if (_state != StreamingState) {
-        LOG_E("Got pipeline bus message not in StreamingState");
-        return;
+void VideoServer::controlChannelStateChanged(Channel::State state) {
+    if (_pipeline && (state != Channel::ConnectedState)) {
+        LOG_W("Lost connection to client, stopping stream");
+        stop();
     }
+}
+
+void VideoServer::onBusMessage(const QGst::MessagePtr & message) {
+    const char *clientMessage;
+    QString errorString;
+
     switch (message->type()) {
     case QGst::MessageEos:
-    {
-        LOG_W("Received EOS message from stream, restarting anyway");
-        resetPipeline();
-        setState(WaitingState);
-        // notify client of the EOS message
-        QString clientMessage("[eos]");
-        _controlChannel->sendMessage(clientMessage.toLatin1().constData(), clientMessage.length() + 1);
-        // resend stream ready signal to client to try to restart the stream
-        START_TIMER(_sendStreamReadyTimerId, 500);
+        LOG_W("Received EOS message from stream, stopping");
+        stop();
+        // notify the client of eos
+        clientMessage = "[eos]";
+        _controlChannel->sendMessage(clientMessage, strlen(clientMessage) + 1);
         emit eos();
-    }
         break;
     case QGst::MessageError:
-    {
-        QString errorString(message.staticCast<QGst::ErrorMessage>()->error().message());
+        errorString = message.staticCast<QGst::ErrorMessage>()->error().message();
         LOG_E("Pipeline error: " + errorString);
-        resetPipeline();
-        setState(WaitingState);
+        stop();
         // notify client of the error
-        QString clientMessage = "[error]" + errorString;
-        _controlChannel->sendMessage(clientMessage.toLatin1().constData(), clientMessage.length() + 1);
-        // resend stream ready signal to client to try to restart the stream
-        START_TIMER(_sendStreamReadyTimerId, 500);
+        clientMessage = "[error]";
+        _controlChannel->sendMessage(clientMessage, strlen(clientMessage) + 1);
         emit error(errorString);
-    }
         break;
     default:
         break;

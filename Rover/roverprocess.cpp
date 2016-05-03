@@ -9,6 +9,7 @@ RoverProcess::RoverProcess(QObject *parent) : QObject(parent) {
     _log = new Logger(this);
     _log->setLogfile(QCoreApplication::applicationDirPath() + "/rover_" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
     _log->RouteToQtLogger = true;
+    _log->MaxQtLoggerLevel = LOG_LEVEL_DEBUG;
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
@@ -98,15 +99,6 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                  this, SLOT(gimbalChannelMessageReceived(const char*, Channel::MessageSize)));
         connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
                  this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
-        //observers for network connectivity changes
-        connect(_armChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-                 this, SLOT(armChannelMessageReceived(const char*, Channel::MessageSize)));
-        connect(_driveChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-                 this, SLOT(driveChannelMessageReceived(const char*, Channel::MessageSize)));
-        connect(_gimbalChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-                 this, SLOT(gimbalChannelMessageReceived(const char*, Channel::MessageSize)));
-        connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-                 this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
 
         LOG_I("*****************Initializing GPS system*******************");
 
@@ -117,40 +109,43 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         LOG_I("Searching for flycapture cameras");
         FlycapEnumerator flycapEnum;
         int flycapCount = flycapEnum.loadCameras(_log);
+
+        LOG_I("Searching for UVD cameras");
         //TODO enumerate UVD cameras
-        if (flycapCount > 0) {
-            if (_soroIniConfig.gimbalCameraDevice.startsWith("FlyCapture2"), Qt::CaseInsensitive) {
-                LOG_I("Gimbal camera is configured as a FLyCapture2 device");
-                bool success;
-                unsigned int serial = _soroIniConfig.gimbalCameraDevice.mid(_soroIniConfig.gimbalCameraDevice.indexOf("/") + 1).toUInt(&success);
-                if (!success) {
-                    LOG_E("Cannot parse flycapture serial number for GimbalCameraDevice");
-                }
-                if (flycapEnum.cameraExists(serial)) {
-                    _gimbalFlycaptureSource = new FlycapSource(flycapEnum.getGUIDForSerial(serial), 15, _log, this);
-                }
+
+        LOG_I("Getting gimbal camera information");
+
+        if (_soroIniConfig.gimbalCameraDevice.startsWith("FlyCapture2", Qt::CaseInsensitive)) {
+            LOG_I("Gimbal camera is configured as a FLyCapture2 device");
+            bool success;
+            unsigned int serial = _soroIniConfig.gimbalCameraDevice.mid(_soroIniConfig.gimbalCameraDevice.indexOf("/") + 1).toUInt(&success);
+            if (!success) {
+                LOG_E("Cannot parse flycapture serial number for GimbalCameraDevice");
             }
-            else if (_soroIniConfig.armCameraDevice.startsWith("UVD", Qt::CaseInsensitive)) {
-                LOG_I("Gimbal camera is configured as a UVD device");
+            if (flycapEnum.cameraExists(serial)) {
+                _gimbalFlycaptureSource = new FlycapSource(flycapEnum.getGUIDForSerial(serial), _log, this);
             }
+            else {
+                LOG_E("Could not locate the gimbal camera by seria number");
+            }
+        }
+        else if (_soroIniConfig.armCameraDevice.startsWith("UVD", Qt::CaseInsensitive)) {
+            LOG_I("Gimbal camera is configured as a UVD device");
         }
         else {
-            LOG_E("No flycapture cameras were found, video may NOT WORK!!!!!");
+            LOG_E("Gimbal camera has an invalid device configuration, this camera WILL NOT WORK!!!");
         }
 
-        LOG_I("Creating video servers");
-        _armVideoServer = new VideoServer(VIDEOSTREAM_NAME_ARM, SocketAddress(QHostAddress::Any, _soroIniConfig.ArmVideoPort), _log, this);
-        _driveVideoServer = new VideoServer(VIDEOSTREAM_NAME_DRIVE, SocketAddress(QHostAddress::Any, _soroIniConfig.DriveVideoPort), _log, this);
-        _gimbalVideoServer = new VideoServer(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalVideoPort), _log, this);
-        _fisheyeVideoServer = new VideoServer(VIDEOSTREAM_NAME_FISHEYE, SocketAddress(QHostAddress::Any, _soroIniConfig.FisheyeVideoPort), _log, this);
-
-        LOG_I("Configuring default video streams");
+        LOG_I("Configuring gimbal video");
         if (_gimbalFlycaptureSource) {
-            _gimbalVideoServer->configure(_gimbalFlycaptureSource->element(), MJPEG_FULLRES_15FPS_30Q);
+            _gimbalVideoServer = new VideoServer(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalVideoPort), _log, this);
         }
         else {
             //TODO
         }
+
+        LOG_I("Starting video streams");
+        _gimbalVideoServer->start(_gimbalFlycaptureSource->element(), STREAMFORMAT_720_MJPEG_Q30);
 
         LOG_I("Waiting for connections...");
     }
