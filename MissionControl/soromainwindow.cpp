@@ -8,8 +8,7 @@
 namespace Soro {
 namespace MissionControl {
 
-SoroMainWindow::SoroMainWindow(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHost, QHostAddress masterArmHost,
-                               bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent) :
+SoroMainWindow::SoroMainWindow(bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SoroMainWindow) {
 
@@ -18,7 +17,7 @@ SoroMainWindow::SoroMainWindow(QHostAddress mainHost, QHostAddress videoHost, QH
     addWidgetShadow(ui->infoContainer, 10, 0);
     addWidgetShadow(ui->videoContainer, 10, 0);
 
-    _controller = new MissionControlProcess(mainHost, videoHost, localLanHost, masterArmHost, masterSubnetNode, role, this);
+    _controller = new MissionControlProcess(ui->topVideoWidget, ui->bottomVideoWidget, masterSubnetNode, role, this);
     connect(_controller, SIGNAL(error(QString)),
             this, SLOT(controllerError(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(warning(QString)),

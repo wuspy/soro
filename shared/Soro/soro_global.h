@@ -16,6 +16,11 @@
 #define CHANNEL_NAME_GIMBAL "Soro_GimbalChannel"
 #define CHANNEL_NAME_SHARED "Soro_SharedTcpChannel"
 
+#define VIDEOSTREAM_NAME_ARM "Arm Camera"
+#define VIDEOSTREAM_NAME_DRIVE "Drive Camera"
+#define VIDEOSTREAM_NAME_GIMBAL "Gimbal Camera"
+#define VIDEOSTREAM_NAME_FISHEYE "Fisheye Camera"
+
 #ifdef QT_WIDGETS_LIB ///////////////////////////////////////////////////////////////////////////////
 
 #include <QWidget>

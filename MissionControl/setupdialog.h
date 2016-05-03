@@ -25,28 +25,29 @@ public:
     ~SetupDialog();
     MissionControlProcess::Role getSelectedRole() const;
     bool getIsMasterNode() const;
-    QHostAddress getSelectedMainHost() const;
+    /*QHostAddress getSelectedMainHost() const;
     QHostAddress getSelectedVideoHost() const;
     QHostAddress getSelectedLocalLanHost() const;
-    QHostAddress getSelectedMasterArmHost() const;
+    QHostAddress getSelectedMasterArmHost() const;*/
 
 private:
     Ui::SetupDialog *ui;
     MissionControlProcess::Role _role;
     bool _masterNode = false;
-    QMap<QString, QHostAddress> _hosts;
+    /*QMap<QString, QHostAddress> _hosts;
     int _mainHostCurrentIndex = 0, _videoHostCurrentIndex = 0,
-        _localLanHostCurrentIndex = 0, _masterArmHostCurrentIndex = 0;
+        _localLanHostCurrentIndex = 0, _masterArmHostCurrentIndex = 0;*/
+
 private slots:
     void armOperatorClicked();
     void driverClicked();
     void cameraOperatorClicked();
     void spectatorClicked();
     void masterCheckBoxToggled(bool checked);
-    void mainHostCurrentIndexChanged(int index);
+    /*void mainHostCurrentIndexChanged(int index);
     void videoHostCurrentIndexChanged(int index);
     void masterArmHostCurrentIndexChanged(int index);
-    void localLanHostCurrentIndexChanged(int index);
+    void localLanHostCurrentIndexChanged(int index);*/
 };
 
 }

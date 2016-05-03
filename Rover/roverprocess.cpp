@@ -116,23 +116,41 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         LOG_I("Searching for flycapture cameras");
         FlycapEnumerator flycapEnum;
-        int count = flycapEnum.loadCameras(_log);
-        if (count > 0) {
-            if (_soroIniConfig.armCameraDevice.startsWith("FlyCapture2"), Qt::CaseInsensitive) {
+        int flycapCount = flycapEnum.loadCameras(_log);
+        //TODO enumerate UVD cameras
+        if (flycapCount > 0) {
+            if (_soroIniConfig.gimbalCameraDevice.startsWith("FlyCapture2"), Qt::CaseInsensitive) {
+                LOG_I("Gimbal camera is configured as a FLyCapture2 device");
                 bool success;
-                unsigned int serial = _soroIniConfig.armCameraDevice.mid(_soroIniConfig.armCameraDevice.indexOf("/") + 1).toUInt(&success);
+                unsigned int serial = _soroIniConfig.gimbalCameraDevice.mid(_soroIniConfig.gimbalCameraDevice.indexOf("/") + 1).toUInt(&success);
                 if (!success) {
-                    LOG_E("Cannot parse flycapture serial number for ArmCameraDevice");
+                    LOG_E("Cannot parse flycapture serial number for GimbalCameraDevice");
+                }
+                if (flycapEnum.cameraExists(serial)) {
+                    _gimbalFlycaptureSource = new FlycapSource(flycapEnum.getGUIDForSerial(serial), 15, _log, this);
                 }
             }
             else if (_soroIniConfig.armCameraDevice.startsWith("UVD", Qt::CaseInsensitive)) {
-
+                LOG_I("Gimbal camera is configured as a UVD device");
             }
         }
         else {
-            LOG_E("No flycapture cameras were found, video will NOT WORK!!!!!");
+            LOG_E("No flycapture cameras were found, video may NOT WORK!!!!!");
         }
 
+        LOG_I("Creating video servers");
+        _armVideoServer = new VideoServer(VIDEOSTREAM_NAME_ARM, SocketAddress(QHostAddress::Any, _soroIniConfig.ArmVideoPort), _log, this);
+        _driveVideoServer = new VideoServer(VIDEOSTREAM_NAME_DRIVE, SocketAddress(QHostAddress::Any, _soroIniConfig.DriveVideoPort), _log, this);
+        _gimbalVideoServer = new VideoServer(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalVideoPort), _log, this);
+        _fisheyeVideoServer = new VideoServer(VIDEOSTREAM_NAME_FISHEYE, SocketAddress(QHostAddress::Any, _soroIniConfig.FisheyeVideoPort), _log, this);
+
+        LOG_I("Configuring default video streams");
+        if (_gimbalFlycaptureSource) {
+            _gimbalVideoServer->configure(_gimbalFlycaptureSource->element(), MJPEG_FULLRES_15FPS_30Q);
+        }
+        else {
+            //TODO
+        }
 
         LOG_I("Waiting for connections...");
     }

@@ -22,7 +22,7 @@ SetupDialog::SetupDialog(QWidget *parent) :
             this, SLOT(masterCheckBoxToggled(bool)));
 
     //populate network hosts
-    QList<QNetworkInterface> all = QNetworkInterface::allInterfaces();
+    /*QList<QNetworkInterface> all = QNetworkInterface::allInterfaces();
     _hosts.insert("Default", QHostAddress::Any); //add default option
     foreach (QNetworkInterface iface, all) {
         unsigned int flags = iface.flags();
@@ -57,7 +57,7 @@ SetupDialog::SetupDialog(QWidget *parent) :
     connect(ui->localLanHostComboBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(localLanHostCurrentIndexChanged(int)));
     connect(ui->masterArmHostComboBox, SIGNAL(currentIndexChanged(int)),
-            this, SLOT(masterArmHostCurrentIndexChanged(int)));
+            this, SLOT(masterArmHostCurrentIndexChanged(int)));*/
 }
 
 SetupDialog::~SetupDialog() {
@@ -88,7 +88,7 @@ void SetupDialog::masterCheckBoxToggled(bool checked) {
     _masterNode = checked;
 }
 
-void SetupDialog::mainHostCurrentIndexChanged(int index) {
+/*void SetupDialog::mainHostCurrentIndexChanged(int index) {
     _mainHostCurrentIndex = index;
 }
 
@@ -118,7 +118,7 @@ QHostAddress SetupDialog::getSelectedLocalLanHost() const {
 
 QHostAddress SetupDialog::getSelectedMasterArmHost() const {
     return _hosts.values()[_masterArmHostCurrentIndex];
-}
+}*/
 
 
 MissionControlProcess::Role SetupDialog::getSelectedRole() const {

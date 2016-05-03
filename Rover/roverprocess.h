@@ -36,6 +36,8 @@ public:
     ~RoverProcess();
 
 private:
+    const MjpegStreamFormat* MJPEG_FULLRES_15FPS_30Q = new MjpegStreamFormat(0, 0, 15, 30);
+
     Logger *_log = NULL;
 
     Channel *_armChannel = NULL;
@@ -45,13 +47,24 @@ private:
 
     VideoServer *_armVideoServer = NULL;
     VideoServer *_driveVideoServer = NULL;
+    VideoServer *_fisheyeVideoServer = NULL;
     VideoServer *_gimbalVideoServer = NULL;
 
     MbedChannel *_armControllerMbed = NULL;
     MbedChannel *_driveControllerMbed = NULL;
     MbedChannel *_gimbalControllerMbed = NULL;
 
-    QList<FlycapSource*> _flycaptureCameras;
+    // these hold the gst elements for the cameras that are flycapture sources
+    FlycapSource *_armFlycaptureSource = NULL;
+    FlycapSource *_driveFlycaptureSource = NULL;
+    FlycapSource *_gimbalFlycaptureSource = NULL;
+    FlycapSource *_fisheyeFlycaptureSource = NULL;
+
+    // these hold the gst elements for the cameras that are V4L2 sources
+    QGst::ElementPtr _armV4L2Source;
+    QGst::ElementPtr _driveV4L2Source;
+    QGst::ElementPtr _gimbalV4L2Source;
+    QGst::ElementPtr _fisheyeV4L2Source;
 
     GpsServer *_gpsServer = NULL;
 

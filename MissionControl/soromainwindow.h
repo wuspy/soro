@@ -20,6 +20,7 @@
 #include "mbedchannel.h"
 #include "latlng.h"
 #include "missioncontrolprocess.h"
+#include "videostreamwidget.h"
 
 namespace Ui {
     class SoroMainWindow;
@@ -32,9 +33,11 @@ namespace MissionControl {
         Q_OBJECT
 
     public:
-        explicit SoroMainWindow(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHost, QHostAddress masterArmHost,
-                                bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent = 0);
+        explicit SoroMainWindow(bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent = 0);
         ~SoroMainWindow();
+
+        VideoStreamWidget getTopVideoWidget();
+
 
     private:
         Ui::SoroMainWindow *ui;

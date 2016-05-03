@@ -20,6 +20,8 @@
 #include "latlng.h"
 #include "masterarmconfig.h"
 #include "soroini.h"
+#include "videostreamwidget.h"
+#include "videoclient.h"
 
 namespace Soro {
 namespace MissionControl {
@@ -35,8 +37,7 @@ public:
         ArmOperator, Driver, CameraOperator, Spectator
     };
 
-    explicit MissionControlProcess(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHosst, QHostAddress masterArmHost,
-                                   bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter = 0);
+    explicit MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo, bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter = 0);
 
     ~MissionControlProcess();
 
@@ -53,35 +54,47 @@ public:
     bool isMasterSubnetNode() const;
 
 private:
-    //used as scratch space for reading gamepad data, master arm data,
-    //subnet broadcasts, etc
+    // Used as scratch space for reading gamepad data, master arm data,
+    // subnet broadcasts, etc
     char _buffer[512];
-    bool _sdlInitialized = false;
+
+    // General configuration
     bool _masterNode;
     MissionControlProcess::Role _role;
-    DriveGamepadMode _driveGamepadMode = DualStick;
-    float _driveMiddleSkidSteerFactor = 0.2; //lower is faster, higher is slower
     Logger *_log = NULL;
-    //used to connect to other mission control computers on the same subnet
-    QUdpSocket *_broadcastSocket = NULL;
-    QHostAddress _mainHost, _videoHost, _localLanHost, _masterArmHost;
 
-    //used to load configuration options
+    // Used to connect to other mission control computers on the same subnet
+    QUdpSocket *_broadcastSocket = NULL;
+
+    // Used to load configuration options
     SoroIniLoader _soroIniConfig;
 
-    //internet communication channels
+    // Internet communication channels
     Channel *_controlChannel = NULL;
     Channel *_sharedChannel = NULL;
     QList<Channel*> _sharedChannelNodes;
 
-    //for joystick control
+    // SDL joystick control stuff
+    bool _sdlInitialized = false;
+    float _driveMiddleSkidSteerFactor = 0.2; //lower is faster, higher is slower
+    DriveGamepadMode _driveGamepadMode = DualStick;
     SDL_GameController *_gameController = NULL;
     int _controlSendTimerId = TIMER_INACTIVE;
     int _inputSelectorTimerId = TIMER_INACTIVE;
     int _broadcastSharedChannelInfoTimerId = TIMER_INACTIVE;
     int _pruneSharedChannelsTimerId = TIMER_INACTIVE;
 
-    //Arm specific stuff
+    // The widgets that display video
+    VideoStreamWidget *_topVideoWidget;
+    VideoStreamWidget *_bottomVideoWidget;
+
+    // These hold the video clients when in master configuration
+    VideoClient *_armVideoClient = NULL;
+    VideoClient *_driveVideoClient = NULL;
+    VideoClient *_gimbalVideoClient = NULL;
+    VideoClient *_fisheyeVideoClient = NULL;
+
+    // Master arm stuff
     MbedChannel *_masterArmChannel = NULL;
     MasterArmConfig _masterArmRanges;
 

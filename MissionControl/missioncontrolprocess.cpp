@@ -14,14 +14,12 @@
 namespace Soro {
 namespace MissionControl {
 
-MissionControlProcess::MissionControlProcess(QHostAddress mainHost, QHostAddress videoHost, QHostAddress localLanHost, QHostAddress masterArmHost,
-             bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter) : QObject(presenter) {
+MissionControlProcess::MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo,
+                                             bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter) : QObject(presenter) {
     _masterNode = masterSubnetNode;
-    _mainHost = mainHost;
-    _videoHost = videoHost;
-    _localLanHost = localLanHost;
-    _masterArmHost = masterArmHost;
     _role = role;
+    _topVideoWidget = topVideo;
+    _bottomVideoWidget = bottomVideo;
     _log = new Logger(this);
     _log->setLogfile(QCoreApplication::applicationDirPath() + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm_AP") + ".log");
     _log->RouteToQtLogger = true;
@@ -32,6 +30,9 @@ void MissionControlProcess::init() {
     LOG_I("-------------------------------------------------------");
     LOG_I("-------------------------------------------------------");
     LOG_I("Starting up...");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
+    LOG_I("-------------------------------------------------------");
     /***************************************
      * This code handles the initialization and reading the configuration file
      * This has to be run after the event loop has been started
@@ -44,44 +45,45 @@ void MissionControlProcess::init() {
         return;
     }
     _soroIniConfig.applyLogLevel(_log);
+    LOG_I("Configuration has been loaded successfully");
 
     switch (_role) {
     case ArmOperator:
         arm_loadMasterArmConfig();
-        _masterArmChannel = new MbedChannel(SocketAddress(_masterArmHost, _soroIniConfig.MasterArmPort), MBED_ID_MASTER_ARM, _log);
+        _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.MasterArmPort), MBED_ID_MASTER_ARM, _log);
         connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
                 this, SLOT(arm_masterArmMessageReceived(const char*,int)));
         connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel::State)),
                 this, SIGNAL(arm_masterArmStateChanged(MbedChannel::State)));
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _controlChannel = new Channel(this, _soroIniConfig.ArmChannelPort, CHANNEL_NAME_ARM,
-                    Channel::UdpProtocol, _mainHost, _log);
+                    Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         else {
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
-                    Channel::UdpProtocol, _mainHost, _log);
+                    Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         break;
     case Driver:
         initSDL();
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _controlChannel = new Channel(this, _soroIniConfig.DriveChannelPort, CHANNEL_NAME_DRIVE,
-                    Channel::UdpProtocol, _mainHost, _log);
+                    Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         else {
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveChannelPort), CHANNEL_NAME_DRIVE,
-                    Channel::UdpProtocol, _mainHost, _log);
+                    Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         break;
     case CameraOperator:
         initSDL();
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _controlChannel = new Channel(this, _soroIniConfig.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
-                    Channel::UdpProtocol, _mainHost, _log);
+                    Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         else {
             _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
-                    Channel::UdpProtocol, _mainHost, _log);
+                    Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         break;
     case Spectator:
@@ -95,11 +97,11 @@ void MissionControlProcess::init() {
         //create the main shared channel to connect to the rover
         if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
             _sharedChannel = new Channel(this, _soroIniConfig.SharedChannelPort, CHANNEL_NAME_SHARED,
-                    Channel::TcpProtocol, _mainHost, _log);
+                    Channel::TcpProtocol, QHostAddress::Any, _log);
         }
         else {
             _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
-                    Channel::TcpProtocol, _mainHost, _log);
+                    Channel::TcpProtocol, QHostAddress::Any, _log);
         }
         _sharedChannel->open();
         connect(_sharedChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
@@ -107,7 +109,7 @@ void MissionControlProcess::init() {
         connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
                 this, SLOT(roverSharedChannelStateChanged(Channel::State)));
         //create the udp broadcast receive port to listen to other mission control nodes trying to connect
-        if (!_broadcastSocket->bind(_localLanHost, _soroIniConfig.McBroadcastPort)) {
+        if (!_broadcastSocket->bind(QHostAddress::Any, _soroIniConfig.McBroadcastPort)) {
             emit error("Unable to bind subnet broadcast port on " + QString::number(_soroIniConfig.McBroadcastPort));
             return;
         }
@@ -126,13 +128,13 @@ void MissionControlProcess::init() {
         //create a udp socket on the same port to send out broadcasts with the
         //server's information so the master node can connect
         _sharedChannel = new Channel(this, 0, CHANNEL_NAME_SUBNET_SHARED,
-                Channel::TcpProtocol, _localLanHost, _log);
+                Channel::TcpProtocol, QHostAddress::Any, _log);
         _sharedChannel->open();
         connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
                 this, SLOT(slaveSharedChannelStateChanged(Channel::State)));
         connect(_sharedChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
                 this, SLOT(handleSharedChannelMessage(const char*,Channel::MessageSize)));
-        if (!_broadcastSocket->bind(_localLanHost, _sharedChannel->getHostAddress().port)) {
+        if (!_broadcastSocket->bind(QHostAddress::Any, _sharedChannel->getHostAddress().port)) {
             emit error("Unable to bind subnet broadcast port on " + QString::number(_sharedChannel->getHostAddress().port));
             return;
         }
@@ -164,7 +166,22 @@ void MissionControlProcess::init() {
         emit error("The shared data channel experienced a fatal error. This is most likely due to a configuration problem.");
         return;
     }
-    LOG_I("Configuration has been loaded successfully");
+
+    LOG_I("***************Initializing Video system******************");
+
+    if (_masterNode) {
+        LOG_I("Creating video clients");
+        _armVideoClient = new VideoClient(VIDEOSTREAM_NAME_ARM, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.ArmVideoPort), QHostAddress::Any, _log, this);
+        _driveVideoClient = new VideoClient(VIDEOSTREAM_NAME_DRIVE, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.DriveVideoPort), QHostAddress::Any, _log, this);
+        _gimbalVideoClient = new VideoClient(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.GimbalVideoPort), QHostAddress::Any, _log, this);
+        _fisheyeVideoClient = new VideoClient(VIDEOSTREAM_NAME_FISHEYE, SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FisheyeVideoPort), QHostAddress::Any, _log, this);
+
+        //_topVideoWidget->configure(SocketAddress(QHostAddress::LocalHost, _soroIniConfig.GimbalVideoPort), VideoEncoding::MJPEG);
+        _gimbalVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _soroIniConfig.GimbalVideoPort));
+    }
+    else {
+
+    }
 }
 
 void MissionControlProcess::broadcastSocketReadyRead() {
