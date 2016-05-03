@@ -124,6 +124,11 @@ private slots:
                             int rateUp, int rateDown);
     void broadcastSocketReadyRead();
 
+    void gimbalVideoClientEos();
+    void gimbalVideoClientError();
+    void gimbalVideoClientStateChanged(VideoClient::State);
+    void gimbalVideoClientStop();
+
 public slots:
     void init();
 

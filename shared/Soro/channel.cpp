@@ -738,7 +738,7 @@ inline void Channel::sendHandshake() {   //PRIVATE SLOT
 }
 
 inline void Channel::sendHeartbeat() {   //PRIVATE SLOT
-    sendMessage("\0", MSGTYPE_HEARTBEAT);
+    sendMessage("\0", 0, MSGTYPE_HEARTBEAT);
 }
 
 bool Channel::sendMessage(const char *message, MessageSize size) {
