@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>600</width>
-    <height>692</height>
+    <height>640</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>600</width>
-    <height>560</height>
+    <height>640</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>600</width>
-    <height>900</height>
+    <height>640</height>
    </size>
   </property>
   <property name="font">
@@ -140,7 +140,7 @@
     <property name="geometry">
      <rect>
       <x>9</x>
-      <y>227</y>
+      <y>230</y>
       <width>253</width>
       <height>23</height>
      </rect>
@@ -160,7 +160,7 @@
       <x>9</x>
       <y>250</y>
       <width>583</width>
-      <height>51</height>
+      <height>61</height>
      </rect>
     </property>
     <property name="text">
@@ -173,14 +173,45 @@
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>170</y>
-      <width>161</width>
-      <height>17</height>
+      <x>10</x>
+      <y>160</y>
+      <width>191</width>
+      <height>31</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Roboto</family>
+     </font>
     </property>
     <property name="text">
      <string>Mission Control Name:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="nameLineEdit">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>160</y>
+      <width>391</width>
+      <height>31</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>190</y>
+      <width>583</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p style=&quot;font-family:Roboto; font-size:9pt;&quot;&gt;This name will identify your mission control to the rover and to other mission controls. Make it whatever you want, just make sure they're all unique.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>

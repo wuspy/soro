@@ -76,7 +76,7 @@ QGst::ElementPtr VideoStreamWidget::createSink() {
 QGst::BinPtr VideoStreamWidget::createDecoder(VideoEncoding encoding) {
     switch (encoding) {
     case MjpegEncoding:
-        return QGst::Bin::fromDescription("application/x-rtp,encoding=JPEG,payload=26 ! "
+        return QGst::Bin::fromDescription("identity ! application/x-rtp,encoding=JPEG,payload=26 ! "
                                        "rtpjpegdepay ! "
                                        "jpegdec ! "
                                        "videoconvert ! "
@@ -84,7 +84,7 @@ QGst::BinPtr VideoStreamWidget::createDecoder(VideoEncoding encoding) {
                                        "identity");
         break;
     case Mpeg2Encoding:
-        return QGst::Bin::fromDescription("application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
+        return QGst::Bin::fromDescription("identity ! application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
                                        "rtpmp4vdepay ! "
                                        "avdec_mpeg4 ! "
                                        "videoconvert ! "

@@ -61,7 +61,7 @@ StreamFormat VideoClient::getStreamFormat() const {
 
 void VideoClient::controlMessageReceived(const char *message, Channel::MessageSize size) {
     Q_UNUSED(size);
-    QByteArray byteArray(message);
+    QByteArray byteArray(message, size);
     QDataStream stream(byteArray);
     stream.setByteOrder(QDataStream::BigEndian);
     QString messageType;
@@ -115,13 +115,14 @@ void VideoClient::controlMessageReceived(const char *message, Channel::MessageSi
         setState(ConnectedState);
     }
     else {
-        LOG_E("Got unknown message from video server: " + messageType);
+        LOG_E("Got unknown message from video server");
     }
 }
 
 QGst::ElementPtr VideoClient::createSource() {
     clearSource();
     _source = new VideoClientSource();
+    return _source->element();
 }
 
 void VideoClient::clearSource() {
@@ -156,7 +157,7 @@ void VideoClient::videoSocketReadyRead() {
 void VideoClient::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
     if (e->timerId() == _punchTimerId) {
-        LOG_D("punch timer tick");
+        LOG_I("punch timer tick");
         // send data to the the server so it can figure out our address
         _videoSocket->writeDatagram(_name.toLatin1().constData(), _name.size() + 1, _server.host, _server.port);
     }
