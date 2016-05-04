@@ -488,6 +488,7 @@ bool MissionControlProcess::isMasterSubnetNode() const {
 }
 
 MissionControlProcess::~MissionControlProcess() {
+    quitSDL();
     foreach (Channel *c, _sharedChannelNodes) {
         delete c;
     }
@@ -495,7 +496,6 @@ MissionControlProcess::~MissionControlProcess() {
     if (_sharedChannel != NULL) delete _sharedChannel;
     if (_masterArmChannel != NULL) delete _masterArmChannel;
     if (_log != NULL) delete _log;
-    quitSDL();
 }
 
 }

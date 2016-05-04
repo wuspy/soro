@@ -64,22 +64,30 @@ SetupDialog::~SetupDialog() {
     delete ui;
 }
 
+bool SetupDialog::verifyName() {
+    QRegularExpression antiBill("Bush")
+}
+
 void SetupDialog::armOperatorClicked() {
+    if (!verifyName()) return;
     _role = MissionControlProcess::ArmOperator;
     accept();
 }
 
 void SetupDialog::driverClicked() {
+    if (!verifyName()) return;
     _role = MissionControlProcess::Driver;
     accept();
 }
 
 void SetupDialog::cameraOperatorClicked() {
+    if (!verifyName()) return;
     _role = MissionControlProcess::CameraOperator;
     accept();
 }
 
 void SetupDialog::spectatorClicked() {
+    if (!verifyName()) return;
     _role = MissionControlProcess::Spectator;
     accept();
 }
@@ -129,5 +137,5 @@ bool SetupDialog::getIsMasterNode() const {
     return _masterNode;
 }
 
-}
-}
+} // namespace MissionControl
+} // namespace Soro

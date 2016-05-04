@@ -34,6 +34,7 @@ private:
     Ui::SetupDialog *ui;
     MissionControlProcess::Role _role;
     bool _masterNode = false;
+    bool verifyName();
     /*QMap<QString, QHostAddress> _hosts;
     int _mainHostCurrentIndex = 0, _videoHostCurrentIndex = 0,
         _localLanHostCurrentIndex = 0, _masterArmHostCurrentIndex = 0;*/
