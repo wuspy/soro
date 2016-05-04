@@ -29,6 +29,18 @@ VideoClient::VideoClient(QString name, SocketAddress server, QHostAddress host, 
     START_TIMER(_calculateBitrateTimerId, 500);
 }
 
+VideoClient::~VideoClient() {
+    clearSource();
+    if (_controlChannel) {
+        _controlChannel->close();
+        delete _controlChannel;
+    }
+    if (_videoSocket) {
+        if (_videoSocket->isOpen()) _videoSocket->close();
+        delete _videoSocket;
+    }
+}
+
 void VideoClient::addForwardingAddress(SocketAddress address) {
     foreach (SocketAddress existing, _forwardAddresses) {
         if (existing == address) return;
@@ -43,64 +55,79 @@ void VideoClient::removeForwardingAddress(SocketAddress address) {
     }
 }
 
-VideoEncoding VideoClient::getEncoding() {
-    return _encoding;
+StreamFormat VideoClient::getStreamFormat() const {
+    return _format;
 }
 
 void VideoClient::controlMessageReceived(const char *message, Channel::MessageSize size) {
     Q_UNUSED(size);
-    QString messageStr(message);
-    if (messageStr.startsWith("[start]", Qt::CaseInsensitive)) {
+    QByteArray byteArray(message);
+    QDataStream stream(byteArray);
+    stream.setByteOrder(QDataStream::BigEndian);
+    QString messageType;
+    stream >> messageType;
+    if (messageType.compare("start", Qt::CaseInsensitive) == 0) {
         LOG_I("Server has notified us of a new video stream");
-        setState(ConnectedState);
-        _encoding = UNKNOWN;
+        _format.Encoding = UnknownEncoding;
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
         START_TIMER(_punchTimerId, 100);
+        setState(ConnectedState);
     }
-    else if (messageStr.startsWith("[streaming]", Qt::CaseInsensitive)) {
+    else if (messageType.compare("streaming", Qt::CaseInsensitive) == 0) {
         // we were successful and are now receiving a video stream
         LOG_I("Server has confirmed our address and should begin streaming");
-        setState(StreamingState);
         videoSocketReadyRead();
         connect(_videoSocket, SIGNAL(readyRead()),
                 this, SLOT(videoSocketReadyRead()));
-        if (messageStr.indexOf("enc=MJPEG", Qt::CaseInsensitive) >= 0) {
-            _encoding = MJPEG;
-        }
-        else if (messageStr.indexOf("enc=MPEG2", Qt::CaseInsensitive) >= 0) {
-            _encoding = MPEG2;
-        }
-        else {
-            _encoding = UNKNOWN;
+        stream >> reinterpret_cast<quint32&>(_format.Encoding);
+        stream >> _format.Width;
+        stream >> _format.Height;
+        stream >> _format.Framerate;
+        switch (_format.Encoding) {
+        case MjpegEncoding:
+            stream >> _format.Mjpeg_Quality;
+            break;
+        case Mpeg2Encoding:
+            stream >> _format.Mpeg2_Bitrate;
+            break;
+        default:
+            LOG_E("Metadata from server specifies an unknown encoding");
+            break;
         }
         KILL_TIMER(_punchTimerId);
+        setState(StreamingState);
     }
-    else if (messageStr.startsWith("[eos]", Qt::CaseInsensitive)) {
+    else if (messageType.compare("eos", Qt::CaseInsensitive) == 0) {
         LOG_I("Got EOS message from server");
-        setState(ConnectedState);
-        _encoding = UNKNOWN;
+        _format.Encoding = UnknownEncoding;
         KILL_TIMER(_punchTimerId);
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
-        emit serverEos();
+        setState(ConnectedState);
     }
-    else if (messageStr.startsWith("[error]", Qt::CaseInsensitive)) {
-        LOG_I("Got error message from server: " + QString(message + 7));
-        setState(ConnectedState);
-        _encoding = UNKNOWN;
+    else if (messageType.compare("error", Qt::CaseInsensitive) == 0) {
+        QString errorMessage;
+        stream >> errorMessage;
+        LOG_I("Got error message from server: " + errorMessage);
+        _format.Encoding = UnknownEncoding;
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
         KILL_TIMER(_punchTimerId);
-        emit serverError();
-    }
-    else if (messageStr.startsWith("[stop]")) {
-        LOG_I("Got a [stop] message from the server");
+        emit serverError(errorMessage);
         setState(ConnectedState);
-        _encoding = UNKNOWN;
-        KILL_TIMER(_punchTimerId);
-        disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
-        emit stopped();
     }
     else {
-        LOG_E("Got unknown message from video server: " + messageStr);
+        LOG_E("Got unknown message from video server: " + messageType);
+    }
+}
+
+QGst::ElementPtr VideoClient::createSource() {
+    clearSource();
+    _source = new VideoClientSource();
+}
+
+void VideoClient::clearSource() {
+    if (_source) {
+        delete _source;
+        _source = NULL;
     }
 }
 
@@ -108,7 +135,17 @@ void VideoClient::videoSocketReadyRead() {
     qint64 size;
     while (_videoSocket->hasPendingDatagrams()) {
         size = _videoSocket->readDatagram(_buffer, 65536);
+        // update bit total
         _bitCount += size * 8;
+        // push the data to the gstreamer element src pad
+        if (_source) {
+            QGst::BufferPtr ptr = QGst::Buffer::create(size);
+            QGst::MapInfo memory;
+            ptr->map(memory, QGst::MapWrite);
+            memcpy(memory.data(), _buffer, size);
+            ptr->unmap(memory);
+            _source->pushBuffer(ptr);
+        }
         // forward the datagram to all specified addresses
         foreach (SocketAddress address, _forwardAddresses) {
             _videoSocket->writeDatagram(_buffer, size, address.host, address.port);
@@ -138,11 +175,14 @@ void VideoClient::controlChannelStateChanged(Channel::State state) {
         break;
     default:
         setState(ConnectingState);
+        _format.Encoding = UnknownEncoding;
+        disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
+        KILL_TIMER(_punchTimerId);
         break;
     }
 }
 
-VideoClient::State VideoClient::getState() {
+VideoClient::State VideoClient::getState() const {
     return _state;
 }
 

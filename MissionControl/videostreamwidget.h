@@ -31,25 +31,31 @@ public:
     explicit VideoStreamWidget(QWidget *parent = 0);
     ~VideoStreamWidget();
 
-    /* Configure the widget to receive a video stream. If succesful,
+    /* Configure the widget to receive a video stream from a UDP socket. If succesful,
      * the widget should start playing the stream immediately.
      */
-    void configure(SocketAddress address, VideoEncoding encoding);
+    void play(SocketAddress address, VideoEncoding encoding);
+
+    /* Configure the widget to receive a video stream from a source element.
+     * If successful, the widget should start playing the stream immediately.
+     */
+    void play(QGst::ElementPtr source, VideoEncoding encoding);
 
     /* Stops video playback, and displays they reason why
      * if one is provided.
      */
-    void endStream(QString reason = "");
+    void stop(QString reason = "");
+
+    bool isPlaying();
 
 private:
     QGst::PipelinePtr _pipeline;
     QGst::Ui::VideoWidget *_videoWidget;
     QLabel *_messageLabel;
-    int _hideMessageTimerId = TIMER_INACTIVE;
-    int _reconfigureTimerId = TIMER_INACTIVE;
-    SocketAddress _address;
-    VideoEncoding _encoding;
+    bool _isPlaying = false;
 
+    QGst::ElementPtr createSink();
+    QGst::BinPtr createDecoder(VideoEncoding encoding);
     void resetPipeline();
 
 private slots:
@@ -58,7 +64,6 @@ private slots:
     void onBusMessage(const QGst::MessagePtr & message);
 
 protected:
-    void timerEvent(QTimerEvent *e);
     void resizeEvent(QResizeEvent *e);
 
 signals:

@@ -3,7 +3,13 @@
 
 #include <QObject>
 #include <QUdpSocket>
+#include <QDataStream>
+#include <QByteArray>
 #include <QList>
+
+#include <Qt5GStreamer/QGst/Buffer>
+#include <Qt5GStreamer/QGst/Caps>
+#include <Qt5GStreamer/QGst/Utils/ApplicationSource>
 
 #include "soro_global.h"
 #include "channel.h"
@@ -12,6 +18,10 @@
 
 namespace Soro {
 namespace MissionControl {
+
+class VideoClientSource : public QGst::Utils::ApplicationSource {
+    friend class VideoClient;
+};
 
 class VideoClient : public QObject {
     Q_OBJECT
@@ -24,21 +34,22 @@ public:
 
     explicit VideoClient(QString name, SocketAddress server, QHostAddress host, Logger *log = 0, QObject *parent = 0);
 
+    ~VideoClient();
+
     void addForwardingAddress(SocketAddress address);
     void removeForwardingAddress(SocketAddress address);
 
     /* Gets the format of the stream currently being received
      */
-    VideoEncoding getEncoding();
-
-    VideoClient::State getState();
+    StreamFormat getStreamFormat() const;
+    VideoClient::State getState() const;
+    QGst::ElementPtr createSource();
+    void clearSource();
 
 signals:
     void stateChanged(VideoClient::State state);
-    void serverEos();
-    void serverError();
+    void serverError(QString message);
     void statisticsUpdate(long bitrate);
-    void stopped();
 
 private:
     char *_buffer;
@@ -46,9 +57,10 @@ private:
     SocketAddress _server;
     Logger *_log;
     State _state = ConnectingState;
-    VideoEncoding _encoding = UNKNOWN;
+    StreamFormat _format;
     QUdpSocket *_videoSocket;
     Channel *_controlChannel;
+    VideoClientSource *_source = NULL;
     int _punchTimerId = TIMER_INACTIVE;
     int _calculateBitrateTimerId = TIMER_INACTIVE;
     QList<SocketAddress> _forwardAddresses;

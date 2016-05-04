@@ -103,10 +103,10 @@ void VideoServer::beginStream(SocketAddress address) {
     }
     binStr += caps;
     switch (_format->encoding()) {
-    case MJPEG:
+    case MjpegEncoding:
         binStr += " ! jpegenc quality=" + QString::number(((MjpegStreamFormat*)_format)->Quality) + " ! rtpjpegpay ! ";
         break;
-    case MPEG2:
+    case Mpeg2Encoding:
         binStr += " ! avenc_mpeg4 bitrate=" + QString::number(((Mpeg2StreamFormat*)_format)->Bitrate) + " ! rtpmp4vpay config-interval=3 ! ";
         break;
     }
@@ -154,10 +154,10 @@ void VideoServer::videoSocketReadyRead() {
         QDataStream stream(&message, QIODevice::WriteOnly);
         stream << "streaming";
         switch (_format->encoding()) {
-        case MJPEG:
-
+        case MjpegEncoding:
+            response = "[streaming]enc=MJPEG";
             break;
-        case MPEG2:
+        case Mpeg2Encoding:
             response = "[streaming]enc=MPEG2";
             break;
         }

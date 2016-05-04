@@ -177,43 +177,36 @@ void MissionControlProcess::init() {
         _gimbalVideoClient = new VideoClient(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalVideoPort), QHostAddress::Any, _log, this);
         _fisheyeVideoClient = new VideoClient(VIDEOSTREAM_NAME_FISHEYE, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.FisheyeVideoPort), QHostAddress::Any, _log, this);
 
-        connect(_gimbalVideoClient, SIGNAL(serverError()),
-                this, SLOT(gimbalVideoClientError()));
-        connect(_gimbalVideoClient, SIGNAL(serverEos()),
-                this, SLOT(gimbalVideoClientEos()));
+        connect(_gimbalVideoClient, SIGNAL(serverError(QString)),
+                this, SLOT(gimbalVideoClientError(QString)));
         connect(_gimbalVideoClient, SIGNAL(stateChanged(VideoClient::State)),
                 this, SLOT(gimbalVideoClientStateChanged(VideoClient::State)));
-        connect(_gimbalVideoClient, SIGNAL(stopped()),
-                this, SLOT(gimbalVideoClientStop()));
-
-        _gimbalVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _soroIniConfig.GimbalVideoPort));
     }
     else {
 
     }
+
+    //show default video messages
+    _topVideoWidget->stop("Waiting for rover connection...");
+    _bottomVideoWidget->stop("Waiting for rover connection...");
 }
 
-void MissionControlProcess::gimbalVideoClientEos() {
-     _topVideoWidget->endStream("This stream is over.");
-}
-
-void MissionControlProcess::gimbalVideoClientError() {
-     _topVideoWidget->endStream("This rover experienced an error.");
+void MissionControlProcess::gimbalVideoClientError(QString message) {
+     _topVideoWidget->stop("This rover experienced an error trying to stream this camera: \"" + message + "\"");
 }
 
 void MissionControlProcess::gimbalVideoClientStateChanged(VideoClient::State state) {
     switch (state) {
     case VideoClient::StreamingState:
-        _topVideoWidget->configure(SocketAddress(QHostAddress::LocalHost, _soroIniConfig.GimbalVideoPort), VideoEncoding::MJPEG);
+        _topVideoWidget->play(_gimbalVideoClient->createSource(), _gimbalVideoClient->getStreamFormat().Encoding);
+        break;
+    case VideoClient::ConnectedState:
+        _topVideoWidget->stop("The rover isn't sending this stream right now.");
         break;
     case VideoClient::ConnectingState:
-        _topVideoWidget->endStream("Connection to the rover has been lost.");
+        _topVideoWidget->stop("Connection to the rover has been lost.");
         break;
     }
-}
-
-void MissionControlProcess::gimbalVideoClientStop() {
-    _topVideoWidget->endStream("This stream has been turned off.");
 }
 
 void MissionControlProcess::broadcastSocketReadyRead() {
