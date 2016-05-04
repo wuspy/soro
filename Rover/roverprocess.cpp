@@ -123,7 +123,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 LOG_E("Cannot parse flycapture serial number for GimbalCameraDevice");
             }
             if (flycapEnum.cameraExists(serial)) {
-                _gimbalFlycaptureSource = new FlycapSource(flycapEnum.getGUIDForSerial(serial), _log, this);
+                _gimbalFlycaptureCamera = new FlycapCamera(flycapEnum.getGUIDForSerial(serial), _log, this);
             }
             else {
                 LOG_E("Could not locate the gimbal camera by seria number");
@@ -137,15 +137,15 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         }
 
         LOG_I("Configuring gimbal video");
-        if (_gimbalFlycaptureSource) {
-            _gimbalVideoServer = new VideoServer(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalVideoPort), _log, this);
+        _gimbalVideoServer = new VideoServer(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalVideoPort), _log, this);
+
+        LOG_I("Starting video streams");
+        if (_gimbalFlycaptureCamera) {
+            _gimbalVideoServer->start(_gimbalFlycaptureCamera->createSource(30), STREAMFORMAT_720_MJPEG_Q30);
         }
         else {
             //TODO
         }
-
-        LOG_I("Starting video streams");
-        _gimbalVideoServer->start(_gimbalFlycaptureSource->element(), STREAMFORMAT_720_MJPEG_Q30);
 
         LOG_I("Waiting for connections...");
     }

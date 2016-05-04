@@ -20,7 +20,8 @@ SOURCES += main.cpp \
     flycapenumerator.cpp \
     cameraenumerator.cpp \
     flycapsource.cpp \
-    videoserver.cpp
+    videoserver.cpp \
+    flycapcamera.cpp
 
 HEADERS += \
     ../shared/Soro/armmessage.h \
@@ -39,7 +40,8 @@ HEADERS += \
     flycapenumerator.h \
     cameraenumerator.h \
     flycapsource.h \
-    videoserver.h
+    videoserver.h \
+    flycapcamera.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro

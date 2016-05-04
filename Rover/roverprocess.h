@@ -18,7 +18,7 @@
 #include "videoserver.h"
 #include "videoencoding.h"
 #include "flycapenumerator.h"
-#include "flycapsource.h"
+#include "flycapcamera.h"
 
 #include <Qt5GStreamer/QGst/Element>
 #include <Qt5GStreamer/QGst/ElementFactory>
@@ -55,10 +55,10 @@ private:
     MbedChannel *_gimbalControllerMbed = NULL;
 
     // these hold the gst elements for the cameras that are flycapture sources
-    FlycapSource *_armFlycaptureSource = NULL;
-    FlycapSource *_driveFlycaptureSource = NULL;
-    FlycapSource *_gimbalFlycaptureSource = NULL;
-    FlycapSource *_fisheyeFlycaptureSource = NULL;
+    FlycapCamera *_armFlycaptureCamera = NULL;
+    FlycapCamera *_driveFlycaptureCamera= NULL;
+    FlycapCamera *_gimbalFlycaptureCamera= NULL;
+    FlycapCamera *_fisheyeFlycaptureCamera= NULL;
 
     // these hold the gst elements for the cameras that are V4L2 sources
     QGst::ElementPtr _armV4L2Source;
