@@ -19,7 +19,6 @@ SOURCES += main.cpp \
     roverprocess.cpp \
     flycapenumerator.cpp \
     cameraenumerator.cpp \
-    flycapsource.cpp \
     videoserver.cpp \
     flycapcamera.cpp
 
@@ -39,7 +38,6 @@ HEADERS += \
     ../shared/Soro/videoencoding.h \
     flycapenumerator.h \
     cameraenumerator.h \
-    flycapsource.h \
     videoserver.h \
     flycapcamera.h
 

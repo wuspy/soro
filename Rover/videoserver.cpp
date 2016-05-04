@@ -149,11 +149,13 @@ void VideoServer::videoSocketReadyRead() {
         LOG_I("Client has completed handshake on its UDP address");
         KILL_TIMER(_startTimerId);
         // send the client a message letting them know we are now streaming to their address,
-        // and tell them the encoding we're using also
-        const char *response;
+        // and tell them the stream metadata
+        QByteArray message;
+        QDataStream stream(&message, QIODevice::WriteOnly);
+        stream << "streaming";
         switch (_format->encoding()) {
         case MJPEG:
-            response = "[streaming]enc=MJPEG";
+
             break;
         case MPEG2:
             response = "[streaming]enc=MPEG2";
