@@ -46,7 +46,7 @@ public:
 
 private:
     QString LOG_TAG;
-    Logger *_log;
+    Logger *_log = NULL;
     FlyCapture2::Camera _camera;
     FlycapSource *_source = NULL;
     int _captureTimerId = TIMER_INACTIVE;

@@ -138,14 +138,14 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         LOG_I("Configuring gimbal video");
         _gimbalVideoServer = new VideoServer(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalVideoPort), _log, this);
+
+        LOG_I("Starting video streams");
         if (_gimbalFlycaptureCamera) {
+            _gimbalVideoServer->start(_gimbalFlycaptureCamera->createSource(30), STREAMFORMAT_720_MJPEG_Q30);
         }
         else {
             //TODO
         }
-
-        LOG_I("Starting video streams");
-        _gimbalVideoServer->start(_gimbalFlycaptureCamera->createSource(30), STREAMFORMAT_720_MJPEG_Q30);
 
         LOG_I("Waiting for connections...");
     }
