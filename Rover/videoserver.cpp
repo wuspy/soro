@@ -13,7 +13,7 @@ VideoServer::VideoServer(QGst::ElementPtr camera, QString name, SocketAddress ho
 
     LOG_I("Creating new video server");
 
-    _controlChannel = new Channel(this, host.port, name, Channel::TcpProtocol, host.host);
+    _controlChannel = new Channel(this, host.port, "videostream", Channel::TcpProtocol, host.host);
     connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
             this, SLOT(controlChannelStateChanged(Channel::State)));
     _controlChannel->open();
@@ -105,6 +105,7 @@ void VideoServer::beginStream(SocketAddress address) {
     }
     if (_format.Framerate > 0) {
         caps += ",framerate=" + QString::number(_format.Framerate) + "/1";
+        binStr += "videorate ! ";
     }
     binStr += caps;
     switch (_format.Encoding) {

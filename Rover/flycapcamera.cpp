@@ -44,6 +44,7 @@ void FlycapCamera::setFramerate(int framerate) {
         LOG_W("Cannot set framerate to 0, I\'m ignoring your request");
         return;
     }
+    LOG_I("Changing framerate to " + QString::number(framerate) + "/1");
     _framerate = framerate;
     // create caps string
     QString caps = "video/x-raw,format=RGB,"

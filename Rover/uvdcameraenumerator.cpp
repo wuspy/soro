@@ -10,11 +10,15 @@ int UvdCameraEnumerator::loadCameras() {
     _cameras.clear();
     int total = 0;
 #ifdef __linux__
-    QDirIterator dev("/dev");
-    while (dev.hasNext()) {
-        QString file = dev.next();
+    QDir dev("/dev");
+    QStringList allFiles = dev.entryList(QDir::NoDotAndDotDot
+                                                 | QDir::System
+                                                 | QDir::Hidden
+                                                 | QDir::AllDirs
+                                                 | QDir::Files, QDir::DirsFirst);
+    foreach (QString file, allFiles) {
         if (file.contains("video")) {
-            _cameras.append(file);
+            _cameras.append("/dev/" + file);
             total++;
         }
     }

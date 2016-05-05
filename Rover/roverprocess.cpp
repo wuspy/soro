@@ -142,14 +142,14 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         foreach (QString videoDevice, uvdEnum.listByDeviceName()) {
             bool blacklisted = false;
             foreach (QString blacklisted, _soroIniConfig.BlacklistedUvdCameras) {
-                if (videoDevice.remove('\\').remove('/').compare(blacklisted.remove('\\').remove('/'))) {
+                if (videoDevice.mid(videoDevice.size() - 1).compare(blacklisted.mid(blacklisted.size() - 1)) == 0) {
                     LOG_I("Found UVD device " + videoDevice + ", however it is blacklisted");
                     blacklisted = true;
                     break;
                 }
             }
             if (blacklisted) continue;
-            if (cameraIndex == flycapCount + uvdCount) {
+            if (cameraIndex == _soroIniConfig.FlyCapture2CameraCount + _soroIniConfig.UVDCameraCount) {
                 LOG_E("The configuration file says there should be LESS UVD\'s/webcams connected than this, something may be wrong!!!");
                 break;
             }
@@ -191,7 +191,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
 void RoverProcess::syncVideoStreams() {
     LOG_I("Syncing video stream states...");
-    for (int i = 0; i < _videoServers.size(); i++) {
+    foreach (int i, _videoServers.keys()) {
         VideoServer *server = _videoServers[i];
         StreamFormat format = _videoFormats[i];
         if (format.Encoding == UnknownEncoding) {
@@ -205,8 +205,15 @@ void RoverProcess::syncVideoStreams() {
             if (_flycapCameras.contains(i)) {
                 //this camera is flycap, we must set the framerate on it manually
                 _flycapCameras[i]->setFramerate(format.Framerate);
+                //give the server a format with no framerate specified, since the flycap camera will regulate that on its own
+                StreamFormat noFrameratFormat(format);
+                noFrameratFormat.Framerate = 0;
+                server->start(noFrameratFormat);
             }
-            server->start(format);
+            else {
+                server->start(format);
+            }
+
         }
     }
 }
