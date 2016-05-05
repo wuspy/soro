@@ -19,6 +19,8 @@ VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject 
 
     _videoSocket = new QUdpSocket(this);
 
+    _child.setProgram(QCoreApplication::applicationDirPath() + "/VideoStreamProcess");
+
     _state = IdleState;
 }
 
@@ -31,8 +33,17 @@ void VideoServer::stop() {
         LOG_W("stop() called: Server is already stopped");
         return;
     }
-    LOG_I("stop() called: stopping video feed");
-    resetPipeline();
+    if (_child.state() != QProcess::NotRunning) {
+        LOG_I("stop() called: killing child process");
+        _child.kill();
+        _child.waitForFinished();
+        LOG_I("Child process has been killed");
+    }
+    else {
+        LOG_I("stop() called, however the child process is not running");
+    }
+    _deviceDescription = "";
+    _format.Encoding = UnknownEncoding;
     if (_controlChannel->getState() == Channel::ConnectedState) {
         // notify the client that the server is stopping the stream
         QByteArray message;
@@ -45,18 +56,24 @@ void VideoServer::stop() {
     setState(IdleState);
 }
 
-void VideoServer::start(QGst::ElementPtr camera, StreamFormat format) {
+void VideoServer::start(QString deviceName, StreamFormat format) {
     LOG_I("start() called");
-    resetPipeline();
-    if (_state == IdleState) {
-        _camera = camera;
-        _format = format;
-        setState(WaitingState);
-        startInternal();
+    if (_state != IdleState) {
+        LOG_I("Server is not idle, stopping operations");
+        stop();
     }
-    else {
-        LOG_W("start() called: Server is already started");
-    }
+    _deviceDescription = deviceName;
+    _format = format;
+    setState(WaitingState);
+    startInternal();
+}
+
+void VideoServer::start(FlyCapture2::PGRGuid camera, StreamFormat format) {
+    start("FlyCapture2:" + QString::number(camera.value[0]) + ":"
+                        + QString::number(camera.value[1]) + ":"
+                        + QString::number(camera.value[2]) + ":"
+                        + QString::number(camera.value[3]),
+                        format);
 }
 
 void VideoServer::startInternal() {
@@ -88,60 +105,36 @@ void VideoServer::startInternal() {
 }
 
 void VideoServer::beginStream(SocketAddress address) {
-    LOG_I("Starting stream NOW");
-
-    // create pipeline
-    _pipeline = QGst::Pipeline::create();
-    _pipeline->bus()->addSignalWatch();
-    QGlib::connect(_pipeline->bus(), "message", this, &VideoServer::onBusMessage);
-
-    // create gstreamer command
-    QString binStr = "videoconvert ! ";
-    QString caps = "video/x-raw,format=I420";
-    if ((_format.Width > 0) & (_format.Height > 0)) {
-        binStr += "videoscale ! ";
-        caps += ",width=" + QString::number(_format.Width) + ",height=" + QString::number(_format.Height);
-    }
-    if (_format.Framerate > 0) {
-        caps += ",framerate=" + QString::number(_format.Framerate) + "/1";
-        binStr += "videorate ! ";
-    }
-    binStr += caps;
+    QStringList args;
+    args << _deviceDescription;
+    args << QString::number(reinterpret_cast<unsigned int&>(_format.Encoding));
+    args << QString::number(_format.Width);
+    args << QString::number(_format.Height);
+    args << QString::number(_format.Framerate);
     switch (_format.Encoding) {
     case MjpegEncoding:
-        binStr += " ! jpegenc quality=" + QString::number(_format.Mjpeg_Quality) + " ! rtpjpegpay ! ";
+        args << QString::number(_format.Mjpeg_Quality);
         break;
     case Mpeg2Encoding:
-        binStr += " ! avenc_mpeg4 bitrate=" + QString::number(_format.Mpeg2_Bitrate) + " ! rtpmp4vpay config-interval=3 ! ";
+        args << QString::number(_format.Mpeg2_Bitrate);
         break;
     default:
-        LOG_E("Cannot start stream because the specified encoding is not valid");
-        stop();
-        return;
+        break;
     }
+    bool ok;
+    QHostAddress addressIPV4(address.host.toIPv4Address(&ok));
+    args << (ok ? addressIPV4.toString() : address.host.toString());
+    args << QString::number(address.port);
 
-    binStr += "udpsink host=" + address.host.toString() + " port=" + QString::number(address.port);
-    LOG_I("Pipe command: <source> ! " +  binStr);
-    QGst::BinPtr streamer = QGst::Bin::fromDescription(binStr);
+    QHostAddress hostIPV4(_host.host.toIPv4Address(&ok));
+    args << (ok ? hostIPV4.toString() : _host.host.toString());
+    args << QString::number(_host.port);
 
-    // link elements
-    _pipeline->add(_camera, streamer);
-    _camera->link(streamer);
-
-    // play
-    _pipeline->setState(QGst::StatePlaying);
+    _child.setArguments(args);
+    connect(&_child, SIGNAL(stateChanged(QProcess::ProcessState)),
+               this, SLOT(childStateChanged(QProcess::ProcessState)));
+    _child.start();
     setState(StreamingState);
-}
-
-void VideoServer::resetPipeline() {
-    if (_pipeline) {
-        LOG_I("Resetting gstreamer pipeline");
-        _pipeline->setState(QGst::StateNull);
-        _pipeline.clear();
-    }
-    if (_camera) {
-        _camera.clear();
-    }
 }
 
 void VideoServer::timerEvent(QTimerEvent *e) {
@@ -186,41 +179,46 @@ void VideoServer::videoSocketReadyRead() {
     }
 }
 
-void VideoServer::controlChannelStateChanged(Channel::State state) {
-    if (state != Channel::ConnectedState) {
-        stop();
+void VideoServer::childStateChanged(QProcess::ProcessState state) {
+    switch (state) {
+    case QProcess::NotRunning:
+        LOG_I("Child is no longer running (exit code " + QString::number(_child.exitCode()) + ")");
+
+        disconnect(&_child, SIGNAL(stateChanged(QProcess::ProcessState)),
+                   this, SLOT(childStateChanged(QProcess::ProcessState)));
+
+        switch (_child.exitCode()) {
+        case 0:
+        case STREAMPROCESS_ERR_GSTREAMER_EOS:
+            emit eos();
+            break;
+        case STREAMPROCESS_ERR_FLYCAP_ERROR:
+            emit error("Error in FlyCapture2 decoding");
+            break;
+        case STREAMPROCESS_ERR_GSTREAMER_ERROR:
+            emit error("Gstreamer error");
+            break;
+        case STREAMPROCESS_ERR_INVALID_ARGUMENT:
+        case STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS:
+        case STREAMPROCESS_ERR_UNKNOWN_CODEC:
+        default:
+            emit error("Unknown error/segmentation fault");
+        }
+
+        setState(IdleState);
+        break;
+    case QProcess::Starting:
+        LOG_I("Child is starting...");
+        break;
+    case QProcess::Running:
+        LOG_I("Child has started successfully");
+        break;
     }
 }
 
-void VideoServer::onBusMessage(const QGst::MessagePtr & message) {
-    switch (message->type()) {
-    case QGst::MessageEos: {
-        LOG_W("Received EOS message from stream, stopping");
+void VideoServer::controlChannelStateChanged(Channel::State state) {
+    if (state != Channel::ConnectedState) {
         stop();
-        // notify the client of eos
-        QByteArray message;
-        QDataStream stream(&message, QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::BigEndian);
-        stream << QString("eos");
-        _controlChannel->sendMessage(message.constData(), message.size());
-        emit eos();
-    }
-        break;
-    case QGst::MessageError: {
-        QString errorString = message.staticCast<QGst::ErrorMessage>()->error().message();
-        LOG_E("Pipeline error: " + errorString);
-        stop();
-        QByteArray message;
-        QDataStream stream(&message, QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::BigEndian);
-        stream << QString("error");
-        stream << errorString;
-        _controlChannel->sendMessage(message.constData(), message.size());
-        emit error(errorString);
-    }
-        break;
-    default:
-        break;
     }
 }
 

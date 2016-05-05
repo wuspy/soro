@@ -121,11 +121,10 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 LOG_E("The configuration file says there should be LESS flycapture cameras connected than this, something may be wrong!!!");
                 break;
             }
-            FlycapCamera *source = new FlycapCamera(guid, _log, this);
             // create associated video server
             VideoServer *server = new VideoServer("Camera " + QString::number(cameraIndex + 1) + " (Blackfly)",
                                                   SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + cameraIndex), _log, this);
-            _flycapCameras.insert(cameraIndex, source);
+            _flycapCameras.insert(cameraIndex, guid);
             _videoServers.insert(cameraIndex, server);
             _videoFormats.insert(cameraIndex, StreamFormat());
             connect(server, SIGNAL(stateChanged(VideoServer::State)), this, SLOT(videoServerStateChanged(VideoServer::State)));
@@ -154,12 +153,10 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 break;
             }
             LOG_I("Found UVD/Webcam device at " + videoDevice);
-            QGst::ElementPtr source = QGst::ElementFactory::make("v4l2src");
-            source->setProperty("device", videoDevice);
             // create associated video server
             VideoServer *server = new VideoServer("Camera " + QString::number(cameraIndex + 1) + " (Webcam)",
                                                   SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + cameraIndex), _log, this);
-            _uvdCameras.insert(cameraIndex, source);
+            _uvdCameras.insert(cameraIndex, videoDevice);
             _videoServers.insert(cameraIndex, server);
             _videoFormats.insert(cameraIndex, StreamFormat());
             connect(server, SIGNAL(stateChanged(VideoServer::State)), this, SLOT(videoServerStateChanged(VideoServer::State)));
@@ -169,11 +166,11 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         LOG_I("Starting default video streams");
 
         if (_videoFormats.size() > 0) {
-            _videoFormats[0] = streamFormat_Mjpeg_Original_15FPS_Q30();
+            _videoFormats[0] = streamFormat_Mjpeg_960x720_15FPS_Q50();
             if (_videoFormats.size() > 1) {
-                _videoFormats[1] = streamFormat_Mjpeg_Original_15FPS_Q30();
+                _videoFormats[1] = streamFormat_Mjpeg_960x720_15FPS_Q50();
                 if (_videoFormats.size() > 2) {
-                    _videoFormats[2] = streamFormat_Mjpeg_Original_15FPS_Q30();
+                    _videoFormats[2] = streamFormat_Mjpeg_960x720_15FPS_Q50();
                 }
             }
         }
@@ -204,12 +201,10 @@ void RoverProcess::syncVideoStreams() {
             LOG_I("Camera " + server->getCameraName() + " is about to be streamed");
             if (_flycapCameras.contains(i)) {
                 //this camera is flycap, we must set the framerate on it manually
-                StreamFormat noFramerateFormat(format);
-                noFramerateFormat.Framerate = 0;
-                server->start(_flycapCameras[i]->createElement(format.Framerate), noFramerateFormat);
+                server->start(_flycapCameras[i], format);
             }
             else {
-                server->start(_uvdCameras[i], format);
+                server->start("UVD:" + _uvdCameras[i], format);
             }
 
         }

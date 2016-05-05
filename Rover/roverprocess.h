@@ -18,11 +18,7 @@
 #include "videoserver.h"
 #include "videoencoding.h"
 #include "flycapenumerator.h"
-#include "flycapcamera.h"
 #include "uvdcameraenumerator.h"
-
-#include <Qt5GStreamer/QGst/Element>
-#include <Qt5GStreamer/QGst/ElementFactory>
 
 using namespace Soro;
 
@@ -75,13 +71,16 @@ private:
     MbedChannel *_gimbalControllerMbed = NULL;
 
     // These hold the gst elements for the cameras that are flycapture sources
-    QMap<int, FlycapCamera*> _flycapCameras;
+    QMap<int, FlyCapture2::PGRGuid> _flycapCameras;
 
     // These hold the gst elements for the cameras that not flycapture
-    QMap<int, QGst::ElementPtr> _uvdCameras;
+    QMap<int, QString> _uvdCameras;
 
+    // These hold the video server objects which spawn child processes to
+    // stream the data to mission control
     QMap<int, VideoServer*> _videoServers;
 
+    // These hold the current stream format used by each video camera
     QMap<int, StreamFormat> _videoFormats;
 
     // These hold the current stream formats for each camera.

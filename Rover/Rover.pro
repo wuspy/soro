@@ -19,7 +19,6 @@ SOURCES += main.cpp \
     roverprocess.cpp \
     flycapenumerator.cpp \
     videoserver.cpp \
-    flycapcamera.cpp \
     uvdcameraenumerator.cpp
 
 HEADERS += \
@@ -38,10 +37,9 @@ HEADERS += \
     ../shared/Soro/videoencoding.h \
     flycapenumerator.h \
     videoserver.h \
-    flycapcamera.h \
     uvdcameraenumerator.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro
 
-LIBS += -lflycapture -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
+LIBS += -lflycapture
