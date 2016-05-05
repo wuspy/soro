@@ -12,7 +12,7 @@ VideoClient::VideoClient(QString name, SocketAddress server, QHostAddress host, 
 
     LOG_I("Creating new video client for server at " + server.toString());
 
-    _controlChannel = new Channel(this, _server, _name, Channel::TcpProtocol);
+    _controlChannel = new Channel(this, _server, _name, Channel::TcpProtocol, host, _log);
     _videoSocket = new QUdpSocket(this);
     _videoSocket->bind(host);
     _videoSocket->open(QIODevice::ReadWrite);
@@ -30,7 +30,7 @@ VideoClient::VideoClient(QString name, SocketAddress server, QHostAddress host, 
 }
 
 VideoClient::~VideoClient() {
-    clearSource();
+    endOfStream();
     if (_controlChannel) {
         _controlChannel->close();
         delete _controlChannel;
@@ -119,19 +119,6 @@ void VideoClient::controlMessageReceived(const char *message, Channel::MessageSi
     }
 }
 
-QGst::ElementPtr VideoClient::createSource() {
-    clearSource();
-    _source = new VideoClientSource();
-    return _source->element();
-}
-
-void VideoClient::clearSource() {
-    if (_source) {
-        delete _source;
-        _source = NULL;
-    }
-}
-
 void VideoClient::videoSocketReadyRead() {
     qint64 size;
     while (_videoSocket->hasPendingDatagrams()) {
@@ -139,13 +126,13 @@ void VideoClient::videoSocketReadyRead() {
         // update bit total
         _bitCount += size * 8;
         // push the data to the gstreamer element src pad
-        if (_source) {
+        if (_needsData) {
             QGst::BufferPtr ptr = QGst::Buffer::create(size);
             QGst::MapInfo memory;
             ptr->map(memory, QGst::MapWrite);
             memcpy(memory.data(), _buffer, size);
             ptr->unmap(memory);
-            _source->pushBuffer(ptr);
+            pushBuffer(ptr);
         }
         // forward the datagram to all specified addresses
         foreach (SocketAddress address, _forwardAddresses) {
@@ -182,6 +169,16 @@ void VideoClient::controlChannelStateChanged(Channel::State state) {
         break;
     }
 }
+
+void VideoClient::needData(uint length) {
+    Q_UNUSED(length);
+    _needsData = true;
+}
+
+void VideoClient::enoughData() {
+    _needsData = false;
+}
+
 
 VideoClient::State VideoClient::getState() const {
     return _state;

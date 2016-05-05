@@ -27,7 +27,8 @@ SOURCES += \
     setupdialog.cpp \
     clickablelabel.cpp \
     videostreamwidget.cpp \
-    videoclient.cpp
+    videoclient.cpp \
+    videowindow.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -49,7 +50,8 @@ HEADERS  += \
     clickablelabel.h \
     ../shared/Soro/videoencoding.h \
     videostreamwidget.h \
-    videoclient.h
+    videoclient.h \
+    videowindow.h
 
 FORMS    += \
     soromainwindow.ui \

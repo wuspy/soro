@@ -106,52 +106,122 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         LOG_I("*****************Initializing Video system*******************");
 
+        int cameraIndex = 0;
+
         LOG_I("Searching for flycapture cameras");
         FlycapEnumerator flycapEnum;
-        int flycapCount = flycapEnum.loadCameras(_log);
-
-        LOG_I("Searching for UVD cameras");
-        //TODO enumerate UVD cameras
-
-        LOG_I("Getting gimbal camera information");
-
-        if (_soroIniConfig.gimbalCameraDevice.startsWith("FlyCapture2", Qt::CaseInsensitive)) {
-            LOG_I("Gimbal camera is configured as a FLyCapture2 device");
-            bool success;
-            unsigned int serial = _soroIniConfig.gimbalCameraDevice.mid(_soroIniConfig.gimbalCameraDevice.indexOf("/") + 1).toUInt(&success);
-            if (!success) {
-                LOG_E("Cannot parse flycapture serial number for GimbalCameraDevice");
+        int flycapCount = flycapEnum.loadCameras();
+        LOG_I("Number of flycap cameras detected: " + QString::number(flycapCount));
+        if (flycapCount < _soroIniConfig.FlyCapture2CameraCount) {
+            LOG_E("The configuration files says there should be MORE flycapture cameras connected than this, something may be wrong!!!");
+        }
+        foreach (FlyCapture2::PGRGuid guid, flycapEnum.listByGuid()) {
+            LOG_I("Found flycapture camera *-" + QString::number(guid.value[3]));
+            if (cameraIndex == flycapCount) {
+                LOG_E("The configuration file says there should be LESS flycapture cameras connected than this, something may be wrong!!!");
+                break;
             }
-            if (flycapEnum.cameraExists(serial)) {
-                _gimbalFlycaptureCamera = new FlycapCamera(flycapEnum.getGUIDForSerial(serial), _log, this);
+            FlycapCamera *source = new FlycapCamera(guid, _log, this);
+            // create associated video server
+            VideoServer *server = new VideoServer(source->element(), "Camera " + QString::number(cameraIndex + 1) + " (Blackfly)",
+                                                  SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + cameraIndex), _log, this);
+            _flycapCameras.insert(cameraIndex, source);
+            _videoServers.insert(cameraIndex, server);
+            _videoFormats.insert(cameraIndex, StreamFormat());
+            connect(server, SIGNAL(stateChanged(VideoServer::State)), this, SLOT(videoServerStateChanged(VideoServer::State)));
+            cameraIndex++;
+        }
+        cameraIndex = _soroIniConfig.FlyCapture2CameraCount;
+        LOG_I("Searching for UVD cameras (" + QString::number(_soroIniConfig.BlacklistedUvdCameras.size()) + " blacklisted)");
+        UvdCameraEnumerator uvdEnum;
+        int uvdCount = uvdEnum.loadCameras();\
+        LOG_I("Number of UVD\'s/webcams detected: " + QString::number(uvdCount));
+        if (uvdCount < _soroIniConfig.UVDCameraCount) {
+            LOG_E("The configuration files says there should be MORE UVD\'s/webcams connected than this, something may be wrong!!!");
+        }
+        foreach (QString videoDevice, uvdEnum.listByDeviceName()) {
+            bool blacklisted = false;
+            foreach (QString blacklisted, _soroIniConfig.BlacklistedUvdCameras) {
+                if (videoDevice.remove('\\').remove('/').compare(blacklisted.remove('\\').remove('/'))) {
+                    LOG_I("Found UVD device " + videoDevice + ", however it is blacklisted");
+                    blacklisted = true;
+                    break;
+                }
             }
-            else {
-                LOG_E("Could not locate the gimbal camera by seria number");
+            if (blacklisted) continue;
+            if (cameraIndex == flycapCount + uvdCount) {
+                LOG_E("The configuration file says there should be LESS UVD\'s/webcams connected than this, something may be wrong!!!");
+                break;
+            }
+            LOG_I("Found UVD/Webcam device at " + videoDevice);
+            QGst::ElementPtr source = QGst::ElementFactory::make("v4l2src");
+            source->setProperty("device", videoDevice);
+            // create associated video server
+            VideoServer *server = new VideoServer(source, "Camera " + QString::number(cameraIndex + 1) + " (Webcam)",
+                                                  SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + cameraIndex), _log, this);
+            _uvdCameras.insert(cameraIndex, source);
+            _videoServers.insert(cameraIndex, server);
+            _videoFormats.insert(cameraIndex, StreamFormat());
+            connect(server, SIGNAL(stateChanged(VideoServer::State)), this, SLOT(videoServerStateChanged(VideoServer::State)));
+            cameraIndex++;
+        }
+
+        LOG_I("Starting default video streams");
+
+        if (_videoFormats.size() > 0) {
+            _videoFormats[0] = streamFormat_Mjpeg_960x720_15FPS_Q50();
+            if (_videoFormats.size() > 1) {
+                _videoFormats[1] = streamFormat_Mjpeg_960x720_15FPS_Q50();
+                if (_videoFormats.size() > 2) {
+                    _videoFormats[2] = streamFormat_Mjpeg_960x720_15FPS_Q50();
+                }
             }
         }
-        else if (_soroIniConfig.armCameraDevice.startsWith("UVD", Qt::CaseInsensitive)) {
-            LOG_I("Gimbal camera is configured as a UVD device");
-        }
-        else {
-            LOG_E("Gimbal camera has an invalid device configuration, this camera WILL NOT WORK!!!");
-        }
+        syncVideoStreams();
 
-        LOG_I("Configuring gimbal video");
-        _gimbalVideoServer = new VideoServer(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(QHostAddress::Any, _soroIniConfig.GimbalVideoPort), _log, this);
-
-        LOG_I("Starting video streams");
-        if (_gimbalFlycaptureCamera) {
-            _gimbalVideoServer->start(_gimbalFlycaptureCamera->createSource(30), STREAMFORMAT_720_MJPEG_Q30);
-        }
-        else {
-            //TODO
-        }
-
-        LOG_I("Waiting for connections...");
+        LOG_I("-------------------------------------------------------");
+        LOG_I("-------------------------------------------------------");
+        LOG_I("-------------------------------------------------------");
+        LOG_I("Initialization complete");
+        LOG_I("-------------------------------------------------------");
+        LOG_I("-------------------------------------------------------");
+        LOG_I("-------------------------------------------------------");
     }
 }
 
-//observers for network channels message received
+void RoverProcess::syncVideoStreams() {
+    LOG_I("Syncing video stream states...");
+    for (int i = 0; i < _videoServers.size(); i++) {
+        VideoServer *server = _videoServers[i];
+        StreamFormat format = _videoFormats[i];
+        if (format.Encoding == UnknownEncoding) {
+            if (server->getState() != VideoServer::IdleState) {
+                LOG_I("Camera " + server->getCameraName() + " is about to be shut down");
+                server->stop();
+            }
+        }
+        else if (server->getState() == VideoServer::IdleState) {
+            LOG_I("Camera " + server->getCameraName() + " is about to be streamed");
+            if (_flycapCameras.contains(i)) {
+                //this camera is flycap, we must set the framerate on it manually
+                _flycapCameras[i]->setFramerate(format.Framerate);
+            }
+            server->start(format);
+        }
+    }
+}
+
+// observers for video servers
+
+void RoverProcess::videoServerStateChanged(VideoServer::State state) {
+    switch (state) {
+    case VideoServer::IdleState:
+        syncVideoStreams();
+        break;
+    }
+}
+
+// observers for network channels message received
 
 void RoverProcess::armChannelMessageReceived(const char *message, Channel::MessageSize size) {
     switch (message[0]) {

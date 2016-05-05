@@ -37,7 +37,8 @@ public:
         ArmOperator, Driver, CameraOperator, Spectator
     };
 
-    explicit MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo, bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter = 0);
+    explicit MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo, VideoStreamWidget *fullscreenVideo,
+                                   bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter = 0);
 
     ~MissionControlProcess();
 
@@ -87,12 +88,10 @@ private:
     // The widgets that display video
     VideoStreamWidget *_topVideoWidget;
     VideoStreamWidget *_bottomVideoWidget;
+    VideoStreamWidget *_fullscreenVideoWidget;
 
     // These hold the video clients when in master configuration
-    VideoClient *_armVideoClient = NULL;
-    VideoClient *_driveVideoClient = NULL;
-    VideoClient *_gimbalVideoClient = NULL;
-    VideoClient *_fisheyeVideoClient = NULL;
+    QMap<int, VideoClient*> _videoClients;
 
     // Master arm stuff
     MbedChannel *_masterArmChannel = NULL;
@@ -101,6 +100,7 @@ private:
     void arm_loadMasterArmConfig();
     void initSDL();
     void quitSDL();
+    void syncVideoStreams();
 
 signals:
     void initializedSDL();
@@ -124,8 +124,8 @@ private slots:
                             int rateUp, int rateDown);
     void broadcastSocketReadyRead();
 
-    void gimbalVideoClientError(QString message);
-    void gimbalVideoClientStateChanged(VideoClient::State);
+    void videoClientError(QString message);
+    void videoClientStateChanged(VideoClient::State);
 
 public slots:
     void init();

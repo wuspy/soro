@@ -24,11 +24,12 @@ struct SoroIniLoader {
     QHostAddress VideoServerAddress;
     EndPoint ServerSide;
     int LogLevel;
+    int FlyCapture2CameraCount, UVDCameraCount;
     quint16 ArmChannelPort, DriveChannelPort, GimbalChannelPort, SharedChannelPort;
-    quint16 ArmVideoPort, DriveVideoPort, GimbalVideoPort, FisheyeVideoPort;
+    quint16 FirstVideoPort;
     quint16 ArmMbedPort, DriveMbedPort, GimbalMbedPort;
     quint16 McBroadcastPort, MasterArmPort;
-    QString armCameraDevice, driveCameraDevice, gimbalCameraDevice, fisheyeCameraDevice;
+    QList<QString> BlacklistedUvdCameras;
 
     /* Loads the configuration from the default path, and returns true if successful.
      * If there is an error, err will contain a summary of what went wrong.

@@ -7,10 +7,10 @@ const char *_tag_DriveServerPort = "DriveChannelPort";
 const char *_tag_GimbalServerPort = "GimbalChannelPort";
 const char *_tag_SharedServerPort = "SharedChannelPort";
 const char *_tag_VideoServerAddress = "VideoServerAddress";
-const char *_tag_ArmVideoPort = "ArmVideoPort";
-const char *_tag_DriveVideoPort = "DriveVideoPort";
-const char *_tag_GimbalVideoPort = "GimbalVideoPort";
-const char *_tag_FisheyeVideoPort = "FisheyeVideoPort";
+const char *_tag_FlyCapture2CameraCount = "FLyCapture2CameraCount";
+const char *_tag_UvdCameraCount = "UVDCameraCount";
+const char *_tag_UvdCameraBlacklist = "UVDCameraBlacklist";
+const char *_tag_firstVideoPort = "FirstVideoStreamPort";
 const char *_tag_LogLevel = "LogLevel";
 const char *_value_RoverIsServer = "Rover";
 const char *_value_MissionControlIsServer = "MissionControl";
@@ -96,30 +96,6 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     SharedChannelPort = tmp;
-    if (!configParser.valueAsInt(_tag_ArmVideoPort, &tmp)) {
-        *err = "No arm video port found in configuration file";
-        return false;
-    }
-    ArmVideoPort = tmp;
-    if (!configParser.valueAsInt(_tag_DriveVideoPort, &tmp)) {
-        *err = "No drive video port found in configuration file";
-        return false;
-    }
-    DriveVideoPort = tmp;
-    if (!configParser.valueAsInt(_tag_GimbalVideoPort, &tmp)) {
-        *err = "No gimbal video port found in configuration file";
-        return false;
-    }
-    GimbalVideoPort = tmp;
-    if (!configParser.valueAsInt(_tag_FisheyeVideoPort, &tmp)) {
-        *err = "No fisheye video port found in configuration file";
-        return false;
-    }
-    FisheyeVideoPort = tmp;
-    if (!configParser.valueAsInt(_tag_ArmMbedPort, &tmp)) {
-        *err = "No arm mbed port found in configuration file";
-        return false;
-    }
     ArmMbedPort = tmp;
     if (!configParser.valueAsInt(_tag_DriveMbedPort, &tmp)) {
         *err = "No drive mbed port found in configuration file";
@@ -141,10 +117,20 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     MasterArmPort = tmp;
-    armCameraDevice = configParser.value(_tag_ArmCameraDevice);
-    driveCameraDevice = configParser.value(_tag_DriveCameraDevice);
-    gimbalCameraDevice = configParser.value(_tag_GimbalCameraDevice);
-    fisheyeCameraDevice = configParser.value(_tag_FisheyeCameraDevice);
+    if (!configParser.valueAsInt(_tag_firstVideoPort, &tmp)) {
+        *err = "No first video stream port found in configuration file";
+        return false;
+    }
+    FirstVideoPort = tmp;
+    if (!configParser.valueAsInt(_tag_FlyCapture2CameraCount, &FlyCapture2CameraCount)) {
+        *err = "No FlyCapture2 camera count found in configuration file";
+        return false;
+    }
+    if (!configParser.valueAsInt(_tag_UvdCameraCount, &UVDCameraCount)) {
+        *err = "No UVD camera count found in configuration file";
+    }
+    BlacklistedUvdCameras = configParser.valueAsStringList(_tag_UvdCameraBlacklist);
+
     return true;
 }
 

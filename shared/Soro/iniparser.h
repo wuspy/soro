@@ -40,27 +40,32 @@ public:
 
     /* Gets a tag's value from the last file read in.
      */
-    QString value(const QString &tag) const;
+    QString value(const QString& tag) const;
 
     /* Gets a tag's value from the last file read in as an integer,
      * and returns true if the conversion was successful.
      */
-    bool valueAsInt(const QString &tag, int *value) const;
+    bool valueAsInt(const QString& tag, int *value) const;
 
     /* Gets a tag's value from the last file read in as a range of integers
      * and returns true if the conversion was successful
      */
-    bool valueAsIntRange(const QString &tag, int *values) const;
+    bool valueAsIntRange(const QString& tag, int *values) const;
 
     /* Gets a tag's value from the last file read in as an boolean,
      * and returns true if the conversion was successful.
      */
-    bool valueAsBool(const QString &tag, bool *value) const;
+    bool valueAsBool(const QString& tag, bool *value) const;
 
     /* Gets a tag's value from the last file read in as an QHostAddress,
      * and returns true if the conversion was successful.
      */
-    bool valueAsIP(const QString &tag, QHostAddress *value, bool allowV6) const;
+    bool valueAsIP(const QString& tag, QHostAddress *value, bool allowV6) const;
+
+    /* Gets a tag's value from the last file read in as a list of strings,
+     * separated by commas.
+     */
+    QList<QString> valueAsStringList(const QString& tag) const;
 
     /* Gets the list of tags from the last file read in.
      */
@@ -68,7 +73,7 @@ public:
 
     /* Returns true if the tag was contained in the last file read in, false otherwise.
      */
-    bool contains(const QString &tag) const;
+    bool contains(const QString& tag) const;
 
     /* Gets the number of tags/value pairs read in.
      */
@@ -76,7 +81,7 @@ public:
 
     /* Removes a loaded tag/value pair. Does not modify the original file.
      */
-    bool remove(const QString &tag);
+    bool remove(const QString& tag);
 
     /* Inserts a tag/value pair
      */

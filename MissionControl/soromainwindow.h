@@ -21,6 +21,7 @@
 #include "latlng.h"
 #include "missioncontrolprocess.h"
 #include "videostreamwidget.h"
+#include "videowindow.h"
 
 namespace Ui {
     class SoroMainWindow;
@@ -41,6 +42,7 @@ namespace MissionControl {
 
     private:
         Ui::SoroMainWindow *ui;
+        VideoWindow *_videoWindow;
         MissionControlProcess *_controller;
         bool _fullscreen = false;
         int _initTimerId = TIMER_INACTIVE;

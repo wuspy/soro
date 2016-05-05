@@ -13,11 +13,14 @@ SoroMainWindow::SoroMainWindow(bool masterSubnetNode, MissionControlProcess::Rol
     ui(new Ui::SoroMainWindow) {
 
     ui->setupUi(this);
+    _videoWindow = new VideoWindow(this);
+    _videoWindow->show();
+
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
     addWidgetShadow(ui->videoContainer, 10, 0);
 
-    _controller = new MissionControlProcess(ui->topVideoWidget, ui->bottomVideoWidget, masterSubnetNode, role, this);
+    _controller = new MissionControlProcess(ui->topVideoWidget, ui->bottomVideoWidget, _videoWindow->getVideoStreamWidget(), masterSubnetNode, role, this);
     connect(_controller, SIGNAL(error(QString)),
             this, SLOT(controllerError(QString)), Qt::DirectConnection);
     connect(_controller, SIGNAL(warning(QString)),

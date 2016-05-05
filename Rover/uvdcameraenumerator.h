@@ -1,30 +1,28 @@
-#ifndef CAMERAENUMERATOR_H
-#define CAMERAENUMERATOR_H
+#ifndef UVDCAMERAENUMERATOR_H
+#define UVDCAMERAENUMERATOR_H
 
 #include <QMap>
-
-#ifdef __linux__
-
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <linux/videodev2.h>
-
-#endif
 
 #include "logger.h"
 
 namespace Soro {
 namespace Rover {
 
-class CameraEnumerator {
+class UvdCameraEnumerator {
 
 public:
+    /* Enumerates all USB/UVD cameras connected. If successful, this will
+     * return the number of cameras detected, otherwise -1 will be returned.
+     */
+    int loadCameras();
 
+    const QList<QString>& listByDeviceName();
+
+private:
+    QList<QString> _cameras;
 };
 
 } // namespace Rover
 } // namespace Soro
 
-#endif // CAMERAENUMERATOR_H
+#endif // UVDCAMERAENUMERATOR_H

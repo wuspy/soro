@@ -19,6 +19,7 @@
 #include "videoencoding.h"
 #include "flycapenumerator.h"
 #include "flycapcamera.h"
+#include "uvdcameraenumerator.h"
 
 #include <Qt5GStreamer/QGst/Element>
 #include <Qt5GStreamer/QGst/ElementFactory>
@@ -36,7 +37,16 @@ public:
     ~RoverProcess();
 
 private:
-    const MjpegStreamFormat* STREAMFORMAT_720_MJPEG_Q30 = new MjpegStreamFormat(1080, 720, 0, 30);
+
+    inline StreamFormat streamFormat_Mjpeg_960x720_15FPS_Q50() {
+        StreamFormat format;
+        format.Encoding = MjpegEncoding;
+        format.Width = 960;
+        format.Height = 720;
+        format.Framerate = 15;
+        format.Mjpeg_Quality = 50;
+        return format;
+    }
 
     Logger *_log = NULL;
 
@@ -54,29 +64,38 @@ private:
     MbedChannel *_driveControllerMbed = NULL;
     MbedChannel *_gimbalControllerMbed = NULL;
 
-    // these hold the gst elements for the cameras that are flycapture sources
-    FlycapCamera *_armFlycaptureCamera = NULL;
-    FlycapCamera *_driveFlycaptureCamera= NULL;
-    FlycapCamera *_gimbalFlycaptureCamera= NULL;
-    FlycapCamera *_fisheyeFlycaptureCamera= NULL;
+    // These hold the gst elements for the cameras that are flycapture sources
+    QMap<int, FlycapCamera*> _flycapCameras;
 
-    // these hold the gst elements for the cameras that are V4L2 sources
-    QGst::ElementPtr _armV4L2Source;
-    QGst::ElementPtr _driveV4L2Source;
-    QGst::ElementPtr _gimbalV4L2Source;
-    QGst::ElementPtr _fisheyeV4L2Source;
+    // These hold the gst elements for the cameras that not flycapture
+    QMap<int, QGst::ElementPtr> _uvdCameras;
 
+    QMap<int, VideoServer*> _videoServers;
+
+    QMap<int, StreamFormat> _videoFormats;
+
+    // These hold the current stream formats for each camera.
+    // If a camera currently isn't being streamed, the format will have an
+    // encoding value of UnknownEncoding.
     GpsServer *_gpsServer = NULL;
 
     SoroIniLoader _soroIniConfig;
 
     int _initTimerId = TIMER_INACTIVE;
 
+    /* Trys to reconfigure the current streams to match what they
+     * are configured to be. This should be called any time there is
+     * a configuration change or a stream error.
+     */
+    void syncVideoStreams();
+
 private slots:
     void armChannelMessageReceived(const char *message, Channel::MessageSize size);
     void driveChannelMessageReceived(const char *message, Channel::MessageSize size);
     void gimbalChannelMessageReceived(const char *message, Channel::MessageSize size);
     void sharedChannelMessageReceived(const char *message, Channel::MessageSize size);
+
+    void videoServerStateChanged(VideoServer::State state);
 
 protected:
     void timerEvent(QTimerEvent *e);

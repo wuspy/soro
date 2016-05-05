@@ -769,7 +769,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
         serialize<MessageSize>(_sendBuffer, newSize);
         _sendBuffer[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
         serialize<MessageID>(_sendBuffer + sizeof(MessageSize) + 1, _nextSendID);
-        memcpy(_sendBuffer + sizeof(MessageID) + sizeof(MessageSize) + 1, message, size);
+        memcpy(_sendBuffer + sizeof(MessageID) + sizeof(MessageSize) + 1, message, (size_t)size);
         status = _tcpSocket->write(_sendBuffer, newSize);
     }
     else {

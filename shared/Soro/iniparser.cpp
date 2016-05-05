@@ -98,6 +98,21 @@ bool IniParser::valueAsIP(const QString &tag, QHostAddress* value, bool allowV6)
     return false;
 }
 
+QList<QString> IniParser::valueAsStringList(const QString &tag) const {
+    QString rawValue = value(tag).trimmed();
+    QList<QString> list;
+    while (!rawValue.isEmpty()) {
+        int end = rawValue.indexOf(",");
+        if (end < 0) {
+            list.append(rawValue);
+            break;
+        }
+        list.append(rawValue.mid(0, end));
+        rawValue = rawValue.mid(end + 1).trimmed();
+    }
+    return list;
+}
+
 int IniParser::count() const {
     return _contents.size();
 }

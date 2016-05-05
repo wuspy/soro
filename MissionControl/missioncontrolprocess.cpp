@@ -14,12 +14,13 @@
 namespace Soro {
 namespace MissionControl {
 
-MissionControlProcess::MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo,
+MissionControlProcess::MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo, VideoStreamWidget *fullscreenVideo,
                                              bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter) : QObject(presenter) {
     _masterNode = masterSubnetNode;
     _role = role;
     _topVideoWidget = topVideo;
     _bottomVideoWidget = bottomVideo;
+    _fullscreenVideoWidget = fullscreenVideo;
     _log = new Logger(this);
     _log->setLogfile(QCoreApplication::applicationDirPath() + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm_AP") + ".log");
     _log->RouteToQtLogger = true;
@@ -171,41 +172,80 @@ void MissionControlProcess::init() {
     LOG_I("***************Initializing Video system******************");
 
     if (_masterNode) {
-        LOG_I("Creating video clients");
-        _armVideoClient = new VideoClient(VIDEOSTREAM_NAME_ARM, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmVideoPort), QHostAddress::Any, _log, this);
-        _driveVideoClient = new VideoClient(VIDEOSTREAM_NAME_DRIVE, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveVideoPort), QHostAddress::Any, _log, this);
-        _gimbalVideoClient = new VideoClient(VIDEOSTREAM_NAME_GIMBAL, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalVideoPort), QHostAddress::Any, _log, this);
-        _fisheyeVideoClient = new VideoClient(VIDEOSTREAM_NAME_FISHEYE, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.FisheyeVideoPort), QHostAddress::Any, _log, this);
-
-        connect(_gimbalVideoClient, SIGNAL(serverError(QString)),
-                this, SLOT(gimbalVideoClientError(QString)));
-        connect(_gimbalVideoClient, SIGNAL(stateChanged(VideoClient::State)),
-                this, SLOT(gimbalVideoClientStateChanged(VideoClient::State)));
+        LOG_I("Creating video clients for rover");
+        for (int i = 0; i < _soroIniConfig.FlyCapture2CameraCount; i++) {
+            VideoClient *client = new VideoClient("Camera " + QString::number(i + 1) + " (Blackfly)",
+                                                  SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FirstVideoPort + i),
+                                                  QHostAddress::Any, _log, this);
+            _videoClients.insert(i, client);
+            connect(client, SIGNAL(stateChanged(VideoClient::State)),
+                    this, SLOT(videoClientStateChanged(VideoClient::State)));
+        }
+        for (int i = _soroIniConfig.FlyCapture2CameraCount; i < _soroIniConfig.FlyCapture2CameraCount + _soroIniConfig.UVDCameraCount; i++) {
+            VideoClient *client = new VideoClient("Camera " + QString::number(i + 1) + " (Webcam)",
+                                                  SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FirstVideoPort + i),
+                                                  QHostAddress::Any, _log, this);
+            _videoClients.insert(i, client);
+            connect(client, SIGNAL(stateChanged(VideoClient::State)),
+                    this, SLOT(videoClientStateChanged(VideoClient::State)));
+        }
     }
     else {
-
+        LOG_I("Creating mission control subnet video clients");
+        //_topVideoWidget->play(SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FirstVideoPort + 1), );
     }
 
-    //show default video messages
-    _topVideoWidget->stop("Waiting for rover connection...");
-    _bottomVideoWidget->stop("Waiting for rover connection...");
+    syncVideoStreams();
 }
 
-void MissionControlProcess::gimbalVideoClientError(QString message) {
-     _topVideoWidget->stop("This rover experienced an error trying to stream this camera: \"" + message + "\"");
+void MissionControlProcess::videoClientError(QString message) {
+    //_topVideoWidget->stop("This rover experienced an error trying to stream this camera: \"" + message + "\"");
 }
 
-void MissionControlProcess::gimbalVideoClientStateChanged(VideoClient::State state) {
-    switch (state) {
-    case VideoClient::StreamingState:
-        _topVideoWidget->play(_gimbalVideoClient->createSource(), _gimbalVideoClient->getStreamFormat().Encoding);
-        break;
-    case VideoClient::ConnectedState:
-        _topVideoWidget->stop("The rover isn't sending this stream right now.");
-        break;
-    case VideoClient::ConnectingState:
-        _topVideoWidget->stop("Connection to the rover has been lost.");
-        break;
+void MissionControlProcess::videoClientStateChanged(VideoClient::State) {
+    syncVideoStreams();
+}
+
+void MissionControlProcess::syncVideoStreams() {
+    LOG_I("Syncing video stream states");
+    if (_videoClients.contains(0)) {
+        switch (_videoClients[0]->getState()) {
+        case VideoClient::StreamingState:
+            _fullscreenVideoWidget->play(_videoClients[0]->element(), _videoClients[0]->getStreamFormat().Encoding);
+            break;
+        case VideoClient::ConnectedState:
+            _fullscreenVideoWidget->stop("The rover isn't sending this stream right now.");
+            break;
+        case VideoClient::ConnectingState:
+            _fullscreenVideoWidget->stop("You\'re not connected to the rover.");
+            break;
+        }
+    }
+    if (_videoClients.contains(1)) {
+        switch (_videoClients[1]->getState()) {
+        case VideoClient::StreamingState:
+            _topVideoWidget->play(_videoClients[1]->element(), _videoClients[1]->getStreamFormat().Encoding);
+            break;
+        case VideoClient::ConnectedState:
+            _topVideoWidget->stop("The rover isn't sending this stream right now.");
+            break;
+        case VideoClient::ConnectingState:
+            _topVideoWidget->stop("You\'re not connected to the rover.");
+            break;
+        }
+    }
+    if (_videoClients.contains(2)) {
+        switch (_videoClients[2]->getState()) {
+        case VideoClient::StreamingState:
+            _bottomVideoWidget->play(_videoClients[2]->element(), _videoClients[2]->getStreamFormat().Encoding);
+            break;
+        case VideoClient::ConnectedState:
+            _bottomVideoWidget->stop("The rover isn't sending this stream right now.");
+            break;
+        case VideoClient::ConnectingState:
+            _bottomVideoWidget->stop("You\'re not connected to the rover.");
+            break;
+        }
     }
 }
 

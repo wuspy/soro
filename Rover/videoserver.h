@@ -40,13 +40,13 @@ public:
         StreamingState
     };
 
-    explicit VideoServer(QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit VideoServer(QGst::ElementPtr camera, QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+    ~VideoServer();
 
     void stop();
-
-    void start(QGst::ElementPtr source, const StreamFormat *format);
-
-    ~VideoServer();
+    void start(StreamFormat format);
+    QString getCameraName();
+    VideoServer::State getState();
 
 private:
 
@@ -57,14 +57,9 @@ private:
     QGst::ElementPtr _camera;
     Channel *_controlChannel = NULL;
     QUdpSocket *_videoSocket = NULL;
-    const StreamFormat *_format = NULL;
+    StreamFormat _format;
     State _state = IdleState;
-    int _startTimerId = TIMER_INACTIVE;
 
-    /* Begins streaming video to the provided address.
-     * This will fail if the stream is not in WaitingState
-     */
-    void beginStream(SocketAddress address);
     /* Resets the stream pipeline and releases all elements
      * except the source camera. This does not alter the server
      * state in itself.
@@ -74,11 +69,16 @@ private:
      */
     void setState(VideoServer::State state);
 
-
 private slots:
     void onBusMessage(const QGst::MessagePtr & message);
     void videoSocketReadyRead();
     void controlChannelStateChanged(Channel::State state);
+    void startInternal();
+
+    /* Begins streaming video to the provided address.
+     * This will fail if the stream is not in WaitingState
+     */
+    void beginStream(SocketAddress address);
 
 signals:
     void stateChanged(VideoServer::State state);

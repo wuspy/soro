@@ -11,8 +11,19 @@ enum VideoEncoding {
 
 struct StreamFormat {
     int Width = 0, Height = 0, Framerate = 0;
-    int Mjpeg_Quality;
-    int Mpeg2_Bitrate;
+    int Mjpeg_Quality = 0;
+    int Mpeg2_Bitrate = 0;
+
+    StreamFormat() { }
+
+    StreamFormat(const StreamFormat& other) {
+        Encoding = other.Encoding;
+        Width = other.Width;
+        Height = other.Height;
+        Mjpeg_Quality = other.Mjpeg_Quality;
+        Mpeg2_Bitrate = other.Mpeg2_Bitrate;
+        Framerate = other.Framerate;
+    }
 
     VideoEncoding Encoding = UnknownEncoding;
 

@@ -65,7 +65,28 @@ SetupDialog::~SetupDialog() {
 }
 
 bool SetupDialog::verifyName() {
-    QRegularExpression antiBill("Bush")
+    if (ui->nameLineEdit->text().trimmed().isEmpty()) {
+        QMessageBox::critical(this, "Error", "Enter a name for your mission control", QMessageBox::Ok);
+        return false;
+    }
+    QRegularExpression antiBill("bu(s|\\$)h.*("
+                                    "(made.*m(o|0)ney)"
+                                    "|iraq"
+                                    "|((9|n(i|1)ne)(-|\\/| )(11|e(1|l)even))"
+                                    "| wmd"
+                                    "|weap(o|0)n.*mass destruct(i|1)(o|0)n"
+                                    "|jet *fuel"
+                                ")|inside.*j(o|0)b"
+                                "|(george *(w( |\\.|$)|bu(s|\\$)h))"
+                                "|((jet *fuel|melt).*(stee(l|1)|beams))"
+                                "|((thermite|b(o|0)mb).*gr(o|0)und *(zer(o|0)|0))",
+                                QRegularExpression::CaseInsensitiveOption);
+    QRegularExpressionMatch match = antiBill.match(ui->nameLineEdit->text());
+    if (match.hasMatch()) {
+        QMessageBox::information(this, "Error", "Fuck off Bill", QMessageBox::Ok);
+        return false;
+    }
+    return true;
 }
 
 void SetupDialog::armOperatorClicked() {

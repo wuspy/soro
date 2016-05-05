@@ -19,11 +19,7 @@
 namespace Soro {
 namespace MissionControl {
 
-class VideoClientSource : public QGst::Utils::ApplicationSource {
-    friend class VideoClient;
-};
-
-class VideoClient : public QObject {
+class VideoClient : public QObject, public QGst::Utils::ApplicationSource {
     Q_OBJECT
 public:
     enum State {
@@ -43,8 +39,6 @@ public:
      */
     StreamFormat getStreamFormat() const;
     VideoClient::State getState() const;
-    QGst::ElementPtr createSource();
-    void clearSource();
 
 signals:
     void stateChanged(VideoClient::State state);
@@ -54,13 +48,13 @@ signals:
 private:
     char *_buffer;
     QString _name;
+    bool _needsData = false;
     SocketAddress _server;
     Logger *_log;
     State _state = ConnectingState;
     StreamFormat _format;
     QUdpSocket *_videoSocket;
     Channel *_controlChannel;
-    VideoClientSource *_source = NULL;
     int _punchTimerId = TIMER_INACTIVE;
     int _calculateBitrateTimerId = TIMER_INACTIVE;
     QList<SocketAddress> _forwardAddresses;
@@ -76,6 +70,16 @@ private slots:
 
 protected:
     void timerEvent(QTimerEvent *e);
+
+    /*! Called when the appsrc needs more data. A buffer or EOS should be pushed
+     * to appsrc from this thread or another thread. length is just a hint and when
+     * it is set to -1, any number of bytes can be pushed into appsrc. */
+    void needData(uint length) Q_DECL_OVERRIDE;
+
+    /*! Called when appsrc has enough data. It is recommended that the application
+     * stops calling pushBuffer() until the needData() method is called again to
+     * avoid excessive buffer queueing. */
+    void enoughData() Q_DECL_OVERRIDE;
 };
 
 } // namespace MissionControl

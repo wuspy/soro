@@ -13,14 +13,13 @@
 
 #include "logger.h"
 #include "soro_global.h"
-#include "flycapsource.h"
 
 namespace Soro {
 namespace Rover {
 
 /* Manages a flycapture camera for use with gstreamer.
  */
-class FlycapCamera : public QObject {
+class FlycapCamera : public QObject, public QGst::Utils::ApplicationSource  {
     Q_OBJECT
 
 public:
@@ -32,23 +31,13 @@ public:
     int getVideoHeight() const;
     int getFramerate() const;
 
-    /* Creates a gstreamer source element for this camera that will output
-     * the given framerate. A FlycapCamera can only feed once source at a time,
-     * so calling this method while another source is still active means the
-     * previous source will no longer receive data.
-     */
-    QGst::ElementPtr createSource(int framerate);
-
-    /* Clears pointer references to the existing gstreamer source
-     * and stops feeding it.
-     */
-    void clearSource();
+    void setFramerate(int framerate);
 
 private:
+    bool _needsData = false;
     QString LOG_TAG;
     Logger *_log = NULL;
     FlyCapture2::Camera _camera;
-    FlycapSource *_source = NULL;
     int _captureTimerId = TIMER_INACTIVE;
     int _framerate = 0;
     int _width, _height;
@@ -56,22 +45,7 @@ private:
 
 protected:
     void timerEvent(QTimerEvent *e);
-};
 
-/* Connects a Point Grey Flycapture camera as a source in gstreamer.
- * This source can be created from a FlycapCamera object.
- */
-class FlycapSource : public QGst::Utils::ApplicationSource {
-
-    friend class FlycapCamera;
-
-    ~FlycapSource();
-
-private:
-    FlycapSource(int width, int height, int framerate);
-    bool NeedsData = false;
-
-protected:
     /*! Called when the appsrc needs more data. A buffer or EOS should be pushed
      * to appsrc from this thread or another thread. length is just a hint and when
      * it is set to -1, any number of bytes can be pushed into appsrc. */

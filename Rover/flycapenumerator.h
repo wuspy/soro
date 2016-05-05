@@ -15,8 +15,9 @@ public:
     /* Enumerates all flycapture cameras connected. If successful, this will
      * return the number of cameras detected, otherwise -1 will be returned.
      */
-    int loadCameras(Logger *log = 0);
+    int loadCameras();
 
+    QList<FlyCapture2::PGRGuid> listByGuid();
     bool cameraExists(unsigned int serial);
     FlyCapture2::PGRGuid getGUIDForSerial(unsigned int serial);
 

@@ -5,6 +5,7 @@
 #include <QNetworkInterface>
 #include <QUdpSocket>
 #include <QMap>
+#include <QMessageBox>
 
 #include "soroini.h"
 #include "soro_global.h"
