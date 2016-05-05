@@ -10,7 +10,7 @@ FlycapSource::FlycapSource(int width, int height, int framerate) {
     setSize(-1);
     QString caps = "video/x-raw,format=RGB,"
                     "width=(int)" + QString::number(width) + ","
-                    "height=(int)" + QString::number(height); + ","
+                    "height=(int)" + QString::number(height) + ","
                     "framerate=(fraction)" + QString::number(framerate) + "/1";
 
     // configure application source
