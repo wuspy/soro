@@ -40,11 +40,11 @@ public:
         StreamingState
     };
 
-    explicit VideoServer(QGst::ElementPtr camera, QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit VideoServer(QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
     ~VideoServer();
 
     void stop();
-    void start(StreamFormat format);
+    void start(QGst::ElementPtr camera, StreamFormat format);
     QString getCameraName();
     VideoServer::State getState();
 

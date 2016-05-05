@@ -5,11 +5,10 @@
 namespace Soro {
 namespace Rover {
 
-VideoServer::VideoServer(QGst::ElementPtr camera, QString name, SocketAddress host, Logger *log, QObject *parent) : QObject(parent) {
+VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject *parent) : QObject(parent) {
     _name = name;
     _log = log;
     _host = host;
-    _camera = camera;
 
     LOG_I("Creating new video server");
 
@@ -25,7 +24,6 @@ VideoServer::VideoServer(QGst::ElementPtr camera, QString name, SocketAddress ho
 
 VideoServer::~VideoServer() {
     stop();
-    _camera.clear();
 }
 
 void VideoServer::stop() {
@@ -47,10 +45,11 @@ void VideoServer::stop() {
     setState(IdleState);
 }
 
-void VideoServer::start(StreamFormat format) {
+void VideoServer::start(QGst::ElementPtr camera, StreamFormat format) {
+    LOG_I("start() called");
+    resetPipeline();
     if (_state == IdleState) {
-        LOG_I("start() called");
-        resetPipeline();
+        _camera = camera;
         _format = format;
         setState(WaitingState);
         startInternal();
@@ -139,6 +138,9 @@ void VideoServer::resetPipeline() {
         LOG_I("Resetting gstreamer pipeline");
         _pipeline->setState(QGst::StateNull);
         _pipeline.clear();
+    }
+    if (_camera) {
+        _camera.clear();
     }
 }
 

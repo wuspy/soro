@@ -3,6 +3,31 @@
 namespace Soro {
 namespace Rover {
 
+FlycapSource::FlycapSource(int width, int height, int framerate) {
+    setLatency(-1, -1);
+    setLive(true);
+    setStreamType(QGst::AppStreamTypeStream);
+    setSize(-1);
+    QString caps = "video/x-raw,format=RGB,"
+                    "width=(int)" + QString::number(width) + ","
+                    "height=(int)" + QString::number(height); + ","
+                    "framerate=(fraction)" + QString::number(framerate) + "/1";
+
+    // configure application source
+    setCaps(QGst::Caps::fromString(caps));
+}
+
+void FlycapSource::needData(uint length) {
+    Q_UNUSED(length);
+    NeedsData = true;
+}
+
+void FlycapSource::enoughData() {
+    NeedsData = false;
+}
+
+/////////////////////////////////////////////////////
+
 FlycapCamera::FlycapCamera(FlyCapture2::PGRGuid guid, Logger *log, QObject *parent) : QObject(parent) {
     _log = log;
     LOG_TAG = "FlycapCamera(*-" + QString::number(guid.value[3]) + ")";
@@ -26,40 +51,38 @@ FlycapCamera::FlycapCamera(FlyCapture2::PGRGuid guid, Logger *log, QObject *pare
         LOG_E("Could not determine flycap sensor resolution");
     }
 
-    _camera.StartCapture();
     LOG_I("Camera sensor is " + QString(info.sensorResolution) + " " +  QString(info.sensorInfo));
-
-    setLatency(-1, -1);
-    setLive(true);
-    setStreamType(QGst::AppStreamTypeStream);
-    setSize(-1);
 
     // start flycapture camera
     _camera.StartCapture();
-    _needsData = false;
+    _framerate = 0;
 }
 
-void FlycapCamera::setFramerate(int framerate) {
-    if (framerate == 0) {
-        LOG_W("Cannot set framerate to 0, I\'m ignoring your request");
-        return;
-    }
-    LOG_I("Changing framerate to " + QString::number(framerate) + "/1");
+QGst::ElementPtr FlycapCamera::createElement(int framerate) {
+    clearElement();
     _framerate = framerate;
-    // create caps string
-    QString caps = "video/x-raw,format=RGB,"
-                    "width=(int)" + QString::number(_width) + ","
-                    "height=(int)" + QString::number(_height); + ","
-                    "framerate=(fraction)" + QString::number(framerate) + "/1";
-
-    // configure application source
-    setCaps(QGst::Caps::fromString(caps));
+    if (framerate == 0) {
+        LOG_W("Cannot create source with framerate to 0, returning null ElementPtr");
+        return QGst::ElementPtr::wrap(NULL, false);
+    }
+    LOG_I("Creating new element with framerate to " + QString::number(framerate) + "/1");
+    _source = new FlycapSource(_width, _height, _framerate);
     killTimer(_captureTimerId);
     _captureTimerId = startTimer(1000 / framerate, Qt::PreciseTimer);
+    return _source->element();
+}
+
+void FlycapCamera::clearElement() {
+    if (_source) {
+        delete _source;
+        _framerate = 0;
+    }
 }
 
 FlycapCamera::~FlycapCamera() {
-    endOfStream();
+    if (_source) {
+        _source->endOfStream();
+    }
     if (_camera.IsConnected()) {
         _camera.StopCapture();
         _camera.Disconnect();
@@ -68,11 +91,11 @@ FlycapCamera::~FlycapCamera() {
 
 void FlycapCamera::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
-    if (_needsData) {
+    if (_source && _source->NeedsData) {
         if (!_camera.IsConnected()) {
             LOG_E("Flycap camera is no longer connected (or never was connected), sending EOS");
-            endOfStream();
-            _needsData = false;
+            _source->endOfStream();
+            _source->NeedsData = false;
             return;
         }
 
@@ -110,17 +133,8 @@ void FlycapCamera::timerEvent(QTimerEvent *e) {
 
         //push frame to source
         ptr->unmap(memory);
-        pushBuffer(ptr);
+        _source->pushBuffer(ptr);
     }
-}
-
-void FlycapCamera::needData(uint length) {
-    Q_UNUSED(length);
-    _needsData = true;
-}
-
-void FlycapCamera::enoughData() {
-    _needsData = false;
 }
 
 int FlycapCamera::getVideoWidth() const {

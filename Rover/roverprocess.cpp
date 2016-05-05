@@ -122,9 +122,8 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 break;
             }
             FlycapCamera *source = new FlycapCamera(guid, _log, this);
-            source->setFramerate(15);
             // create associated video server
-            VideoServer *server = new VideoServer(source->element(), "Camera " + QString::number(cameraIndex + 1) + " (Blackfly)",
+            VideoServer *server = new VideoServer("Camera " + QString::number(cameraIndex + 1) + " (Blackfly)",
                                                   SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + cameraIndex), _log, this);
             _flycapCameras.insert(cameraIndex, source);
             _videoServers.insert(cameraIndex, server);
@@ -158,7 +157,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
             QGst::ElementPtr source = QGst::ElementFactory::make("v4l2src");
             source->setProperty("device", videoDevice);
             // create associated video server
-            VideoServer *server = new VideoServer(source, "Camera " + QString::number(cameraIndex + 1) + " (Webcam)",
+            VideoServer *server = new VideoServer("Camera " + QString::number(cameraIndex + 1) + " (Webcam)",
                                                   SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + cameraIndex), _log, this);
             _uvdCameras.insert(cameraIndex, source);
             _videoServers.insert(cameraIndex, server);
@@ -205,14 +204,12 @@ void RoverProcess::syncVideoStreams() {
             LOG_I("Camera " + server->getCameraName() + " is about to be streamed");
             if (_flycapCameras.contains(i)) {
                 //this camera is flycap, we must set the framerate on it manually
-                _flycapCameras[i]->setFramerate(format.Framerate);
-                //give the server a format with no framerate specified, since the flycap camera will regulate that on its own
-                StreamFormat noFrameratFormat(format);
-                noFrameratFormat.Framerate = 0;
-                server->start(noFrameratFormat);
+                StreamFormat noFramerateFormat(format);
+                noFramerateFormat.Framerate = 0;
+                server->start(_flycapCameras[i]->createElement(format.Framerate), noFramerateFormat);
             }
             else {
-                server->start(format);
+                server->start(_uvdCameras[i], format);
             }
 
         }
