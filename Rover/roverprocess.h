@@ -48,6 +48,16 @@ private:
         return format;
     }
 
+    inline StreamFormat streamFormat_Mjpeg_Original_15FPS_Q30() {
+        StreamFormat format;
+        format.Encoding = MjpegEncoding;
+        format.Width = 0;
+        format.Height = 0;
+        format.Framerate = 15;
+        format.Mjpeg_Quality = 50;
+        return format;
+    }
+
     Logger *_log = NULL;
 
     Channel *_armChannel = NULL;

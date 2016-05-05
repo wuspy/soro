@@ -169,11 +169,11 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         LOG_I("Starting default video streams");
 
         if (_videoFormats.size() > 0) {
-            _videoFormats[0] = streamFormat_Mjpeg_960x720_15FPS_Q50();
+            _videoFormats[0] = streamFormat_Mjpeg_Original_15FPS_Q30();
             if (_videoFormats.size() > 1) {
-                _videoFormats[1] = streamFormat_Mjpeg_960x720_15FPS_Q50();
+                _videoFormats[1] = streamFormat_Mjpeg_Original_15FPS_Q30();
                 if (_videoFormats.size() > 2) {
-                    _videoFormats[2] = streamFormat_Mjpeg_960x720_15FPS_Q50();
+                    _videoFormats[2] = streamFormat_Mjpeg_Original_15FPS_Q30();
                 }
             }
         }
