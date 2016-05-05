@@ -121,13 +121,10 @@ void VideoServer::beginStream(SocketAddress address) {
     default:
         break;
     }
-    bool ok;
-    QHostAddress addressIPV4(address.host.toIPv4Address(&ok));
-    args << (ok ? addressIPV4.toString() : address.host.toString());
-    args << QString::number(address.port);
 
-    QHostAddress hostIPV4(_host.host.toIPv4Address(&ok));
-    args << (ok ? hostIPV4.toString() : _host.host.toString());
+    args << QHostAddress(address.host.toIPv4Address()).toString();
+    args << QString::number(address.port);
+    args << QHostAddress(_host.host.toIPv4Address()).toString();
     args << QString::number(_host.port);
 
     _child.setArguments(args);
