@@ -206,7 +206,6 @@ void VideoServer::onBusMessage(const QGst::MessagePtr & message) {
         break;
     case QGst::MessageError: {
         QString errorString = message.staticCast<QGst::ErrorMessage>()->error().message();
-        LOG_E(message.toStdString());
         LOG_E("Pipeline error: " + errorString);
         stop();
         QByteArray message;
