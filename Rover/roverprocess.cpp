@@ -122,6 +122,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 break;
             }
             FlycapCamera *source = new FlycapCamera(guid, _log, this);
+            source->setFramerate(15);
             // create associated video server
             VideoServer *server = new VideoServer(source->element(), "Camera " + QString::number(cameraIndex + 1) + " (Blackfly)",
                                                   SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + cameraIndex), _log, this);
