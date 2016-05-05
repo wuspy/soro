@@ -141,8 +141,8 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         }
         foreach (QString videoDevice, uvdEnum.listByDeviceName()) {
             bool blacklisted = false;
-            foreach (QString blacklisted, _soroIniConfig.BlacklistedUvdCameras) {
-                if (videoDevice.mid(videoDevice.size() - 1).compare(blacklisted.mid(blacklisted.size() - 1)) == 0) {
+            foreach (QString blacklistedDevice, _soroIniConfig.BlacklistedUvdCameras) {
+                if (videoDevice.mid(videoDevice.size() - 1).compare(blacklistedDevice.mid(blacklistedDevice.size() - 1)) == 0) {
                     LOG_I("Found UVD device " + videoDevice + ", however it is blacklisted");
                     blacklisted = true;
                     break;
