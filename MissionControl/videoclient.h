@@ -42,10 +42,10 @@ public:
     SocketAddress getHostAddress() const;
     VideoClient::State getState() const;
     QString getCameraName() const;
+    QString getErrorString() const;
 
 signals:
     void stateChanged(VideoClient *client, VideoClient::State state);
-    void serverError(VideoClient *client, QString message);
     void statisticsUpdate(VideoClient *client, long bitrate);
     void nameChanged(VideoClient *client, QString name);
 
@@ -64,6 +64,7 @@ private:
     QList<SocketAddress> _forwardAddresses;
     long _bitCount = 0;
     int _lastBitrate = 0;
+    QString _errorString = "";
 
     void setState(State state);
     void setCameraName(QString name);

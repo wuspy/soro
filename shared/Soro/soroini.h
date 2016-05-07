@@ -21,10 +21,8 @@ struct SoroIniLoader {
     };
 
     QHostAddress ServerAddress;
-    QHostAddress VideoServerAddress;
     EndPoint ServerSide;
     int LogLevel;
-    int FlyCapture2CameraCount, UVDCameraCount;
     quint16 ArmChannelPort, DriveChannelPort, GimbalChannelPort, SharedChannelPort;
     quint16 FirstVideoPort;
     quint16 ArmMbedPort, DriveMbedPort, GimbalMbedPort;

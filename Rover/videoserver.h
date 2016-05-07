@@ -60,7 +60,7 @@ private:
 
 private slots:
     void videoSocketReadyRead();
-    void controlChannelStateChanged(Channel::State state);
+    void controlChannelStateChanged(Channel *channel, Channel::State state);
     void startInternal();
     void childStateChanged(QProcess::ProcessState state);
 

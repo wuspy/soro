@@ -16,11 +16,6 @@
 #define CHANNEL_NAME_GIMBAL "Soro_GimbalChannel"
 #define CHANNEL_NAME_SHARED "Soro_SharedTcpChannel"
 
-#define VIDEOSTREAM_NAME_ARM "Arm Camera"
-#define VIDEOSTREAM_NAME_DRIVE "Drive Camera"
-#define VIDEOSTREAM_NAME_GIMBAL "Gimbal Camera"
-#define VIDEOSTREAM_NAME_FISHEYE "Fisheye Camera"
-
 #define STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS 1200
 #define STREAMPROCESS_ERR_INVALID_ARGUMENT 1201
 #define STREAMPROCESS_ERR_GSTREAMER_EOS 1202
@@ -37,9 +32,9 @@ enum SharedMessageType {
     SharedMessage_MissionControlDisconnected,
     SharedMessage_RequestActivateCamera,
     SharedMessage_RequestDeactivateCamera,
-    SharedMessage_CameraConfigurationChanged,
     SharedMessage_RoverVideoServerError,
-    SharedMessage_MissionControlChat
+    SharedMessage_MissionControlChat,
+    SharedMessage_CameraChanged
 };
 
 enum RoverSubsystemState {
@@ -73,8 +68,7 @@ inline void addWidgetShadow(QWidget *target, int radius, int offset) {
 
 #define MBED_ID_MASTER_ARM 1
 #define MBED_ID_ARM 2
-#define MBED_ID_DRIVE 3
-#define MBED_ID_GIMBAL 4
+#define MBED_ID_DRIVE_CAMERA 3
 
 namespace Soro {
 

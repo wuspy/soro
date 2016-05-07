@@ -87,7 +87,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         // create mbed channels
         _armControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.ArmMbedPort), MBED_ID_ARM, this, _log);
-        _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.DriveMbedPort), MBED_ID_DRIVE, this, _log);
+        _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.DriveMbedPort), MBED_ID_DRIVE_CAMERA, this, _log);
 
         // observers for mbed connectivity changes
         connect(_armControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
@@ -126,7 +126,6 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
             VideoServer *server = new VideoServer("Camera " + QString::number(_videoServers.size() + 1),
                                                   SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + _videoServers.size()), _log, this);
             _videoServers.append(server);
-            _videoFormats.append(StreamFormat());
             _flycapCameras.insert(_videoServers.size() - 1, guid);
             connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(videoServerStateChanged(VideoServer*, VideoServer::State)));
             connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(videoServerError(VideoServer*,QString)));
@@ -152,20 +151,19 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
             VideoServer *server = new VideoServer("Camera " + QString::number(_videoServers.size() + 1),
                                                   SocketAddress(QHostAddress::Any, _soroIniConfig.FirstVideoPort + _videoServers.size()), _log, this);
             _videoServers.append(server);
-            _videoFormats.append(StreamFormat());
             _uvdCameras.insert(_videoServers.size() - 1, videoDevice);
             connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(videoServerStateChanged(VideoServer*, VideoServer::State)));
             connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(videoServerError(VideoServer*,QString)));
         }
 
-        LOG_I("**************Streaming default cameras*****************");
+        LOG_I("**************Streaming first 3 cameras*****************");
 
         for (int cameraID = 0; cameraID < qMin(3, _videoServers.size()); cameraID++) {
             if (_flycapCameras.contains(cameraID)) {
-                _videoServers[cameraID]->start(_flycapCameras[cameraID], streamFormatNormalQuality());
+                _videoServers[cameraID]->start(_flycapCameras[cameraID], streamFormatHighQuality());
             }
             else if (_uvdCameras.contains(cameraID)) {
-                _videoServers[cameraID]->start(_uvdCameras[cameraID], streamFormatNormalQuality());
+                _videoServers[cameraID]->start(_uvdCameras[cameraID], streamFormatHighQuality());
             }
         }
 
@@ -181,52 +179,11 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
 // observers for video servers
 
-void RoverProcess::videoServerStateChanged(VideoServer *server, VideoServer::State state) {
-    Q_UNUSED(state);
-
-    // get the camera ID
-    int cameraID = _videoServers.indexOf(server);
-    if (cameraID < 0) {
-        LOG_E("While handling video configuration change, reverse camera ID lookup failed for video server " + server->getCameraName());
-        return;
-    }
-
-    // update the active streams format list
-    _videoFormats[cameraID] = server->getCurrentStreamFormat();
-
-    // notify mission control
-    sendCameraStateMessage();
-}
-
-void RoverProcess::videoServerError(VideoServer *server, QString message) {
-    // notify mcc of the error
-    QByteArray byteArray;
-    QDataStream stream(&byteArray, QIODevice::WriteOnly);
-    SharedMessageType messageType = SharedMessage_RoverVideoServerError;
-
-    stream << reinterpret_cast<qint32&>(messageType);
-
-    // include the camera ID
-    qint32 cameraID = _videoServers.indexOf(server);
-    if (cameraID < 0) {
-        LOG_E("While handling video stream error, reverse camera ID lookup failed for video server " + server->getCameraName());
-        return;
-    }
-
-    stream << cameraID;
-    stream << message;
-    _sharedChannel->sendMessage(byteArray.constData(), byteArray.size());
-
-    // remove from active streams list
-    _videoFormats[cameraID].Encoding = UnknownOrNoEncoding;
-}
-
 void RoverProcess::sharedChannelStateChanged(Channel *channel, Channel::State state) {
     Q_UNUSED(channel);
     if (state == Channel::ConnectedState) {
         // send all status information since we just connected
         sendSystemStatusMessage();
-        sendCameraStateMessage();
     }
 }
 
@@ -239,29 +196,12 @@ void RoverProcess::sendSystemStatusMessage() {
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_RoverStatusUpdate;
-    MbedChannel::State armState = _armControllerMbed->getState();
-    MbedChannel::State driveGimbalState = _driveGimbalControllerMbed->getState();
-
-    stream << reinterpret_cast<qint32&>(messageType);
-    stream << reinterpret_cast<qint32&>(armState);
-    stream << reinterpret_cast<qint32&>(driveGimbalState);
-
-    _sharedChannel->sendMessage(message.constData(), message.size());
-}
-
-void RoverProcess::sendCameraStateMessage() {
-    // send a message to mcc with a list of all current camera stream formats
-    QByteArray message;
-    QDataStream stream(&message, QIODevice::WriteOnly);
-    SharedMessageType messageType = SharedMessage_CameraConfigurationChanged;
+    bool armState = _armControllerMbed->getState() == MbedChannel::ConnectedState;
+    bool driveGimbalState = _driveGimbalControllerMbed->getState() == MbedChannel::ConnectedState;
 
     stream << reinterpret_cast<quint32&>(messageType);
-    // include number of cameras first
-    stream << (qint32)_videoFormats.size();
-
-    foreach (StreamFormat format, _videoFormats) {
-        stream << format;
-    }
+    stream << armState;
+    stream << driveGimbalState;
 
     _sharedChannel->sendMessage(message.constData(), message.size());
 }
@@ -307,14 +247,13 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     QDataStream stream(byteArray);
     SharedMessageType messageType;
 
-    stream >> reinterpret_cast<qint32&>(messageType);
+    stream >> reinterpret_cast<quint32&>(messageType);
     switch (messageType) {
     case SharedMessage_RequestActivateCamera: {
         qint32 camera;
         StreamFormat format;
         stream >> camera;
         stream >> format;
-        _videoFormats.insert(camera, format);
         VideoServer *server = _videoServers[camera];
 
         LOG_I("Camera " + server->getCameraName() + " is about to be streamed");
@@ -323,7 +262,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
             server->start(_flycapCameras[camera], format);
         }
         else {
-            server->start("UVD:" + _uvdCameras[camera], format);
+            server->start(_uvdCameras[camera], format);
         }
     }
         break;
@@ -343,7 +282,6 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     case SharedMessage_MissionControlConnected: {
         // resend our current staus for the new mission control
         sendSystemStatusMessage();
-        sendCameraStateMessage();
     }
         break;
     default:

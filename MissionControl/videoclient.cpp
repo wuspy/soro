@@ -81,24 +81,11 @@ void VideoClient::controlMessageReceived(Channel *channel, const char *message, 
     else if (messageType.compare("streaming", Qt::CaseInsensitive) == 0) {
         // we were successful and are now receiving a video stream
         LOG_I("Server has confirmed our address and should begin streaming");
+        _errorString = ""; // clear error string since we have an active connection;
         videoSocketReadyRead();
         connect(_videoSocket, SIGNAL(readyRead()),
                 this, SLOT(videoSocketReadyRead()));
-        stream >> reinterpret_cast<quint32&>(_format.Encoding);
-        stream >> _format.Width;
-        stream >> _format.Height;
-        stream >> _format.Framerate;
-        switch (_format.Encoding) {
-        case MjpegEncoding:
-            stream >> _format.Mjpeg_Quality;
-            break;
-        case Mpeg2Encoding:
-            stream >> _format.Mpeg2_Bitrate;
-            break;
-        default:
-            LOG_E("Metadata from server specifies an unknown encoding");
-            break;
-        }
+        stream >> _format;
         KILL_TIMER(_punchTimerId);
         setState(StreamingState);
     }
@@ -110,13 +97,11 @@ void VideoClient::controlMessageReceived(Channel *channel, const char *message, 
         setState(ConnectedState);
     }
     else if (messageType.compare("error", Qt::CaseInsensitive) == 0) {
-        QString errorMessage;
-        stream >> errorMessage;
-        LOG_I("Got error message from server: " + errorMessage);
+        stream >> _errorString;
+        LOG_I("Got error message from server: " + _errorString);
         _format.Encoding = UnknownOrNoEncoding;
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
         KILL_TIMER(_punchTimerId);
-        emit serverError(this, errorMessage);
         setState(ConnectedState);
     }
     else {
@@ -174,6 +159,10 @@ void VideoClient::controlChannelStateChanged(Channel *channel, Channel::State st
         KILL_TIMER(_punchTimerId);
         break;
     }
+}
+
+QString VideoClient::getErrorString() const {
+    return _errorString;
 }
 
 QString VideoClient::getCameraName() const {

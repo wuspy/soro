@@ -13,8 +13,8 @@ VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject 
     LOG_I("Creating new video server");
 
     _controlChannel = new Channel(this, host.port, _name, Channel::TcpProtocol, host.host);
-    connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(controlChannelStateChanged(Channel::State)));
+    connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
+            this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
     _controlChannel->open();
 
     _videoSocket = new QUdpSocket(this);
@@ -151,7 +151,6 @@ void VideoServer::videoSocketReadyRead() {
         QDataStream stream(&message, QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::BigEndian);
         stream << QString("streaming");
-        stream << _name;
         stream << reinterpret_cast<unsigned int&>(_format.Encoding);
         stream << _format.Width;
         stream << _format.Height;
@@ -214,7 +213,8 @@ void VideoServer::childStateChanged(QProcess::ProcessState state) {
     }
 }
 
-void VideoServer::controlChannelStateChanged(Channel::State state) {
+void VideoServer::controlChannelStateChanged(Channel *channel, Channel::State state) {
+    Q_UNUSED(channel);
     if (state != Channel::ConnectedState) {
         stop();
     }
@@ -242,4 +242,3 @@ void VideoServer::setState(VideoServer::State state) {
 
 } // namespace Rover
 } // namespace Soro
-

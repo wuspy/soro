@@ -121,6 +121,7 @@ private:
     void handleSharedChannelPingUpdate(int ping);
     void broadcastSharedMessage(const char *message, int size, bool includeRover, Channel *exclude = 0);
     void playCamera(int cameraID, CameraWidget *widget);
+    void handleCameraStateChange(int cameraID, VideoClient::State state, StreamFormat encoding, QString errorString);
 
 signals:
     void initializedSDL();
@@ -147,6 +148,7 @@ private slots:
     void arm_masterArmMessageReceived(const char *message, int size);
     void master_broadcastSocketReadyRead();
     void controlChannelStateChanged(Channel *channel, Channel::State state);
+    void videoClientStateChanged(VideoClient *client, VideoClient::State state);
 
 public slots:
     void init();

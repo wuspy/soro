@@ -183,8 +183,75 @@ void MissionControlProcess::init() {
             VideoClient *client = new VideoClient("Camera " + QString::number(i + 1),
                                                   SocketAddress(_config.ServerAddress, _config.FirstVideoPort + i),
                                                   QHostAddress::Any, _log, this);
+            connect(client, SIGNAL(stateChanged(VideoClient*,VideoClient::State)),
+                    this, SLOT(videoClientStateChanged(VideoClient*,VideoClient::State)));
+
             _videoClients.append(client);
+            _streamFormats.append(StreamFormat());
         }
+    }
+
+    //activate the rover's first 3 cameras
+    _videoWidgets.insert(0, _topVideoWidget);
+    _videoWidgets.insert(1, _bottomVideoWidget);
+    _videoWidgets.insert(2, _fullscreenVideoWidget);
+
+    _videoWidgets[0]->stop("Waiting for connection...");
+    _videoWidgets[1]->stop("Waiting for connection...");
+    _videoWidgets[2]->stop("Waiting for connection...");
+}
+
+void MissionControlProcess::videoClientStateChanged(VideoClient *client, VideoClient::State state) {
+    int cameraID = _videoClients.indexOf(client);
+    handleCameraStateChange(cameraID, state, client->getStreamFormat(), client->getErrorString());
+
+    // rebroadcast to other mission controls
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_CameraChanged;
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << (qint32)cameraID;
+    stream << reinterpret_cast<quint32&>(state);
+    stream << client->getStreamFormat();
+    stream << client->getErrorString();
+
+    broadcastSharedMessage(message.constData(), message.size(), false);
+}
+
+void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::State state, StreamFormat format, QString errorString) {
+    _streamFormats[cameraID] = format;
+    switch (state) {
+    case VideoClient::ConnectingState:
+        if (_videoWidgets.contains(cameraID)) {
+            if (errorString.isEmpty()) {
+                _videoWidgets[cameraID]->stop("Trying to connect with the rover...");
+            }
+            else {
+                _videoWidgets[cameraID]->stop("The rover experienced an error streaming this camera: " + errorString);
+            }
+        }
+        break;
+    case VideoClient::ConnectedState:
+        if (_videoWidgets.contains(cameraID)) {
+            if (errorString.isEmpty()) {
+                _videoWidgets[cameraID]->stop("You\'re connected, but the rover isn\'t sending this stream right now.");
+            }
+            else {
+                _videoWidgets[cameraID]->stop("The rover experienced an error streaming this camera: " + errorString);
+            }
+        }
+        break;
+    case VideoClient::StreamingState:
+        if (_videoWidgets.contains(cameraID)) {
+            if (_masterMissionControl) {
+                _videoWidgets[cameraID]->play(_videoClients[cameraID]->element(), format.Encoding);
+            }
+            else {
+                _videoWidgets[cameraID]->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + cameraID), format.Encoding);
+            }
+        }
+        break;
     }
 }
 
@@ -272,10 +339,10 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
 
     stream >> reinterpret_cast<quint32&>(messageType);
     switch (messageType) {
-    case SharedMessage_RoverSharedChannelStateChanged:
+    case SharedMessage_RoverSharedChannelStateChanged: {
         Channel::State state;
         stream >> reinterpret_cast<quint32&>(state);
-
+    }
         break;
     case SharedMessage_MissionControlConnected: {
         QString name;
@@ -320,58 +387,18 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         emit roverSystemStateUpdate(armSubsystemState, driveCameraSubsystemState, MalfunctionSubsystemState);
     }
         break;
-    case SharedMessage_CameraConfigurationChanged: {
+    case SharedMessage_CameraChanged: {
+        qint32 cameraID;
+        StreamFormat format;
+        VideoClient::State state;
+        QString errorString;
 
-        /*********************************
-         * This is the main section of code that syncronizes
-         * the cameras playing in the UI with the cameras the server
-         * reports it is streaming.
-         */
+        stream >> cameraID;
+        stream >> reinterpret_cast<quint32&>(state);
+        stream >> format;
+        stream >> errorString;
 
-        qint32 cameraCount;
-        QMap<int, StreamFormat> freeCameras;
-        QList<CameraWidget*> freeCameraWidgets;
-        freeCameraWidgets.append(_topVideoWidget);
-        freeCameraWidgets.append(_bottomVideoWidget);
-        freeCameraWidgets.append(_fullscreenVideoWidget);
-        stream >> cameraCount;
-
-        _streamFormats.clear();
-        // loop through all stream formats to collect the ones not streaming anymore,
-        // and and their associated widgets (if any) to the free list
-        for (int cameraID = 0; cameraID < cameraCount; cameraID++) {
-            StreamFormat format;
-            stream >> format;
-            _streamFormats.append(format);
-            if (_videoWidgets.contains(cameraID)) {
-                if (format.Encoding == UnknownOrNoEncoding) {
-                    // this video was being streamed, however it has stopped and it's assigned
-                    // widget is now free
-                    _videoWidgets.remove(cameraID);
-                }
-                else {
-                    // this video is still being streamed and already has an assigned widget
-                    freeCameraWidgets.removeOne(_videoWidgets[cameraID]);
-                }
-            }
-            else if (format.Encoding != UnknownOrNoEncoding) {
-                // this video has no assigned widget
-                freeCameras.insert(cameraID, format);
-            }
-        }
-
-        // now assign free widgets to free videos
-        foreach (int cameraID, freeCameras.keys()) {
-            if (freeCameraWidgets.isEmpty()) break;
-            playCamera(cameraID, freeCameraWidgets[0]);
-            freeCameraWidgets.removeAt(0);
-        }
-
-        //if there are still free widgets, make them play static
-        foreach (CameraWidget *widget, freeCameraWidgets) {
-            widget->stop("This camera isn't being streamed right now.");
-        }
-
+        handleCameraStateChange(cameraID, state, format, errorString);
     }
         break;
     case SharedMessage_RoverVideoServerError: {
@@ -653,24 +680,45 @@ void MissionControlProcess::cycleVideosClockwise() {
     int oldTop = _videoWidgets.key(_topVideoWidget, -1);
     int oldBottom = _videoWidgets.key(_bottomVideoWidget, -1);
     int oldFullscreen = _videoWidgets.key(_fullscreenVideoWidget, -1);
-
+    _topVideoWidget->stop("Switching video mode...");
+    _bottomVideoWidget->stop("Switching video mode...");
+    _fullscreenVideoWidget->stop("Switching video mode...");
+    _videoWidgets.clear();
+    if (oldFullscreen >= 0) {
+        if (_masterMissionControl) {
+            _bottomVideoWidget->play(_videoClients[oldFullscreen]->element(), _streamFormats[oldFullscreen].Encoding);
+        }
+        else {
+            _bottomVideoWidget->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + oldFullscreen), _streamFormats[oldFullscreen].Encoding);
+        }
+        _videoWidgets.insert(oldFullscreen, _bottomVideoWidget);
+    }
+    else {
+        _bottomVideoWidget->stop("This camera isn't being streamed right now.");
+    }
     if (oldTop >= 0) {
-        playCamera(oldTop, _fullscreenVideoWidget);
+        if (_masterMissionControl) {
+            _fullscreenVideoWidget->play(_videoClients[oldTop]->element(), _streamFormats[oldTop].Encoding);
+        }
+        else {
+            _fullscreenVideoWidget->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + oldTop), _streamFormats[oldTop].Encoding);
+        }
+        _videoWidgets.insert(oldTop, _fullscreenVideoWidget);
     }
     else {
         _fullscreenVideoWidget->stop("This camera isn't being streamed right now.");
     }
     if (oldBottom >= 0) {
-        playCamera(oldBottom, _topVideoWidget);
+        if (_masterMissionControl) {
+            _topVideoWidget->play(_videoClients[oldBottom]->element(), _streamFormats[oldBottom].Encoding);
+        }
+        else {
+            _topVideoWidget->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + oldBottom), _streamFormats[oldBottom].Encoding);
+        }
+        _videoWidgets.insert(oldBottom, _topVideoWidget);
     }
     else {
         _topVideoWidget->stop("This camera isn't being streamed right now.");
-    }
-    if (oldFullscreen >= 0) {
-        playCamera(oldFullscreen, _bottomVideoWidget);
-    }
-    else {
-        _bottomVideoWidget->stop("This camera isn't being streamed right now.");
     }
 }
 
@@ -678,21 +726,42 @@ void MissionControlProcess::cycleVideosCounterClockwise() {
     int oldTop = _videoWidgets.key(_topVideoWidget, -1);
     int oldBottom = _videoWidgets.key(_bottomVideoWidget, -1);
     int oldFullscreen = _videoWidgets.key(_fullscreenVideoWidget, -1);
-
+    _topVideoWidget->stop("Switching video mode...");
+    _bottomVideoWidget->stop("Switching video mode...");
+    _fullscreenVideoWidget->stop("Switching video mode...");
+    _videoWidgets.clear();
     if (oldTop >= 0) {
-        playCamera(oldTop, _bottomVideoWidget);
+        if (_masterMissionControl) {
+            _bottomVideoWidget->play(_videoClients[oldTop]->element(), _streamFormats[oldTop].Encoding);
+        }
+        else {
+            _bottomVideoWidget->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + oldTop), _streamFormats[oldTop].Encoding);
+        }
+        _videoWidgets.insert(oldTop, _bottomVideoWidget);
     }
     else {
         _bottomVideoWidget->stop("This camera isn't being streamed right now.");
     }
     if (oldBottom >= 0) {
-        playCamera(oldBottom, _fullscreenVideoWidget);
+        if (_masterMissionControl) {
+            _fullscreenVideoWidget->play(_videoClients[oldBottom]->element(), _streamFormats[oldBottom].Encoding);
+        }
+        else {
+            _fullscreenVideoWidget->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + oldBottom), _streamFormats[oldBottom].Encoding);
+        }
+        _videoWidgets.insert(oldBottom, _fullscreenVideoWidget);
     }
     else {
         _fullscreenVideoWidget->stop("This camera isn't being streamed right now.");
     }
     if (oldFullscreen >= 0) {
-        playCamera(oldFullscreen, _topVideoWidget);
+        if (_masterMissionControl) {
+            _topVideoWidget->play(_videoClients[oldFullscreen]->element(), _streamFormats[oldFullscreen].Encoding);
+        }
+        else {
+            _topVideoWidget->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + oldFullscreen), _streamFormats[oldFullscreen].Encoding);
+        }
+        _videoWidgets.insert(oldFullscreen, _topVideoWidget);
     }
     else {
         _topVideoWidget->stop("This camera isn't being streamed right now.");

@@ -34,7 +34,7 @@ public:
 
 private:
 
-    inline StreamFormat streamFormatLowQuality() {
+    /*inline StreamFormat streamFormatLowQuality() {
         StreamFormat format;
         format.Encoding = Mpeg2Encoding;
         format.Width = 480;
@@ -72,7 +72,48 @@ private:
         format.Framerate = 30;
         format.Mpeg2_Bitrate = 10000000;
         return format;
+    }*/
+
+    inline StreamFormat streamFormatLowQuality() {
+        StreamFormat format;
+        format.Encoding = MjpegEncoding;
+        format.Width = 480;
+        format.Height = 360;
+        format.Framerate = 15;
+        format.Mjpeg_Quality = 30;
+        return format;
     }
+
+    inline StreamFormat streamFormatNormalQuality() {
+        StreamFormat format;
+        format.Encoding = MjpegEncoding;
+        format.Width = 640;
+        format.Height = 480;
+        format.Framerate = 20;
+        format.Mjpeg_Quality = 50;
+        return format;
+    }
+
+    inline StreamFormat streamFormatHighQuality() {
+        StreamFormat format;
+        format.Encoding = MjpegEncoding;
+        format.Width = 960;
+        format.Height = 720;
+        format.Framerate = 15;
+        format.Mjpeg_Quality = 50;
+        return format;
+    }
+
+    inline StreamFormat streamFormatUltraQuality() {
+        StreamFormat format;
+        format.Encoding = MjpegEncoding;
+        format.Width = 960;
+        format.Height = 720;
+        format.Framerate = 20;
+        format.Mjpeg_Quality = 50;
+        return format;
+    }
+
 
     Logger *_log = NULL;
 
@@ -94,11 +135,6 @@ private:
     // stream the data to mission control
     QList<VideoServer*> _videoServers; // camera ID is by index
 
-    // These hold the current stream format used by each video camera
-    // If a camera is not currently streaming, that is represented by a
-    // video format with the encoding set to UnknownOrNoEncoding
-    QList<StreamFormat> _videoFormats; // camera ID is by index
-
     // These hold the current stream formats for each camera.
     // If a camera currently isn't being streamed, the format will have an
     // encoding value of UnknownEncoding.
@@ -108,26 +144,16 @@ private:
 
     int _initTimerId = TIMER_INACTIVE;
 
-    /* Trys to reconfigure the current streams to match what they
-     * are configured to be. This should be called any time there is
-     * a configuration change or a stream error.
-     */
-    void syncVideoStreams();
-
     void sendSystemStatusMessage();
-    void sendCameraStateMessage();
 
 private slots:
-    void armChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size);
-    void driveChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size);
-    void gimbalChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size);
-    void sharedChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size);
+    void armChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void driveChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void gimbalChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void sharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void sharedChannelStateChanged(Channel *channel, Channel::State state);
 
     void mbedChannelStateChanged(MbedChannel *channel, MbedChannel::State state);
-
-    void videoServerStateChanged(VideoServer *server, VideoServer::State state);
-    void videoServerError(VideoServer *server, QString message);
 
 protected:
     void timerEvent(QTimerEvent *e);

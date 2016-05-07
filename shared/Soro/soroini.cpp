@@ -6,9 +6,6 @@ const char *_tag_ArmServerPort = "ArmChannelPort";
 const char *_tag_DriveServerPort = "DriveChannelPort";
 const char *_tag_GimbalServerPort = "GimbalChannelPort";
 const char *_tag_SharedServerPort = "SharedChannelPort";
-const char *_tag_VideoServerAddress = "VideoServerAddress";
-const char *_tag_FlyCapture2CameraCount = "FLyCapture2CameraCount";
-const char *_tag_UvdCameraCount = "UVDCameraCount";
 const char *_tag_UvdCameraBlacklist = "UVDCameraBlacklist";
 const char *_tag_firstVideoPort = "FirstVideoStreamPort";
 const char *_tag_LogLevel = "LogLevel";
@@ -24,10 +21,6 @@ const char *_tag_DriveMbedPort = "DriveMbedPort";
 const char *_tag_GimbalMbedPort = "GimbalMbedPort";
 const char *_tag_MasterArmPort = "MasterArmPort";
 const char *_tag_McSubnetBroadcastPort = "McSubnetBroadcastPort";
-const char *_tag_ArmCameraDevice = "ArmCameraDevice";
-const char *_tag_DriveCameraDevice = "DriveCameraDevice";
-const char *_tag_GimbalCameraDevice = "GimbalCameraDevice";
-const char *_tag_FisheyeCameraDevice = "FisheyeCameraDevice";
 
 namespace Soro {
 
@@ -47,17 +40,10 @@ bool SoroIniLoader::load(QString *err) {
     QString serverSide = configParser.value(_tag_ServerSide);
     if (QString::compare(serverSide, _value_RoverIsServer, Qt::CaseInsensitive) == 0) {
         ServerSide = RoverEndPoint;
-        //we cannot know were to send the video when we act as the server.
-        //wait for mission control to connect first, then send it to that address.
-        VideoServerAddress = QHostAddress::Null;
     }
     else {
         //default to mission control as server
         ServerSide = MissionControlEndPoint;
-        if (!configParser.valueAsIP(_tag_VideoServerAddress, &VideoServerAddress, true)) {
-            //assume video server address is same as main server address
-            VideoServerAddress = ServerAddress;
-        }
     }
     QString logLevel = configParser.value(_tag_LogLevel);
     if (QString::compare(logLevel, _value_LogLevelDebug, Qt::CaseInsensitive) == 0) {
@@ -122,13 +108,6 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     FirstVideoPort = tmp;
-    if (!configParser.valueAsInt(_tag_FlyCapture2CameraCount, &FlyCapture2CameraCount)) {
-        *err = "No FlyCapture2 camera count found in configuration file";
-        return false;
-    }
-    if (!configParser.valueAsInt(_tag_UvdCameraCount, &UVDCameraCount)) {
-        *err = "No UVD camera count found in configuration file";
-    }
     BlacklistedUvdCameras = configParser.valueAsStringList(_tag_UvdCameraBlacklist);
 
     return true;
