@@ -163,7 +163,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 _videoServers[cameraID]->start(_flycapCameras[cameraID], x264());
             }
             else if (_uvdCameras.contains(cameraID)) {
-                _videoServers[cameraID]->start(_uvdCameras[cameraID], x264());
+                _videoServers[cameraID]->start(_uvdCameras[cameraID], mjpeg_streamFormatNormalQuality());
             }
         }
 

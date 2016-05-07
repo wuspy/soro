@@ -87,9 +87,9 @@ QGst::BinPtr CameraWidget::createDecoder(VideoEncoding encoding) {
                                        "videoconvert");
         break;
     case x264Encoding:
-        return QGst::Bin::fromDescription("identity ! application/x-rtp,media=video, clock-rate=90000, encoding-name=H264 ! "
+        return QGst::Bin::fromDescription("identity ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
                                        "rtph264depay ! "
-                                       "ffdec_h264 ! "
+                                       "avdec_h264 ! "
                                        "videoconvert");
         break;
     default:
@@ -160,9 +160,9 @@ void CameraWidget::onBusMessage(const QGst::MessagePtr & message) {
         emit eosMessage();
         break;
     case QGst::MessageError:
-        stop("Decoding Error: " + message.staticCast<QGst::ErrorMessage>()->error().message() + "<br><br>Resetting...");
-        emit error();
-        break;
+        //stop("Decoding Error: " + message.staticCast<QGst::ErrorMessage>()->error().message() + "<br><br>Resetting...");
+        //emit error();
+        //break;
     default:
         break;
     }

@@ -100,8 +100,10 @@ inline StreamFormat mjpeg_streamFormatUltraQuality() {
 inline StreamFormat x264() {
     StreamFormat format;
     format.Encoding = x264Encoding;
-    format.Width = 640;
-    format.Height = 480;
+    format.Width = 960;
+    format.Height = 720;
+    format.Framerate = 30;
+    format.Bitrate = 1000;
     return format;
 }
 

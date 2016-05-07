@@ -34,7 +34,7 @@ StreamProcess::StreamProcess(QGst::ElementPtr source, StreamFormat format, Socke
         binStr += " ! avenc_mpeg4 bitrate=" + QString::number(format.Bitrate) + " ! rtpmp4vpay config-interval=3 ! ";
         break;
     case x264Encoding:
-        binStr += " ! x264enc tune=zerolatency bitrate=" + QString::number(format.Bitrate / 1000) + " ! rtph264pay ! ";
+        binStr += " ! x264enc tune=zerolatency bitrate=" + QString::number(format.Bitrate) + " ! rtph264pay ! ";
         break;
     default:
         //unknown codec
