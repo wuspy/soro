@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
     else {
 #ifdef __linux__
         source = QGst::ElementFactory::make("v4l2src");
+        device = device.mid(1, device.length() - 2);
         source->setProperty("device", device);
         qDebug() << "Setting UVD device " + device + " for v4l2src";
 
