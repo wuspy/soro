@@ -52,13 +52,10 @@ int main(int argc, char *argv[]) {
         format.Mjpeg_Quality = QString(argv[6]).toInt(&ok);
         if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
         break;
-    case Mpeg2Encoding:
-        format.Mpeg2_Bitrate = QString(argv[6]).toInt(&ok);
+    default:
+        format.Bitrate = QString(argv[6]).toInt(&ok);
         if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
         break;
-    default:
-        // unknown encoding
-        return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
 
     address.host = QHostAddress(argv[7]);

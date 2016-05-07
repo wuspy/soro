@@ -160,10 +160,10 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         for (int cameraID = 0; cameraID < qMin(3, _videoServers.size()); cameraID++) {
             if (_flycapCameras.contains(cameraID)) {
-                _videoServers[cameraID]->start(_flycapCameras[cameraID], streamFormatHighQuality());
+                _videoServers[cameraID]->start(_flycapCameras[cameraID], x264());
             }
             else if (_uvdCameras.contains(cameraID)) {
-                _videoServers[cameraID]->start(_uvdCameras[cameraID], streamFormatHighQuality());
+                _videoServers[cameraID]->start(_uvdCameras[cameraID], x264());
             }
         }
 

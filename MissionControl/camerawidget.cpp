@@ -86,6 +86,12 @@ QGst::BinPtr CameraWidget::createDecoder(VideoEncoding encoding) {
                                        "avdec_mpeg4 ! "
                                        "videoconvert");
         break;
+    case x264Encoding:
+        return QGst::Bin::fromDescription("identity ! application/x-rtp,media=video, clock-rate=90000, encoding-name=H264 ! "
+                                       "rtph264depay ! "
+                                       "ffdec_h264 ! "
+                                       "videoconvert");
+        break;
     default:
         return QGst::BinPtr::wrap(NULL, false);
     }

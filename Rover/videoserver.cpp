@@ -115,10 +115,8 @@ void VideoServer::beginStream(SocketAddress address) {
     case MjpegEncoding:
         args << QString::number(_format.Mjpeg_Quality);
         break;
-    case Mpeg2Encoding:
-        args << QString::number(_format.Mpeg2_Bitrate);
-        break;
     default:
+        args << QString::number(_format.Bitrate);
         break;
     }
 
@@ -150,23 +148,7 @@ void VideoServer::videoSocketReadyRead() {
         QByteArray message;
         QDataStream stream(&message, QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::BigEndian);
-        stream << QString("streaming");
-        stream << reinterpret_cast<unsigned int&>(_format.Encoding);
-        stream << _format.Width;
-        stream << _format.Height;
-        stream << _format.Framerate;
-        switch (_format.Encoding) {
-        case MjpegEncoding:
-            stream << _format.Mjpeg_Quality;
-            break;
-        case Mpeg2Encoding:
-            stream << _format.Mpeg2_Bitrate;
-            break;
-        default:
-            LOG_E("The format's encoding is set to Unknown, why am I starting a stream???");
-            stop();
-            return;
-        }
+        stream << _format;
         LOG_I("Sending stream configuration to client");
         _controlChannel->sendMessage(message.constData(), message.size());
         // Disconnect the video UDP socket so udpsink can bind to it
