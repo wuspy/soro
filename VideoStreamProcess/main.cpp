@@ -107,8 +107,7 @@ int main(int argc, char *argv[]) {
     else {
 #ifdef __linux__
         source = QGst::ElementFactory::make("v4l2src");
-        device = device.mid(1, device.length() - 2);
-        source->setProperty("device", device);
+        source->setProperty("device", device.remove('\'').remove('\"').remove('.'));
         qDebug() << "Setting UVD device " + device + " for v4l2src";
 
         qDebug() << "Parset parameters for v4l2 successfully";
