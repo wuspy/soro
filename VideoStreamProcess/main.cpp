@@ -107,20 +107,16 @@ int main(int argc, char *argv[]) {
 
         return a.exec();
     }
-    else if (device.startsWith("UVD:", Qt::CaseInsensitive)) {
+    else {
 #ifdef __linux__
         source = QGst::ElementFactory::make("v4l2src");
-        source->setProperty("device", device.mid(device.indexOf(":") + 1));
-        qDebug() << "Setting UVD device " + device.mid(device.indexOf(":") + 1) + " for v4l2src";
+        source->setProperty("device", device);
+        qDebug() << "Setting UVD device " + device + " for v4l2src";
 
         qDebug() << "Parset parameters for v4l2 successfully";
         StreamProcess stream(source, format, host, address, &a);
         qDebug() << "Stream initialized for v4l2 successfully";
 #endif
         return a.exec();
-    }
-    else {
-        // unknown source
-        return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
 }

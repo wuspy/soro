@@ -89,8 +89,8 @@ private:
         format.Encoding = MjpegEncoding;
         format.Width = 640;
         format.Height = 480;
-        format.Framerate = 20;
-        format.Mjpeg_Quality = 50;
+        format.Framerate = 15;
+        format.Mjpeg_Quality = 40;
         return format;
     }
 
@@ -100,7 +100,7 @@ private:
         format.Width = 960;
         format.Height = 720;
         format.Framerate = 15;
-        format.Mjpeg_Quality = 50;
+        format.Mjpeg_Quality = 30;
         return format;
     }
 
