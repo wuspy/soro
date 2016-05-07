@@ -38,16 +38,20 @@ public:
     /* Gets the format of the stream currently being received
      */
     StreamFormat getStreamFormat() const;
+    SocketAddress getServerAddress() const;
+    SocketAddress getHostAddress() const;
     VideoClient::State getState() const;
+    QString getCameraName() const;
 
 signals:
-    void stateChanged(VideoClient::State state);
-    void serverError(QString message);
-    void statisticsUpdate(long bitrate);
+    void stateChanged(VideoClient *client, VideoClient::State state);
+    void serverError(VideoClient *client, QString message);
+    void statisticsUpdate(VideoClient *client, long bitrate);
+    void nameChanged(VideoClient *client, QString name);
 
 private:
     char *_buffer;
-    QString _name;
+    QString _name = "";
     bool _needsData = false;
     SocketAddress _server;
     Logger *_log;
@@ -62,11 +66,12 @@ private:
     int _lastBitrate = 0;
 
     void setState(State state);
+    void setCameraName(QString name);
 
 private slots:
-    void controlMessageReceived(const char *message, Channel::MessageSize size);
+    void controlMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void videoSocketReadyRead();
-    void controlChannelStateChanged(Channel::State state);
+    void controlChannelStateChanged(Channel *channel, Channel::State state);
 
 protected:
     void timerEvent(QTimerEvent *e);

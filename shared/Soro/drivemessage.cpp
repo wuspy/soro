@@ -20,12 +20,10 @@ void setGamepadData_DualStick(char *driveMessage, short leftYAxis, short rightYA
     clampMiddleSkidSteerFactor(middleSkidSteerFactor);
 
     float midScale = middleSkidSteerFactor * ((float)qAbs(leftYAxis - rightYAxis)/SHRT_MAX);
-    driveMessage[Index_FrontLeft] = axisShortToAxisByte(leftYAxis);
-    driveMessage[Index_FrontRight] = axisShortToAxisByte(rightYAxis);
-    driveMessage[Index_MiddleLeft] = axisShortToAxisByte(leftYAxis - (short)(midScale * leftYAxis));
-    driveMessage[Index_MiddleRight] = axisShortToAxisByte(rightYAxis - (short)(midScale * rightYAxis));
-    driveMessage[Index_BackLeft] = axisShortToAxisByte(leftYAxis);
-    driveMessage[Index_BackRight] = axisShortToAxisByte(rightYAxis);
+    driveMessage[Index_LeftOuter] = axisShortToAxisByte(leftYAxis);
+    driveMessage[Index_RightOuter] = axisShortToAxisByte(rightYAxis);
+    driveMessage[Index_LeftMiddle] = axisShortToAxisByte(leftYAxis - (short)(midScale * leftYAxis));
+    driveMessage[Index_RightMiddle] = axisShortToAxisByte(rightYAxis - (short)(midScale * rightYAxis));
 }
 
 void setGamepadData_SingleStick(char *driveMessage, short XAxis, short YAxis,
@@ -75,12 +73,10 @@ void setGamepadData_SingleStick(char *driveMessage, short XAxis, short YAxis,
 
     float midScale = middleSkidSteerFactor * (qAbs(x)/1.0);
 
-    driveMessage[Index_FrontLeft] = axisFloatToAxisByte(left);
-    driveMessage[Index_FrontRight] = axisFloatToAxisByte(right);
-    driveMessage[Index_MiddleLeft] = axisFloatToAxisByte(left - (midScale * left));
-    driveMessage[Index_MiddleRight] = axisFloatToAxisByte(right - (midScale * right));
-    driveMessage[Index_BackLeft] = axisFloatToAxisByte(left);
-    driveMessage[Index_BackRight] = axisFloatToAxisByte(right);
+    driveMessage[Index_LeftOuter] = axisFloatToAxisByte(left);
+    driveMessage[Index_RightOuter] = axisFloatToAxisByte(right);
+    driveMessage[Index_LeftMiddle] = axisFloatToAxisByte(left - (midScale * left));
+    driveMessage[Index_RightMiddle] = axisFloatToAxisByte(right - (midScale * right));
 }
 
 #endif

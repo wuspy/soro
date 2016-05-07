@@ -12,7 +12,7 @@ VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject 
 
     LOG_I("Creating new video server");
 
-    _controlChannel = new Channel(this, host.port, "videostream", Channel::TcpProtocol, host.host);
+    _controlChannel = new Channel(this, host.port, _name, Channel::TcpProtocol, host.host);
     connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
             this, SLOT(controlChannelStateChanged(Channel::State)));
     _controlChannel->open();
@@ -43,7 +43,7 @@ void VideoServer::stop() {
         LOG_I("stop() called, however the child process is not running");
     }
     _deviceDescription = "";
-    _format.Encoding = UnknownEncoding;
+    _format.Encoding = UnknownOrNoEncoding;
     if (_controlChannel->getState() == Channel::ConnectedState) {
         // notify the client that the server is stopping the stream
         QByteArray message;
@@ -143,7 +143,7 @@ void VideoServer::videoSocketReadyRead() {
     SocketAddress peer;
     char buffer[100];
     _videoSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
-    if ((strcmp(buffer, _name.toLatin1().constData()) == 0) && (_format.Encoding != UnknownEncoding)) {
+    if ((strcmp(buffer, _name.toLatin1().constData()) == 0) && (_format.Encoding != UnknownOrNoEncoding)) {
         LOG_I("Client has completed handshake on its UDP address");
         // send the client a message letting them know we are now streaming to their address,
         // and tell them the stream metadata
@@ -151,6 +151,7 @@ void VideoServer::videoSocketReadyRead() {
         QDataStream stream(&message, QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::BigEndian);
         stream << QString("streaming");
+        stream << _name;
         stream << reinterpret_cast<unsigned int&>(_format.Encoding);
         stream << _format.Width;
         stream << _format.Height;
@@ -187,19 +188,19 @@ void VideoServer::childStateChanged(QProcess::ProcessState state) {
         switch (_child.exitCode()) {
         case 0:
         case STREAMPROCESS_ERR_GSTREAMER_EOS:
-            emit eos();
+            emit eos(this);
             break;
         case STREAMPROCESS_ERR_FLYCAP_ERROR:
-            emit error("Error in FlyCapture2 decoding");
+            emit error(this, "Error in FlyCapture2 decoding");
             break;
         case STREAMPROCESS_ERR_GSTREAMER_ERROR:
-            emit error("Gstreamer error");
+            emit error(this, "Gstreamer error");
             break;
         case STREAMPROCESS_ERR_INVALID_ARGUMENT:
         case STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS:
         case STREAMPROCESS_ERR_UNKNOWN_CODEC:
         default:
-            emit error("Unknown error/segmentation fault");
+            emit error(this, "Unknown error/segmentation fault");
         }
 
         setState(IdleState);
@@ -227,11 +228,15 @@ QString VideoServer::getCameraName() {
     return _name;
 }
 
+const StreamFormat& VideoServer::getCurrentStreamFormat() const {
+    return _format;
+}
+
 void VideoServer::setState(VideoServer::State state) {
     if (_state != state) {
         LOG_I("Changing to state " + QString::number(reinterpret_cast<unsigned int&>(state)));
         _state = state;
-        emit stateChanged(state);
+        emit stateChanged(this, state);
     }
 }
 

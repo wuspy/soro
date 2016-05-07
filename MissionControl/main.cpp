@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     SetupDialog dialog;
     if (dialog.exec() == QDialog::Accepted) {
-        SoroMainWindow w(dialog.getIsMasterNode(), dialog.getSelectedRole());
+        SoroMainWindow w(dialog.getName(), dialog.getIsMasterNode(), dialog.getSelectedRole());
         w.show();
 
         return a.exec();

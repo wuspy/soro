@@ -20,7 +20,7 @@
 #include "latlng.h"
 #include "masterarmconfig.h"
 #include "soroini.h"
-#include "videostreamwidget.h"
+#include "camerawidget.h"
 #include "videoclient.h"
 
 namespace Soro {
@@ -30,68 +30,85 @@ class MissionControlProcess : public QObject {
     Q_OBJECT
 public:
     enum DriveGamepadMode {
-        SingleStick, DualStick
+        SingleStickDrive, DualStickDrive
     };
 
     enum Role {
-        ArmOperator, Driver, CameraOperator, Spectator
+        ArmOperatorRole, DriverRole, CameraOperatorRole, SpectatorRole
     };
 
-    explicit MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo, VideoStreamWidget *fullscreenVideo,
+    enum NotificationType {
+        RoverNotification, MCCNotification, ChatNotification
+    };
+
+    explicit MissionControlProcess(QString name, CameraWidget *topVideo, CameraWidget *bottomVideo, CameraWidget *fullscreenVideo,
                                    bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter = 0);
 
     ~MissionControlProcess();
 
-    const Channel *getControlChannel() const;
-    const Channel *getSharedChannel() const;
-    const MbedChannel *arm_getMasterArmChannel() const;
-    const SoroIniLoader *getSoroIniConfig() const;
-    SDL_GameController *getGamepad();
+    QString getName() const;
+    const SoroIniLoader *getConfiguration() const;
     void drive_setMiddleSkidSteerFactor(float factor);
     void drive_setGamepadMode(DriveGamepadMode mode);
     float drive_getMiddleSkidSteerFactor() const;
     MissionControlProcess::DriveGamepadMode drive_getGamepadMode() const;
     MissionControlProcess::Role getRole() const;
     bool isMasterSubnetNode() const;
+    void cycleVideosClockwise();
+    void cycleVideosCounterClockwise();
 
 private:
     // Used as scratch space for reading gamepad data, master arm data,
     // subnet broadcasts, etc
     char _buffer[512];
 
+    // Holds the unique name of this mission control that the user can choose (except Bill)
+    QString _name;
+
     // General configuration
-    bool _masterNode;
+    bool _masterMissionControl;
     MissionControlProcess::Role _role;
     Logger *_log = NULL;
+
+    bool _roverSharedChannelConnected = false;
 
     // Used to connect to other mission control computers on the same subnet
     QUdpSocket *_broadcastSocket = NULL;
 
     // Used to load configuration options
-    SoroIniLoader _soroIniConfig;
+    SoroIniLoader _config;
 
     // Internet communication channels
     Channel *_controlChannel = NULL;
     Channel *_sharedChannel = NULL;
-    QList<Channel*> _sharedChannelNodes;
+
+    // used by the master mission control to relay data
+    // from the shared channel to other mission controls
+    // and vice versa
+    QList<Channel*> _slaveMissionControlChannels;
+    QList<Role> _slaveMissionControlRoles;
 
     // SDL joystick control stuff
     bool _sdlInitialized = false;
     float _driveMiddleSkidSteerFactor = 0.2; //lower is faster, higher is slower
-    DriveGamepadMode _driveGamepadMode = DualStick;
+    DriveGamepadMode _driveGamepadMode = DualStickDrive;
     SDL_GameController *_gameController = NULL;
     int _controlSendTimerId = TIMER_INACTIVE;
     int _inputSelectorTimerId = TIMER_INACTIVE;
     int _broadcastSharedChannelInfoTimerId = TIMER_INACTIVE;
-    int _pruneSharedChannelsTimerId = TIMER_INACTIVE;
+    int _masterResponseWatchdogTimerId = TIMER_INACTIVE;
+    int _rttStatTimerId = TIMER_INACTIVE;
+    int _droppedPacketTimerId = TIMER_INACTIVE;
 
     // The widgets that display video
-    VideoStreamWidget *_topVideoWidget;
-    VideoStreamWidget *_bottomVideoWidget;
-    VideoStreamWidget *_fullscreenVideoWidget;
+    CameraWidget *_topVideoWidget;
+    CameraWidget *_bottomVideoWidget;
+    CameraWidget *_fullscreenVideoWidget;
 
     // These hold the video clients when in master configuration
-    QMap<int, VideoClient*> _videoClients;
+    QList<VideoClient*> _videoClients; // camera ID is by index
+    QList<StreamFormat> _streamFormats; // camera ID is by index
+    QMap<int, CameraWidget*> _videoWidgets; // camera ID is by key
 
     // Master arm stuff
     MbedChannel *_masterArmChannel = NULL;
@@ -100,35 +117,40 @@ private:
     void arm_loadMasterArmConfig();
     void initSDL();
     void quitSDL();
-    void syncVideoStreams();
+    void handleSharedChannelMessage(const char *message, Channel::MessageSize size);
+    void handleSharedChannelPingUpdate(int ping);
+    void broadcastSharedMessage(const char *message, int size, bool includeRover, Channel *exclude = 0);
+    void playCamera(int cameraID, CameraWidget *widget);
 
 signals:
     void initializedSDL();
-    void error(QString description);
+    void fatalError(QString description);
     void warning(QString description);
     void gamepadChanged(SDL_GameController *controller);
-    void connectionQualityUpdate(int sharedRtt, int tcpLag);
-    void controlChannelStateChanged(Channel::State state);
-    void sharedChannelStateChanged(Channel::State state);
-    void controlChannelStatsUpdate(int rtt, quint64 msg_up, quint64 msg_down, int rate_up, int rate_down);
-    void arm_masterArmStateChanged(MbedChannel::State state);
+    void connectionStateChanged(Channel::State controlChannelState, Channel::State mccNetworkState, Channel::State sharedChannelState);
+    void rttUpdate(int rtt);
+    void droppedPacketRateUpdate(int droppedRatePercent);
+    void roverSystemStateUpdate(RoverSubsystemState armSystemState, RoverSubsystemState driveCameraSystemState,
+                                RoverSubsystemState secondaryComputerState);
+    void roverCameraUpdate(RoverCameraState camera1State, RoverCameraState camera2State, RoverCameraState camera3State,
+                           RoverCameraState camera4State, RoverCameraState camera5State);
+    void arm_masterArmStateChanged(MbedChannel *channel, MbedChannel::State state);
+    void notification(MissionControlProcess::NotificationType type, QString sender, QString message);
 
 private slots:
-    void handleSharedChannelMessage(const char *message, Channel::MessageSize size);
-    void roverSharedChannelMessageReceived(const char *message, Channel::MessageSize size);
-    void nodeSharedChannelMessageReceived(const char *message, Channel::MessageSize size);
-    void roverSharedChannelStateChanged(Channel::State state);
-    void slaveSharedChannelStateChanged(Channel::State state);
+    void slave_masterSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void slave_masterSharedChannelStateChanged(Channel *channel, Channel::State state);
+    void master_roverSharedChannelStateChanged(Channel *channel, Channel::State state);
+    void master_slaveSharedChannelStateChanged(Channel *channel, Channel::State state);
+    void master_roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void master_slaveSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void arm_masterArmMessageReceived(const char *message, int size);
-    void roverSharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
-                            int rateUp, int rateDown);
-    void broadcastSocketReadyRead();
-
-    void videoClientError(QString message);
-    void videoClientStateChanged(VideoClient::State);
+    void master_broadcastSocketReadyRead();
+    void controlChannelStateChanged(Channel *channel, Channel::State state);
 
 public slots:
     void init();
+    void postChatMessage(QString message);
 
 protected:
     void timerEvent(QTimerEvent *e);

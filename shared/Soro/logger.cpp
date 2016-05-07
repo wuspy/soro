@@ -9,6 +9,13 @@ const QString Logger::_levelFormatters[4] = {
     "[D]\t%1\t%2:\t%3"
 };
 
+const QString Logger::_levelFormattersHTML[4] = {
+    "<div style=\"color:#b71c1c\">%1&emsp;E/<i>%2</i>:&emsp;%3</div>",
+    "<div style=\"color:#0d47a1\">%1&emsp;W/<i>%2</i>:&emsp;%3</div>",
+    "<div>%1&emsp;I/<i>%2</i>:&emsp;%3</div>",
+    "<div style=\"color:#dddddd\">%1&emsp;D/<i>%2</i>:&emsp;%3</div>"
+};
+
 Logger::Logger(QObject *parent) : QObject(parent) {
   MaxLevel = LOG_LEVEL_DEBUG;
   MaxQtLoggerLevel = LOG_LEVEL_INFORMATION;

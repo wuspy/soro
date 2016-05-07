@@ -15,6 +15,13 @@
         <file>driver_red_96px.png</file>
         <file>spectator_red_96px.png</file>
         <file>info_white_24px.png</file>
+        <file>send_red_18px.png</file>
+        <file>camera_green_18px.png</file>
+        <file>camera_yellow_18px.png</file>
+        <file>camera_black_18px.png</file>
+        <file>camera_red_18px.png</file>
+        <file>embedded_board_yellow_18px.png</file>
+        <file>embedded_board_green_18px.png</file>
     </qresource>
     <qresource prefix="/">
         <file>map.html</file>

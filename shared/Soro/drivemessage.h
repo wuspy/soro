@@ -26,15 +26,13 @@ namespace DriveMessage  {
     const unsigned char Header = 3;
     /* The size a drive message should be
      */
-    const int RequiredSize = 7;
+    const int RequiredSize = 5;
     /* These list the indicies of values in a drive message
      */
-    const int Index_FrontLeft = 1;
-    const int Index_FrontRight = 2;
-    const int Index_MiddleLeft = 3;
-    const int Index_MiddleRight = 4;
-    const int Index_BackLeft = 5;
-    const int Index_BackRight = 6;
+    const int Index_LeftOuter = 1;
+    const int Index_LeftMiddle = 2;
+    const int Index_RightOuter = 3;
+    const int Index_RightMiddle = 4;
 
 #ifdef QT_CORE_LIB
 
@@ -52,46 +50,32 @@ namespace DriveMessage  {
                                float middleSkidSteerFactor);
 #endif
 
-    /* Gets the front left wheel speed value and converts
+    /* Gets the left outer wheels speed value and converts
      * it to a float ranging from -1 to 1
      */
-    inline float getFrontLeft(const char *message) {
-        return axisByteToAxisFloat(message[Index_FrontLeft]);
+    inline float getLeftOuter(const char *message) {
+        return axisByteToAxisFloat(message[Index_LeftOuter]);
     }
 
-    /* Gets the front right wheel speed value and converts
+    /* Gets the left middle wheel speed value and converts
      * it to a float ranging from -1 to 1
      */
-    inline float getFrontRight(const char *message) {
-        return axisByteToAxisFloat(message[Index_FrontRight]);
+    inline float getLeftMiddle(const char *message) {
+        return axisByteToAxisFloat(message[Index_LeftMiddle]);
     }
 
-    /* Gets the middle left wheel speed value and converts
+    /* Gets the right outer wheels speed value and converts
      * it to a float ranging from -1 to 1
      */
-    inline float getMiddleLeft(const char *message) {
-        return axisByteToAxisFloat(message[Index_MiddleLeft]);
+    inline float getRightOuter(const char *message) {
+        return axisByteToAxisFloat(message[Index_RightOuter]);
     }
 
-    /* Gets the middle right wheel speed value and converts
+    /* Gets the right middle wheel speed value and converts
      * it to a float ranging from -1 to 1
      */
-    inline float getMiddleRight(const char *message) {
-        return axisByteToAxisFloat(message[Index_MiddleRight]);
-    }
-
-    /* Gets the back left wheel speed value and converts
-     * it to a float ranging from -1 to 1
-     */
-    inline float getBackLeft(const char *message) {
-        return axisByteToAxisFloat(message[Index_BackLeft]);
-    }
-
-    /* Gets the back right wheel speed value and converts
-     * it to a float ranging from -1 to 1
-     */
-    inline float getBackRight(const char *message) {
-        return axisByteToAxisFloat(message[Index_BackRight]);
+    inline float getRightMiddle(const char *message) {
+        return axisByteToAxisFloat(message[Index_RightMiddle]);
     }
 }
 }

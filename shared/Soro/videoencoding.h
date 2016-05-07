@@ -1,18 +1,20 @@
 #ifndef VIDEOENCODING_H
 #define VIDEOENCODING_H
 
+#include <QDataStream>
+
 namespace Soro {
 
 enum VideoEncoding {
-    UnknownEncoding = 0,
+    UnknownOrNoEncoding = 0,
     MjpegEncoding,
     Mpeg2Encoding
 };
 
 struct StreamFormat {
-    int Width = 0, Height = 0, Framerate = 0;
-    int Mjpeg_Quality = 0;
-    int Mpeg2_Bitrate = 0;
+    qint32 Width = 0, Height = 0, Framerate = 0;
+    qint32 Mjpeg_Quality = 0;
+    qint32 Mpeg2_Bitrate = 0;
 
     StreamFormat() { }
 
@@ -25,11 +27,32 @@ struct StreamFormat {
         Framerate = other.Framerate;
     }
 
-    VideoEncoding Encoding = UnknownEncoding;
+    VideoEncoding Encoding = UnknownOrNoEncoding;
 
     float aspectRatio() {
         if (Height == 0) return 0;
         return (float)Width / (float)Height;
+    }
+
+    inline friend QDataStream& operator<<(QDataStream& stream, const StreamFormat& format) {
+        VideoEncoding encoding = format.Encoding;
+        stream << reinterpret_cast<qint32&>(encoding);
+        stream << format.Width;
+        stream << format.Height;
+        stream << format.Framerate;
+        stream << format.Mjpeg_Quality;
+        stream << format.Mpeg2_Bitrate;
+        return stream;
+    }
+
+    inline friend QDataStream& operator>>(QDataStream& stream, StreamFormat& format) {
+        stream >> reinterpret_cast<qint32&>(format.Encoding);
+        stream >> format.Width;
+        stream >> format.Height;
+        stream >> format.Framerate;
+        stream >> format.Mjpeg_Quality;
+        stream >> format.Mpeg2_Bitrate;
+        return stream;
     }
 };
 

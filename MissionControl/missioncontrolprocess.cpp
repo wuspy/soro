@@ -9,22 +9,21 @@
 
 #define CONTROL_SEND_INTERVAL 50
 
-#define CHANNEL_NAME_SUBNET_SHARED "Soro_MissionControlChannel"
-
 namespace Soro {
 namespace MissionControl {
 
-MissionControlProcess::MissionControlProcess(VideoStreamWidget *topVideo, VideoStreamWidget *bottomVideo, VideoStreamWidget *fullscreenVideo,
+MissionControlProcess::MissionControlProcess(QString name, CameraWidget *topVideo, CameraWidget *bottomVideo, CameraWidget *fullscreenVideo,
                                              bool masterSubnetNode, MissionControlProcess::Role role, QMainWindow *presenter) : QObject(presenter) {
-    _masterNode = masterSubnetNode;
+    _masterMissionControl = masterSubnetNode;
     _role = role;
     _topVideoWidget = topVideo;
     _bottomVideoWidget = bottomVideo;
     _fullscreenVideoWidget = fullscreenVideo;
+    _name = name;
     _log = new Logger(this);
     _log->setLogfile(QCoreApplication::applicationDirPath() + "/mission_control" + QDateTime::currentDateTime().toString("M-dd_h:mm_AP") + ".log");
     _log->RouteToQtLogger = true;
-    _log->MaxQtLoggerLevel = LOG_LEVEL_DEBUG;
+    _log->MaxQtLoggerLevel = LOG_LEVEL_ERROR;
 }
 
 void MissionControlProcess::init() {
@@ -41,288 +40,488 @@ void MissionControlProcess::init() {
      */
     //parse soro.ini configuration
     QString err = QString::null;
-    if (!_soroIniConfig.load(&err)) {
+    if (!_config.load(&err)) {
         LOG_E(err);
-        emit error(err);
+        emit fatalError(err);
         return;
     }
-    _soroIniConfig.applyLogLevel(_log);
+    _config.applyLogLevel(_log);
     LOG_I("Configuration has been loaded successfully");
 
+    LOG_I("***************Initializing Rover connections*********************");
+
     switch (_role) {
-    case ArmOperator:
+    case ArmOperatorRole:
         arm_loadMasterArmConfig();
-        _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, _soroIniConfig.MasterArmPort), MBED_ID_MASTER_ARM, _log);
+        _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, _config.MasterArmPort), MBED_ID_MASTER_ARM, _log);
         connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
                 this, SLOT(arm_masterArmMessageReceived(const char*,int)));
-        connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel::State)),
-                this, SIGNAL(arm_masterArmStateChanged(MbedChannel::State)));
-        if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
-            _controlChannel = new Channel(this, _soroIniConfig.ArmChannelPort, CHANNEL_NAME_ARM,
+        connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel *, MbedChannel::State)),
+                this, SIGNAL(arm_masterArmStateChanged(MbedChannel *, MbedChannel::State)));
+        if (_config.ServerSide == SoroIniLoader::MissionControlEndPoint) {
+            _controlChannel = new Channel(this, _config.ArmChannelPort, CHANNEL_NAME_ARM,
                     Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         else {
-            _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.ArmChannelPort), CHANNEL_NAME_ARM,
+            _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.ArmChannelPort), CHANNEL_NAME_ARM,
                     Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         break;
-    case Driver:
+    case DriverRole:
         initSDL();
-        if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
-            _controlChannel = new Channel(this, _soroIniConfig.DriveChannelPort, CHANNEL_NAME_DRIVE,
+        if (_config.ServerSide == SoroIniLoader::MissionControlEndPoint) {
+            _controlChannel = new Channel(this, _config.DriveChannelPort, CHANNEL_NAME_DRIVE,
                     Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         else {
-            _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.DriveChannelPort), CHANNEL_NAME_DRIVE,
+            _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.DriveChannelPort), CHANNEL_NAME_DRIVE,
                     Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         break;
-    case CameraOperator:
+    case CameraOperatorRole:
         initSDL();
-        if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
-            _controlChannel = new Channel(this, _soroIniConfig.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
+        if (_config.ServerSide == SoroIniLoader::MissionControlEndPoint) {
+            _controlChannel = new Channel(this, _config.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
                     Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         else {
-            _controlChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
+            _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
                     Channel::UdpProtocol, QHostAddress::Any, _log);
         }
         break;
-    case Spectator:
+    case SpectatorRole:
         //no control connections to create since spectators don't control anything
         break;
     }
 
+    // start statistic timers
+    START_TIMER(_rttStatTimerId, 1000);
+    if (_role != SpectatorRole) { // spectator has no UDP connection to monitor
+        START_TIMER(_droppedPacketTimerId, 5000);
+    }
+
+
+    LOG_I("****************Initializing Mission Control network connections*******************");
+
     _broadcastSocket = new QUdpSocket(this);
-    if (_masterNode) {
+    if (_masterMissionControl) {
         LOG_I("Setting up as master subnet node");
-        //create the main shared channel to connect to the rover
-        if (_soroIniConfig.ServerSide == SoroIniLoader::MissionControlEndPoint) {
-            _sharedChannel = new Channel(this, _soroIniConfig.SharedChannelPort, CHANNEL_NAME_SHARED,
+        // create the main shared channel to connect to the rover
+        if (_config.ServerSide == SoroIniLoader::MissionControlEndPoint) {
+            _sharedChannel = new Channel(this, _config.SharedChannelPort, CHANNEL_NAME_SHARED,
                     Channel::TcpProtocol, QHostAddress::Any, _log);
         }
         else {
-            _sharedChannel = new Channel(this, SocketAddress(_soroIniConfig.ServerAddress, _soroIniConfig.SharedChannelPort), CHANNEL_NAME_SHARED,
+            _sharedChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.SharedChannelPort), CHANNEL_NAME_SHARED,
                     Channel::TcpProtocol, QHostAddress::Any, _log);
         }
         _sharedChannel->open();
-        connect(_sharedChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-                this, SLOT(roverSharedChannelMessageReceived(const char*,Channel::MessageSize)));
-        connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
-                this, SLOT(roverSharedChannelStateChanged(Channel::State)));
-        //create the udp broadcast receive port to listen to other mission control nodes trying to connect
-        if (!_broadcastSocket->bind(QHostAddress::Any, _soroIniConfig.McBroadcastPort)) {
-            emit error("Unable to bind subnet broadcast port on " + QString::number(_soroIniConfig.McBroadcastPort));
+        connect(_sharedChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
+                this, SLOT(master_roverSharedChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
+        connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+                this, SLOT(master_roverSharedChannelStateChanged(Channel*,Channel::State)));
+        // create the udp broadcast receive port to listen to other mission control nodes trying to connect
+        if (!_broadcastSocket->bind(QHostAddress::Any, _config.McBroadcastPort)) {
+            emit fatalError("Unable to bind subnet broadcast port on port " + QString::number(_config.McBroadcastPort) +
+                            ". You may be trying to run two master mission controls on the same computer, don\'t do that.");
             return;
         }
         if (!_broadcastSocket->open(QIODevice::ReadWrite)) {
-            emit error("Unable to open subnet broadcast port on " + QString::number(_soroIniConfig.McBroadcastPort));
+            emit fatalError("Unable to open subnet broadcast port on port " + QString::number(_config.McBroadcastPort));
             return;
         }
         connect(_broadcastSocket, SIGNAL(readyRead()),
-                this, SLOT(broadcastSocketReadyRead()));
-        //start a timer to monitor inactive shared channels
-        START_TIMER(_pruneSharedChannelsTimerId, 10000);
+                this, SLOT(master_broadcastSocketReadyRead()));
     }
     else {
         LOG_I("Setting up as slave subnet node");
-        //create a tcp channel on a random port to act as a server, and
-        //create a udp socket on the same port to send out broadcasts with the
-        //server's information so the master node can connect
-        _sharedChannel = new Channel(this, 0, CHANNEL_NAME_SUBNET_SHARED,
+        // create a tcp channel on a random port to act as a server, and
+        // create a udp socket on the same port to send out broadcasts with the
+        // server's information so the master node can connect
+        _sharedChannel = new Channel(this, 0, _name,
                 Channel::TcpProtocol, QHostAddress::Any, _log);
         _sharedChannel->open();
-        connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
-                this, SLOT(slaveSharedChannelStateChanged(Channel::State)));
-        connect(_sharedChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-                this, SLOT(handleSharedChannelMessage(const char*,Channel::MessageSize)));
+        connect(_sharedChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
+                this, SLOT(slave_masterSharedChannelStateChanged(Channel*, Channel::State)));
+        connect(_sharedChannel, SIGNAL(messageReceived(Channel*, const char*,Channel::MessageSize)),
+                this, SLOT(slave_masterSharedChannelMessageReceived(Channel*, const char*,Channel::MessageSize)));
         if (!_broadcastSocket->bind(QHostAddress::Any, _sharedChannel->getHostAddress().port)) {
-            emit error("Unable to bind subnet broadcast port on " + QString::number(_sharedChannel->getHostAddress().port));
+            emit fatalError("Unable to bind subnet broadcast port on " + QString::number(_sharedChannel->getHostAddress().port));
             return;
         }
         if (!_broadcastSocket->open(QIODevice::ReadWrite)) {
-            emit error("Unable to open subnet broadcast port on " + QString::number(_sharedChannel->getHostAddress().port));
+            emit fatalError("Unable to open subnet broadcast port on " + QString::number(_sharedChannel->getHostAddress().port));
             return;
         }
-        START_TIMER(_broadcastSharedChannelInfoTimerId, 1000);
+        START_TIMER(_broadcastSharedChannelInfoTimerId, 500);
+        START_TIMER(_masterResponseWatchdogTimerId, 3000); // 3 seconds should be plenty
     }
-    //also connect the shared channel's state changed event to this signal
-    //so the UI can be updated. This signal is also broadcast when the rover
-    //becomes disconnected from the master mission control, and they inform us
-    //of that event since we are connected to the rover through them.
-    connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SIGNAL(sharedChannelStateChanged(Channel::State)));
+    // also connect the shared channel's state changed event to this signal
+    // so the UI can be updated. This signal is also broadcast when the rover
+    // becomes disconnected from the master mission control, and they inform us
+    // of that event since we are connected to the rover through them.
     if (_controlChannel != NULL) {
-        connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
-                this, SIGNAL(controlChannelStateChanged(Channel::State)));
-        connect(_controlChannel, SIGNAL(statisticsUpdate(int,quint64,quint64,int,int)),
-                this, SIGNAL(controlChannelStatsUpdate(int, quint16, quint64, int, int)));
+        connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
+                this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
         _controlChannel->open();
         if (_controlChannel->getState() == Channel::ErrorState) {
-            emit error("The control channel experienced a fatal error. This is most likely due to a configuration problem.");
+            emit fatalError("The control channel experienced a fatal error. This is most likely due to a configuration problem.");
             return;
         }
     }
 
     if (_sharedChannel->getState() == Channel::ErrorState) {
-        emit error("The shared data channel experienced a fatal error. This is most likely due to a configuration problem.");
+        emit fatalError("The shared data channel experienced a fatal error. This is most likely due to a configuration problem.");
         return;
     }
 
     LOG_I("***************Initializing Video system******************");
 
-    if (_masterNode) {
+    if (_masterMissionControl) {
         LOG_I("Creating video clients for rover");
-        for (int i = 0; i < _soroIniConfig.FlyCapture2CameraCount; i++) {
-            VideoClient *client = new VideoClient("Camera " + QString::number(i + 1) + " (Blackfly)",
-                                                  SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FirstVideoPort + i),
+        for (int i = 0; i < 5; i++) {
+            VideoClient *client = new VideoClient("Camera " + QString::number(i + 1),
+                                                  SocketAddress(_config.ServerAddress, _config.FirstVideoPort + i),
                                                   QHostAddress::Any, _log, this);
-            _videoClients.insert(i, client);
-            connect(client, SIGNAL(stateChanged(VideoClient::State)),
-                    this, SLOT(videoClientStateChanged(VideoClient::State)));
-        }
-        for (int i = _soroIniConfig.FlyCapture2CameraCount; i < _soroIniConfig.FlyCapture2CameraCount + _soroIniConfig.UVDCameraCount; i++) {
-            VideoClient *client = new VideoClient("Camera " + QString::number(i + 1) + " (Webcam)",
-                                                  SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FirstVideoPort + i),
-                                                  QHostAddress::Any, _log, this);
-            _videoClients.insert(i, client);
-            connect(client, SIGNAL(stateChanged(VideoClient::State)),
-                    this, SLOT(videoClientStateChanged(VideoClient::State)));
-        }
-    }
-    else {
-        LOG_I("Creating mission control subnet video clients");
-        //_topVideoWidget->play(SocketAddress(_soroIniConfig.VideoServerAddress, _soroIniConfig.FirstVideoPort + 1), );
-    }
-
-    syncVideoStreams();
-}
-
-void MissionControlProcess::videoClientError(QString message) {
-    //_topVideoWidget->stop("This rover experienced an error trying to stream this camera: \"" + message + "\"");
-}
-
-void MissionControlProcess::videoClientStateChanged(VideoClient::State) {
-    syncVideoStreams();
-}
-
-void MissionControlProcess::syncVideoStreams() {
-    LOG_I("Syncing video stream states");
-    if (_videoClients.contains(0)) {
-        switch (_videoClients[0]->getState()) {
-        case VideoClient::StreamingState:
-            _fullscreenVideoWidget->play(_videoClients[0]->element(), _videoClients[0]->getStreamFormat().Encoding);
-            break;
-        case VideoClient::ConnectedState:
-            _fullscreenVideoWidget->stop("The rover isn't sending this stream right now.");
-            break;
-        case VideoClient::ConnectingState:
-            _fullscreenVideoWidget->stop("You\'re not connected to the rover.");
-            break;
-        }
-    }
-    if (_videoClients.contains(1)) {
-        switch (_videoClients[1]->getState()) {
-        case VideoClient::StreamingState:
-            _topVideoWidget->play(_videoClients[1]->element(), _videoClients[1]->getStreamFormat().Encoding);
-            break;
-        case VideoClient::ConnectedState:
-            _topVideoWidget->stop("The rover isn't sending this stream right now.");
-            break;
-        case VideoClient::ConnectingState:
-            _topVideoWidget->stop("You\'re not connected to the rover.");
-            break;
-        }
-    }
-    if (_videoClients.contains(2)) {
-        switch (_videoClients[2]->getState()) {
-        case VideoClient::StreamingState:
-            _bottomVideoWidget->play(_videoClients[2]->element(), _videoClients[2]->getStreamFormat().Encoding);
-            break;
-        case VideoClient::ConnectedState:
-            _bottomVideoWidget->stop("The rover isn't sending this stream right now.");
-            break;
-        case VideoClient::ConnectingState:
-            _bottomVideoWidget->stop("You\'re not connected to the rover.");
-            break;
+            _videoClients.append(client);
         }
     }
 }
 
-void MissionControlProcess::broadcastSocketReadyRead() {
+void MissionControlProcess::controlChannelStateChanged(Channel *channel, Channel::State state) {
+    Q_UNUSED(channel);
+    emit connectionStateChanged(state,
+                                _masterMissionControl ? Channel::ConnectedState : _sharedChannel->getState(),
+                                _roverSharedChannelConnected ? Channel::ConnectedState : Channel::ConnectingState);
+}
+
+void MissionControlProcess::master_broadcastSocketReadyRead() {
     SocketAddress peer;
+    Role peerRole;
+    QString peerName;
     while (_broadcastSocket->hasPendingDatagrams()) {
-        int len = _broadcastSocket->readDatagram(_buffer, strlen(CHANNEL_NAME_SUBNET_SHARED) + 1, &peer.host, &peer.port);
-        if ((size_t)len < strlen(CHANNEL_NAME_SUBNET_SHARED) + 1) continue;
-        if (strcmp(_buffer, CHANNEL_NAME_SUBNET_SHARED) == 0) {
-            //found a new mission control trying to connect
-            //make sure they're not already added (delayed UDP packet or something)
-            bool added = false;
-            foreach (Channel *c, _sharedChannelNodes) {
-                if (c->getProvidedServerAddress() == peer) {
-                    added = true;
-                    break;
-                }
+        int len = _broadcastSocket->readDatagram(_buffer, sizeof(_buffer), &peer.host, &peer.port);
+        // found a new mission control trying to connect
+        QByteArray byteArray(_buffer, len);
+        QDataStream stream(byteArray);
+        stream >> reinterpret_cast<quint32&>(peerRole);
+        stream >> peerName;
+        // ensure they don't conflict with an existing mission control
+        bool conflict = false;
+        for (int i = 0; i < _slaveMissionControlChannels.size(); i++) {
+            //check if they are already added
+            if (_slaveMissionControlChannels[i]->getProvidedServerAddress() == peer) {
+                // address conflict
+                conflict = true;
+                break;
             }
-            if (!added) {
-                //not already added, create a channel for them
-                LOG_I("Creating new channel for node " + peer.toString());
-                Channel *channel = new Channel(this, peer, CHANNEL_NAME_SUBNET_SHARED,
-                                   Channel::TcpProtocol, _broadcastSocket->localAddress(), _log);
-                channel->open();
-                _sharedChannelNodes.append(channel);
-                connect(channel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-                        this, SLOT(nodeSharedChannelMessageReceived(const char*,Channel::MessageSize)));
+            if (_slaveMissionControlChannels[i]->getName().compare(peerName) == 0) {
+                // name conflict
+                conflict = true;
+                break;
+            }
+            if ((peerRole != SpectatorRole) && (_slaveMissionControlRoles[i] == peerRole)) {
+                // role conflict
+                conflict = true;
+                break;
+            }
+        }
+        if (!conflict) {
+            // not already added, create a channel for them
+            LOG_I("Creating new channel for node " + peer.toString());
+            Channel *channel = new Channel(this, peer, peerName,
+                               Channel::TcpProtocol, _broadcastSocket->localAddress(), _log);
+            channel->open();
+            _slaveMissionControlChannels.append(channel);
+            _slaveMissionControlRoles.append(peerRole);
+            connect(channel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
+                    this, SLOT(master_slaveSharedChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
+            connect(channel, SIGNAL(stateChanged(Channel*,Channel::State)),
+                    this, SLOT(master_slaveSharedChannelStateChanged(Channel*,Channel::State)));
+
+            // forward video streams to their address as well (using the same port that the server uses
+            // for consistency)
+            foreach (VideoClient *client, _videoClients) {
+                client->addForwardingAddress(SocketAddress(peer.host, client->getServerAddress().port));
             }
         }
     }
 }
 
-void MissionControlProcess::roverSharedChannelStateChanged(Channel::State state) {
-    //broadcast to other mission controls that the rover isn't connected
-    //TODO
+void MissionControlProcess::broadcastSharedMessage(const char *message, int size, bool includeRover, Channel *exclude) {
+    if (!_masterMissionControl) {
+        _sharedChannel->sendMessage(message, size);
+        return;
+    }
+    if (includeRover) {
+        _sharedChannel->sendMessage(message, size);
+    }
+    foreach (Channel *c, _slaveMissionControlChannels) {
+        if (c != exclude) {
+            c->sendMessage(message, size);
+        }
+    }
 }
 
 void MissionControlProcess::handleSharedChannelMessage(const char *message, Channel::MessageSize size) {
-    //TODO
+    QByteArray byteArray = QByteArray::fromRawData(message, size);
+    QDataStream stream(byteArray);
+    SharedMessageType messageType;
+
+    LOG_E("Getting shared channel message");
+
+    stream >> reinterpret_cast<quint32&>(messageType);
+    switch (messageType) {
+    case SharedMessage_RoverSharedChannelStateChanged:
+        Channel::State state;
+        stream >> reinterpret_cast<quint32&>(state);
+
+        break;
+    case SharedMessage_MissionControlConnected: {
+        QString name;
+        stream >> name;
+        emit notification(MCCNotification, name, name + " has connected to the mission control center network.");
+    }
+        break;
+    case SharedMessage_MissionControlDisconnected: {
+        QString name;
+        stream >> name;
+        emit notification(MCCNotification, name, name + " has disconnected from the mission control center network.");
+    }
+        break;
+    case SharedMessage_MissionControlChat: {
+        QString name;
+        QString message;
+        stream >> name;
+        stream >> message;
+        emit notification(ChatNotification, name , message);
+    }
+        break;
+    case SharedMessage_RoverDisconnected: {
+        _roverSharedChannelConnected = false;
+        // emit rover system state update because we no longer know the system state of the rover
+        emit roverSystemStateUpdate(UnknownSubsystemState, UnknownSubsystemState, UnknownSubsystemState);
+        // emit connection state changed signal
+        emit connectionStateChanged(_controlChannel == NULL ? Channel::ErrorState : _controlChannel->getState(),
+                                    Channel::ConnectingState, _sharedChannel->getState());
+    }
+        break;
+    case SharedMessage_RoverStatusUpdate: {
+        _roverSharedChannelConnected = true;
+        RoverSubsystemState armSubsystemState, driveCameraSubsystemState;
+        bool armNormal, driveCameraNormal;
+
+        stream >> armNormal;
+        stream >> driveCameraNormal;
+
+        armSubsystemState = armNormal ? NormalSubsystemState : MalfunctionSubsystemState;
+        driveCameraSubsystemState = driveCameraNormal ? NormalSubsystemState : MalfunctionSubsystemState;
+        //TODO secondary computer
+        emit roverSystemStateUpdate(armSubsystemState, driveCameraSubsystemState, MalfunctionSubsystemState);
+    }
+        break;
+    case SharedMessage_CameraConfigurationChanged: {
+
+        /*********************************
+         * This is the main section of code that syncronizes
+         * the cameras playing in the UI with the cameras the server
+         * reports it is streaming.
+         */
+
+        qint32 cameraCount;
+        QMap<int, StreamFormat> freeCameras;
+        QList<CameraWidget*> freeCameraWidgets;
+        freeCameraWidgets.append(_topVideoWidget);
+        freeCameraWidgets.append(_bottomVideoWidget);
+        freeCameraWidgets.append(_fullscreenVideoWidget);
+        stream >> cameraCount;
+
+        _streamFormats.clear();
+        // loop through all stream formats to collect the ones not streaming anymore,
+        // and and their associated widgets (if any) to the free list
+        for (int cameraID = 0; cameraID < cameraCount; cameraID++) {
+            StreamFormat format;
+            stream >> format;
+            _streamFormats.append(format);
+            if (_videoWidgets.contains(cameraID)) {
+                if (format.Encoding == UnknownOrNoEncoding) {
+                    // this video was being streamed, however it has stopped and it's assigned
+                    // widget is now free
+                    _videoWidgets.remove(cameraID);
+                }
+                else {
+                    // this video is still being streamed and already has an assigned widget
+                    freeCameraWidgets.removeOne(_videoWidgets[cameraID]);
+                }
+            }
+            else if (format.Encoding != UnknownOrNoEncoding) {
+                // this video has no assigned widget
+                freeCameras.insert(cameraID, format);
+            }
+        }
+
+        // now assign free widgets to free videos
+        foreach (int cameraID, freeCameras.keys()) {
+            if (freeCameraWidgets.isEmpty()) break;
+            playCamera(cameraID, freeCameraWidgets[0]);
+            freeCameraWidgets.removeAt(0);
+        }
+
+        //if there are still free widgets, make them play static
+        foreach (CameraWidget *widget, freeCameraWidgets) {
+            widget->stop("This camera isn't being streamed right now.");
+        }
+
+    }
+        break;
+    case SharedMessage_RoverVideoServerError: {
+        // find out which stream had the error
+        qint32 cameraID;
+        QString message;
+        stream >> cameraID;
+        stream >> message;
+
+        // if the stream that experienced the error is currently playing, stop it and display
+        // the error instead
+        if (_videoWidgets.contains(cameraID)) {
+            _videoWidgets[cameraID]->stop("The rover experienced an error streaming this camera: " + message);
+            _videoWidgets.remove(cameraID);
+        }
+    }
+        break;
+    default:
+        LOG_E("Got unknown message header on shared channel");
+        break;
+    }
 }
 
-void MissionControlProcess::roverSharedChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown, int rateUp, int rateDown) {
-    //TODO
+void MissionControlProcess::master_roverSharedChannelStateChanged(Channel *channel, Channel::State state) {
+    Q_UNUSED(channel);
+    _roverSharedChannelConnected = state == Channel::ConnectedState;
+
+    // broadcast the new state to all other mission controls
+    SharedMessageType messageType = SharedMessage_RoverSharedChannelStateChanged;
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << reinterpret_cast<quint32&>(state);
+
+    broadcastSharedMessage(message.constData(), message.size(), false);
+
+    if (state == Channel::ConnectingState) {
+        // emit rover system state update because we no longer know the system state of the rover
+        emit roverSystemStateUpdate(UnknownSubsystemState, UnknownSubsystemState, UnknownSubsystemState);
+    }
+    // emit connection state changed signal
+    emit connectionStateChanged(_controlChannel == NULL ? Channel::ErrorState : _controlChannel->getState(),
+                                Channel::ConnectedState, _sharedChannel->getState());
 }
 
-void MissionControlProcess::roverSharedChannelMessageReceived(const char *message, Channel::MessageSize size) {
+void MissionControlProcess::master_roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
+    Q_UNUSED(channel);
     //message from the rover, rebroadcast to all other mission controls
     handleSharedChannelMessage(message, size);
-    foreach (Channel *c, _sharedChannelNodes) {
-        c->sendMessage(message, size);
-    }
+    broadcastSharedMessage(message, size, false);
 }
 
-void MissionControlProcess::nodeSharedChannelMessageReceived(const char *message, Channel::MessageSize size) {
-    //resend to all other mission controls (including the sender) and the rover
+void MissionControlProcess::master_slaveSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
+    // message from another mission control, resend it to the rover and all other mission controls
     handleSharedChannelMessage(message, size);
-    _sharedChannel->sendMessage(message, size);
-    foreach (Channel *c, _sharedChannelNodes) {
-        c->sendMessage(message, size);
+    broadcastSharedMessage(message, size, true, channel);
+}
+
+void MissionControlProcess::master_slaveSharedChannelStateChanged(Channel *channel, Channel::State state) {
+    switch (state) {
+    case Channel::ConnectedState: {
+        LOG_I("Mission control " + channel->getName() + " has connected");
+        // notify all other mission controls that a new mission control has connected
+        SharedMessageType messageType = SharedMessage_MissionControlConnected;
+        QByteArray message;
+        QDataStream stream(&message, QIODevice::WriteOnly);
+
+        stream << reinterpret_cast<quint32&>(messageType);
+        stream << channel->getName();
+
+        broadcastSharedMessage(message.constData(), message.size(), false, channel);
+    }
+        break;
+    default: // assume anything other than connected is bad
+        if (channel->wasConnected()) {
+            LOG_W("Mission control " + channel->getName() + " appears to have disconnected");
+            // nofity all mission controls that a mission control has disconnected
+            SharedMessageType messageType = SharedMessage_MissionControlDisconnected;
+            QByteArray message;
+            QDataStream stream(&message, QIODevice::WriteOnly);
+
+            stream << reinterpret_cast<quint32&>(messageType);
+            stream << channel->getName();
+
+            broadcastSharedMessage(message.constData(), message.size(), false, channel);
+
+            // remove the mission control's old channel and hope they connect again via broadcasting
+            if (channel->wasConnected() && (state != Channel::ConnectedState)) {
+                // remove the channel and wait for them to hopefully reconnect
+                delete channel;
+                int index = _slaveMissionControlChannels.indexOf(channel);
+                if (index >= 0) {
+                    _slaveMissionControlChannels.removeAt(index);
+                    _slaveMissionControlRoles.removeAt(index);
+                }
+            }
+        }
+        break;
     }
 }
 
-void MissionControlProcess::slaveSharedChannelStateChanged(Channel::State state) {
-    LOG_D("slaveSharedChannelStateChanged()");
+void MissionControlProcess::slave_masterSharedChannelStateChanged(Channel *channel, Channel::State state) {
+    Q_UNUSED(channel);
     switch (state) {
     case Channel::ConnectedState:
+        LOG_I("Connected to master mission control");
         //connected to the master mission control, stop broadcasting
         KILL_TIMER(_broadcastSharedChannelInfoTimerId);
+        KILL_TIMER(_masterResponseWatchdogTimerId);
         break;
     case Channel::ConnectingState:
-        //lost connection to the master mission control, start broadcasting
-        START_TIMER(_broadcastSharedChannelInfoTimerId, 1000);
+        LOG_W("Lost connection with the master mission control");
+        if (channel->wasConnected()) {
+            // lost connection to the master mission control, start rebroadcasting
+            // our information
+            START_TIMER(_broadcastSharedChannelInfoTimerId, 500);
+            START_TIMER(_masterResponseWatchdogTimerId, 3000);
+        }
+        _roverSharedChannelConnected = false;
+        // emit rover system state update because we no longer know the system state of the rover
+        emit roverSystemStateUpdate(UnknownSubsystemState, UnknownSubsystemState, UnknownSubsystemState);
         break;
     case Channel::ErrorState:
-        emit error("The shared channel experienced a fatal error");
+        emit fatalError("The shared channel experienced a fatal error");
+        break;
+    default:
         break;
     }
+    emit connectionStateChanged(_controlChannel == NULL ? Channel::ErrorState : _controlChannel->getState(),
+                                _sharedChannel->getState(),
+                                _roverSharedChannelConnected ? Channel::ConnectedState : Channel::ConnectingState);
+}
+
+void MissionControlProcess::slave_masterSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
+    Q_UNUSED(channel);
+    handleSharedChannelMessage(message, size);
+}
+
+void MissionControlProcess::postChatMessage(QString message) {
+    // broadcast the message to all other mission controls
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_MissionControlChat;
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << _name;
+    stream << message;
+
+    broadcastSharedMessage(byteArray.constData(), byteArray.size(), false);
 }
 
 void MissionControlProcess::timerEvent(QTimerEvent *e) {
@@ -343,7 +542,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 return;
             }
             switch (_role) {
-            case ArmOperator:
+            case ArmOperatorRole:
                 //send the rover an arm gamepad packet
                 ArmMessage::setGamepadData(_buffer,
                                            SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
@@ -356,16 +555,16 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                                            SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y));
                 _controlChannel->sendMessage(_buffer, ArmMessage::RequiredSize_Gamepad);
                 break;
-            case Driver:
+            case DriverRole:
                 //send the rover a drive gamepad packet
                 switch (_driveGamepadMode) {
-                case SingleStick:
+                case SingleStickDrive:
                     DriveMessage::setGamepadData_DualStick(_buffer,
                                                  SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
                                                  SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY),
                                                  _driveMiddleSkidSteerFactor);
                     break;
-                case DualStick:
+                case DualStickDrive:
                     DriveMessage::setGamepadData_DualStick(_buffer,
                                                  SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY),
                                                  SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY),
@@ -374,12 +573,14 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 }
                 _controlChannel->sendMessage(_buffer, DriveMessage::RequiredSize);
                 break;
-            case CameraOperator:
+            case CameraOperatorRole:
                 //send the rover a gimbal gamepad packet
                 GimbalMessage::setGamepadData(_buffer,
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY));
                 _controlChannel->sendMessage(_buffer, GimbalMessage::RequiredSize);
+                break;
+            default:
                 break;
             }
         }
@@ -412,8 +613,110 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
          */
         LOG_I("Broadcasting shared channel information on address "
               + SocketAddress(_broadcastSocket->localAddress(), _broadcastSocket->localPort()).toString());
-        _broadcastSocket->writeDatagram(CHANNEL_NAME_SUBNET_SHARED, strlen(CHANNEL_NAME_SUBNET_SHARED) + 1,
-                                        QHostAddress::Broadcast, _soroIniConfig.McBroadcastPort);
+        QByteArray message;
+        QDataStream stream(&message, QIODevice::WriteOnly);
+        stream << reinterpret_cast<quint32&>(_role);
+        stream << _name;
+        _broadcastSocket->writeDatagram(message.constData(), message.size() + 1,
+                                        QHostAddress::Broadcast, _config.McBroadcastPort);
+    }
+    else if (e->timerId() == _masterResponseWatchdogTimerId) {
+        /****************************************
+         * This timer only runs once in the event the master mission control
+         * does not respond back in time. In this event, an error is shown
+         * to the user
+         */
+        LOG_E("Master mission control did not respond in time");
+        emit fatalError("Unable to connect to the mission control network. Please make sure that:\n\n"
+                   "1. There is a master mission control running on the network, and there is no firewall issues.\n"
+                   "2. The name you chose isn't already being used by an existing mission control.\n"
+                   "3. The role you selected (Arm Operator, Driver, etc.) isn't already claimed by an existin mission control.");
+        return;
+    }
+    else if (e->timerId() == _droppedPacketTimerId) {
+        /****************************************
+         * This timer runs every few seconds to update the
+         * dropped packet statistic
+         */
+        emit droppedPacketRateUpdate(_controlChannel->getUdpDroppedPacketsPercent());
+    }
+    else if (e->timerId() == _rttStatTimerId) {
+        /****************************************
+         * This timer runs regularly to update the
+         * rtt (ping) statistic
+         */
+        emit rttUpdate(_controlChannel->getLastRtt());
+    }
+}
+
+void MissionControlProcess::cycleVideosClockwise() {
+    int oldTop = _videoWidgets.key(_topVideoWidget, -1);
+    int oldBottom = _videoWidgets.key(_bottomVideoWidget, -1);
+    int oldFullscreen = _videoWidgets.key(_fullscreenVideoWidget, -1);
+
+    if (oldTop >= 0) {
+        playCamera(oldTop, _fullscreenVideoWidget);
+    }
+    else {
+        _fullscreenVideoWidget->stop("This camera isn't being streamed right now.");
+    }
+    if (oldBottom >= 0) {
+        playCamera(oldBottom, _topVideoWidget);
+    }
+    else {
+        _topVideoWidget->stop("This camera isn't being streamed right now.");
+    }
+    if (oldFullscreen >= 0) {
+        playCamera(oldFullscreen, _bottomVideoWidget);
+    }
+    else {
+        _bottomVideoWidget->stop("This camera isn't being streamed right now.");
+    }
+}
+
+void MissionControlProcess::cycleVideosCounterClockwise() {
+    int oldTop = _videoWidgets.key(_topVideoWidget, -1);
+    int oldBottom = _videoWidgets.key(_bottomVideoWidget, -1);
+    int oldFullscreen = _videoWidgets.key(_fullscreenVideoWidget, -1);
+
+    if (oldTop >= 0) {
+        playCamera(oldTop, _bottomVideoWidget);
+    }
+    else {
+        _bottomVideoWidget->stop("This camera isn't being streamed right now.");
+    }
+    if (oldBottom >= 0) {
+        playCamera(oldBottom, _fullscreenVideoWidget);
+    }
+    else {
+        _fullscreenVideoWidget->stop("This camera isn't being streamed right now.");
+    }
+    if (oldFullscreen >= 0) {
+        playCamera(oldFullscreen, _topVideoWidget);
+    }
+    else {
+        _topVideoWidget->stop("This camera isn't being streamed right now.");
+    }
+}
+
+void MissionControlProcess::playCamera(int cameraID, CameraWidget *widget) {
+    int oldCameraID = _videoWidgets.key(widget);
+    if (oldCameraID >= 0) {
+        _videoWidgets.remove(oldCameraID);
+    }
+
+    if (_streamFormats[cameraID].Encoding == UnknownOrNoEncoding) {
+        widget->stop("This camera isn't being streamed right now");
+    }
+    else {
+        if (_masterMissionControl) {
+            widget->play(_videoClients[cameraID]->element(), _streamFormats[cameraID].Encoding);
+        }
+        else {
+            widget->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + cameraID), _streamFormats[cameraID].Encoding);
+        }
+        widget->setCameraName("Camera " + QString::number(cameraID + 1));
+        _videoWidgets.insert(cameraID, widget);
     }
 }
 
@@ -423,15 +726,15 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
 void MissionControlProcess::initSDL() {
     LOG_D("initSDL()");
     if (!_sdlInitialized) {
-        LOG_I("Input mode set to use SDL");
+        LOG_I("Initializing SDL");
         if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
-            emit error("SDL failed to initialize: " + QString(SDL_GetError()));
+            emit fatalError("SDL failed to initialize: " + QString(SDL_GetError()));
             return;
         }
         _sdlInitialized = true;
         _gameController = NULL;
         if (SDL_GameControllerAddMappingsFromFile((SDL_MAP_FILE_PATH).toLocal8Bit().constData()) == -1) {
-            emit error("Failed to load SDL gamepad map: " + QString(SDL_GetError()));
+            emit fatalError("Failed to load SDL gamepad map: " + QString(SDL_GetError()));
             return;
         }
         START_TIMER(_controlSendTimerId, CONTROL_SEND_INTERVAL);
@@ -472,35 +775,23 @@ void MissionControlProcess::arm_masterArmMessageReceived(const char *message, in
 
 void MissionControlProcess::arm_loadMasterArmConfig() {
     LOG_D("loadMasterArmConfig()");
-    if (_role == ArmOperator) {
+    if (_role == ArmOperatorRole) {
         QFile masterArmFile(MASTER_ARM_INI_PATH);
         if (_masterArmRanges.load(masterArmFile)) {
             LOG_I("Loaded master arm configuration");
         }
         else {
-            emit error("The master arm configuration file " + MASTER_ARM_INI_PATH + " is either missing or invalid");
+            emit fatalError("The master arm configuration file " + MASTER_ARM_INI_PATH + " is either missing or invalid");
         }
     }
 }
 
-SDL_GameController *MissionControlProcess::getGamepad() {
-    return _gameController;
+QString MissionControlProcess::getName() const {
+    return _name;
 }
 
-const SoroIniLoader *MissionControlProcess::getSoroIniConfig() const {
-    return &_soroIniConfig;
-}
-
-const Channel *MissionControlProcess::getControlChannel() const {
-    return _controlChannel;
-}
-
-const Channel *MissionControlProcess::getSharedChannel() const {
-    return _sharedChannel;
-}
-
-const MbedChannel* MissionControlProcess::arm_getMasterArmChannel() const {
-    return _masterArmChannel;
+const SoroIniLoader *MissionControlProcess::getConfiguration() const {
+    return &_config;
 }
 
 void MissionControlProcess::drive_setMiddleSkidSteerFactor(float factor) {
@@ -524,12 +815,12 @@ MissionControlProcess::Role MissionControlProcess::getRole() const {
 }
 
 bool MissionControlProcess::isMasterSubnetNode() const {
-    return _masterNode;
+    return _masterMissionControl;
 }
 
 MissionControlProcess::~MissionControlProcess() {
     quitSDL();
-    foreach (Channel *c, _sharedChannelNodes) {
+    foreach (Channel *c, _slaveMissionControlChannels) {
         delete c;
     }
     if (_controlChannel != NULL) delete _controlChannel;

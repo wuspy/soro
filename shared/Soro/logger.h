@@ -34,6 +34,7 @@ class Logger: public QObject {
 
 private:
     static const QString _levelFormatters[];
+    static const QString _levelFormattersHTML[];
     QFile* _file = NULL;
     QTextStream* _fileStream = NULL;
     void publish(int level, QString tag, QString message);
@@ -43,6 +44,7 @@ public:
     ~Logger();
 
     bool setLogfile(QString fileName);
+
     void closeLogfile();
 
     inline void d(QString tag, QString message) {

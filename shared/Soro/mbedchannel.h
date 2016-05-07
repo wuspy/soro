@@ -43,6 +43,8 @@ public:
         ConnectedState, ConnectingState
     };
 
+    MbedChannel::State getState() const;
+
 private:
     QString LOG_TAG;
     Logger *_log;
@@ -72,7 +74,7 @@ public:
 
 signals:
     void messageReceived(const char* message, int length);
-    void stateChanged(MbedChannel::State state);
+    void stateChanged(MbedChannel *channel, MbedChannel::State state);
 
 protected:
     void timerEvent(QTimerEvent *e);

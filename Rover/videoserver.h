@@ -40,6 +40,7 @@ public:
     void start(FlyCapture2::PGRGuid camera, StreamFormat format);
     QString getCameraName();
     VideoServer::State getState();
+    const StreamFormat& getCurrentStreamFormat() const;
 
 private:
 
@@ -69,9 +70,9 @@ private slots:
     void beginStream(SocketAddress address);
 
 signals:
-    void stateChanged(VideoServer::State state);
-    void eos();
-    void error(QString message);
+    void stateChanged(VideoServer *server, VideoServer::State state);
+    void eos(VideoServer *server);
+    void error(VideoServer *server, QString message);
 
 protected:
     void timerEvent(QTimerEvent *e);

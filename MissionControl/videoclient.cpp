@@ -14,17 +14,21 @@ VideoClient::VideoClient(QString name, SocketAddress server, QHostAddress host, 
 
     _controlChannel = new Channel(this, _server, _name, Channel::TcpProtocol, host, _log);
     _videoSocket = new QUdpSocket(this);
-    _videoSocket->bind(host);
-    _videoSocket->open(QIODevice::ReadWrite);
 
     _buffer = new char[65536];
 
-    connect(_controlChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-            this, SLOT(controlMessageReceived(const char*,Channel::MessageSize)));
-    connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(controlChannelStateChanged(Channel::State)));
+    connect(_controlChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
+            this, SLOT(controlMessageReceived(Channel*, const char*, Channel::MessageSize)));
+    connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
+            this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
 
     _controlChannel->open();
+
+    if (!_videoSocket->bind(host)) {
+        LOG_E("Failed to bind to UDP socket");
+    }
+
+    _videoSocket->open(QIODevice::ReadWrite);
 
     START_TIMER(_calculateBitrateTimerId, 500);
 }
@@ -59,16 +63,17 @@ StreamFormat VideoClient::getStreamFormat() const {
     return _format;
 }
 
-void VideoClient::controlMessageReceived(const char *message, Channel::MessageSize size) {
-    Q_UNUSED(size);
-    QByteArray byteArray(message, size);
+void VideoClient::controlMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
+    Q_UNUSED(size); Q_UNUSED(channel);
+    QByteArray byteArray = QByteArray::fromRawData(message, size);
     QDataStream stream(byteArray);
     stream.setByteOrder(QDataStream::BigEndian);
     QString messageType;
     stream >> messageType;
+    LOG_E("Got message: " + messageType);
     if (messageType.compare("start", Qt::CaseInsensitive) == 0) {
         LOG_I("Server has notified us of a new video stream");
-        _format.Encoding = UnknownEncoding;
+        _format.Encoding = UnknownOrNoEncoding;
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
         START_TIMER(_punchTimerId, 100);
         setState(ConnectedState);
@@ -99,7 +104,7 @@ void VideoClient::controlMessageReceived(const char *message, Channel::MessageSi
     }
     else if (messageType.compare("eos", Qt::CaseInsensitive) == 0) {
         LOG_I("Got EOS message from server");
-        _format.Encoding = UnknownEncoding;
+        _format.Encoding = UnknownOrNoEncoding;
         KILL_TIMER(_punchTimerId);
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
         setState(ConnectedState);
@@ -108,10 +113,10 @@ void VideoClient::controlMessageReceived(const char *message, Channel::MessageSi
         QString errorMessage;
         stream >> errorMessage;
         LOG_I("Got error message from server: " + errorMessage);
-        _format.Encoding = UnknownEncoding;
+        _format.Encoding = UnknownOrNoEncoding;
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
         KILL_TIMER(_punchTimerId);
-        emit serverError(errorMessage);
+        emit serverError(this, errorMessage);
         setState(ConnectedState);
     }
     else {
@@ -152,22 +157,27 @@ void VideoClient::timerEvent(QTimerEvent *e) {
         // this timer runs twice per second to calculate the bitrate received by the client
         _lastBitrate = _bitCount * 2;
         _bitCount = 0;
-        emit statisticsUpdate(_lastBitrate);
+        emit statisticsUpdate(this, _lastBitrate);
     }
 }
 
-void VideoClient::controlChannelStateChanged(Channel::State state) {
+void VideoClient::controlChannelStateChanged(Channel *channel, Channel::State state) {
+    Q_UNUSED(channel);
     switch (state) {
     case Channel::ConnectedState:
         setState(ConnectedState);
         break;
     default:
         setState(ConnectingState);
-        _format.Encoding = UnknownEncoding;
+        _format.Encoding = UnknownOrNoEncoding;
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
         KILL_TIMER(_punchTimerId);
         break;
     }
+}
+
+QString VideoClient::getCameraName() const {
+    return _name;
 }
 
 void VideoClient::needData(uint length) {
@@ -179,15 +189,29 @@ void VideoClient::enoughData() {
     _needsData = false;
 }
 
-
 VideoClient::State VideoClient::getState() const {
     return _state;
+}
+
+SocketAddress VideoClient::getServerAddress() const {
+    return _server;
+}
+
+SocketAddress VideoClient::getHostAddress() const {
+    return SocketAddress(_videoSocket->localAddress(), _videoSocket->localPort());
 }
 
 void VideoClient::setState(State state) {
     if (_state != state) {
         _state = state;
-        emit stateChanged(_state);
+        emit stateChanged(this, _state);
+    }
+}
+
+void VideoClient::setCameraName(QString name) {
+    if (_name.compare(name) != 0) {
+        _name = name;
+        emit nameChanged(this, _name);
     }
 }
 

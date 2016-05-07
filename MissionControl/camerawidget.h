@@ -1,6 +1,5 @@
-#ifndef VIDEOSTREAMWIDGET_H
-#define VIDEOSTREAMWIDGET_H
-
+#ifndef CAMERAWIDGET_H
+#define CAMERAWIDGET_H
 
 #include <QWidget>
 #include <QLabel>
@@ -22,14 +21,18 @@
 #include "soro_global.h"
 #include "videoencoding.h"
 
+namespace Ui {
+class CameraWidget;
+}
+
 namespace Soro {
 namespace MissionControl {
 
-class VideoStreamWidget : public QWidget {
+class CameraWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit VideoStreamWidget(QWidget *parent = 0);
-    ~VideoStreamWidget();
+    explicit CameraWidget(QWidget *parent = 0);
+    ~CameraWidget();
 
     /* Configure the widget to receive a video stream from a UDP socket. If succesful,
      * the widget should start playing the stream immediately.
@@ -46,12 +49,14 @@ public:
      */
     void stop(QString reason = "");
 
+    QString getCameraName();
+    void setCameraName(QString name);
+
     bool isPlaying();
 
 private:
+    Ui::CameraWidget *ui;
     QGst::PipelinePtr _pipeline;
-    QGst::Ui::VideoWidget *_videoWidget;
-    QLabel *_messageLabel;
     bool _isPlaying = false;
 
     QGst::ElementPtr createSink();
@@ -79,4 +84,4 @@ signals:
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // VIDEOSTREAMWIDGET_H
+#endif // CAMERAWIDGET_H

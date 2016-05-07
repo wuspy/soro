@@ -157,9 +157,11 @@ public:
      */
     quint64 getConnectionMessagesDown() const;
 
-    int getDataRateUp() const;
+    int getBitsPerSecondUp() const;
 
-    int getDataRateDown() const;
+    int getBitsPerSecondDown() const;
+
+    int getUdpDroppedPacketsPercent();
 
     SocketAddress getHostAddress() const;
 
@@ -170,6 +172,11 @@ public:
     void setUdpDropOldPackets(bool dropOldPackets);
 
     void setLowDelaySocketOption(bool lowDelay);
+
+    /* Returns true if this channel is or was connected to a peer
+     * at some point
+     */
+    bool wasConnected();
 
 private:
     char _receiveBuffer[1024];  //buffer for received messages
@@ -210,6 +217,7 @@ private:
     bool _sendAcks = true;
     int _lowDelaySocketOption = false;
     bool _configured = false;
+    bool _wasConnected = false;
 
     QTcpSocket *_tcpSocket = NULL; //Currently active TCP socket
     QTcpServer *_tcpServer = NULL; //Currently active TCP server (for registering TCP clients)
@@ -222,6 +230,8 @@ private:
     quint64 _messagesDown;  //Total number of received messages
     quint64 _bytesUp;
     quint64 _bytesDown;
+    int _droppedPackets;
+    int _receivedPackets;
     int _dataRateUp;
     int _dataRateDown;
 
@@ -291,11 +301,11 @@ signals: //Always public
 
     /* Signal to notify an observer that a message has been received
      */
-    void messageReceived(const char *message, Channel::MessageSize size);
+    void messageReceived(Channel *channel, const char *message, Channel::MessageSize size);
 
     /* Signal to notify an observer that the state of the channel has changed
      */
-    void stateChanged(Channel::State state);
+    void stateChanged(Channel *channel, Channel::State state);
 
     /* Signal to notify an observer that the connected peer has changed
      * If the channel is no longer connected, peerAddress.address will be QHostAddress::Null
@@ -304,13 +314,9 @@ signals: //Always public
      * server address regardless of the state of the connection since that is the only allowed address
      * for communication.
      */
-    void peerAddressChanged(const SocketAddress &peerAddress);
+    void peerAddressChanged(Channel *channel, const SocketAddress &peerAddress);
 
-    /* Signal to notify an observer that the connection statistics have been updated
-     */
-    void statisticsUpdate(int rtt, quint64 msg_up, quint64 msg_down, int rate_up, int rate_down);
-
-    void connectionError(QAbstractSocket::SocketError err);
+    void connectionError(Channel *channel, QAbstractSocket::SocketError err);
 
 protected:
     void timerEvent(QTimerEvent *);

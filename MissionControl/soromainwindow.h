@@ -20,8 +20,8 @@
 #include "mbedchannel.h"
 #include "latlng.h"
 #include "missioncontrolprocess.h"
-#include "videostreamwidget.h"
-#include "videowindow.h"
+#include "camerawidget.h"
+#include "camerawindow.h"
 
 namespace Ui {
     class SoroMainWindow;
@@ -34,15 +34,12 @@ namespace MissionControl {
         Q_OBJECT
 
     public:
-        explicit SoroMainWindow(bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent = 0);
+        explicit SoroMainWindow(QString name, bool masterSubnetNode, MissionControlProcess::Role role, QWidget *parent = 0);
         ~SoroMainWindow();
-
-        VideoStreamWidget getTopVideoWidget();
-
 
     private:
         Ui::SoroMainWindow *ui;
-        VideoWindow *_videoWindow;
+        CameraWindow *_videoWindow;
         MissionControlProcess *_controller;
         bool _fullscreen = false;
         int _initTimerId = TIMER_INACTIVE;
@@ -53,15 +50,19 @@ namespace MissionControl {
         void settingsClicked();
 
     private slots:
-        void sharedChannelStateChanged(Channel::State state);
-        void controlChannelStateChanged(Channel::State state);
-        void controlChannelStatsUpdate(int rtt, quint64 messagesUp, quint64 messagesDown,
-                                int rateUp, int rateDown);
-        void masterArmStateChanged(MbedChannel::State);
-        void controllerError(QString description);
-        void controllerWarning(QString description);
-        void controllerConnectionQualityUpdate(int sharedRtt, int tcpLag);
-        void controllerGamepadChanged(SDL_GameController *controller);
+        void onFatalError(QString description);
+        void onWarning(QString description);
+        void onGamepadChanged(SDL_GameController *controller);
+        void onConnectionStateChanged(Channel::State controlChannelState, Channel::State mccNetworkState, Channel::State sharedChannelState);
+        void onRttUpdate(int rtt);
+        void onDroppedPacketRateUpdate(int droppedRatePercent);
+        void onRoverSystemStateUpdate(RoverSubsystemState armSystemState, RoverSubsystemState driveCameraSystemState,
+                                    RoverSubsystemState secondaryComputerState);
+        void onRoverCameraUpdate(RoverCameraState camera1State, RoverCameraState camera2State, RoverCameraState camera3State,
+                               RoverCameraState camera4State, RoverCameraState camera5State);
+        void arm_onMasterArmStateChanged(MbedChannel *channel, MbedChannel::State state);
+        void onNotification(MissionControlProcess::NotificationType type, QString sender, QString message);
+
 
     protected:
         void keyPressEvent(QKeyEvent *e);

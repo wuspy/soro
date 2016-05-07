@@ -28,6 +28,28 @@
 #define STREAMPROCESS_ERR_UNKNOWN_CODEC 1204
 #define STREAMPROCESS_ERR_FLYCAP_ERROR 1205
 
+enum SharedMessageType {
+    SharedMessage_RoverSharedChannelStateChanged = 1,
+    SharedMessage_RoverStatusUpdate,
+    SharedMessage_RoverDisconnected,
+    SharedMessage_RoverGpsUpdate,
+    SharedMessage_MissionControlConnected,
+    SharedMessage_MissionControlDisconnected,
+    SharedMessage_RequestActivateCamera,
+    SharedMessage_RequestDeactivateCamera,
+    SharedMessage_CameraConfigurationChanged,
+    SharedMessage_RoverVideoServerError,
+    SharedMessage_MissionControlChat
+};
+
+enum RoverSubsystemState {
+    NormalSubsystemState, MalfunctionSubsystemState, UnknownSubsystemState
+};
+
+enum RoverCameraState {
+    StreamingCameraState, DisabledCameraState, UnavailableCameraState
+};
+
 #ifdef QT_WIDGETS_LIB ///////////////////////////////////////////////////////////////////////////////
 
 #include <QWidget>

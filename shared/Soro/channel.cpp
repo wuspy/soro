@@ -349,7 +349,6 @@ void Channel::resetConnectionVars() {   //PRIVATE
     _dataRateUp = 0;
     _dataRateDown = 0;
     _sentTimeLogIndex = 0;
-    emit statisticsUpdate(_lastRtt, _messagesUp, _messagesDown, _dataRateUp, _dataRateDown);
 }
 
 void Channel::resetConnection() {   //PRIVATE
@@ -481,7 +480,7 @@ inline void Channel::setChannelState(Channel::State state, bool forceUpdate) {  
      if ((_state != state) | forceUpdate) {
          LOG_D("Setting state to " + QString::number(state));
          _state = state;
-         emit stateChanged(_state);
+         emit stateChanged(this, _state);
      }
 }
 
@@ -490,7 +489,7 @@ inline void Channel::setPeerAddress(Soro::SocketAddress address) {    //PRIVATE
     if (_peerAddress != address) {
         LOG_D("Setting peer address to " + address.toString());
         _peerAddress = address;
-        emit peerAddressChanged(_peerAddress);
+        emit peerAddressChanged(this, _peerAddress);
     }
 }
 
@@ -524,7 +523,7 @@ void Channel::close(Channel::State closeState) {   //PRIVATE
  ***************************************************************************/
 
 void Channel::connectionErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
-    emit connectionError(err);
+    emit connectionError(this, err);
     LOG_E("Connection Error: " + _socket->errorString());
     //Attempt to reconnect after RECOVERY_DELAY
     //we should NOT directly call resetConnectio() here as that could
@@ -533,7 +532,7 @@ void Channel::connectionErrorInternal(QAbstractSocket::SocketError err) { //PRIV
 }
 
 void Channel::serverErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
-    emit connectionError(err);
+    emit connectionError(this, err);
     LOG_E("Server Error: " + _tcpServer->errorString());
     //don't automatically kill the connection if it's still active, only the listening server
     //experienced the error
@@ -629,8 +628,10 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
         if ((ID > _lastReceiveID) | !_dropOldPackets){
             LOG_D("Received normal packet " + QString::number(ID));
             _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
+            _receivedPackets++;
+            _droppedPackets += ID - _lastReceiveID + 1;
             _lastReceiveID = ID;
-            emit messageReceived(message, size);
+            emit messageReceived(this, message, size);
         }
         break;
     case MSGTYPE_SERVER_HANDSHAKE:
@@ -646,6 +647,7 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
                 _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
                 setChannelState(ConnectedState, false);
+                _wasConnected = true;
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_D("Received handshake response from server " + _serverAddress.toString());
             }
@@ -669,6 +671,7 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
                 _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
                 setChannelState(ConnectedState, false);
+                _wasConnected = true;
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_D("Received handshake request from client " + _peerAddress.toString());
             }
@@ -708,7 +711,6 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
             logIndex += SENT_LOG_CAP;
         }
         _lastRtt = _lastReceiveTime - _sentTimeLog[logIndex];
-        emit statisticsUpdate(_lastRtt, _messagesUp, _messagesDown, _dataRateUp, _dataRateDown);
         break;
     }
     _messagesDown++;
@@ -818,6 +820,16 @@ Channel::State Channel::getState() const {
     return _state;
 }
 
+int Channel::getUdpDroppedPacketsPercent() {
+    int percent = 0;
+    if ((_protocol == UdpProtocol) && (_droppedPackets + _receivedPackets) > 0) {
+        percent = _droppedPackets / (_droppedPackets + _receivedPackets);
+        _receivedPackets = 0;
+        _droppedPackets = 0;
+    }
+    return percent;
+}
+
 int Channel::getConnectionUptime() const {
     if (_state == ConnectedState) {
         return (QDateTime::currentMSecsSinceEpoch() - _connectionEstablishedTime) / 1000;
@@ -837,11 +849,11 @@ quint64 Channel::getConnectionMessagesDown() const {
     return _messagesDown;
 }
 
-int Channel::getDataRateUp() const {
+int Channel::getBitsPerSecondUp() const {
     return _dataRateUp;
 }
 
-int Channel::getDataRateDown() const {
+int Channel::getBitsPerSecondDown() const {
     return _dataRateDown;
 }
 
@@ -868,6 +880,10 @@ SocketAddress Channel::getProvidedServerAddress() const {
 
 void Channel::setUdpDropOldPackets(bool dropOldPackets) {
     _dropOldPackets = dropOldPackets;
+}
+
+bool Channel::wasConnected() {
+    return _wasConnected;
 }
 
 void Channel::setLowDelaySocketOption(bool lowDelay) {

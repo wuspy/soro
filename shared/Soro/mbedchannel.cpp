@@ -18,7 +18,7 @@ namespace Soro {
 void MbedChannel::setChannelState(MbedChannel::State state) {
     if (_state != state) {
         _state = state;
-        emit stateChanged(state);
+        emit stateChanged(this, state);
     }
 }
 
@@ -126,6 +126,10 @@ void MbedChannel::timerEvent(QTimerEvent *e) {
         resetConnection();
         KILL_TIMER(_resetConnectionTimerId); //single shot
     }
+}
+
+MbedChannel::State MbedChannel::getState() const {
+    return _state;
 }
 
 #endif
