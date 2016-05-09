@@ -28,11 +28,14 @@ class StreamProcess : public QObject {
     Q_OBJECT
 public:
 
-    explicit StreamProcess(QGst::ElementPtr source, StreamFormat format, SocketAddress host, SocketAddress address, QObject *parent = 0);
+    explicit StreamProcess(QGst::ElementPtr source, StreamFormat format, SocketAddress bindAddress, SocketAddress address, QObject *parent = 0);
+    explicit StreamProcess(QString deviceName, StreamFormat format, SocketAddress bindAddress, SocketAddress address, QObject *parent = 0);
     ~StreamProcess();
 
 private:
     QGst::PipelinePtr _pipeline;
+    QGst::PipelinePtr createPipeline();
+    QString makeEncodingBinString(StreamFormat format, SocketAddress bindAddress, SocketAddress address);
 
 private slots:
     void onBusMessage(const QGst::MessagePtr & message);

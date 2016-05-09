@@ -25,7 +25,8 @@ int main(int argc, char *argv[]) {
 
     if (argc < 10) {
         //no arguments
-        qCritical() << "This program cannot be run directly (got " + QString::number(argc) + " argument(s))";
+        qCritical() << "Invalid arguments";
+        qCritical() << "Example: VideoStreamProcess device encoding width height framerate bitrate/quality address port bindAddress bindPort";
         return STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS;
     }
 
@@ -33,41 +34,48 @@ int main(int argc, char *argv[]) {
     StreamFormat format;
     QString device;
     SocketAddress address;
-    SocketAddress host;
+    SocketAddress bindAddress;
 
-    //parse stream parameters
+    //parse device
     device = argv[1];
+    //parse encoding
     unsigned int encodingUInt = QString(argv[2]).toUInt(&ok);
     if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     format.Encoding = reinterpret_cast<VideoEncoding&>(encodingUInt);
-    if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
+    //parse width
     format.Width = QString(argv[3]).toInt(&ok);
     if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
+    //parse height
     format.Height = QString(argv[4]).toInt(&ok);
     if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
+    //parse framerate
     format.Framerate = QString(argv[5]).toInt(&ok);
     if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
+
     switch (format.Encoding) {
     case MjpegEncoding:
+        //parse mjpeg quality
         format.Mjpeg_Quality = QString(argv[6]).toInt(&ok);
         if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
         break;
     default:
+        //parse bitrate
         format.Bitrate = QString(argv[6]).toInt(&ok);
         if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
         break;
     }
 
+    //parse address/port
     address.host = QHostAddress(argv[7]);
     address.port = QString(argv[8]).toInt(&ok);
     if ((address.host == QHostAddress::Null) | (address.host == QHostAddress::Any) | !ok) {
         // invalid address
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
-
-    host.host = QHostAddress(argv[9]);
-    host.port = QString(argv[10]).toInt(&ok);
-    if ((host.host == QHostAddress::Null) | (host.host == QHostAddress::Any) | !ok) {
+    //parse bindAddress/bindPort
+    bindAddress.host = QHostAddress(argv[9]);
+    bindAddress.port = QString(argv[10]).toInt(&ok);
+    if ((bindAddress.host == QHostAddress::Null) | (bindAddress.host == QHostAddress::Any) | !ok) {
         // invalid host
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
@@ -99,21 +107,14 @@ int main(int argc, char *argv[]) {
         format.Framerate = 0;
 
         qDebug() << "Parset parameters for FlyCapture successfully";
-        StreamProcess stream(source, format, host, address, &a);
+        StreamProcess stream(source, format, bindAddress, address, &a);
         qDebug() << "Stream initialized for FlyCapture successfully";
-
-        return a.exec();
     }
     else {
-#ifdef __linux__
-        source = QGst::ElementFactory::make("v4l2src");
-        source->setProperty("device", device.remove('\'').remove('\"').remove('.'));
-        qDebug() << "Setting UVD device " + device + " for v4l2src";
-
-        qDebug() << "Parset parameters for v4l2 successfully";
-        StreamProcess stream(source, format, host, address, &a);
-        qDebug() << "Stream initialized for v4l2 successfully";
-#endif
-        return a.exec();
+        qDebug() << "Setting UVD device " + device;
+        StreamProcess stream(device, format, bindAddress, address, &a);
+        qDebug() << "Stream initialized successfully";
     }
+
+    return a.exec();
 }

@@ -34,10 +34,10 @@ void VideoServer::stop() {
         return;
     }
     if (_child.state() != QProcess::NotRunning) {
-        LOG_I("stop() called: killing child process");
-        _child.kill();
+        LOG_I("stop() called: terminating child process");
+        _child.terminate();
         _child.waitForFinished();
-        LOG_I("Child process has been killed");
+        LOG_I("Child process has been terminated");
     }
     else {
         LOG_I("stop() called, however the child process is not running");

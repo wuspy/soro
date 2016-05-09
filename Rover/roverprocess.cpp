@@ -255,7 +255,10 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         stream >> camera;
         stream >> format;
         VideoServer *server = _videoServers[camera];
-
+        if (server == NULL) {
+            LOG_E("Request to activate a nonexistent video server");
+            return;
+        }
         LOG_I("Camera " + server->getCameraName() + " is about to be streamed");
         if (_flycapCameras.contains(camera)) {
             //this camera is flycap, we must set the framerate on it manually
@@ -271,7 +274,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         stream >> camera;
         VideoServer *server = _videoServers[camera];
         if (server == NULL) {
-            LOG_E("Request to deactivate a null video server");
+            LOG_E("Request to deactivate a nonexistent video server");
             return;
         }
         if (server->getState() != VideoServer::IdleState) {

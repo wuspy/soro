@@ -26,6 +26,11 @@ namespace ArmMessage  {
      */
     const unsigned char Header_Gamepad = 1;
     const unsigned char Header_Master = 2;
+
+#if __cplusplus > 199711L
+    constexpr
+#endif
+    const char* StopMessage = "Arm_Stop";
     /* The size each type of arm message should be
      */
     const int RequiredSize_Gamepad = 8;
