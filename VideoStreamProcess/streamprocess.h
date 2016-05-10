@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QCoreApplication>
+#include <QTcpSocket>
 
 #include <Qt5GStreamer/QGst/Ui/VideoWidget>
 #include <Qt5GStreamer/QGst/Pipeline>
@@ -28,17 +29,22 @@ class StreamProcess : public QObject {
     Q_OBJECT
 public:
 
-    explicit StreamProcess(QGst::ElementPtr source, StreamFormat format, SocketAddress bindAddress, SocketAddress address, QObject *parent = 0);
-    explicit StreamProcess(QString deviceName, StreamFormat format, SocketAddress bindAddress, SocketAddress address, QObject *parent = 0);
+    StreamProcess(QGst::ElementPtr source, StreamFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);
+    StreamProcess(QString deviceName, StreamFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);
     ~StreamProcess();
 
 private:
     QGst::PipelinePtr _pipeline;
     QGst::PipelinePtr createPipeline();
+    QTcpSocket *_ipcSocket = NULL;
+
+    bool connectToParent(quint16 port);
     QString makeEncodingBinString(StreamFormat format, SocketAddress bindAddress, SocketAddress address);
+    void stop();
 
 private slots:
     void onBusMessage(const QGst::MessagePtr & message);
+    void ipcSocketReadyRead();
 
 signals:
     void eos();

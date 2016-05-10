@@ -53,6 +53,9 @@ private:
     State _state = IdleState;
     QProcess _child;
     QString _deviceDescription;
+    QTcpServer *_ipcServer = NULL;
+    QTcpSocket *_ipcSocket = NULL;
+    int _startInternalTimerId = TIMER_INACTIVE;
 
     /* Internal state change method
      */
@@ -69,13 +72,12 @@ private slots:
      */
     void beginStream(SocketAddress address);
 
+    void ipcServerClientAvailable();
+
 signals:
     void stateChanged(VideoServer *server, VideoServer::State state);
     void eos(VideoServer *server);
     void error(VideoServer *server, QString message);
-
-protected:
-    void timerEvent(QTimerEvent *e);
 };
 
 } // namespace Rover

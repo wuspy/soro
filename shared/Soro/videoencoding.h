@@ -13,7 +13,8 @@ enum VideoEncoding {
 };
 
 struct StreamFormat {
-    qint32 Width = 0, Height = 0, Framerate = 0;
+    VideoEncoding Encoding = UnknownOrNoEncoding;
+    qint32 Height = 0, Framerate = 0;
     qint32 Mjpeg_Quality = 0;
     qint32 Bitrate = 0;
 
@@ -21,24 +22,24 @@ struct StreamFormat {
 
     StreamFormat(const StreamFormat& other) {
         Encoding = other.Encoding;
-        Width = other.Width;
         Height = other.Height;
         Mjpeg_Quality = other.Mjpeg_Quality;
         Bitrate = other.Bitrate;
         Framerate = other.Framerate;
     }
 
-    VideoEncoding Encoding = UnknownOrNoEncoding;
+    inline bool isNull() const {
+        return Encoding == UnknownOrNoEncoding;
+    }
 
-    float aspectRatio() {
-        if (Height == 0) return 0;
-        return (float)Width / (float)Height;
+    inline bool operator==(const StreamFormat& other) const {
+        return (Height == other.Height) && (Framerate == other.Framerate) && (Encoding == other.Encoding)
+                && (Encoding == MjpegEncoding ? (Mjpeg_Quality == other.Mjpeg_Quality) : (Bitrate == other.Bitrate));
     }
 
     inline friend QDataStream& operator<<(QDataStream& stream, const StreamFormat& format) {
         VideoEncoding encoding = format.Encoding;
         stream << reinterpret_cast<qint32&>(encoding);
-        stream << format.Width;
         stream << format.Height;
         stream << format.Framerate;
         stream << format.Mjpeg_Quality;
@@ -48,7 +49,6 @@ struct StreamFormat {
 
     inline friend QDataStream& operator>>(QDataStream& stream, StreamFormat& format) {
         stream >> reinterpret_cast<qint32&>(format.Encoding);
-        stream >> format.Width;
         stream >> format.Height;
         stream >> format.Framerate;
         stream >> format.Mjpeg_Quality;
@@ -57,53 +57,48 @@ struct StreamFormat {
     }
 };
 
-inline StreamFormat mjpeg_streamFormatLowQuality() {
+inline StreamFormat streamFormatPreview() {
     StreamFormat format;
-    format.Encoding = MjpegEncoding;
-    format.Width = 480;
+    format.Encoding = Mpeg2Encoding;
+    format.Height = 144;
+    format.Framerate = 5;
+    format.Bitrate = 300000;
+    return format;
+}
+
+inline StreamFormat streamFormatLow() {
+    StreamFormat format;
+    format.Encoding = Mpeg2Encoding;
     format.Height = 360;
     format.Framerate = 15;
-    format.Mjpeg_Quality = 30;
+    format.Bitrate = 750000;
     return format;
 }
 
-inline StreamFormat mjpeg_streamFormatNormalQuality() {
+inline StreamFormat streamFormatMedium() {
     StreamFormat format;
-    format.Encoding = MjpegEncoding;
-    format.Width = 640;
+    format.Encoding = Mpeg2Encoding;
     format.Height = 480;
     format.Framerate = 15;
-    format.Mjpeg_Quality = 40;
+    format.Bitrate = 1500000;
     return format;
 }
 
-inline StreamFormat mjpeg_streamFormatHighQuality() {
+inline StreamFormat streamFormatHigh() {
     StreamFormat format;
-    format.Encoding = MjpegEncoding;
-    format.Width = 960;
+    format.Encoding = Mpeg2Encoding;
     format.Height = 720;
     format.Framerate = 15;
-    format.Mjpeg_Quality = 30;
+    format.Bitrate = 3000000;
     return format;
 }
 
-inline StreamFormat mjpeg_streamFormatUltraQuality() {
+inline StreamFormat streamFormatUltra() {
     StreamFormat format;
-    format.Encoding = MjpegEncoding;
-    format.Width = 960;
+    format.Encoding = Mpeg2Encoding;
     format.Height = 720;
     format.Framerate = 20;
-    format.Mjpeg_Quality = 50;
-    return format;
-}
-
-inline StreamFormat x264() {
-    StreamFormat format;
-    format.Encoding = x264Encoding;
-    format.Width = 960;
-    format.Height = 720;
-    format.Framerate = 30;
-    format.Bitrate = 1000;
+    format.Bitrate = 5000000;
     return format;
 }
 

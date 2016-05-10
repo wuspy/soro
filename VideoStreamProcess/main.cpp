@@ -23,10 +23,12 @@ int main(int argc, char *argv[]) {
 
     QGst::init();
 
-    if (argc < 10) {
+    qDebug() << "Starting up";
+
+    if (argc < 11) {
         //no arguments
         qCritical() << "Invalid arguments";
-        qCritical() << "Example: VideoStreamProcess device encoding width height framerate bitrate/quality address port bindAddress bindPort";
+        qCritical() << "Example: VideoStreamProcess device encoding width height framerate bitrate/quality address port bindAddress bindPort IPCPort";
         return STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS;
     }
 
@@ -35,6 +37,7 @@ int main(int argc, char *argv[]) {
     QString device;
     SocketAddress address;
     SocketAddress bindAddress;
+    quint16 ipcPort;
 
     //parse device
     device = argv[1];
@@ -75,15 +78,20 @@ int main(int argc, char *argv[]) {
     //parse bindAddress/bindPort
     bindAddress.host = QHostAddress(argv[9]);
     bindAddress.port = QString(argv[10]).toInt(&ok);
-    if ((bindAddress.host == QHostAddress::Null) | (bindAddress.host == QHostAddress::Any) | !ok) {
+    if ((bindAddress.host == QHostAddress::Null) | !ok) {
         // invalid host
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
+    ipcPort = QString(argv[11]).toInt(&ok);
+    if (!ok) {
+        // invalid IPC port
+        return STREAMPROCESS_ERR_INVALID_ARGUMENT;
+    }
 
-    QGst::ElementPtr source;
+    a.setApplicationName("VideoStream for " + device + " to " + address.toString());
 
     if (device.startsWith("FlyCapture2:", Qt::CaseInsensitive)) {
-
+        QGst::ElementPtr source;
         // parse GUID
         FlyCapture2::PGRGuid guid;
         device = device.mid(device.indexOf(":") + 1);
@@ -107,14 +115,14 @@ int main(int argc, char *argv[]) {
         format.Framerate = 0;
 
         qDebug() << "Parset parameters for FlyCapture successfully";
-        StreamProcess stream(source, format, bindAddress, address, &a);
+        StreamProcess stream(source, format, bindAddress, address, ipcPort, &a);
         qDebug() << "Stream initialized for FlyCapture successfully";
+        return a.exec();
     }
     else {
-        qDebug() << "Setting UVD device " + device;
-        StreamProcess stream(device, format, bindAddress, address, &a);
+        qDebug() << "Setting UVD device " << device;
+        StreamProcess stream(device, format, bindAddress, address, ipcPort, &a);
         qDebug() << "Stream initialized successfully";
+        return a.exec();
     }
-
-    return a.exec();
 }

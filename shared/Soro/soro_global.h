@@ -23,6 +23,10 @@
 #define STREAMPROCESS_ERR_UNKNOWN_CODEC 95
 #define STREAMPROCESS_ERR_FLYCAP_ERROR 96
 
+#define STREAMPROCESS_IPC_START 's'
+#define STREAMPROCESS_IPC_STREAMING 'v'
+#define STREAMPROCESS_IPC_EXIT 'e'
+
 enum SharedMessageType {
     SharedMessage_RoverSharedChannelStateChanged = 1,
     SharedMessage_RoverStatusUpdate,

@@ -10,7 +10,7 @@ VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject 
     _log = log;
     _host = host;
 
-    LOG_I("Creating new video server");
+    LOG_I("Creating new video server \"" + name + "\" with address " + host.toString());
 
     _controlChannel = new Channel(this, host.port, _name, Channel::TcpProtocol, host.host);
     connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
@@ -18,6 +18,11 @@ VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject 
     _controlChannel->open();
 
     _videoSocket = new QUdpSocket(this);
+
+    _ipcServer = new QTcpServer(this);
+    _ipcServer->listen(QHostAddress::LocalHost);
+    connect(_ipcServer, SIGNAL(newConnection()),
+            this, SLOT(ipcServerClientAvailable()));
 
     _child.setProgram(QCoreApplication::applicationDirPath() + "/VideoStreamProcess");
 
@@ -34,13 +39,34 @@ void VideoServer::stop() {
         return;
     }
     if (_child.state() != QProcess::NotRunning) {
-        LOG_I("stop() called: terminating child process");
-        _child.terminate();
-        _child.waitForFinished();
-        LOG_I("Child process has been terminated");
+        LOG_I("stop() called: asking the streaming process to stop");
+        if (_ipcSocket) {
+            _ipcSocket->write("stop");
+            _ipcSocket->flush();
+            if (!_child.waitForFinished(5000)) {
+                LOG_E("Streaming process did not respond to stop request, terminating it");
+                _child.terminate();
+                _child.waitForFinished();
+                LOG_I("Streaming process has been terminated");
+            }
+            else {
+                LOG_I("Streaming process has exited gracefully");
+            }
+        }
+        else {
+            LOG_E("Streaming process is not connected to the rover process, terminating it");
+            _child.terminate();
+            _child.waitForFinished();
+            LOG_I("Streaming process has been terminated");
+        }
     }
     else {
         LOG_I("stop() called, however the child process is not running");
+    }
+    if (_ipcSocket) {
+        _ipcSocket->abort();
+        delete _ipcSocket;
+        _ipcSocket = NULL;
     }
     _deviceDescription = "";
     _format.Encoding = UnknownOrNoEncoding;
@@ -81,7 +107,7 @@ void VideoServer::startInternal() {
     if (_controlChannel->getState() == Channel::ConnectedState) {
         _videoSocket->abort();
         if (!_videoSocket->bind(_host.host, _host.port)) {
-            LOG_E("Cannot bind to video port: " + _videoSocket->errorString());
+            LOG_E("Cannot bind to video host " + _host.toString() + ": " + _videoSocket->errorString());
             QTimer::singleShot(500, this, SLOT(startInternal()));
             return;
         }
@@ -95,8 +121,9 @@ void VideoServer::startInternal() {
         stream.setByteOrder(QDataStream::BigEndian);
         stream << QString("start");
         _controlChannel->sendMessage(message.constData(), message.size());
-        // client must respond within a certain time or the process will start again
+        // client must respond on its UDP address within a certain time or the process will start again
         QTimer::singleShot(3000, this, SLOT(startInternal()));
+
     }
     else {
         LOG_I("Waiting for client to connect...");
@@ -124,16 +151,31 @@ void VideoServer::beginStream(SocketAddress address) {
     args << QString::number(address.port);
     args << QHostAddress(_host.host.toIPv4Address()).toString();
     args << QString::number(_host.port);
+    args << QString::number(_ipcServer->serverPort());
 
     _child.setArguments(args);
     connect(&_child, SIGNAL(stateChanged(QProcess::ProcessState)),
                this, SLOT(childStateChanged(QProcess::ProcessState)));
     _child.start();
+    qDebug() << "Starting with args " << args;
+
+    LOG_I("Sending streaming message to client");
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << QString("streaming");
+    stream << _format;
+    LOG_I("Sending stream configuration to client");
+    _controlChannel->sendMessage(message.constData(), message.size());
+
     setState(StreamingState);
 }
 
-void VideoServer::timerEvent(QTimerEvent *e) {
-    QObject::timerEvent(e);
+void VideoServer::ipcServerClientAvailable() {
+    if (!_ipcSocket) {
+        _ipcSocket = _ipcServer->nextPendingConnection();
+        LOG_I("Streaming process is connected to to the rover process");
+    }
 }
 
 void VideoServer::videoSocketReadyRead() {
@@ -143,14 +185,6 @@ void VideoServer::videoSocketReadyRead() {
     _videoSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
     if ((strcmp(buffer, _name.toLatin1().constData()) == 0) && (_format.Encoding != UnknownOrNoEncoding)) {
         LOG_I("Client has completed handshake on its UDP address");
-        // send the client a message letting them know we are now streaming to their address,
-        // and tell them the stream metadata
-        QByteArray message;
-        QDataStream stream(&message, QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::BigEndian);
-        stream << _format;
-        LOG_I("Sending stream configuration to client");
-        _controlChannel->sendMessage(message.constData(), message.size());
         // Disconnect the video UDP socket so udpsink can bind to it
         disconnect(_videoSocket, SIGNAL(readyRead()), this, SLOT(videoSocketReadyRead()));
         _videoSocket->abort(); // MUST ABORT THE SOCKET!!!!
@@ -161,27 +195,33 @@ void VideoServer::videoSocketReadyRead() {
 void VideoServer::childStateChanged(QProcess::ProcessState state) {
     switch (state) {
     case QProcess::NotRunning:
-        LOG_I("Child is no longer running (exit code " + QString::number(_child.exitCode()) + ")");
-
         disconnect(&_child, SIGNAL(stateChanged(QProcess::ProcessState)),
                    this, SLOT(childStateChanged(QProcess::ProcessState)));
 
         switch (_child.exitCode()) {
         case 0:
         case STREAMPROCESS_ERR_GSTREAMER_EOS:
+            LOG_I("Streaming process has exited normally");
             emit eos(this);
             break;
         case STREAMPROCESS_ERR_FLYCAP_ERROR:
-            emit error(this, "Error in FlyCapture2 decoding");
+            LOG_E("Streaming processes exited due to an error in FlyCapture2 processing");
+            emit error(this, "Streaming processes exited due to an error in FlyCapture2 processing");
             break;
         case STREAMPROCESS_ERR_GSTREAMER_ERROR:
+            LOG_E("The streaming processes exited due to a gstreamer error");
             emit error(this, "Gstreamer error");
             break;
         case STREAMPROCESS_ERR_INVALID_ARGUMENT:
         case STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS:
         case STREAMPROCESS_ERR_UNKNOWN_CODEC:
+            LOG_E("Streaming processes exited due to an argument error");
+            emit error(this, "Streaming processes exited due to an argument error");
+            break;
         default:
-            emit error(this, "Unknown error/segmentation fault");
+            LOG_E("Streaming process exited due to an unknown error (exit code " + QString::number(_child.exitCode()) + ")");
+            emit error(this, "Streaming process exited due to an unknown error (exit code " + QString::number(_child.exitCode()) + ")");
+            break;
         }
 
         setState(IdleState);
