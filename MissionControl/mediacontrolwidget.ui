@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MediaControlWidget</class>
+ <widget class="QWidget" name="MediaControlWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>879</width>
+    <height>24</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>24</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>24</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">.QWidget {
+	background-color: white;
+	border-radius: 5px;
+}
+
+QRadioButton::indicator {
+	width: 0px; 
+	height: 0px; 
+}
+
+QRadioButton {
+	background-color: transparent;
+	color: black;
+	border-radius: 5px;
+	padding-left:5px;
+	padding-right:5px;
+	font-family: &quot;Roboto&quot;;
+	font-size: 10pt;
+	font-weight: bold;
+}
+
+QRadioButton:checked {
+	background-color: black;
+	color: white;
+}</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="graphicLabel">
+     <property name="minimumSize">
+      <size>
+       <width>18</width>
+       <height>18</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>18</width>
+       <height>18</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">qproperty-pixmap: url(:/icons/camera_black_18px.png);</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="nameLabel">
+     <property name="font">
+      <font>
+       <family>Roboto</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>Camera Name</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>386</width>
+       <height>16</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QLabel" name="unavailableLabel">
+     <property name="font">
+      <font>
+       <family>Roboto</family>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: #F57F17;</string>
+     </property>
+     <property name="text">
+      <string>This device isn't available.</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="disabledRadioButton">
+     <property name="text">
+      <string>DISABLED</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="lowRadioButton">
+     <property name="text">
+      <string>LOW</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="normalRadioButton">
+     <property name="text">
+      <string>NORMAL</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="highRadioButton">
+     <property name="text">
+      <string>HIGH</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="ultraRadioButton">
+     <property name="text">
+      <string>ULTRA</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
