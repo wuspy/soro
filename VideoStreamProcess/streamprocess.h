@@ -45,11 +45,8 @@ private:
 private slots:
     void onBusMessage(const QGst::MessagePtr & message);
     void ipcSocketReadyRead();
-<<<<<<< HEAD
     void ipcSocketError(QAbstractSocket::SocketError error);
     void ipcSocketDisconnected();
-=======
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
 
 signals:
     void eos();

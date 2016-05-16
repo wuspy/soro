@@ -25,17 +25,10 @@ int main(int argc, char *argv[]) {
 
     qDebug() << "Starting up";
 
-<<<<<<< HEAD
     if (argc < 10) {
         //no arguments
         qCritical() << "Invalid arguments";
         qCritical() << "Example: VideoStreamProcess [device] [encoding] [height] [bitrate/quality] [address] [port] [bindAddress] [bindPort] [IPCPort]";
-=======
-    if (argc < 11) {
-        //no arguments
-        qCritical() << "Invalid arguments";
-        qCritical() << "Example: VideoStreamProcess device encoding width height framerate bitrate/quality address port bindAddress bindPort IPCPort";
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
         return STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS;
     }
 
@@ -52,71 +45,38 @@ int main(int argc, char *argv[]) {
     unsigned int encodingUInt = QString(argv[2]).toUInt(&ok);
     if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     format.Encoding = reinterpret_cast<VideoEncoding&>(encodingUInt);
-<<<<<<< HEAD
     //parse height
     format.Height = QString(argv[3]).toInt(&ok);
-=======
-    //parse width
-    format.Width = QString(argv[3]).toInt(&ok);
-    if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-    //parse height
-    format.Height = QString(argv[4]).toInt(&ok);
-    if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-    //parse framerate
-    format.Framerate = QString(argv[5]).toInt(&ok);
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
     if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
 
     switch (format.Encoding) {
     case MjpegEncoding:
         //parse mjpeg quality
-<<<<<<< HEAD
         format.Mjpeg_Quality = QString(argv[4]).toInt(&ok);
-=======
-        format.Mjpeg_Quality = QString(argv[6]).toInt(&ok);
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
         if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
         break;
     default:
         //parse bitrate
-<<<<<<< HEAD
         format.Bitrate = QString(argv[4]).toInt(&ok);
-=======
-        format.Bitrate = QString(argv[6]).toInt(&ok);
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
         if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
         break;
     }
 
     //parse address/port
-<<<<<<< HEAD
     address.host = QHostAddress(argv[5]);
     address.port = QString(argv[6]).toInt(&ok);
-=======
-    address.host = QHostAddress(argv[7]);
-    address.port = QString(argv[8]).toInt(&ok);
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
     if ((address.host == QHostAddress::Null) | (address.host == QHostAddress::Any) | !ok) {
         // invalid address
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
     //parse bindAddress/bindPort
-<<<<<<< HEAD
     bindAddress.host = QHostAddress(argv[7]);
     bindAddress.port = QString(argv[8]).toInt(&ok);
-=======
-    bindAddress.host = QHostAddress(argv[9]);
-    bindAddress.port = QString(argv[10]).toInt(&ok);
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
     if ((bindAddress.host == QHostAddress::Null) | !ok) {
         // invalid host
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
-<<<<<<< HEAD
     ipcPort = QString(argv[9]).toInt(&ok);
-=======
-    ipcPort = QString(argv[11]).toInt(&ok);
->>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
     if (!ok) {
         // invalid IPC port
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
