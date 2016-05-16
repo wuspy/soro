@@ -75,6 +75,10 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     SharedChannelPort = tmp;
+    if (!configParser.valueAsInt(_tag_ArmMbedPort, &tmp)) {
+        *err = "No arm mbed port found in configuration file";
+        return false;
+    }
     ArmMbedPort = tmp;
     if (!configParser.valueAsInt(_tag_DriveCameraMbedPort, &tmp)) {
         *err = "No drive/camera mbed port found in configuration file";
