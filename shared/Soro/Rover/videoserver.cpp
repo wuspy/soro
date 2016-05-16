@@ -1,18 +1,18 @@
 #include "videoserver.h"
 
-#define LOG_TAG _name + "(S)"
+#define LOG_TAG "Camera Server " + QString::number(_cameraId)
 
 namespace Soro {
 namespace Rover {
 
-VideoServer::VideoServer(QString name, SocketAddress host, Logger *log, QObject *parent) : QObject(parent) {
-    _name = name;
+VideoServer::VideoServer(int cameraId, SocketAddress host, Logger *log, QObject *parent) : QObject(parent) {
+    _cameraId = cameraId;
     _log = log;
     _host = host;
 
-    LOG_I("Creating new video server \"" + name + "\" with address " + host.toString());
+    LOG_I("Creating new video server with camera ID\"" + QString::number(cameraId) + "\" and address " + host.toString());
 
-    _controlChannel = new Channel(this, host.port, _name, Channel::TcpProtocol, host.host);
+    _controlChannel = new Channel(this, host.port, "camera" + QString::number(cameraId), Channel::TcpProtocol, host.host);
     connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
             this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
     _controlChannel->open();
@@ -43,7 +43,7 @@ void VideoServer::stop() {
         if (_ipcSocket) {
             _ipcSocket->write("stop");
             _ipcSocket->flush();
-            if (!_child.waitForFinished(5000)) {
+            if (!_child.waitForFinished(1000)) {
                 LOG_E("Streaming process did not respond to stop request, terminating it");
                 _child.terminate();
                 _child.waitForFinished();
@@ -68,7 +68,7 @@ void VideoServer::stop() {
         delete _ipcSocket;
         _ipcSocket = NULL;
     }
-    _deviceDescription = "";
+    _currentCamera = "";
     _format.Encoding = UnknownOrNoEncoding;
     if (_controlChannel->getState() == Channel::ConnectedState) {
         // notify the client that the server is stopping the stream
@@ -88,7 +88,7 @@ void VideoServer::start(QString deviceName, StreamFormat format) {
         LOG_I("Server is not idle, stopping operations");
         stop();
     }
-    _deviceDescription = deviceName;
+    _currentCamera = deviceName;
     _format = format;
     setState(WaitingState);
     startInternal();
@@ -133,11 +133,9 @@ void VideoServer::startInternal() {
 
 void VideoServer::beginStream(SocketAddress address) {
     QStringList args;
-    args << _deviceDescription;
+    args << _currentCamera;
     args << QString::number(reinterpret_cast<unsigned int&>(_format.Encoding));
-    args << QString::number(_format.Width);
     args << QString::number(_format.Height);
-    args << QString::number(_format.Framerate);
     switch (_format.Encoding) {
     case MjpegEncoding:
         args << QString::number(_format.Mjpeg_Quality);
@@ -174,7 +172,7 @@ void VideoServer::beginStream(SocketAddress address) {
 void VideoServer::ipcServerClientAvailable() {
     if (!_ipcSocket) {
         _ipcSocket = _ipcServer->nextPendingConnection();
-        LOG_I("Streaming process is connected to to the rover process");
+        LOG_I("Streaming process is connected to its parent through TCP");
     }
 }
 
@@ -182,14 +180,28 @@ void VideoServer::videoSocketReadyRead() {
     if (!_videoSocket | (_state == StreamingState)) return;
     SocketAddress peer;
     char buffer[100];
-    _videoSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
-    if ((strcmp(buffer, _name.toLatin1().constData()) == 0) && (_format.Encoding != UnknownOrNoEncoding)) {
-        LOG_I("Client has completed handshake on its UDP address");
-        // Disconnect the video UDP socket so udpsink can bind to it
-        disconnect(_videoSocket, SIGNAL(readyRead()), this, SLOT(videoSocketReadyRead()));
-        _videoSocket->abort(); // MUST ABORT THE SOCKET!!!!
-        beginStream(peer);
+    int length = _videoSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
+
+    QByteArray byteArray = QByteArray::fromRawData(buffer, length);
+    QDataStream stream(byteArray);
+    QString tag;
+    int cameraId;
+    stream >> tag;
+    stream >> cameraId;
+
+    if (tag.compare("camera", Qt::CaseInsensitive) != 0) {
+        LOG_E("Got invalid handshake packet on UDP video port");
+        return;
     }
+    if (cameraId != _cameraId) {
+        LOG_E("Got wrong camera ID during UDP handshake, check your port configuration");
+        return;
+    }
+    LOG_I("Client has completed handshake on its UDP address");
+    // Disconnect the video UDP socket so udpsink can bind to it
+    disconnect(_videoSocket, SIGNAL(readyRead()), this, SLOT(videoSocketReadyRead()));
+    _videoSocket->abort(); // MUST ABORT THE SOCKET!!!!
+    beginStream(peer);
 }
 
 void VideoServer::childStateChanged(QProcess::ProcessState state) {
@@ -218,13 +230,17 @@ void VideoServer::childStateChanged(QProcess::ProcessState state) {
             LOG_E("Streaming processes exited due to an argument error");
             emit error(this, "Streaming processes exited due to an argument error");
             break;
+        case STREAMPROCESS_ERR_SOCKET_ERROR:
+            LOG_E("Streaming process exited because it lost contact with the parent process");
+            emit error(this, "Streaming process exited because it lost contact with the parent process");
+            break;
         default:
             LOG_E("Streaming process exited due to an unknown error (exit code " + QString::number(_child.exitCode()) + ")");
             emit error(this, "Streaming process exited due to an unknown error (exit code " + QString::number(_child.exitCode()) + ")");
             break;
         }
 
-        setState(IdleState);
+        stop();
         break;
     case QProcess::Starting:
         LOG_I("Child is starting...");
@@ -242,12 +258,12 @@ void VideoServer::controlChannelStateChanged(Channel *channel, Channel::State st
     }
 }
 
-VideoServer::State VideoServer::getState() {
+VideoServer::State VideoServer::getState() const {
     return _state;
 }
 
-QString VideoServer::getCameraName() {
-    return _name;
+int VideoServer::getCameraId() const {
+    return _cameraId;
 }
 
 const StreamFormat& VideoServer::getCurrentStreamFormat() const {

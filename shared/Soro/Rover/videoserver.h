@@ -32,27 +32,27 @@ public:
         StreamingState
     };
 
-    explicit VideoServer(QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit VideoServer(int cameraId, SocketAddress host, Logger *log = 0, QObject *parent = 0);
     ~VideoServer();
 
     void stop();
     void start(QString deviceName, StreamFormat format);
     void start(FlyCapture2::PGRGuid camera, StreamFormat format);
-    QString getCameraName();
-    VideoServer::State getState();
+    int getCameraId() const;
+    VideoServer::State getState() const;
     const StreamFormat& getCurrentStreamFormat() const;
 
 private:
 
     Logger *_log = NULL;
-    QString _name;
+    int _cameraId;
     SocketAddress _host;
     Channel *_controlChannel = NULL;
     QUdpSocket *_videoSocket = NULL;
     StreamFormat _format;
     State _state = IdleState;
     QProcess _child;
-    QString _deviceDescription;
+    QString _currentCamera;
     QTcpServer *_ipcServer = NULL;
     QTcpSocket *_ipcSocket = NULL;
     int _startInternalTimerId = TIMER_INACTIVE;

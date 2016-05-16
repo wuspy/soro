@@ -112,8 +112,21 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 _videoServers->remove(_videoServers->cameraCount() - 1);
             }
         }
+<<<<<<< HEAD
         else if (_videoServers->cameraCount() < _config.MainComputerCameraCount) {
             LOG_E("The configuration specifies more cameras than this, check cable connections");
+=======
+
+        LOG_I("**************Streaming first 3 cameras*****************");
+
+        for (int cameraID = 0; cameraID < qMin(3, _videoServers.size()); cameraID++) {
+            if (_flycapCameras.contains(cameraID)) {
+                _videoServers[cameraID]->start(_flycapCameras[cameraID], mpeg2_streamFormatHighQuality());
+            }
+            else if (_uvdCameras.contains(cameraID)) {
+                _videoServers[cameraID]->start(_uvdCameras[cameraID], mpeg2_streamFormatHighQuality());
+            }
+>>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
         }
 
         LOG_I("-------------------------------------------------------");
@@ -219,15 +232,48 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         StreamFormat format;
         stream >> camera;
         stream >> format;
+<<<<<<< HEAD
 
         _videoServers->activate(camera, format);
+=======
+        VideoServer *server = _videoServers[camera];
+        if (server == NULL) {
+            LOG_E("Request to activate a nonexistent video server");
+            return;
+        }
+        LOG_I("Camera " + server->getCameraName() + " is about to be streamed");
+        if (_flycapCameras.contains(camera)) {
+            //this camera is flycap, we must set the framerate on it manually
+            server->start(_flycapCameras[camera], format);
+        }
+        else {
+            server->start(_uvdCameras[camera], format);
+        }
+>>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
     }
         break;
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
+<<<<<<< HEAD
 
         _videoServers->deactivate(camera);
+=======
+        VideoServer *server = _videoServers[camera];
+        if (server == NULL) {
+            LOG_E("Request to deactivate a nonexistent video server");
+            return;
+        }
+        if (server->getState() != VideoServer::IdleState) {
+            LOG_I("Camera " + server->getCameraName() + " is about to be shut down");
+            server->stop();
+        }
+    }
+    case SharedMessage_MissionControlConnected: {
+        // resend our current staus for the new mission control
+        sendSystemStatusMessage();
+    }
+>>>>>>> 428dd76f9c40301c2fc62fa976ee6f582d8d93a4
         break;
     default:
         break;
