@@ -31,31 +31,6 @@
 
 namespace Soro {
 
-Channel::Channel (QObject *parent, const QString &configFile, Logger *log) : QObject(parent) {
-    _log = log;
-    LOG_I("Opening configuration file " + configFile);
-    QFile file(configFile, this);
-    if (!file.open(QIODevice::ReadOnly)) {
-        LOG_E("Cannot open configuration file " + configFile + " for read access");
-        setChannelState(ErrorState, false);
-        return;
-    }
-
-    QTextStream stream(&file);
-    parseConfigStream(stream);
-    file.close();
-
-    if (_state != ErrorState) init();
-}
-
-Channel::Channel (QObject *parent, const QUrl &configUrl, Logger *log) : QObject(parent) {
-    _log = log;
-    //load the config file form the network url
-    _netConfigFileUrl = configUrl;
-    _netConfigFileReply = NULL;
-    fetchNetworkConfigFile();
-}
-
 Channel::Channel(QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
                  QHostAddress hostAddress, Logger *log) : QObject(parent) {
     _log = log;
@@ -82,60 +57,25 @@ Channel::Channel(QObject *parent, quint16 port, QString name, Protocol protocol,
 }
 
 Channel::~Channel() {
+    close();
     if (_sentTimeLog != NULL) {
         delete [] _sentTimeLog;
     }
-    if (_netConfigFileReply != NULL) {
-        _netConfigFileReply->abort();
-        delete _netConfigFileReply;
+    if (_tcpSocket) {
+        delete _tcpSocket;
+        _tcpSocket = NULL;
     }
-    KILL_TIMER(_connectionMonitorTimerID);
-    KILL_TIMER(_resetTcpTimerID);
-    KILL_TIMER(_resetTimerID);
-    KILL_TIMER(_fetchNetConfigFileTimerID);
-    KILL_TIMER(_handshakeTimerID);
-    //Qt will take care of cleaning up any object that has 'this' passed to it in its constructor
-}
-
-/*  Network configuration stuff, for loading the config file from a
- *  network resource
- ***************************************************************************
- ***************************************************************************
- ***************************************************************************/
-
-void Channel::fetchNetworkConfigFile() {    //PRIVATE
-    //We are loading from a network configuration file and are waiting
-    //for a response
-    LOG_I("Loading configuration from  " + _netConfigFileUrl.toString());
-    QNetworkAccessManager manager(this);
-    _netConfigFileReply = manager.get(QNetworkRequest(_netConfigFileUrl));
-    connect(_netConfigFileReply, SIGNAL(finished()),
-            this, SLOT(netConfigFileAvailable()));
-    connect(_netConfigFileReply, SIGNAL(error(QNetworkReply::NetworkError)),
-            this, SLOT(netConfigRequestError()));
-}
-
-void Channel::netConfigFileAvailable() {    //PRIVATE SLOT
-    LOG_I("Downloaded configuration");
-    QTextStream stream(_netConfigFileReply);
-    parseConfigStream(stream);
-    delete _netConfigFileReply;
-    _netConfigFileReply = NULL;
-        if (_state != ErrorState) {
-        init();
-        if (_openOnConfigured) {
-            //the user has called open() before we had gotten a response from the config file server, so the request
-            //had to be delayed until now
-            open();
-        }
+    if (_udpSocket) {
+        delete _udpSocket;
+        _udpSocket = NULL;
     }
-}
-
-void Channel::netConfigRequestError() {  //PRIVATE SLOT
-    LOG_E("Cannot fetch network configuration file: " + _netConfigFileReply->errorString() + ", retrying...");
-    delete _netConfigFileReply;
-    //retry again after RECOVERY_DELAY
-    START_TIMER(_fetchNetConfigFileTimerID, RECOVERY_DELAY);
+    if (_tcpServer) {
+        delete _tcpServer;
+        _tcpServer = NULL;
+    }
+    if (_nameUtf8) {
+        delete [] _nameUtf8;
+    }
 }
 
 /*  Initialization, creates timers, sockets, apply configuration
@@ -152,111 +92,6 @@ void Channel::setName(QString name) {   //PRIVATE
     if (_nameUtf8Size > 64) {
         LOG_E("Name is too long (max 64 characters)");
         setChannelState(ErrorState, true);
-    }
-}
-
-void Channel::parseConfigStream(QTextStream &stream) { //PRIVATE
-    const QString usingDefaultWarningString = "%1 was either not found or invalid while loading configuration, using default value %2";
-    const QString parseErrorString = "%1 was either not found or invalid while loading configuration";
-
-    IniParser parser;
-    if (!parser.load(stream)) {
-        LOG_E("The configuration file is not properly formatted");
-        setChannelState(ErrorState, false);
-        return;
-    }
-
-    //These values must be in the file
-
-    bool success;
-    QString name = parser.value(CONFIG_TAG_CHANNEL_NAME);
-    parser.remove(CONFIG_TAG_CHANNEL_NAME);
-    if (name.isEmpty()) {
-        LOG_E(parseErrorString.arg(CONFIG_TAG_CHANNEL_NAME));
-        setChannelState(ErrorState, false);
-        return;
-    }
-    setName(name);
-    QString endpoint = parser.value(CONFIG_TAG_ENDPOINT).toLower();
-    parser.remove(CONFIG_TAG_ENDPOINT);
-    if (endpoint == "server") {
-        _isServer = true;
-    }
-    else if (endpoint == "client") {
-        _isServer = false;
-    }
-    else {
-        LOG_E(parseErrorString.arg(CONFIG_TAG_ENDPOINT));
-        setChannelState(ErrorState, false);
-        return;
-    }
-    success = parser.valueAsIP(CONFIG_TAG_SERVER_ADDRESS, &_serverAddress.host, true);
-    parser.remove(CONFIG_TAG_SERVER_ADDRESS);
-    if (!success) {
-        if (_isServer) {      //Server address is not mandatory if we are the server
-            _serverAddress.host = QHostAddress::Any;
-        }
-        else {
-            LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_ADDRESS));
-            setChannelState(ErrorState, false);
-            return;
-        }
-    }
-    int port;
-    success = parser.valueAsInt(CONFIG_TAG_SERVER_PORT, &port);
-    parser.remove(CONFIG_TAG_SERVER_PORT);
-    if (!success) {
-        LOG_E(parseErrorString.arg(CONFIG_TAG_SERVER_PORT));
-        setChannelState(ErrorState, false);
-        return;
-    }
-    _serverAddress.port = port;
-    QString protocol = parser.value(CONFIG_TAG_PROTOCOL).toLower();
-    parser.remove(CONFIG_TAG_PROTOCOL);
-    if (protocol == "udp") {
-        _protocol = UdpProtocol;
-    }
-    else if (protocol == "tcp") {
-        _protocol = TcpProtocol;
-    }
-    else {
-        LOG_E(parseErrorString.arg(CONFIG_TAG_PROTOCOL));
-        setChannelState(ErrorState, false);
-        return;
-    }
-
-    //These values are optional
-
-    success = parser.valueAsIP(CONFIG_TAG_HOST_ADDRESS, &_hostAddress.host, true);
-    parser.remove(CONFIG_TAG_HOST_ADDRESS);
-    if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_HOST_ADDRESS, "-any-"));
-        _hostAddress.host = QHostAddress::Any;
-    }
-    success = parser.valueAsBool(CONFIG_TAG_DROP_OLD_PACKETS, &_dropOldPackets);
-    parser.remove(CONFIG_TAG_DROP_OLD_PACKETS);
-    if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_DROP_OLD_PACKETS, "true"));
-        _dropOldPackets = true;
-    }
-    success = parser.valueAsBool(CONFIG_TAG_SEND_ACKS, &_sendAcks);
-    parser.remove(CONFIG_TAG_SEND_ACKS);
-    if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_SEND_ACKS, "true"));
-        _sendAcks = true;
-    }
-    bool lowDelay;
-    success = parser.valueAsBool(CONFIG_TAG_LOW_DELAY, &lowDelay);
-    parser.remove(CONFIG_TAG_LOW_DELAY);
-    if (!success) {
-        LOG_W(usingDefaultWarningString.arg(CONFIG_TAG_LOW_DELAY, "false"));
-        lowDelay = false;
-    }
-    _lowDelaySocketOption = lowDelay ? 1 : 0;
-
-    //check for unknown values (known ones were already removed
-    foreach (QString unknown, parser.tags()) {
-        LOG_W("Uknown configuration option " + unknown);
     }
 }
 
@@ -321,12 +156,6 @@ void Channel::open() {
         //start the connection procedure
         resetConnection();
         break;
-    case UnconfiguredState:
-        //cannot open yet because we are waiting on a reply from the network server
-        //where the config file is stored. Open as soon as it's ready.
-        LOG_D("openOnConfiguration set to true");
-        _openOnConfigured = true;
-        break;
     default:
         LOG_E("Cannot call open() in the current channel state");
         break;
@@ -353,7 +182,6 @@ void Channel::resetConnectionVars() {   //PRIVATE
 
 void Channel::resetConnection() {   //PRIVATE
     LOG_I("Attempting to connect to other side of channel...");
-    setChannelState(ConnectingState, false);
     resetConnectionVars();
     KILL_TIMER(_connectionMonitorTimerID);
     KILL_TIMER(_handshakeTimerID);
@@ -402,6 +230,8 @@ void Channel::resetConnection() {   //PRIVATE
             newTcpClient();
         }
     }
+
+    setChannelState(ConnectingState, false);
 }
 
 void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
@@ -431,10 +261,6 @@ void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
     else if (id == _handshakeTimerID) {
         sendHandshake();
     }
-    else if (id == _fetchNetConfigFileTimerID) {
-        fetchNetworkConfigFile();
-        KILL_TIMER(_fetchNetConfigFileTimerID); //single shot
-    }
 }
 
 void Channel::configureNewTcpSocket() { //PRIVATE
@@ -454,12 +280,13 @@ void Channel::tcpConnected() {  //PRIVATE SLOT
     //Both sides of the channel must send handshakes to each other to verify identity.
     //If this message is not sent timely (within a few seconds), both sides will disconnect
     //and attempt the whole thing over again
-    setChannelState(ConnectingState, false);
     setPeerAddress(SocketAddress(_tcpSocket->peerAddress(), _tcpSocket->peerPort()));
     sendHandshake();
     //Close the connection if it is not verified in time
     START_TIMER(_resetTcpTimerID, IDLE_CONNECTION_TIMEOUT);
     LOG_I("TCP peer " + _peerAddress.toString() + " has connected");
+
+    setChannelState(ConnectingState, false);
 }
 
 void Channel::newTcpClient() {  //PRIVATE SLOT
@@ -498,15 +325,11 @@ void Channel::close() {
 }
 
 void Channel::close(Channel::State closeState) {   //PRIVATE
-    if (_state == UnconfiguredState) {
-        LOG_W("Channel is loading it's configuration and cannot be closed until this process is finished");
-        return;
-    }
     LOG_W("Closing channel in state " + QString::number(closeState));
-    if (_socket != NULL) {
-        _socket->close();
+    if (_socket) {
+        _socket->abort();
     }
-    if (_tcpServer != NULL) {
+    if (_tcpServer) {
         _tcpServer->close();
     }
     KILL_TIMER(_connectionMonitorTimerID);
@@ -514,6 +337,7 @@ void Channel::close(Channel::State closeState) {   //PRIVATE
     KILL_TIMER(_resetTimerID);
     KILL_TIMER(_handshakeTimerID);
     resetConnectionVars();
+
     setChannelState(closeState, false);
 }
 
@@ -646,10 +470,11 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
                 KILL_TIMER(_resetTcpTimerID);
                 _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
-                setChannelState(ConnectedState, false);
                 _wasConnected = true;
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_D("Received handshake response from server " + _serverAddress.toString());
+
+                setChannelState(ConnectedState, false);
             }
             else {
                 LOG_W("Received server handshake with invalid channel name");
@@ -670,10 +495,11 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
                 }
                 _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
                 _lastReceiveID = ID;
-                setChannelState(ConnectedState, false);
                 _wasConnected = true;
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
                 LOG_D("Received handshake request from client " + _peerAddress.toString());
+
+                setChannelState(ConnectedState, false);
             }
             else {
                 LOG_W("Received client handshake with invalid channel name");

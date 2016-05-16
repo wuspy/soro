@@ -39,11 +39,6 @@ public:
      */
     void play(SocketAddress address, VideoEncoding encoding);
 
-    /* Configure the widget to receive a video stream from a source element.
-     * If successful, the widget should start playing the stream immediately.
-     */
-    void play(QGst::ElementPtr source, VideoEncoding encoding);
-
     /* Stops video playback, and displays they reason why
      * if one is provided.
      */
@@ -60,7 +55,6 @@ private:
     bool _isPlaying = false;
 
     QGst::ElementPtr createSink();
-    QGst::BinPtr createDecoder(VideoEncoding encoding);
     void resetPipeline();
 
 private slots:

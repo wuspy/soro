@@ -9,6 +9,7 @@
 #include <Qt5GStreamer/QGst/Caps>
 #include <Qt5GStreamer/QGst/Utils/ApplicationSource>
 #include <flycapture/FlyCapture2.h>
+//#include <flycapture/C/FlyCapture2_C.h>
 
 #include "logger.h"
 #include "videoencoding.h"
@@ -23,15 +24,17 @@ class FlycapCamera : public QObject, public QGst::Utils::ApplicationSource  {
     Q_OBJECT
 
 public:
-    explicit FlycapCamera(FlyCapture2::PGRGuid guid, int framerate, QObject *parent = 0);
+    explicit FlycapCamera(FlyCapture2::PGRGuid guid, QObject *parent = 0);
     ~FlycapCamera();
 
 private:
     bool _needsData = false;
+
     FlyCapture2::Camera _camera;
-    FlyCapture2::Image _imageBuffer;
     int _captureTimerId;
     int _errorCount = 0;
+
+    void stopWithError(QString error);
 
 protected:
     void timerEvent(QTimerEvent *e);

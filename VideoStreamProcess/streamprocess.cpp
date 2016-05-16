@@ -3,46 +3,14 @@
 namespace Soro {
 namespace Rover {
 
-StreamProcess::StreamProcess(QGst::ElementPtr source, StreamFormat format, SocketAddress host, SocketAddress address, QObject *parent)
+StreamProcess::StreamProcess(QGst::ElementPtr source, StreamFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent)
         : QObject(parent) {
+    if (!connectToParent(ipcPort)) return;
 
-    qDebug() << "Creating pipeline";
-
-    // create pipeline
-    _pipeline = QGst::Pipeline::create();
-    _pipeline->bus()->addSignalWatch();
-    QGlib::connect(_pipeline->bus(), "message", this, &StreamProcess::onBusMessage);
-
-    qDebug() << "Pipeline created";
+    _pipeline = createPipeline();
 
     // create gstreamer command
-    QString binStr = "videoconvert ! ";
-    QString caps = "video/x-raw,format=I420";
-    if ((format.Width > 0) & (format.Height > 0)) {
-        binStr += "videoscale ! ";
-        caps += ",width=" + QString::number(format.Width) + ",height=" + QString::number(format.Height);
-    }
-    if (format.Framerate > 0) {
-        caps += ",framerate=" + QString::number(format.Framerate) + "/1";
-    }
-    binStr += caps;
-    switch (format.Encoding) {
-    case MjpegEncoding:
-        binStr += " ! jpegenc quality=" + QString::number(format.Mjpeg_Quality) + " ! rtpjpegpay ! ";
-        break;
-    case Mpeg2Encoding:
-        binStr += " ! avenc_mpeg4 bitrate=" + QString::number(format.Bitrate) + " ! rtpmp4vpay config-interval=3 ! ";
-        break;
-    case x264Encoding:
-        binStr += " ! x264enc tune=zerolatency bitrate=" + QString::number(format.Bitrate) + " ! rtph264pay ! ";
-        break;
-    default:
-        //unknown codec
-        QCoreApplication::exit(STREAMPROCESS_ERR_UNKNOWN_CODEC);
-        return;
-    }
-
-    binStr += "udpsink bind-address=" + host.host.toString() + " bind-port=" + QString::number(host.port) + " host=" + address.host.toString() + " port=" + QString::number(address.port);
+    QString binStr = makeEncodingBinString(format, bindAddress, address);
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
     qDebug() << "Created gstreamer bin <source> ! " << binStr;
@@ -59,11 +27,112 @@ StreamProcess::StreamProcess(QGst::ElementPtr source, StreamFormat format, Socke
     qDebug() << "Stream started";
 }
 
+StreamProcess::StreamProcess(QString sourceDevice, StreamFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent)
+        : QObject(parent) {
+    if (!connectToParent(ipcPort)) return;
+
+    _pipeline = createPipeline();
+
+    // create gstreamer command
+    QString binStr = makeEncodingBinString(format, bindAddress, address);
+#ifdef __linux__
+    binStr = "v4l2src device=" + sourceDevice + " ! " + binStr;
+#endif
+    QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
+
+    qDebug() << "Created gstreamer bin " << binStr;
+
+    _pipeline->add(encoder);
+
+    // play
+    _pipeline->setState(QGst::StatePlaying);
+
+    qDebug() << "Stream started";
+
+}
+
 StreamProcess::~StreamProcess() {
+    stop();
+}
+
+void StreamProcess::stop() {
+    qDebug() << "Stopping";
     if (_pipeline) {
         _pipeline->setState(QGst::StateNull);
         _pipeline.clear();
     }
+    if (_ipcSocket) {
+        delete _ipcSocket;
+        _ipcSocket = NULL;
+    }
+}
+
+bool StreamProcess::connectToParent(quint16 port) {
+    _ipcSocket = new QTcpSocket(this);
+
+    connect(_ipcSocket, SIGNAL(readyRead()),
+            this, SLOT(ipcSocketReadyRead()));
+    connect(_ipcSocket, SIGNAL(disconnected()),
+            this, SLOT(ipcSocketDisconnected()));
+    connect(_ipcSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(ipcSocketError(QAbstractSocket::SocketError)));
+
+    _ipcSocket->connectToHost(QHostAddress::LocalHost, port);
+    if (!_ipcSocket->waitForConnected(1000)) {
+        qCritical() << "Unable to connect to parent on port " << port;
+        QCoreApplication::exit(0);
+        return false;
+    }
+    return true;
+}
+
+void StreamProcess::ipcSocketReadyRead() {
+    char buffer[512];
+    while (_ipcSocket->bytesAvailable() > 0) {
+        _ipcSocket->readLine(buffer, 512);
+        if (QString(buffer).compare("stop") == 0) {
+            qDebug() << "Got exit request from parent";
+            stop();
+            QCoreApplication::exit(0);
+        }
+    }
+}
+
+QGst::PipelinePtr StreamProcess::createPipeline() {
+    qDebug() << "Creating pipeline";
+
+    QGst::PipelinePtr pipeline = QGst::Pipeline::create();
+    pipeline->bus()->addSignalWatch();
+    QGlib::connect(pipeline->bus(), "message", this, &StreamProcess::onBusMessage);
+
+    qDebug() << "Pipeline created";
+    return pipeline;
+}
+
+QString StreamProcess::makeEncodingBinString(StreamFormat format, SocketAddress bindAddress, SocketAddress address) {
+    QString binStr = "videoconvert ! videoscale method=nearest-neighbour ! video/x-raw,height=" + QString::number(format.Height) + " ! ";
+    switch (format.Encoding) {
+    case MjpegEncoding:
+        binStr += "jpegenc quality=" + QString::number(format.Mjpeg_Quality) + " ! rtpjpegpay ! ";
+        break;
+    case Mpeg2Encoding:
+        // mpeg2 takes bitrate in bps
+        binStr += "avenc_mpeg4 bitrate=" + QString::number(format.Bitrate) + " bitrate-tolerance=1000000 ! rtpmp4vpay config-interval=3 pt=96 ! ";
+        break;
+    case x264Encoding:
+        // x264 takes bitrate in kbps
+        binStr += "x264enc tune=zerolatency bitrate=" + QString::number(format.Bitrate / 1000) + " ! rtph264pay config-interval=3 pt=96 ! ";
+        break;
+    default:
+        //unknown codec
+        QCoreApplication::exit(STREAMPROCESS_ERR_UNKNOWN_CODEC);
+        return "";
+    }
+
+    binStr += "udpsink bind-address=" + bindAddress.host.toString() + " bind-port=" + QString::number(bindAddress.port)
+            + " host=" + address.host.toString() + " port=" + QString::number(address.port);
+
+    return binStr;
 }
 
 void StreamProcess::onBusMessage(const QGst::MessagePtr & message) {
@@ -80,6 +149,16 @@ void StreamProcess::onBusMessage(const QGst::MessagePtr & message) {
     default:
         break;
     }
+}
+
+void StreamProcess::ipcSocketError(QAbstractSocket::SocketError error) {
+    stop();
+    QCoreApplication::exit(STREAMPROCESS_ERR_SOCKET_ERROR);
+}
+
+void StreamProcess::ipcSocketDisconnected() {
+    stop();
+    QCoreApplication::exit(STREAMPROCESS_ERR_SOCKET_ERROR);
 }
 
 } // namespace Rover

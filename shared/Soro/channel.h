@@ -69,8 +69,6 @@ public:
     /* Lists the state a channel can be in
      */
     enum State {
-        UnconfiguredState, //The channel has not yet been configured properly and has not
-                            //initialized
 
         ReadyState, //The channel is ready to be connected as soon as open() is called
 
@@ -85,14 +83,6 @@ public:
     //The maximum size of a sent message (the header may make the actual message
     //slighty larger)
     static const MessageSize MAX_MESSAGE_LENGTH = 500;
-
-    /* Creates a new Channel with a local configuration file
-     */
-    Channel (QObject *parent, const QString &configFile, Logger *log = NULL);
-
-    /* Creates a new Channel with the configuration file on a network server
-     */
-    Channel (QObject *parent, const QUrl &configUrl, Logger *log = NULL);
 
     /* Creates a new channel to act as the server end point for communication
      */
@@ -131,6 +121,10 @@ public:
     /* Sends a message to the other side of the channel
      */
     bool sendMessage(const char *message, Channel::MessageSize size);
+
+    inline bool sendMessage(const QByteArray& message) {
+        return sendMessage(message.constData(), message.size());
+    }
 
     /* Returns true if this channel object acts as the server side
      */
@@ -187,7 +181,7 @@ private:
     char *_nameUtf8;
     int _nameUtf8Size;
 
-    State _state = UnconfiguredState;   //current state the channel is in
+    State _state = ReadyState;   //current state the channel is in
 
     qint64 *_sentTimeLog;   //Used for statistic calculation
     int _sentTimeLogIndex;
@@ -204,11 +198,6 @@ private:
     SocketAddress _peerAddress = SocketAddress(QHostAddress::Null, 0); //The address of the currently connected peer
 
     Protocol _protocol; //Protocol used by the channel (UDP or TCP)
-    QUrl _netConfigFileUrl; //URL to obtain the configuration file from, if configuring
-                        //over the internet
-
-    QNetworkReply *_netConfigFileReply = NULL; //Used for network configuration file
-    bool _openOnConfigured = false;
 
     Logger* _log = NULL;   //Logger object we are writing log messages to (can be null)
 
@@ -239,7 +228,6 @@ private:
     int _handshakeTimerID = TIMER_INACTIVE;
     int _resetTimerID = TIMER_INACTIVE;
     int _resetTcpTimerID = TIMER_INACTIVE;
-    int _fetchNetConfigFileTimerID = TIMER_INACTIVE;
 
     qint64 _lastReceiveTime = QDateTime::currentMSecsSinceEpoch(); //Last time a message was received
     qint64 _lastSendTime = QDateTime::currentMSecsSinceEpoch();
@@ -272,8 +260,6 @@ private:
 
     inline void initVars(); //Initializes variables when the channel is fist created (mostly nulling pointers)
 
-    void parseConfigStream(QTextStream &stream);    //Sets up a channel for use once the configuration source
-                                                        //has been located and accessed as a QTextStream
     void init();
 
     void resetConnection(); //Closes any existing connections and attempts to reconnect. Called in the event
@@ -282,8 +268,6 @@ private:
     inline void sendHandshake();    //Sends a handshake message to the connected peer
 
     inline void sendHeartbeat();    //Sends a heartbeat message to the connected peer
-
-    void fetchNetworkConfigFile();
 
     void setName(QString name); //sets the name of the channel
 
@@ -294,8 +278,6 @@ private slots:
     void newTcpClient();
     void connectionErrorInternal(QAbstractSocket::SocketError err);
     void serverErrorInternal(QAbstractSocket::SocketError err);
-    void netConfigFileAvailable();
-    void netConfigRequestError();
 
 signals: //Always public
 

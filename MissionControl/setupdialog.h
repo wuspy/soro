@@ -24,13 +24,13 @@ class SetupDialog : public QDialog {
 public:
     explicit SetupDialog(QWidget *parent = 0);
     ~SetupDialog();
-    MissionControlProcess::Role getSelectedRole() const;
+    Role getSelectedRole() const;
     bool getIsMasterNode() const;
     QString getName() const;
 
 private:
     Ui::SetupDialog *ui;
-    MissionControlProcess::Role _role;
+    Role _role;
     bool _masterNode = false;
     QString _name = "";
     bool verifyName();

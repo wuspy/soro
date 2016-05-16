@@ -1,13 +1,14 @@
 #include "soroini.h"
 
 const char *_tag_ServerAddress = "ServerAddress";
-const char *_tag_ServerSide = "ServerSide";
 const char *_tag_ArmServerPort = "ArmChannelPort";
 const char *_tag_DriveServerPort = "DriveChannelPort";
 const char *_tag_GimbalServerPort = "GimbalChannelPort";
 const char *_tag_SharedServerPort = "SharedChannelPort";
 const char *_tag_UvdCameraBlacklist = "UVDCameraBlacklist";
-const char *_tag_firstVideoPort = "FirstVideoStreamPort";
+const char *_tag_FirstVideoPort = "FirstVideoStreamPort";
+const char *_tag_MainComputerCameraCount = "MainComputerCameraCount";
+const char *_tag_SecondaryComputerCameraCount = "SecondaryComputerCameraCount";
 const char *_tag_LogLevel = "LogLevel";
 const char *_value_RoverIsServer = "Rover";
 const char *_value_MissionControlIsServer = "MissionControl";
@@ -17,8 +18,8 @@ const char *_value_LogLevelWarn = "Warning";
 const char *_value_LogLevelError = "Error";
 const char *_value_LogDisabled = "Disabled";
 const char *_tag_ArmMbedPort = "ArmMbedPort";
-const char *_tag_DriveMbedPort = "DriveMbedPort";
-const char *_tag_GimbalMbedPort = "GimbalMbedPort";
+const char *_tag_DriveCameraMbedPort = "DriveCameraMbedPort";
+const char *_tag_SecondaryComputerPort = "SecondaryComputerPort";
 const char *_tag_MasterArmPort = "MasterArmPort";
 const char *_tag_McSubnetBroadcastPort = "McSubnetBroadcastPort";
 
@@ -36,14 +37,6 @@ bool SoroIniLoader::load(QString *err) {
     if (!configParser.valueAsIP(_tag_ServerAddress, &ServerAddress, true)) {
         *err = "No server address found in configuration file";
         return false;
-    }
-    QString serverSide = configParser.value(_tag_ServerSide);
-    if (QString::compare(serverSide, _value_RoverIsServer, Qt::CaseInsensitive) == 0) {
-        ServerSide = RoverEndPoint;
-    }
-    else {
-        //default to mission control as server
-        ServerSide = MissionControlEndPoint;
     }
     QString logLevel = configParser.value(_tag_LogLevel);
     if (QString::compare(logLevel, _value_LogLevelDebug, Qt::CaseInsensitive) == 0) {
@@ -83,16 +76,11 @@ bool SoroIniLoader::load(QString *err) {
     }
     SharedChannelPort = tmp;
     ArmMbedPort = tmp;
-    if (!configParser.valueAsInt(_tag_DriveMbedPort, &tmp)) {
-        *err = "No drive mbed port found in configuration file";
+    if (!configParser.valueAsInt(_tag_DriveCameraMbedPort, &tmp)) {
+        *err = "No drive/camera mbed port found in configuration file";
         return false;
     }
-    DriveMbedPort = tmp;
-    if (!configParser.valueAsInt(_tag_GimbalMbedPort, &tmp)) {
-        *err = "No gimbal mbed port found in configuration file";
-        return false;
-    }
-    GimbalMbedPort = tmp;
+    DriveCameraMbedPort = tmp;
     if (!configParser.valueAsInt(_tag_McSubnetBroadcastPort, &tmp)) {
         *err = "No mission control subnet broadcast port found in configuration file";
         return false;
@@ -103,13 +91,25 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     MasterArmPort = tmp;
-    if (!configParser.valueAsInt(_tag_firstVideoPort, &tmp)) {
+    if (!configParser.valueAsInt(_tag_FirstVideoPort, &tmp)) {
         *err = "No first video stream port found in configuration file";
         return false;
     }
     FirstVideoPort = tmp;
+    if (!configParser.valueAsInt(_tag_SecondaryComputerPort, &tmp)) {
+        *err = "No secondary computer port found in configuration file";
+        return false;
+    }
+    SecondaryComputerPort = tmp;
     BlacklistedUvdCameras = configParser.valueAsStringList(_tag_UvdCameraBlacklist);
-
+    if (!configParser.valueAsInt(_tag_MainComputerCameraCount, &MainComputerCameraCount)) {
+        *err = "No main computer camera count found in configuration file";
+        return false;
+    }
+    if (!configParser.valueAsInt(_tag_SecondaryComputerCameraCount, &SecondaryComputerCameraCount)) {
+        *err = "No secondary computer camera count found in configuration file";
+        return false;
+    }
     return true;
 }
 

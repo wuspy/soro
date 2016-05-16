@@ -17,7 +17,7 @@ namespace MissionControl {
         const LatLng& getLastLocation() const;
     public slots:
         void addMarker(QString type);
-        void updateLocation(LatLng location);
+        void updateLocation(const LatLng& location);
         void updateHeading(int degrees);
     private:
         LatLng _lastSetLocation;

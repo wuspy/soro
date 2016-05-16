@@ -13,7 +13,7 @@ void GoogleMapView::addMarker(QString type) {
     page()->runJavaScript("addMarker(\"" + type + "\");");
 }
 
-void GoogleMapView::updateLocation(LatLng location) {
+void GoogleMapView::updateLocation(const LatLng& location) {
     if (_lastSetLocation.isEmpty() || (_lastSetLocation.metersTo(location) >= MIN_UPDATE_DISTANCE)) {
         page()->runJavaScript("updateLocation(" + location.toString() + ");");
         _lastSetLocation = location;

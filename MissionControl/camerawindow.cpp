@@ -6,6 +6,7 @@ namespace MissionControl {
 CameraWindow::CameraWindow(QWidget *parent) : QMainWindow(parent) {
     _cameraWidget = new CameraWidget(this);
     resize(800, 600);
+    setWindowTitle("Mission Control");
 }
 
 CameraWindow::~CameraWindow() {

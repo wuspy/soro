@@ -31,7 +31,8 @@ bool SetupDialog::verifyName() {
         QMessageBox::critical(this, "Error", "Enter a name for your mission control", QMessageBox::Ok);
         return false;
     }
-    QRegularExpression antiBill("bu(s|\\$)h.*("
+    QRegularExpression antiBill("(bu(s|\\$)h.|d(i|1)ck.cheney)"
+                                "*("
                                     "(made.*m(o|0)ney)"
                                     "|iraq"
                                     "|((9|n(i|1)ne)(-|\\/| )?(11|e(1|l)even))"
@@ -44,36 +45,38 @@ bool SetupDialog::verifyName() {
                                 "|((thermite|b(o|0)mb).*gr(o|0)und *(zer(o|0)|0))"
                                 "|terr(o|0)r(i|1)st",
                                 QRegularExpression::CaseInsensitiveOption);
+
     QRegularExpressionMatch match = antiBill.match(ui->nameLineEdit->text());
     if (match.hasMatch()) {
         QMessageBox::information(this, "Error", "Fuck off Bill", QMessageBox::Ok);
         return false;
     }
+
     _name = ui->nameLineEdit->text().trimmed();
     return true;
 }
 
 void SetupDialog::armOperatorClicked() {
     if (!verifyName()) return;
-    _role = MissionControlProcess::ArmOperatorRole;
+    _role = ArmOperatorRole;
     accept();
 }
 
 void SetupDialog::driverClicked() {
     if (!verifyName()) return;
-    _role = MissionControlProcess::DriverRole;
+    _role = DriverRole;
     accept();
 }
 
 void SetupDialog::cameraOperatorClicked() {
     if (!verifyName()) return;
-    _role = MissionControlProcess::CameraOperatorRole;
+    _role = CameraOperatorRole;
     accept();
 }
 
 void SetupDialog::spectatorClicked() {
     if (!verifyName()) return;
-    _role = MissionControlProcess::SpectatorRole;
+    _role = SpectatorRole;
     accept();
 }
 
@@ -81,7 +84,7 @@ void SetupDialog::masterCheckBoxToggled(bool checked) {
     _masterNode = checked;
 }
 
-MissionControlProcess::Role SetupDialog::getSelectedRole() const {
+Role SetupDialog::getSelectedRole() const {
     return _role;
 }
 

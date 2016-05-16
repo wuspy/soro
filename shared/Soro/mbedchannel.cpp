@@ -23,6 +23,7 @@ void MbedChannel::setChannelState(MbedChannel::State state) {
 }
 
 void MbedChannel::socketError(QAbstractSocket::SocketError err) {
+    Q_UNUSED(err);
     LOG_E("Error: " + _socket->errorString());
     START_TIMER(_resetConnectionTimerId, 500);
 }

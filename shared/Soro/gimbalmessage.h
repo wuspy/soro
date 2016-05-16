@@ -24,17 +24,19 @@ namespace GimbalMessage  {
     const char Header = 4;
     /* The size a gimbal message should be
      */
-    const int RequiredSize = 3;
+    const int RequiredSize = 5;
     /* These list the indicies of values in a gimbal message
      */
     const int Index_Yaw = 1;
     const int Index_Pitch = 2;
+    const int Index_Home = 3;
+    const int Index_Accelerate = 4;
 
 #ifdef QT_CORE_LIB
 
     /* Fills a gimbal message with SDL gamepad data
      */
-    void setGamepadData(char *message, short XAxis, short YAxis);
+    void setGamepadData(char *message, short XAxis, short YAxis, bool accelerateButton, bool homeButton);
 
 #endif
 
@@ -50,6 +52,14 @@ namespace GimbalMessage  {
      */
     inline float getYaw(const char *message) {
         return axisByteToAxisFloat(message[Index_Yaw]);
+    }
+
+    inline bool getHome(const char *message) {
+        return message[Index_Home] == 1;
+    }
+
+    inline bool getAccelerate(const char *message) {
+        return message[Index_Accelerate] == 1;
     }
 
 }

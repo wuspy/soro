@@ -63,13 +63,10 @@
 				lastLocation = newLocation;
 				recenter();
 			}
-			updateHeading(lastHeading);
+			setPositionMarker();
 		}
 
-		/* called by the host application when the position arrow should be pointed
-		 * torwards a different heading
-		 */
-		function updateHeading(degrees) {
+		function setPositionMarker() {
 			lastHeading = degrees;
 			if (!located) return;
 			if (headingMarker != null) {
@@ -78,7 +75,7 @@
 			headingMarker = new google.maps.Marker({
 			    position: lastLocation,
 			    icon: {
-					path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+					path: google.maps.SymbolPath.CIRCLE,
 				    fillColor: 'red',
 				    fillOpacity: 1,
 				    scale: 4,

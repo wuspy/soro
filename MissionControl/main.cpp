@@ -1,6 +1,6 @@
 #include <QApplication>
 
-#include "soromainwindow.h"
+#include "missioncontrolprocess.h"
 #include "setupdialog.h"
 #include "soro_global.h"
 
@@ -10,14 +10,16 @@ using namespace Soro::MissionControl;
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
-    QGst::init();
 
     SetupDialog dialog;
     if (dialog.exec() == QDialog::Accepted) {
-        SoroMainWindow w(dialog.getName(), dialog.getIsMasterNode(), dialog.getSelectedRole());
-        w.show();
+        QGst::init();
 
-        return a.exec();
+        MissionControlProcess missionControl(dialog.getName(), dialog.getIsMasterNode(), dialog.getSelectedRole(), &a);
+        int status = a.exec();
+
+        return status;
     }
+
     return 0;
 }

@@ -16,16 +16,12 @@ namespace Soro {
  */
 struct SoroIniLoader {
 
-    enum EndPoint {
-        RoverEndPoint, MissionControlEndPoint
-    };
-
     QHostAddress ServerAddress;
-    EndPoint ServerSide;
     int LogLevel;
-    quint16 ArmChannelPort, DriveChannelPort, GimbalChannelPort, SharedChannelPort;
+    int MainComputerCameraCount, SecondaryComputerCameraCount;
+    quint16 ArmChannelPort, DriveChannelPort, GimbalChannelPort, SharedChannelPort, SecondaryComputerPort;
     quint16 FirstVideoPort;
-    quint16 ArmMbedPort, DriveMbedPort, GimbalMbedPort;
+    quint16 ArmMbedPort, DriveCameraMbedPort;
     quint16 McBroadcastPort, MasterArmPort;
     QList<QString> BlacklistedUvdCameras;
 

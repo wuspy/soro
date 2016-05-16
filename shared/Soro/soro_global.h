@@ -15,13 +15,19 @@
 #define CHANNEL_NAME_DRIVE "Soro_DriveChannel"
 #define CHANNEL_NAME_GIMBAL "Soro_GimbalChannel"
 #define CHANNEL_NAME_SHARED "Soro_SharedTcpChannel"
+#define CHANNEL_NAME_SECONDARY_COMPUTER "Soro_SecondaryComputerChannel"
 
-#define STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS 1200
-#define STREAMPROCESS_ERR_INVALID_ARGUMENT 1201
-#define STREAMPROCESS_ERR_GSTREAMER_EOS 1202
-#define STREAMPROCESS_ERR_GSTREAMER_ERROR 1203
-#define STREAMPROCESS_ERR_UNKNOWN_CODEC 1204
-#define STREAMPROCESS_ERR_FLYCAP_ERROR 1205
+#define STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS 91
+#define STREAMPROCESS_ERR_INVALID_ARGUMENT 92
+#define STREAMPROCESS_ERR_GSTREAMER_EOS 93
+#define STREAMPROCESS_ERR_GSTREAMER_ERROR 94
+#define STREAMPROCESS_ERR_UNKNOWN_CODEC 95
+#define STREAMPROCESS_ERR_FLYCAP_ERROR 96
+#define STREAMPROCESS_ERR_SOCKET_ERROR 97
+
+#define STREAMPROCESS_IPC_START 's'
+#define STREAMPROCESS_IPC_STREAMING 'v'
+#define STREAMPROCESS_IPC_EXIT 'e'
 
 enum SharedMessageType {
     SharedMessage_RoverSharedChannelStateChanged = 1,
@@ -34,7 +40,8 @@ enum SharedMessageType {
     SharedMessage_RequestDeactivateCamera,
     SharedMessage_RoverVideoServerError,
     SharedMessage_MissionControlChat,
-    SharedMessage_CameraChanged
+    SharedMessage_CameraChanged,
+    SharedMessage_BitrateUpdate
 };
 
 enum RoverSubsystemState {
@@ -43,6 +50,18 @@ enum RoverSubsystemState {
 
 enum RoverCameraState {
     StreamingCameraState, DisabledCameraState, UnavailableCameraState
+};
+
+enum DriveGamepadMode {
+    SingleStickDrive, DualStickDrive
+};
+
+enum Role {
+    ArmOperatorRole, DriverRole, CameraOperatorRole, SpectatorRole
+};
+
+enum NotificationType {
+    RoverNotification, MCCNotification, ChatNotification
 };
 
 #ifdef QT_WIDGETS_LIB ///////////////////////////////////////////////////////////////////////////////

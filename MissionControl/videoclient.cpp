@@ -1,18 +1,20 @@
 #include "videoclient.h"
 
-#define LOG_TAG _name + "(C)"
+#define LOG_TAG "Video Client " + QString::number(_cameraId)
 
 namespace Soro {
 namespace MissionControl {
 
-VideoClient::VideoClient(QString name, SocketAddress server, QHostAddress host, Logger *log, QObject *parent) : QObject(parent) {
-    _name = name;
+VideoClient::VideoClient(int cameraId, SocketAddress server, QHostAddress host, Logger *log, QObject *parent)
+    : QObject(parent) {
+
+    _cameraId = cameraId;
     _server = server;
     _log = log;
 
     LOG_I("Creating new video client for server at " + server.toString());
 
-    _controlChannel = new Channel(this, _server, _name, Channel::TcpProtocol, host, _log);
+    _controlChannel = new Channel(this, _server, "camera" + QString::number(cameraId), Channel::TcpProtocol, host, _log);
     _videoSocket = new QUdpSocket(this);
 
     _buffer = new char[65536];
@@ -30,11 +32,10 @@ VideoClient::VideoClient(QString name, SocketAddress server, QHostAddress host, 
 
     _videoSocket->open(QIODevice::ReadWrite);
 
-    START_TIMER(_calculateBitrateTimerId, 500);
+    START_TIMER(_calculateBitrateTimerId, 1000);
 }
 
 VideoClient::~VideoClient() {
-    endOfStream();
     if (_controlChannel) {
         _controlChannel->close();
         delete _controlChannel;
@@ -94,6 +95,7 @@ void VideoClient::controlMessageReceived(Channel *channel, const char *message, 
         _format.Encoding = UnknownOrNoEncoding;
         KILL_TIMER(_punchTimerId);
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
+        _lastBitrate = 0;
         setState(ConnectedState);
     }
     else if (messageType.compare("error", Qt::CaseInsensitive) == 0) {
@@ -101,6 +103,7 @@ void VideoClient::controlMessageReceived(Channel *channel, const char *message, 
         LOG_I("Got error message from server: " + _errorString);
         _format.Encoding = UnknownOrNoEncoding;
         disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
+        _lastBitrate = 0;
         KILL_TIMER(_punchTimerId);
         setState(ConnectedState);
     }
@@ -115,15 +118,6 @@ void VideoClient::videoSocketReadyRead() {
         size = _videoSocket->readDatagram(_buffer, 65536);
         // update bit total
         _bitCount += size * 8;
-        // push the data to the gstreamer element src pad
-        if (_needsData) {
-            QGst::BufferPtr ptr = QGst::Buffer::create(size);
-            QGst::MapInfo memory;
-            ptr->map(memory, QGst::MapWrite);
-            memcpy(memory.data(), _buffer, size);
-            ptr->unmap(memory);
-            pushBuffer(ptr);
-        }
         // forward the datagram to all specified addresses
         foreach (SocketAddress address, _forwardAddresses) {
             _videoSocket->writeDatagram(_buffer, size, address.host, address.port);
@@ -136,13 +130,16 @@ void VideoClient::timerEvent(QTimerEvent *e) {
     if (e->timerId() == _punchTimerId) {
         LOG_I("punch timer tick");
         // send data to the the server so it can figure out our address
-        _videoSocket->writeDatagram(_name.toLatin1().constData(), _name.size() + 1, _server.host, _server.port);
+        QByteArray message;
+        QDataStream stream(&message, QIODevice::WriteOnly);
+        stream << QString("camera");
+        stream << _cameraId;
+        _videoSocket->writeDatagram(message.constData(), message.size(), _server.host, _server.port);
     }
     else if (e->timerId() == _calculateBitrateTimerId) {
         // this timer runs twice per second to calculate the bitrate received by the client
-        _lastBitrate = _bitCount * 2;
+        _lastBitrate = _bitCount;
         _bitCount = 0;
-        emit statisticsUpdate(this, _lastBitrate);
     }
 }
 
@@ -165,17 +162,12 @@ QString VideoClient::getErrorString() const {
     return _errorString;
 }
 
-QString VideoClient::getCameraName() const {
-    return _name;
+int VideoClient::getCameraId() const {
+    return _cameraId;
 }
 
-void VideoClient::needData(uint length) {
-    Q_UNUSED(length);
-    _needsData = true;
-}
-
-void VideoClient::enoughData() {
-    _needsData = false;
+quint64 VideoClient::getVideoBitrate() const {
+    return _lastBitrate;
 }
 
 VideoClient::State VideoClient::getState() const {
@@ -197,12 +189,6 @@ void VideoClient::setState(State state) {
     }
 }
 
-void VideoClient::setCameraName(QString name) {
-    if (_name.compare(name) != 0) {
-        _name = name;
-        emit nameChanged(this, _name);
-    }
-}
 
 } // namespace MissionControl
 } // namespace Soro

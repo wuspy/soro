@@ -28,7 +28,8 @@ SOURCES += \
     clickablelabel.cpp \
     videoclient.cpp \
     camerawidget.cpp \
-    camerawindow.cpp
+    camerawindow.cpp \
+    mediacontrolwidget.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -51,12 +52,14 @@ HEADERS  += \
     ../shared/Soro/videoencoding.h \
     videoclient.h \
     camerawidget.h \
-    camerawindow.h
+    camerawindow.h \
+    mediacontrolwidget.h
 
 FORMS    += \
     soromainwindow.ui \
     setupdialog.ui \
-    camerawidget.ui
+    camerawidget.ui \
+    mediacontrolwidget.ui
 
 RESOURCES += \
     Resources/MissionControl.qrc

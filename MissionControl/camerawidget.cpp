@@ -19,29 +19,8 @@ CameraWidget::~CameraWidget() {
     resetPipeline();
 }
 
-void CameraWidget::play(QGst::ElementPtr source, VideoEncoding encoding) {
-    resetPipeline();
-    ui->messageLabel->setVisible(false);
-    _pipeline = QGst::Pipeline::create();
-    _pipeline->bus()->addSignalWatch();
-    QGlib::connect(_pipeline->bus(), "message", this, &CameraWidget::onBusMessage);
-
-    QGst::BinPtr decoder = createDecoder(encoding);
-    if (!decoder) {
-        stop("The video player doesn't recognize the encoding");
-        return;
-    }
-    QGst::ElementPtr sink = createSink();
-
-    _pipeline->add(source, decoder, sink);
-    source->link(decoder);
-    decoder->link(sink);
-
-    _isPlaying = true;
-    _pipeline->setState(QGst::StatePlaying);
-}
-
 void CameraWidget::play(SocketAddress address, VideoEncoding encoding) {
+    qDebug() << "Play";
     resetPipeline();
     ui->messageLabel->setVisible(false);
 
@@ -49,17 +28,41 @@ void CameraWidget::play(SocketAddress address, VideoEncoding encoding) {
     _pipeline->bus()->addSignalWatch();
     QGlib::connect(_pipeline->bus(), "message", this, &CameraWidget::onBusMessage);
 
-    QGst::BinPtr source = QGst::Bin::fromDescription("udpsrc address=" + address.host.toString() + " port=" + QString::number(address.port));
-    QGst::BinPtr decoder = createDecoder(encoding);
-    if (!decoder) {
+    // create a udpsrc to receive the stream
+    QString binStr = "udpsrc address=" + address.host.toString() + " port=" + QString::number(address.port);
+
+    // append encoding-specific elements
+    switch (encoding) {
+    case MjpegEncoding:
+        binStr += " ! application/x-rtp,encoding=JPEG,payload=26 ! "
+                                       "rtpjpegdepay ! "
+                                       "jpegdec ! "
+                                       "videoconvert";
+        break;
+    case Mpeg2Encoding:
+        binStr += " ! application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
+                                       "rtpmp4vdepay ! "
+                                       "avdec_mpeg4 ! "
+                                       "videoconvert";
+        break;
+    case x264Encoding:
+        binStr += " ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
+                                       "rtph264depay ! "
+                                       "avdec_h264 ! "
+                                       "videoconvert";
+        break;
+    default:
         stop("The video player doesn't recognize the encoding");
         return;
     }
+
+    // create a gstreamer bin from the description
+    QGst::BinPtr source = QGst::Bin::fromDescription(binStr);
+    // create a gstreamer sink
     QGst::ElementPtr sink = createSink();
 
-    _pipeline->add(source, decoder, sink);
-    source->link(decoder);
-    decoder->link(sink);
+    _pipeline->add(source, sink);
+    source->link(sink);
 
     _isPlaying = true;
     _pipeline->setState(QGst::StatePlaying);
@@ -70,31 +73,6 @@ QGst::ElementPtr CameraWidget::createSink() {
     sink->setProperty("force-aspect-ratio", true);
     ui->videoWidget->setVideoSink(sink);
     return sink;
-}
-
-QGst::BinPtr CameraWidget::createDecoder(VideoEncoding encoding) {
-    switch (encoding) {
-    case MjpegEncoding:
-        return QGst::Bin::fromDescription("identity ! application/x-rtp,encoding=JPEG,payload=26 ! "
-                                       "rtpjpegdepay ! "
-                                       "jpegdec ! "
-                                       "videoconvert");
-        break;
-    case Mpeg2Encoding:
-        return QGst::Bin::fromDescription("identity ! application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
-                                       "rtpmp4vdepay ! "
-                                       "avdec_mpeg4 ! "
-                                       "videoconvert");
-        break;
-    case x264Encoding:
-        return QGst::Bin::fromDescription("identity ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
-                                       "rtph264depay ! "
-                                       "avdec_h264 ! "
-                                       "videoconvert");
-        break;
-    default:
-        return QGst::BinPtr::wrap(NULL, false);
-    }
 }
 
 void CameraWidget::stop(QString reason) {
@@ -125,6 +103,7 @@ void CameraWidget::stop(QString reason) {
 }
 
 void CameraWidget::resetPipeline() {
+    qDebug() << "ResetPipeline";
     if (_pipeline) {
         _pipeline->setState(QGst::StateNull);
         _pipeline.clear();
@@ -154,6 +133,7 @@ bool CameraWidget::isPlaying() {
 }
 
 void CameraWidget::onBusMessage(const QGst::MessagePtr & message) {
+    qDebug() << "Got bus message type " << message->typeName();
     switch (message->type()) {
     case QGst::MessageEos:
         stop("Received end-of-stream message.");
