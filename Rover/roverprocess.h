@@ -37,6 +37,7 @@ private:
 
     Channel *_armChannel = NULL;
     Channel *_driveChannel = NULL;
+    Channel *_gimbalChannel = NULL;
     Channel *_sharedChannel = NULL;
     Channel *_secondaryComputerChannel = NULL;
 

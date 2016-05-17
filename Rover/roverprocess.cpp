@@ -41,6 +41,8 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                                   Channel::UdpProtocol, QHostAddress::Any, _log);
         _driveChannel = new Channel(this, _config.DriveChannelPort, CHANNEL_NAME_DRIVE,
                                   Channel::UdpProtocol, QHostAddress::Any, _log);
+        _gimbalChannel = new Channel(this, _config.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
+                                  Channel::UdpProtocol, QHostAddress::Any, _log);
         _sharedChannel = new Channel(this, _config.SharedChannelPort, CHANNEL_NAME_SHARED,
                                   Channel::TcpProtocol, QHostAddress::Any, _log);
         _secondaryComputerChannel = new Channel(this, _config.SecondaryComputerPort, CHANNEL_NAME_SECONDARY_COMPUTER,
@@ -54,6 +56,10 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
             LOG_E("The drive channel experienced a fatal error during initialization");
             exit(1); return;
         }
+        if (_gimbalChannel->getState() == Channel::ErrorState) {
+            LOG_E("The gimbal channel experienced a fatal error during initialization");
+            exit(1); return;
+        }
         if (_sharedChannel->getState() == Channel::ErrorState) {
             LOG_E("The shared channel experienced a fatal error during initialization");
             exit(1); return;
@@ -61,6 +67,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         _armChannel->open();
         _driveChannel->open();
+        _gimbalChannel->open();
         _sharedChannel->open();
 
         // create the udp broadcast socket that will listen for the secondary computer
@@ -90,6 +97,8 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                  this, SLOT(armChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
         connect(_driveChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
                  this, SLOT(driveChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
+        connect(_gimbalChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
+                this, SLOT(gimbalChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
         connect(_sharedChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
                  this, SLOT(sharedChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
 
