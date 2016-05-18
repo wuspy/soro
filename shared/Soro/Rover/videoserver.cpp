@@ -180,6 +180,7 @@ void VideoServer::ipcServerClientAvailable() {
 }
 
 void VideoServer::ipcSocketReadyRead() {
+    LOG_I("ipcSocketReadyRead()");
     if (_ipcSocket->canReadLine()) {
         QByteArray errorMessage = _ipcSocket->readLine(256);
         emit error(this, QString(errorMessage));
