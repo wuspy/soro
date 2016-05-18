@@ -142,14 +142,14 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
         StreamFormat format;
         stream >> camera;
         stream >> format;
-
+        LOG_I("Camera " + QString::number(camera) + " is about to be activated");
         _videoServers.activate(camera, format);
     }
         break;
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
-
+        LOG_I("Camera " + QString::number(camera) + " is about to be deactivated");
         _videoServers.deactivate(camera);
         break;
     default:
