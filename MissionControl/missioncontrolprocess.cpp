@@ -102,7 +102,6 @@ void MissionControlProcess::init() {
         START_TIMER(_droppedPacketTimerId, 5000);
     }
 
-
     LOG_I("****************Initializing Mission Control network connections*******************");
 
     _broadcastSocket = new QUdpSocket(this);
@@ -199,6 +198,7 @@ void MissionControlProcess::init() {
     }
     for (int i = 0; i < _config.MainComputerCameraCount + _config.SecondaryComputerCameraCount; i++) {
         _streamFormats.append(StreamFormat());
+        _cameraNames.append("Camera " + QString::number(i + 1));
     }
 
 
@@ -226,6 +226,7 @@ void MissionControlProcess::videoClientStateChanged(VideoClient *client, VideoCl
     broadcastSharedMessage(message.constData(), message.size(), false);
 }
 
+
 void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::State state, StreamFormat format, QString errorString) {
     _streamFormats[cameraID] = format;
     switch (state) {
@@ -237,7 +238,7 @@ void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::S
                 }
                 else {
                     endStreamOnWidget(_assignedCameraWidgets.value(cameraID), "The rover experienced an error streaming this camera: " + errorString);
-                }
+                }    void handleBitrateUpdate(int bpsRoverDown, int bpsRoverUp);
             }
         }
         break;
@@ -260,6 +261,22 @@ void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::S
         }
         break;
     }
+}
+
+void MissionControlProcess::handleRoverSharedChannelStateChanged(Channel::State state) {
+    switch (state) {
+    case Channel::ConnectedState:
+        _roverSharedChannelConnected = true;
+        break;
+    default:
+        _roverSharedChannelConnected = false;
+        // also update subsystem states
+        ui->onArmSubsystemStateChanged(UnknownSubsystemState);
+        ui->onDriveCameraSubsystemStateChanged(UnknownSubsystemState);
+        ui->onSecondaryComputerStateChanged(UnknownSubsystemState);
+        break;
+    }
+    ui->onSharedChannelStateChanged(state);
 }
 
 void MissionControlProcess::endStreamOnWidget(CameraWidget *widget, QString reason) {
@@ -295,7 +312,7 @@ void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widge
     else {
         _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + cameraID), format.Encoding);
     }
-    _assignedCameraWidgets.value(cameraID)->setCameraName("Camera " + QString::number(cameraID + 1));
+    _assignedCameraWidgets.value(cameraID)->setCameraName(_cameraNames.at(cameraID));
 }
 
 void MissionControlProcess::controlChannelStateChanged(Channel *channel, Channel::State state) {
@@ -383,16 +400,7 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
     case SharedMessage_RoverSharedChannelStateChanged: {
         Channel::State state;
         stream >> reinterpret_cast<quint32&>(state);
-        switch (state) {
-        case Channel::ConnectedState:
-            _roverSharedChannelConnected = true;
-            ui->onSharedChannelStateChanged(Channel::ConnectedState);
-            break;
-        default:
-            _roverSharedChannelConnected = false;
-            ui->onSharedChannelStateChanged(Channel::ConnectingState);
-            break;
-        }
+        handleRoverSharedChannelStateChanged(state);
     }
         break;
     case SharedMessage_MissionControlConnected: {
@@ -416,7 +424,8 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
     }
         break;
     case SharedMessage_RoverStatusUpdate: {
-        _roverSharedChannelConnected = true;
+        handleRoverSharedChannelStateChanged(Channel::ConnectedState);
+
         bool armNormal, driveCameraNormal, secondComputerNormal;
 
         stream >> armNormal;
@@ -446,27 +455,30 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         handleCameraStateChange(cameraID, state, format, errorString);
     }
         break;
-    case SharedMessage_RoverVideoServerError: {
-        // find out which stream had the error
-        qint32 cameraID;
-        QString message;
-        stream >> cameraID;
-        stream >> message;
-
-        // if the stream that experienced the error is currently playing, stop it and display
-        // the error instead
-        if (_assignedCameraWidgets.contains(cameraID)) {
-            _assignedCameraWidgets[cameraID]->stop("The rover experienced an error streaming this camera: " + message);
-            _assignedCameraWidgets.remove(cameraID);
-        }
-    }
-        break;
     case SharedMessage_BitrateUpdate: {
         quint64 bpsRoverDown, bpsRoverUp;
         stream >> bpsRoverDown;
         stream >> bpsRoverUp;
 
         ui->onBitrateUpdate(bpsRoverDown, bpsRoverUp);
+    }
+        break;
+    case SharedMessage_CameraNameChanged: {
+        qint32 cameraId;
+        QString newName;
+        stream >> cameraId;
+        stream >> newName;
+
+        handleCameraNameChanged(cameraId, newName);
+    }
+        break;
+    case SharedMessage_RoverVideoServerError: {
+        qint32 cameraId;
+        QString error;
+        stream >> cameraId;
+        stream >> error;
+
+        LOG_E("Streaming error on camera " + QString::number(cameraId) + ": " + error);
     }
         break;
     default:
@@ -477,7 +489,8 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
 
 void MissionControlProcess::master_roverSharedChannelStateChanged(Channel *channel, Channel::State state) {
     Q_UNUSED(channel);
-    _roverSharedChannelConnected = state == Channel::ConnectedState;
+
+    handleRoverSharedChannelStateChanged(state);
 
     // broadcast the new state to all other mission controls
     SharedMessageType messageType = SharedMessage_RoverSharedChannelStateChanged;
@@ -488,8 +501,6 @@ void MissionControlProcess::master_roverSharedChannelStateChanged(Channel *chann
     stream << reinterpret_cast<quint32&>(state);
 
     broadcastSharedMessage(message.constData(), message.size(), false);
-
-    ui->onSharedChannelStateChanged(state);
 }
 
 void MissionControlProcess::master_roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
@@ -570,7 +581,7 @@ void MissionControlProcess::slave_masterSharedChannelStateChanged(Channel *chann
             // our information
             START_TIMER(_broadcastSharedChannelInfoTimerId, 500);
         }
-        _roverSharedChannelConnected = false;
+        handleRoverSharedChannelStateChanged(Channel::ConnectedState);
         break;
     case Channel::ErrorState:
         ui->onFatalError("The shared channel experienced a fatal error");
@@ -630,6 +641,21 @@ void MissionControlProcess::sendWelcomePackets() {
 
             channel->sendMessage(videoClientMessage);
         }
+
+        // send camera names
+
+        for (int i = 0; i < _cameraNames.size(); i++) {
+            // rebroadcast to other mission controls
+            QByteArray message;
+            QDataStream stream(&message, QIODevice::WriteOnly);
+            SharedMessageType messageType = SharedMessage_CameraNameChanged;
+
+            stream << reinterpret_cast<quint32&>(messageType);
+            stream << (qint32)i;
+            stream << _cameraNames.at(i);
+
+            broadcastSharedMessage(message.constData(), message.size(), false);
+        }
     }
 
     _newSlaveMissionControls.clear();
@@ -670,6 +696,29 @@ void MissionControlProcess::cameraFormatSelected(int camera, const StreamFormat 
     _sharedChannel->sendMessage(message);
 }
 
+void MissionControlProcess::cameraNameEdited(int camera, QString newName) {
+    handleCameraNameChanged(camera, newName);
+
+    // rebroadcast to other mission controls
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_CameraNameChanged;
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << (qint32)camera;
+    stream << newName;
+
+    broadcastSharedMessage(message.constData(), message.length(), false);
+}
+
+void MissionControlProcess::handleCameraNameChanged(int camera, QString newName) {
+    _cameraNames.replace(camera, newName);
+    ui->setCameraName(camera, newName);
+    if (_assignedCameraWidgets.contains(camera)) {
+        _assignedCameraWidgets.value(camera)->setCameraName(newName);
+    }
+}
+
 void MissionControlProcess::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
     if (e->timerId() == _controlSendTimerId) {
@@ -681,7 +730,6 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
         if (_gameController) {
             SDL_GameControllerUpdate();
             if (!SDL_GameControllerGetAttached(_gameController)) {
-                delete _gameController;
                 _gameController = NULL;
                 START_TIMER(_inputSelectorTimerId, 1000);
                 ui->onGamepadChanged(NULL);
@@ -724,12 +772,30 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 GimbalMessage::setGamepadData(_buffer,
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY),
-                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER),
-                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_A));
+                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_X),
+                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y),
+                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_B));
                 _controlChannel->sendMessage(_buffer, GimbalMessage::RequiredSize);
                 break;
             default:
                 break;
+            }
+
+            // use the gamepad to cycle the videos as well
+            if (SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_LEFT) == 1) {
+                if (!_ignoreGamepadVideoButtons) {
+                    cycleVideosClockwise();
+                    _ignoreGamepadVideoButtons = true;
+                }
+            }
+            else if (SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) == 1) {
+                if (!_ignoreGamepadVideoButtons) {
+                    cycleVideosClockwise();
+                    _ignoreGamepadVideoButtons = true;
+                }
+            }
+            else {
+                _ignoreGamepadVideoButtons = false;
             }
         }
     }
@@ -750,7 +816,6 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                     return;
                 }
                 SDL_GameControllerClose(controller);
-                delete controller;
             }
         }
     }

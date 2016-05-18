@@ -19,7 +19,10 @@ MediaControlWidget::MediaControlWidget(QWidget *parent) :
             this, SLOT(optionButtonClicked()));
     connect(ui->ultraRadioButton, SIGNAL(clicked(bool)),
             this, SLOT(optionButtonClicked()));
-
+    connect(ui->editNameButton, SIGNAL(clicked(bool)),
+            this, SLOT(editButtonClicked()));
+    connect(ui->nameLineEdit, SIGNAL(returnPressed()),
+            this, SLOT(nameEditReturnClicked()));
     // default to video mode
     setMode(VideoMode);
 }
@@ -34,11 +37,15 @@ void MediaControlWidget::setMode(MediaControlWidget::Mode mode) {
     switch (mode) {
     case AudioMode:
         ui->graphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/volume_up_black_18px.png);");
+        ui->editNameButton->setVisible(false);
         break;
     case VideoMode:
         ui->graphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/camera_black_18px.png);");
+        ui->editNameButton->setVisible(true);
         break;
     }
+
+    ui->nameLineEdit->setVisible(false);
 
     // default to disabled
     ui->disabledRadioButton->setChecked(true);
@@ -114,6 +121,25 @@ void MediaControlWidget::setAvailable(bool available) {
         ui->highRadioButton->hide();
         ui->ultraRadioButton->hide();
     }
+}
+
+void MediaControlWidget::editButtonClicked() {
+    ui->nameLabel->setVisible(false);
+    ui->editNameButton->setVisible(false);
+    ui->nameLineEdit->setVisible(true);
+    ui->nameLineEdit->setText(getName());
+}
+
+QString MediaControlWidget::getName() {
+    return ui->nameLabel->text();
+}
+
+void MediaControlWidget::nameEditReturnClicked() {
+    setName(ui->nameLineEdit->text());
+    ui->nameLineEdit->setVisible(false);
+    ui->nameLabel->setVisible(true);
+    ui->editNameButton->setVisible(true);
+    emit userEditedName(getName());
 }
 
 }

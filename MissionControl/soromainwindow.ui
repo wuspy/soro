@@ -191,7 +191,7 @@ margin-right: 10px;</string>
          </font>
         </property>
         <property name="text">
-         <string>Rover ▲ 944b/s ▼ 3.2Mb/s</string>
+         <string>Rover ▲ 0b/s ▼ 0b/s</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -591,6 +591,10 @@ margin-right: 10px;</string>
           <set>Qt::AlignCenter</set>
          </property>
         </widget>
+        <zorder>comm_mainStatusLabel</zorder>
+        <zorder>comm_detailStatusLabel</zorder>
+        <zorder>comm_mainStatusGraphicLabel</zorder>
+        <zorder>mainTabWidget</zorder>
        </widget>
        <zorder>comm_controlStateLabel</zorder>
        <zorder>comm_bitrateLabel</zorder>
@@ -907,6 +911,532 @@ margin-right: 10px;</string>
           </spacer>
          </item>
         </layout>
+       </widget>
+       <widget class="QWidget" name="settingsTab">
+        <attribute name="title">
+         <string>Settings</string>
+        </attribute>
+        <widget class="QPushButton" name="pushButton">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>10</y>
+           <width>221</width>
+           <height>26</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">border-radius: 5px;
+color: white;
+background-color: #b71c1c;</string>
+         </property>
+         <property name="text">
+          <string>TOGGLE ARM POWER</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="pushButton_3">
+         <property name="geometry">
+          <rect>
+           <x>240</x>
+           <y>10</y>
+           <width>221</width>
+           <height>26</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">border-radius: 5px;
+color: white;
+background-color: #b71c1c;</string>
+         </property>
+         <property name="text">
+          <string>TOGGLE DRIVE/GIM POWER</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="masterArmTab">
+        <attribute name="title">
+         <string>Master Arm</string>
+        </attribute>
+        <widget class="QSpinBox" name="spinBox">
+         <property name="geometry">
+          <rect>
+           <x>130</x>
+           <y>10</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_2">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>10</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Yaw Min:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_3">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>40</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Yaw Max:</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="yawMaxSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>130</x>
+           <y>40</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_4">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>70</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Yaw Shift:</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="yawShiftSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>130</x>
+           <y>70</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_5">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>150</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Elbow Max:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_6">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>180</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Elbow Shift:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_7">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>120</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Elbow Min:</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="elbowShiftSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>130</x>
+           <y>180</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="elbowMaxSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>130</x>
+           <y>150</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="elbowMinSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>130</x>
+           <y>120</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_8">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>70</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Shoulder Shift:</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="shoulderMaxSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>360</x>
+           <y>40</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="shoulderShiftSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>360</x>
+           <y>70</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="shoulderMinSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>360</x>
+           <y>10</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_9">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>40</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Shoulder Max:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_10">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>10</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Shoulder Min:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_11">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>180</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Wrist Shift:</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="wristMinSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>360</x>
+           <y>120</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_12">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>120</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Wrist Min:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_13">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>150</y>
+           <width>111</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+          </font>
+         </property>
+         <property name="text">
+          <string>Wrist Max:</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="wristShiftSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>360</x>
+           <y>180</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="wristMaxSpinBox">
+         <property name="geometry">
+          <rect>
+           <x>360</x>
+           <y>150</y>
+           <width>101</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="maximum">
+          <number>65535</number>
+         </property>
+         <property name="singleStep">
+          <number>10</number>
+         </property>
+        </widget>
+        <widget class="QCheckBox" name="elbowReverseCheckBox">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>201</y>
+           <width>97</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Reverse</string>
+         </property>
+        </widget>
+        <widget class="QCheckBox" name="yawReverseCheckBox">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>90</y>
+           <width>97</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Reverse</string>
+         </property>
+        </widget>
+        <widget class="QCheckBox" name="shoulderReverseCheckBox">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>90</y>
+           <width>97</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Reverse</string>
+         </property>
+        </widget>
+        <widget class="QCheckBox" name="wristReverseCheckBox">
+         <property name="geometry">
+          <rect>
+           <x>250</x>
+           <y>200</y>
+           <width>97</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Reverse</string>
+         </property>
+        </widget>
        </widget>
       </widget>
      </item>

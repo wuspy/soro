@@ -137,13 +137,17 @@ QString StreamProcess::makeEncodingBinString(StreamFormat format, SocketAddress 
 
 void StreamProcess::onBusMessage(const QGst::MessagePtr & message) {
     qDebug() << "Getting bus message";
+    QByteArray errorMessage;
     switch (message->type()) {
     case QGst::MessageEos:
         qWarning() << "End-of-Stream";
         QCoreApplication::exit(STREAMPROCESS_ERR_GSTREAMER_EOS);
         break;
     case QGst::MessageError:
-        qCritical() << "Bus error: " << message.staticCast<QGst::ErrorMessage>()->error().message();
+        errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
+        qCritical() << "Bus error: " << errorMessage.constData();
+        _ipcSocket->write(errorMessage.constData(), errorMessage.length());
+        _ipcSocket->flush();
         QCoreApplication::exit(STREAMPROCESS_ERR_GSTREAMER_ERROR);
         break;
     default:

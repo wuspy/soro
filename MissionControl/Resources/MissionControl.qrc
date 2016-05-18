@@ -25,6 +25,7 @@
         <file>check_white_36px.png</file>
         <file>preloader_white_yellow_36px.gif</file>
         <file>volume_up_black_18px.png</file>
+        <file>edit_black_18px.png</file>
     </qresource>
     <qresource prefix="/">
         <file>map.html</file>

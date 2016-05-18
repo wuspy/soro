@@ -31,9 +31,11 @@ public:
     void setName(QString name);
     void setAvailable(bool available);
     void setMode(MediaControlWidget::Mode mode);
+    QString getName();
 
 signals:
     void optionSelected(MediaControlWidget::Option option);
+    void userEditedName(QString newName);
 
 private:
     Ui::MediaControlWidget *ui;
@@ -42,6 +44,8 @@ private:
 
 private slots:
     void optionButtonClicked();
+    void editButtonClicked();
+    void nameEditReturnClicked();
 };
 
 }

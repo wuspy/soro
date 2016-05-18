@@ -55,12 +55,13 @@ void translateMasterArmValues(char *message, const MasterArmConfig& ranges) {
 #ifdef TARGET_LPC1768
 
 void setMasterArmData(char *message, unsigned short yaw, unsigned short shoulder,
-                                    unsigned short elbow, unsigned short wrist) {
+                                    unsigned short elbow, unsigned short wrist, bool stow) {
     message[0] = reinterpret_cast<const char&>(Header_Master);  //identify this message as master and not glfw
     serialize<unsigned short>(message + Index_MasterYaw, yaw);
     serialize<unsigned short>(message + Index_MasterShoulder, shoulder);
     serialize<unsigned short>(message + Index_MasterElbow, elbow);
     serialize<unsigned short>(message + Index_MasterWrist, wrist);
+    message[Index_Stow] = stow ? 1 : 0;
 }
 
 

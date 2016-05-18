@@ -24,19 +24,20 @@ namespace GimbalMessage  {
     const char Header = 4;
     /* The size a gimbal message should be
      */
-    const int RequiredSize = 5;
+    const int RequiredSize = 6;
     /* These list the indicies of values in a gimbal message
      */
     const int Index_Yaw = 1;
     const int Index_Pitch = 2;
-    const int Index_Home = 3;
-    const int Index_Accelerate = 4;
+    const int Index_LookHome = 3;
+    const int Index_LookLeft = 4;
+    const int Index_LookRight = 5;
 
 #ifdef QT_CORE_LIB
 
     /* Fills a gimbal message with SDL gamepad data
      */
-    void setGamepadData(char *message, short XAxis, short YAxis, bool accelerateButton, bool homeButton);
+    void setGamepadData(char *message, short XAxis, short YAxis, bool xButton, bool yButton, bool bButton);
 
 #endif
 
@@ -54,12 +55,16 @@ namespace GimbalMessage  {
         return axisByteToAxisFloat(message[Index_Yaw]);
     }
 
-    inline bool getHome(const char *message) {
-        return message[Index_Home] == 1;
+    inline bool getLookHome(const char *message) {
+        return message[Index_LookHome] == 1;
     }
 
-    inline bool getAccelerate(const char *message) {
-        return message[Index_Accelerate] == 1;
+    inline bool getLookLeft(const char *message) {
+        return message[Index_LookLeft] == 1;
+    }
+
+    inline bool getLookRight(const char *message) {
+        return message[Index_LookRight] == 1;
     }
 
 }
