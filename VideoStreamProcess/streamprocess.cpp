@@ -146,8 +146,6 @@ void StreamProcess::onBusMessage(const QGst::MessagePtr & message) {
     case QGst::MessageError:
         errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
         qCritical() << "Bus error: " << errorMessage.constData();
-        _ipcSocket->write(errorMessage.constData(), errorMessage.length());
-        _ipcSocket->flush();
         QCoreApplication::exit(STREAMPROCESS_ERR_GSTREAMER_ERROR);
         break;
     default:

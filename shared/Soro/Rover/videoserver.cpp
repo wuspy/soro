@@ -173,17 +173,7 @@ void VideoServer::beginStream(SocketAddress address) {
 void VideoServer::ipcServerClientAvailable() {
     if (!_ipcSocket) {
         _ipcSocket = _ipcServer->nextPendingConnection();
-        connect(_ipcSocket, SIGNAL(readyRead()),
-                this, SLOT(ipcSocketReadyRead()));
         LOG_I("Streaming process is connected to its parent through TCP");
-    }
-}
-
-void VideoServer::ipcSocketReadyRead() {
-    LOG_I("ipcSocketReadyRead()");
-    if (_ipcSocket->canReadLine()) {
-        QByteArray errorMessage = _ipcSocket->readLine(256);
-        emit error(this, QString(errorMessage));
     }
 }
 
@@ -232,6 +222,7 @@ void VideoServer::childStateChanged(QProcess::ProcessState state) {
             break;
         case STREAMPROCESS_ERR_GSTREAMER_ERROR:
             LOG_E("The streaming processes exited due to a gstreamer error");
+            emit error(this, "Streaming process exited due to a gstreamer error");
             break;
         case STREAMPROCESS_ERR_INVALID_ARGUMENT:
         case STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS:

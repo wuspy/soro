@@ -73,7 +73,6 @@ private slots:
     void beginStream(SocketAddress address);
 
     void ipcServerClientAvailable();
-    void ipcSocketReadyRead();
 
 signals:
     void stateChanged(VideoServer *server, VideoServer::State state);

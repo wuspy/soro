@@ -237,7 +237,17 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         StreamFormat format;
         stream >> camera;
         stream >> format;
-        _videoServers->activate(camera, format);
+        if (camera >= _config.MainComputerCameraCount) {
+            // this is the second odroid's camera
+            QByteArray byteArray2;
+            QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
+            stream2 << camera - _config.MainComputerCameraCount;
+            stream2 << format;
+            _secondaryComputerChannel->sendMessage(byteArray2);
+        }
+        else {
+            _videoServers->activate(camera, format);
+        }
     }
         break;
     case SharedMessage_RequestDeactivateCamera:
