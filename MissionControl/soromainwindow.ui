@@ -591,33 +591,7 @@ margin-right: 10px;</string>
           <set>Qt::AlignCenter</set>
          </property>
         </widget>
-        <zorder>comm_mainStatusLabel</zorder>
-        <zorder>comm_detailStatusLabel</zorder>
-        <zorder>comm_mainStatusGraphicLabel</zorder>
-        <zorder>mainTabWidget</zorder>
        </widget>
-       <zorder>comm_controlStateLabel</zorder>
-       <zorder>comm_bitrateLabel</zorder>
-       <zorder>comm_sharedStateLabel</zorder>
-       <zorder>comm_controlStateGraphicLabel</zorder>
-       <zorder>comm_sharedStateGraphicLabel</zorder>
-       <zorder>hid_inputDeviceGraphicLabel</zorder>
-       <zorder>hid_inputDeviceLabel</zorder>
-       <zorder>line_2</zorder>
-       <zorder>comm_mccStateLabel</zorder>
-       <zorder>comm_mccStateGraphicLabel</zorder>
-       <zorder>line_3</zorder>
-       <zorder>sys_armSubsystemLabel</zorder>
-       <zorder>sys_armSubsystemGraphicLabel</zorder>
-       <zorder>sys_driveGimbalSubsystemLabel</zorder>
-       <zorder>sys_secondaryComputerLabel</zorder>
-       <zorder>sys_secondaryComputerGraphicLabel</zorder>
-       <zorder>video_camerasStreamingGraphicLabel</zorder>
-       <zorder>video_camerasDisabledGraphicLabel</zorder>
-       <zorder>audio_statusGraphicLabel</zorder>
-       <zorder>sys_driveGimbalSubsystemGraphicLabel</zorder>
-       <zorder>comm_statusContainer</zorder>
-       <zorder>mainTabWidget</zorder>
       </widget>
      </item>
      <item>
@@ -631,7 +605,7 @@ margin-right: 10px;</string>
         <enum>QTabWidget::North</enum>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>4</number>
        </property>
        <widget class="QWidget" name="notificationTab">
         <attribute name="title">
@@ -1435,6 +1409,34 @@ background-color: #b71c1c;</string>
          </property>
          <property name="text">
           <string>Reverse</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="applyMasterArmUpdateButton">
+         <property name="geometry">
+          <rect>
+           <x>470</x>
+           <y>10</y>
+           <width>61</width>
+           <height>191</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Roboto</family>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">border-radius: 5px;
+color: white;
+background-color: #b71c1c;</string>
+         </property>
+         <property name="text">
+          <string>APPLY</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
          </property>
         </widget>
        </widget>

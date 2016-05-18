@@ -69,14 +69,22 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         _driveChannel->open();
         _gimbalChannel->open();
         _sharedChannel->open();
+        _secondaryComputerChannel->open();
 
         // create the udp broadcast socket that will listen for the secondary computer
         _secondaryComputerBroadcastSocket = new QUdpSocket(this);
+
+        // observers for network channel connectivity changes
+        connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+                this, SLOT(sharedChannelStateChanged(Channel*,Channel::State)));
+        connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+                this, SLOT(secondaryComputerStateChanged(Channel*,Channel::State)));
 
         connect(_secondaryComputerBroadcastSocket, SIGNAL(readyRead()),
                 this, SLOT(secondaryComputerBroadcastSocketReadyRead()));
         connect(_secondaryComputerBroadcastSocket, SIGNAL(error(QAbstractSocket::SocketError)),
                 this, SLOT(secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError)));
+
 
         beginSecondaryComputerListening();
 
@@ -103,12 +111,6 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
                 this, SLOT(gimbalChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
         connect(_sharedChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
                  this, SLOT(sharedChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
-
-        // observers for network channel connectivity changes
-        connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                this, SLOT(sharedChannelStateChanged(Channel*,Channel::State)));
-        connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                this, SLOT(secondaryComputerStateChanged(Channel*,Channel::State)));
 
         LOG_I("*****************Initializing GPS system*******************");
 
@@ -257,10 +259,10 @@ void RoverProcess::secondaryComputerBroadcastSocketReadyRead() {
     SocketAddress peer;
     while (_secondaryComputerBroadcastSocket->hasPendingDatagrams()) {
         int len = _secondaryComputerBroadcastSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
-        if (strncmp(CHANNEL_NAME_SECONDARY_COMPUTER, buffer, len) == 0) {
+        if (strncmp(SECONDARY_COMPUTER_BROADCAST_STRING, buffer, len) == 0) {
             // secondary computer is broadcasting, respond
             LOG_I("Getting broadcast from secondary computer");
-            _secondaryComputerBroadcastSocket->writeDatagram(CHANNEL_NAME_SECONDARY_COMPUTER, strlen(CHANNEL_NAME_SECONDARY_COMPUTER) + 1, peer.host, peer.port);
+            _secondaryComputerBroadcastSocket->writeDatagram(MASTER_COMPUTER_BROADCAST_STRING, strlen(MASTER_COMPUTER_BROADCAST_STRING) + 1, peer.host, peer.port);
         }
     }
 }
