@@ -69,7 +69,7 @@ void Rover2Process::timerEvent(QTimerEvent *e) {
     else if ((e->timerId() == _broadcastTimerId) && _masterComputerBroadcastSocket) {
         // broadcast to the master computer
         LOG_I("Sending broadcast on subnet");
-        _masterComputerBroadcastSocket->writeDatagram(CHANNEL_NAME_SECONDARY_COMPUTER, strlen(CHANNEL_NAME_SECONDARY_COMPUTER) + 1,
+        _masterComputerBroadcastSocket->writeDatagram(SECONDARY_COMPUTER_BROADCAST_STRING, strlen(SECONDARY_COMPUTER_BROADCAST_STRING) + 1,
                                                       QHostAddress::Broadcast, _config.SecondaryComputerPort);
     }
 }
@@ -89,7 +89,7 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
     SocketAddress peer;
     while (_masterComputerBroadcastSocket->hasPendingDatagrams()) {
         int len = _masterComputerBroadcastSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
-        if ((strncmp(CHANNEL_NAME_SECONDARY_COMPUTER, buffer, len) == 0) && (peer.host != _masterComputerBroadcastSocket->localAddress())) {
+        if ((strncmp(MASTER_COMPUTER_BROADCAST_STRING, buffer, len) == 0)) {
             // master computer has responded
             LOG_I("Got response from master computer on broadcast socket");
 
