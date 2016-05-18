@@ -40,6 +40,8 @@ MissionControlProcess::MissionControlProcess(QString name, bool masterSubnetNode
             this, SLOT(cycleVideosCounterClockwise()));
     connect(ui, SIGNAL(cameraFormatChanged(int,StreamFormat)),
             this, SLOT(cameraFormatSelected(int,StreamFormat)));
+    connect(ui, SIGNAL(cameraNameEdited(int,QString)),
+            this, SLOT(cameraNameEdited(int,QString)));
 
     QTimer::singleShot(1, this, SLOT(init()));
 }
@@ -424,8 +426,6 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
     }
         break;
     case SharedMessage_RoverStatusUpdate: {
-        handleRoverSharedChannelStateChanged(Channel::ConnectedState);
-
         bool armNormal, driveCameraNormal, secondComputerNormal;
 
         stream >> armNormal;
