@@ -55,6 +55,17 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     connect(ui->media_camera5ControlWidget, SIGNAL(optionSelected(MediaControlWidget::Option)),
             this, SLOT(camera5ControlOptionChanged(MediaControlWidget::Option)));
 
+    connect(ui->media_camera1ControlWidget, SIGNAL(userEditedName(QString)),
+            this, SLOT(camera1NameEdited(QString)));
+    connect(ui->media_camera2ControlWidget, SIGNAL(userEditedName(QString)),
+            this, SLOT(camera2NameEdited(QString)));
+    connect(ui->media_camera3ControlWidget, SIGNAL(userEditedName(QString)),
+            this, SLOT(camera3NameEdited(QString)));
+    connect(ui->media_camera4ControlWidget, SIGNAL(userEditedName(QString)),
+            this, SLOT(camera4NameEdited(QString)));
+    connect(ui->media_camera5ControlWidget, SIGNAL(userEditedName(QString)),
+            this, SLOT(camera5NameEdited(QString)));
+
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
     addWidgetShadow(ui->videoContainer, 10, 0);
@@ -295,6 +306,26 @@ void SoroMainWindow::camera5ControlOptionChanged(MediaControlWidget::Option opti
     cameraControlOptionChanged(4, option);
 }
 
+void SoroMainWindow::camera1NameEdited(QString newName) {
+    emit cameraNameEdited(0, newName);
+}
+
+void SoroMainWindow::camera2NameEdited(QString newName) {
+    emit cameraNameEdited(1, newName);
+}
+
+void SoroMainWindow::camera3NameEdited(QString newName) {
+    emit cameraNameEdited(2, newName);
+}
+
+void SoroMainWindow::camera4NameEdited(QString newName) {
+    emit cameraNameEdited(3, newName);
+}
+
+void SoroMainWindow::camera5NameEdited(QString newName) {
+    emit cameraNameEdited(4, newName);
+}
+
 void SoroMainWindow::cameraControlOptionChanged(int camera, MediaControlWidget::Option option) {
     switch (option) {
     case MediaControlWidget::DisabledOption:
@@ -317,8 +348,29 @@ void SoroMainWindow::cameraControlOptionChanged(int camera, MediaControlWidget::
     }
 }
 
-void SoroMainWindow::onRoverCameraUpdate(QList<RoverCameraState> cameraStates) {
+void SoroMainWindow::setCameraName(int camera, QString name) {
+    MediaControlWidget *widget;
+    switch (camera) {
+    case 0:
+        widget = ui->media_camera1ControlWidget;
+        break;
+    case 1:
+        widget = ui->media_camera2ControlWidget;
+        break;
+    case 2:
+        widget = ui->media_camera3ControlWidget;
+        break;
+    case 3:
+        widget = ui->media_camera4ControlWidget;
+        break;
+    case 4:
+        widget = ui->media_camera5ControlWidget;
+        break;
+    default:
+        return;
+    }
 
+    widget->setName(name);
 }
 
 void SoroMainWindow::onNotification(NotificationType type, QString sender, QString message) {

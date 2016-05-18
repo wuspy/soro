@@ -105,6 +105,8 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         // observers for network channel connectivity changes
         connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
                 this, SLOT(sharedChannelStateChanged(Channel*,Channel::State)));
+        connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+                this, SLOT(secondaryComputerStateChanged(Channel*,Channel::State)));
 
         LOG_I("*****************Initializing GPS system*******************");
 
@@ -148,7 +150,10 @@ void RoverProcess::secondaryComputerBroadcastSocketError(QAbstractSocket::Socket
     QTimer::singleShot(500, this, SLOT(beginSecondaryComputerListening()));
 }
 
-// observers for video servers
+void RoverProcess::secondaryComputerStateChanged(Channel *channel, Channel::State state) {
+    Q_UNUSED(channel); Q_UNUSED(state);
+    sendSystemStatusMessage();
+}
 
 void RoverProcess::sharedChannelStateChanged(Channel *channel, Channel::State state) {
     Q_UNUSED(channel);
@@ -236,6 +241,10 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         stream >> camera;
         _videoServers->deactivate(camera);
         break;
+    case SharedMessage_RequestToggleArmMbedPower:
+        break;
+    case SharedMessage_RequestToggleDriveCameraMbedPower:
+        break;
     default:
         break;
     }
@@ -252,6 +261,19 @@ void RoverProcess::secondaryComputerBroadcastSocketReadyRead() {
             _secondaryComputerBroadcastSocket->writeDatagram(CHANNEL_NAME_SECONDARY_COMPUTER, strlen(CHANNEL_NAME_SECONDARY_COMPUTER) + 1, peer.host, peer.port);
         }
     }
+}
+
+void RoverProcess::videoServerError(int cameraId, QString message) {
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_RoverVideoServerError;
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << (qint32)cameraId;
+    stream << message;
+
+    _sharedChannel->sendMessage(byteArray);
 }
 
 RoverProcess::~RoverProcess() {

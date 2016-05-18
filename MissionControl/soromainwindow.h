@@ -41,6 +41,7 @@ public:
     CameraWidget* getBottomCameraWidget();
     CameraWidget* getFullscreenCameraWidget();
 
+
 private:
     Ui::SoroMainWindow *ui;
     CameraWindow *_videoWindow;
@@ -66,6 +67,7 @@ signals:
     void cycleVideosClockwise();
     void cycleVideosCounterclockwise();
     void cameraFormatChanged(int camera, const StreamFormat& format);
+    void cameraNameEdited(int camera, QString name);
 
 public slots:
     void onFatalError(QString description);
@@ -81,13 +83,13 @@ public slots:
     void onArmSubsystemStateChanged(RoverSubsystemState state);
     void onDriveCameraSubsystemStateChanged(RoverSubsystemState state);
     void onSecondaryComputerStateChanged(RoverSubsystemState state);
-    void onRoverCameraUpdate(QList<RoverCameraState> cameraStates);
     void arm_onMasterArmStateChanged(MbedChannel::State state);
     void onNotification(NotificationType type, QString sender, QString message);
     void onRoleChanged(Role role);
     void onNameChanged(QString name);
     void onMasterChanged(bool isMaster);
     void onCameraFormatChanged(int camera, const StreamFormat& format);
+    void setCameraName(int camera, QString name);
 
 private slots:
     void updateStatusBar();
@@ -99,6 +101,11 @@ private slots:
     void camera4ControlOptionChanged(MediaControlWidget::Option option);
     void camera5ControlOptionChanged(MediaControlWidget::Option option);
     void cameraControlOptionChanged(int camera, MediaControlWidget::Option option);
+    void camera1NameEdited(QString newName);
+    void camera2NameEdited(QString newName);
+    void camera3NameEdited(QString newName);
+    void camera4NameEdited(QString newName);
+    void camera5NameEdited(QString newName);
 
 protected:
     void keyPressEvent(QKeyEvent *e);

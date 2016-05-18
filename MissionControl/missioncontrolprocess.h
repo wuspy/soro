@@ -62,6 +62,7 @@ private:
     Logger *_log = NULL;
 
     bool _roverSharedChannelConnected = false;
+    bool _ignoreGamepadVideoButtons = false;
 
     // Used to connect to other mission control computers on the same subnet
     QUdpSocket *_broadcastSocket = NULL;
@@ -97,6 +98,7 @@ private:
     QList<VideoClient*> _videoClients; // camera ID is by index
     QList<StreamFormat> _streamFormats; // camera ID is by index
     QMap<int, CameraWidget*> _assignedCameraWidgets; // camera ID is by key
+    QList<QString> _cameraNames; // camera ID is by index
     QList<CameraWidget*> _freeCameraWidgets;
 
     // Master arm stuff
@@ -112,10 +114,10 @@ private:
     void initSDL();
     void quitSDL();
     void handleSharedChannelMessage(const char *message, Channel::MessageSize size);
-    void handleBitrateUpdate(int bpsRoverDown, int bpsRoverUp);
     void broadcastSharedMessage(const char *message, int size, bool includeRover, Channel *exclude = 0);
     void handleCameraStateChange(int cameraID, VideoClient::State state, StreamFormat encoding, QString errorString);
-    void handleRoverSubsystemUpdate();
+    void handleRoverSharedChannelStateChanged(Channel::State state);
+    void handleCameraNameChanged(int camera, QString newName);
     void playStreamOnWidget(int cameraID, CameraWidget *widget, StreamFormat format);
     void endStreamOnWidget(CameraWidget *widget, QString reason);
 
@@ -136,7 +138,7 @@ private slots:
     void cycleVideosClockwise();
     void cycleVideosCounterClockwise();
     void cameraFormatSelected(int camera, const StreamFormat& format);
-
+    void cameraNameEdited(int camera, QString newName);
     void sendWelcomePackets();
 
 protected:

@@ -57,7 +57,6 @@ private:
 
     int _initTimerId = TIMER_INACTIVE;
 
-
 private slots:
     void armChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void driveChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
@@ -69,9 +68,12 @@ private slots:
 
     void secondaryComputerBroadcastSocketReadyRead();
     void secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError err);
+    void secondaryComputerStateChanged(Channel *channel, Channel::State state);
     void beginSecondaryComputerListening();
 
     void sendSystemStatusMessage();
+
+    void videoServerError(int cameraId, QString message);
 
 protected:
     void timerEvent(QTimerEvent *e);

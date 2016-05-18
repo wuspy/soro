@@ -32,7 +32,6 @@
 enum SharedMessageType {
     SharedMessage_RoverSharedChannelStateChanged = 1,
     SharedMessage_RoverStatusUpdate,
-    SharedMessage_RoverDisconnected,
     SharedMessage_RoverGpsUpdate,
     SharedMessage_MissionControlConnected,
     SharedMessage_MissionControlDisconnected,
@@ -41,7 +40,10 @@ enum SharedMessageType {
     SharedMessage_RoverVideoServerError,
     SharedMessage_MissionControlChat,
     SharedMessage_CameraChanged,
-    SharedMessage_BitrateUpdate
+    SharedMessage_BitrateUpdate,
+    SharedMessage_CameraNameChanged,
+    SharedMessage_RequestToggleArmMbedPower,
+    SharedMessage_RequestToggleDriveCameraMbedPower
 };
 
 enum RoverSubsystemState {
