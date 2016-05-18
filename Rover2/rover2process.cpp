@@ -52,6 +52,9 @@ void Rover2Process::timerEvent(QTimerEvent *e) {
         LOG_I("*************Initializing core networking*****************");
 
         _masterComputerBroadcastSocket = new QUdpSocket(this);
+        connect(_masterComputerBroadcastSocket, SIGNAL(readyRead()),
+                this, SLOT(masterComputerBroadcastSocketReadyRead()));
+
         beginBroadcast();
 
         LOG_I("-------------------------------------------------------");
@@ -73,7 +76,7 @@ void Rover2Process::timerEvent(QTimerEvent *e) {
 
 void Rover2Process::beginBroadcast() {
     LOG_I("Beginning UDP broadcast on port " + QString::number(_config.SecondaryComputerPort));
-    if (_masterComputerBroadcastSocket && (_masterComputerBroadcastSocket->state() != QAbstractSocket::UnconnectedState)) {
+    if (_masterComputerBroadcastSocket) {
         _masterComputerBroadcastSocket->abort();
         _masterComputerBroadcastSocket->bind(QHostAddress::Any, _config.SecondaryComputerPort);
     }
@@ -101,6 +104,8 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
 
                 connect(_masterComputerChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
                         this, SLOT(masterChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
+                connect(_masterComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+                        this, SLOT(masterChannelStateChanged(Channel*,Channel::State)));
 
                 _masterComputerChannel->open();
             }
