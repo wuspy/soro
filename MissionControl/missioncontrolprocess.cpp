@@ -581,7 +581,7 @@ void MissionControlProcess::slave_masterSharedChannelStateChanged(Channel *chann
             // our information
             START_TIMER(_broadcastSharedChannelInfoTimerId, 500);
         }
-        handleRoverSharedChannelStateChanged(Channel::ConnectedState);
+        handleRoverSharedChannelStateChanged(Channel::ConnectingState);
         break;
     case Channel::ErrorState:
         ui->onFatalError("The shared channel experienced a fatal error");
