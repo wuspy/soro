@@ -79,6 +79,7 @@ void Rover2Process::beginBroadcast() {
     if (_masterComputerBroadcastSocket) {
         _masterComputerBroadcastSocket->abort();
         _masterComputerBroadcastSocket->bind(QHostAddress::Any, _config.SecondaryComputerPort);
+        _masterComputerBroadcastSocket->open(QIODevice::ReadWrite);
     }
     START_TIMER(_broadcastTimerId, 1000);
 }
@@ -88,7 +89,7 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
     SocketAddress peer;
     while (_masterComputerBroadcastSocket->hasPendingDatagrams()) {
         int len = _masterComputerBroadcastSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
-        if (strncmp(CHANNEL_NAME_SECONDARY_COMPUTER, buffer, len) == 0) {
+        if ((strncmp(CHANNEL_NAME_SECONDARY_COMPUTER, buffer, len) == 0) && (peer.host != _masterComputerBroadcastSocket->localAddress())) {
             // master computer has responded
             LOG_I("Got response from master computer on broadcast socket");
 

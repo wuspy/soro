@@ -78,6 +78,8 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         connect(_secondaryComputerBroadcastSocket, SIGNAL(error(QAbstractSocket::SocketError)),
                 this, SLOT(secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError)));
 
+        beginSecondaryComputerListening();
+
         LOG_I("All network channels initialized successfully");
 
         LOG_I("*****************Initializing MBED systems*******************");
@@ -138,7 +140,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 }
 
 void RoverProcess::beginSecondaryComputerListening() {
-    if (_secondaryComputerBroadcastSocket && (_secondaryComputerBroadcastSocket->state() != QAbstractSocket::UnconnectedState)) {
+    if (_secondaryComputerBroadcastSocket) {
         _secondaryComputerBroadcastSocket->abort();
     }
     _secondaryComputerBroadcastSocket->bind(QHostAddress::Any, _config.SecondaryComputerPort);
