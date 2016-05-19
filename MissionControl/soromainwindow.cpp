@@ -97,6 +97,14 @@ void SoroMainWindow::updateStatusBar() {
     }
 }
 
+/*void SoroMainWindow::onKillArmClicked() {
+    _messageBoxHolder = new QMessageBox(QMessageBox::Critical, "Confirm action",
+                "Press OK to confirm you want to kill the arm system.",
+                QMessageBox::Ok | QMessageBox::Cancel, this);
+
+
+}*/
+
 void SoroMainWindow::updateConnectionStateInformation() {
 
     // update control channel state UI

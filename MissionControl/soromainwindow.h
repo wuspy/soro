@@ -61,6 +61,8 @@ private:
     int _lastDroppedPacketPercent = 0;
     int _lastRtt = 0;
 
+    QMessageBox *messageBoxHolder;
+
 signals:
     void settingsClicked();
     void chatMessageEntered(QString message);
@@ -110,6 +112,8 @@ private slots:
     void camera3NameEdited(QString newName);
     void camera4NameEdited(QString newName);
     void camera5NameEdited(QString newName);
+    //void onKillArmClicked();
+    //void onKillDriveGimbalClicked();
 
 protected:
     void keyPressEvent(QKeyEvent *e);

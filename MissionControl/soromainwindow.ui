@@ -894,9 +894,9 @@ margin-right: 10px;</string>
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>70</y>
+           <y>40</y>
            <width>171</width>
-           <height>26</height>
+           <height>31</height>
           </rect>
          </property>
          <property name="font">
@@ -924,7 +924,7 @@ background-color: #b71c1c;</string>
            <x>10</x>
            <y>5</y>
            <width>171</width>
-           <height>61</height>
+           <height>31</height>
           </rect>
          </property>
          <property name="font">
@@ -952,7 +952,7 @@ background-color: #1B5E20;</string>
            <x>200</x>
            <y>5</y>
            <width>171</width>
-           <height>61</height>
+           <height>31</height>
           </rect>
          </property>
          <property name="font">
@@ -978,9 +978,9 @@ background-color: #1B5E20;</string>
          <property name="geometry">
           <rect>
            <x>200</x>
-           <y>70</y>
+           <y>40</y>
            <width>171</width>
-           <height>26</height>
+           <height>31</height>
           </rect>
          </property>
          <property name="font">
