@@ -163,8 +163,7 @@ void MbedChannel::reset() {
     mbed_reset();
 }
 
-//Old method that read the actual IP from the file as well
-/*void MbedChannel::loadConfig() {
+void MbedChannel::loadConfig() {
     LocalFileSystem local("local");
     FILE *configFile = fopen("/local/server.txt", "r");
     if (configFile != NULL) {
@@ -185,23 +184,6 @@ void MbedChannel::reset() {
     }
     //an error occurred
     panic();
-}*/
-
-int MbedChannel::loadPort() {
-    LocalFileSystem local("local");
-    FILE *configFile = fopen("/local/server.txt", "r");
-    if (configFile != NULL) {
-        char line[12];
-        fgets(&line[0], 12, configFile);
-        fclose(configFile);
-        int port = (int)atoi(line);
-        if ((port > 0) | (port <= 65535)) {
-            return port;
-        }
-    }
-    //an error occurred
-    panic();
-    return 0; //never actually reached
 }
 
 void MbedChannel::initConnection() {
@@ -215,20 +197,14 @@ void MbedChannel::initConnection() {
         wait(0.5);
         reset();
     }
-    //connect to ethernet and get address through DHCP
+    // connect to ethernet and get address through DHCP
     led2 = 1;
     if (_eth->connect() != 0) {
         wait(0.5);
         reset();
     }
     led3 = 1;
-    //now that we have an IP, set the broadcast address
-    //and read from the config file what port we should broadcast on
-    char *ip = _eth->getIPAddress();
-    char *broadcast = new char[strlen(ip) + 3]; //make sure we have enough room to add 2 more digits
-    strcpy(broadcast, ip);
-    strcpy(strrchr(broadcast, '.'), ".255");
-    _server.set_address(broadcast, loadPort());
+    loadConfig();
     setTimeout(IDLE_CONNECTION_TIMEOUT / 3);
     //initialize socket
     while (_socket->init() != 0) {
@@ -237,41 +213,56 @@ void MbedChannel::initConnection() {
         wait(0.2);
         led3 = 1;
     }
-    if (_socket->set_broadcasting(true) != 0) {
-        wait(0.2);
-        led3 = 0;
-        wait(0.2);
-        led3 = 1;
-        reset();
-    }
-    //find server through LAN broadcast
-    led4 = 1;
-    Endpoint peer;
-    int packet_len = strlen(BROADCAST_PACKET) + 1;
-    char buffer[packet_len];
-    while (1) {
-        //send broadcast handshake
-        sendMessage(BROADCAST_PACKET, packet_len, _MBED_MSG_TYPE_BROADCAST);
-        while (1) {
-            //recieve any responses
-            int len = _socket->receiveFrom(peer, &buffer[0], packet_len);
-            if (len <= 0) break;
-            if ((len == packet_len) && (strcmp(&buffer[0], BROADCAST_PACKET) == 0))  {
-                //received a response from the server
-                _server = peer;
-                led1 = 0;
-                led2 = 0;
-                led3 = 0;
-                led4 = 0;
-                _socket->set_broadcasting(false);
-                return;
-            }
+    /*if (strcmp(_server.get_address(), "0.0.0.0") == 0) {
+        // find server through UDP broadcast
+        char *ip = _eth->getIPAddress();
+        char *broadcast = new char[strlen(ip) + 3]; //make sure we have enough room to add 2 more digits
+        strcpy(broadcast, ip);
+        strcpy(strrchr(broadcast, '.'), ".255");
+        _server.set_address(broadcast, _server.get_port());
+        if (_socket->set_broadcasting(true) != 0) {
+            wait(0.2);
+            led3 = 0;
+            wait(0.2);
+            led3 = 1;
+            reset();
         }
-        wait(0.2);
-        led4 = 0;
-        wait(0.2);
         led4 = 1;
+        //find server through LAN broadcast
+        Endpoint peer;
+        int packet_len = strlen(BROADCAST_PACKET) + 1;
+        char buffer[packet_len];
+        while (1) {
+            //send broadcast handshake
+            sendMessage(BROADCAST_PACKET, packet_len, _MBED_MSG_TYPE_BROADCAST);
+            while (1) {
+                //recieve any responses
+                int len = _socket->receiveFrom(peer, &buffer[0], packet_len);
+                if (len <= 0) break;
+                if ((len == packet_len) && (strcmp(&buffer[0], BROADCAST_PACKET) == 0))  {
+                    //received a response from the server
+                    _server = peer;
+                    led1 = 0;
+                    led2 = 0;
+                    led3 = 0;
+                    led4 = 0;
+                    _socket->set_broadcasting(false);
+                    return;
+                }
+            }
+            wait(0.2);
+            led4 = 0;
+            wait(0.2);
+            led4 = 1;
+        }
     }
+    else {*/
+        // provided a static server address
+        led1 = 0;
+        led2 = 0;
+        led3 = 0;
+        led4 = 0;
+    //}
 }
 
 MbedChannel::MbedChannel(unsigned char mbedId) {

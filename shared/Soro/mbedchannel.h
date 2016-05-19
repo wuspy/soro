@@ -103,9 +103,9 @@ private:
     /* Called in the event of an invalid or missing config file
      */
     void panic();
-    /* Loads the config file containg the communication port
+    /* Loads the config file containg the server address
      */
-    int loadPort();
+    int loadConfig();
     /* Resets the mbed after calling the reset listener (if it is set)
      */
     void reset();
