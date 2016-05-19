@@ -68,6 +68,10 @@ signals:
     void cycleVideosCounterclockwise();
     void cameraFormatChanged(int camera, const StreamFormat& format);
     void cameraNameEdited(int camera, QString name);
+    void startArmRequested();
+    void killArmRequested();
+    void startDriveGimbalRequested();
+    void killDriveGimbalRequested();
 
 public slots:
     void onFatalError(QString description);

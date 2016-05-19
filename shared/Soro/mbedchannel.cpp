@@ -75,7 +75,6 @@ void MbedChannel::resetConnection() {
     _peer.host = QHostAddress::Null;
     _peer.port = 0;
     _socket->abort();
-    if (_socket->isOpen()) _socket->close();
     if (_socket->bind(_host.host, _host.port)) {
         LOG_I("Listening on UDP port " + _host.toString());
         _socket->open(QIODevice::ReadWrite);
@@ -238,7 +237,7 @@ void MbedChannel::initConnection() {
         wait(0.2);
         led3 = 1;
     }
-    if (_socket.set_broadcasting(true) != 0) {
+    if (_socket->set_broadcasting(true) != 0) {
         wait(0.2);
         led3 = 0;
         wait(0.2);
@@ -264,7 +263,7 @@ void MbedChannel::initConnection() {
                 led2 = 0;
                 led3 = 0;
                 led4 = 0;
-                _socket.set_broadcasting(false);
+                _socket->set_broadcasting(false);
                 return;
             }
         }

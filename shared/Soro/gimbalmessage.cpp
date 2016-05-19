@@ -9,13 +9,15 @@ namespace GimbalMessage {
 
 #ifdef QT_CORE_LIB
 
-void setGamepadData(char *message, short XAxis, short YAxis,  bool xButton, bool yButton, bool bButton) {
-    message[0] = Header;
-    message[Index_Yaw] = axisShortToAxisByte(XAxis);
-    message[Index_Pitch] = axisShortToAxisByte(YAxis);
-    message[Index_LookHome] = yButton ? 1 : 0;
-    message[Index_LookLeft] = xButton ? 1 : 0;
-    message[Index_LookRight] = bButton ? 1 : 0;
+void setGamepadData(char *message, short yawAxis, short pitchAxis, bool leftButton, bool homeButton, bool rightButton, bool armButton) {
+    MbedMessageType messageType = MbedMessage_Gimbal;
+    message[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);
+    message[Index_Yaw] = axisShortToAxisByte(yawAxis);
+    message[Index_Pitch] = axisShortToAxisByte(pitchAxis);
+    message[Index_LookHome] = homeButton ? 1 : 0;
+    message[Index_LookLeft] = leftButton ? 1 : 0;
+    message[Index_LookRight] = rightButton ? 1 : 0;
+    message[Index_LookArm] = armButton ? 1 : 0;
 }
 
 #endif

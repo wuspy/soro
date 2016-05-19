@@ -20,13 +20,6 @@ namespace Soro {
  */
 namespace ArmMessage  {
 
-    /* These identify the type of message (arm gamepad or arm master) and are the first char.
-     * They should also be unique between drive/arm/gimbal messages
-     * to avoid unfortunate mistakes
-     */
-    const unsigned char Header_Gamepad = 1;
-    const unsigned char Header_Master = 2;
-
     /* The size each type of arm message should be
      */
     const int RequiredSize_Gamepad = 8;

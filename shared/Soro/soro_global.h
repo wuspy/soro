@@ -45,8 +45,8 @@ enum SharedMessageType {
     SharedMessage_CameraChanged,
     SharedMessage_BitrateUpdate,
     SharedMessage_CameraNameChanged,
-    SharedMessage_RequestToggleArmMbedPower,
-    SharedMessage_RequestToggleDriveCameraMbedPower
+    SharedMessage_RequestKillArmMbed,
+    SharedMessage_RequestStartArmMbed
 };
 
 enum RoverSubsystemState {
@@ -94,6 +94,17 @@ inline void addWidgetShadow(QWidget *target, int radius, int offset) {
 #define MBED_ID_ARM 2
 #define MBED_ID_DRIVE_CAMERA 3
 
+enum MbedMessageType {
+    MbedMessage_ArmMaster = 1,
+    MbedMessage_ArmGamepad,
+    MbedMessage_Drive,
+    MbedMessage_Gimbal,
+    MbedMessage_KillArmPower,
+    MbedMessage_StartArmPower,
+    MbedMessage_KillDriveGimbalPower,
+    MbedMessage_StartDriveGimbalPower
+};
+
 namespace Soro {
 
 template <typename T>
@@ -122,6 +133,8 @@ inline char axisShortToAxisByte(short val) {
     val /= (SHRT_MAX / 100);
     val += 100;
     unsigned char uc = (unsigned char)val;
+#define MESSAGE_KILL_ARM "Soro_KillArm"
+#define MESSAGE_START_ARM "Soro_StartArm"
     return reinterpret_cast<char&>(uc);
 }
 
@@ -134,6 +147,8 @@ inline char axisFloatToAxisByte(float val) {
     val = (val + 1) * 100;
     unsigned char uc = (unsigned char)val;
     return reinterpret_cast<char&>(uc);
+#define MESSAGE_KILL_ARM "Soro_KillArm"
+#define MESSAGE_START_ARM "Soro_StartArm"
 }
 
 /* Converts an int ranging from -100 to 100 into an unsigned char,

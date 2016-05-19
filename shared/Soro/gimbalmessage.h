@@ -17,14 +17,9 @@ namespace Soro {
  */
 namespace GimbalMessage  {
 
-    /* This identifies a char array as a gimbal message.
-     * It should be unique between drive/arm/gimbal messages
-     * to avoid unfortunate mistakes
-     */
-    const char Header = 4;
     /* The size a gimbal message should be
      */
-    const int RequiredSize = 6;
+    const int RequiredSize = 7;
     /* These list the indicies of values in a gimbal message
      */
     const int Index_Yaw = 1;
@@ -32,12 +27,13 @@ namespace GimbalMessage  {
     const int Index_LookHome = 3;
     const int Index_LookLeft = 4;
     const int Index_LookRight = 5;
+    const int Index_LookArm = 6;
 
 #ifdef QT_CORE_LIB
 
     /* Fills a gimbal message with SDL gamepad data
      */
-    void setGamepadData(char *message, short XAxis, short YAxis, bool xButton, bool yButton, bool bButton);
+    void setGamepadData(char *message, short yawAxis, short pitchAxis, bool leftButton, bool homeButton, bool rightButton, bool armButton);
 
 #endif
 
@@ -67,6 +63,9 @@ namespace GimbalMessage  {
         return message[Index_LookRight] == 1;
     }
 
+    inline bool getLookArm(const char *message) {
+        return message[Index_LookArm] == 1;
+    }
 }
 }
 

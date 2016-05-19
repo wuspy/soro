@@ -193,9 +193,12 @@ void RoverProcess::sendSystemStatusMessage() {
 
 void RoverProcess::armChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
     Q_UNUSED(channel);
-    switch (message[0]) {
-    case ArmMessage::Header_Gamepad:
-    case ArmMessage::Header_Master:
+    char header = message[0];
+    MbedMessageType messageType;
+    reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
+    switch (messageType) {
+    case MbedMessage_ArmGamepad:
+    case MbedMessage_ArmMaster:
         _armControllerMbed->sendMessage(message, (int)size);
         break;
     default:
@@ -206,21 +209,31 @@ void RoverProcess::armChannelMessageReceived(Channel * channel, const char *mess
 
 void RoverProcess::driveChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
     Q_UNUSED(channel);
-    if (message[0] == DriveMessage::Header) {
+    char header = message[0];
+    MbedMessageType messageType;
+    reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
+    switch (messageType) {
+    case MbedMessage_Drive:
         _driveGimbalControllerMbed->sendMessage(message, (int)size);
-    }
-    else {
+        break;
+    default:
         LOG_E("Received invalid message from mission control on drive control channel");
+        break;
     }
 }
 
 void RoverProcess::gimbalChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
     Q_UNUSED(channel);
-    if (message[0] == GimbalMessage::Header) {
+    char header = message[0];
+    MbedMessageType messageType;
+    reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
+    switch (messageType) {
+    case MbedMessage_Gimbal:
         _driveGimbalControllerMbed->sendMessage(message, (int)size);
-    }
-    else {
+        break;
+    default:
         LOG_E("Received invalid message from mission control on gimbal control channel");
+        break;
     }
 }
 
@@ -255,9 +268,23 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         stream >> camera;
         _videoServers->deactivate(camera);
         break;
-    case SharedMessage_RequestToggleArmMbedPower:
+    case SharedMessage_RequestKillArmMbed: {
+        char message[1];
+        MbedMessageType messageType = MbedMessage_KillArmPower;
+        message[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);
+        for (int i = 0; i < 5; i++) {
+            _driveGimbalControllerMbed->sendMessage(&message[0], 1);
+        }
+    }
         break;
-    case SharedMessage_RequestToggleDriveCameraMbedPower:
+    case SharedMessage_RequestStartArmMbed: {
+        char message[1];
+        MbedMessageType messageType = MbedMessage_StartArmPower;
+        message[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);
+        for (int i = 0; i < 5; i++) {
+            _driveGimbalControllerMbed->sendMessage(&message[0], 1);
+        }
+    }
         break;
     default:
         break;

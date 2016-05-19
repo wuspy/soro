@@ -11,7 +11,8 @@ namespace ArmMessage {
 
 void setGamepadData(char *armMessage, short leftXAxis, short leftYAxis, short rightYAxis,
                            short leftTriggerAxis, short rightTriggerAxis, bool rightButton, bool leftButton, bool yButton) {
-    armMessage[0] = reinterpret_cast<const char&>(Header_Gamepad);  //identify this message as gamepad and not master arm
+    MbedMessageType messageType = MbedMessage_ArmGamepad;
+    armMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as gamepad and not master arm
     armMessage[Index_GamepadX] = axisShortToAxisByte(leftXAxis);
     armMessage[Index_GamepadY] = axisShortToAxisByte(rightYAxis);
     armMessage[Index_GamepadYaw] = axisShortToAxisByte(leftYAxis);
@@ -56,7 +57,8 @@ void translateMasterArmValues(char *message, const MasterArmConfig& ranges) {
 
 void setMasterArmData(char *message, unsigned short yaw, unsigned short shoulder,
                                     unsigned short elbow, unsigned short wrist, bool stow) {
-    message[0] = reinterpret_cast<const char&>(Header_Master);  //identify this message as master and not glfw
+    MbedMessageType messageType = MbedMessage_ArmMaster;
+    armMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as master and not gamepad
     serialize<unsigned short>(message + Index_MasterYaw, yaw);
     serialize<unsigned short>(message + Index_MasterShoulder, shoulder);
     serialize<unsigned short>(message + Index_MasterElbow, elbow);

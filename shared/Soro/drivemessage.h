@@ -19,11 +19,6 @@ namespace Soro {
  */
 namespace DriveMessage  {
 
-    /* This identifies a char array as a drive message.
-     * It should be unique between drive/arm/gimbal messages
-     * to avoid unfortunate mistakes
-     */
-    const unsigned char Header = 3;
     /* The size a drive message should be
      */
     const int RequiredSize = 5;

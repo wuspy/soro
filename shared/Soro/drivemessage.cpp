@@ -16,7 +16,8 @@ void clampMiddleSkidSteerFactor(float& factor) {
 
 void setGamepadData_DualStick(char *driveMessage, short leftYAxis, short rightYAxis,
                            float middleSkidSteerFactor) {
-    driveMessage[0] = reinterpret_cast<const char&>(Header);
+    MbedMessageType messageType = MbedMessage_Drive;
+    driveMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);
     clampMiddleSkidSteerFactor(middleSkidSteerFactor);
 
     float midScale = middleSkidSteerFactor * ((float)qAbs(leftYAxis - rightYAxis)/SHRT_MAX);
@@ -28,7 +29,8 @@ void setGamepadData_DualStick(char *driveMessage, short leftYAxis, short rightYA
 
 void setGamepadData_SingleStick(char *driveMessage, short XAxis, short YAxis,
                            float middleSkidSteerFactor) {
-    driveMessage[0] = reinterpret_cast<const char&>(Header);
+    MbedMessageType messageType = MbedMessage_Drive;
+    driveMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);
     clampMiddleSkidSteerFactor(middleSkidSteerFactor);
 
     float y = axisShortToAxisFloat(YAxis);

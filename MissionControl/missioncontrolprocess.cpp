@@ -42,6 +42,10 @@ MissionControlProcess::MissionControlProcess(QString name, bool masterSubnetNode
             this, SLOT(cameraFormatSelected(int,StreamFormat)));
     connect(ui, SIGNAL(cameraNameEdited(int,QString)),
             this, SLOT(cameraNameEdited(int,QString)));
+    connect(ui, SIGNAL(startArmRequested()),
+            this, SLOT(startArmRequested()));
+    connect(ui, SIGNAL(killArmRequested()),
+            this, SLOT(killArmRequested()));
 
     QTimer::singleShot(1, this, SLOT(init()));
 }
@@ -771,10 +775,11 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 //send the rover a gimbal gamepad packet
                 GimbalMessage::setGamepadData(_buffer,
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
-                                              SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTY),
+                                              SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_X),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y),
-                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_B));
+                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_B),
+                                              SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_A));
                 _controlChannel->sendMessage(_buffer, GimbalMessage::RequiredSize);
                 break;
             default:
@@ -889,6 +894,26 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
 
         broadcastSharedMessage(message.constData(), message.size(), false);
     }
+}
+
+void MissionControlProcess::startArmRequested() {
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_RequestStartArmMbed;
+
+    stream << reinterpret_cast<quint32&>(messageType);
+
+    _sharedChannel->sendMessage(byteArray);
+}
+
+void MissionControlProcess::killArmRequested() {
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_RequestKillArmMbed;
+
+    stream << reinterpret_cast<quint32&>(messageType);
+
+    _sharedChannel->sendMessage(byteArray);
 }
 
 void MissionControlProcess::cycleVideosClockwise() {
