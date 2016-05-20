@@ -145,15 +145,25 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
         StreamFormat format;
         stream >> camera;
         stream >> format;
-        LOG_I("Camera " + QString::number(camera) + " is about to be activated");
-        _videoServers->activate(camera, format);
+        if ((camera >= _config.MainComputerCameraCount) && (camera < _config.MainComputerCameraCount + _config.SecondaryComputerCameraCount)) {
+            LOG_I("Camera " + QString::number(camera) + " is about to be activated");
+            _videoServers->activate(camera, format);
+        }
+        else {
+            LOG_E("Received camera ID out of range (" + QString::number(camera));
+        }
     }
         break;
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
-        LOG_I("Camera " + QString::number(camera) + " is about to be deactivated");
-        _videoServers->deactivate(camera);
+        if ((camera >= _config.MainComputerCameraCount) && (camera < _config.MainComputerCameraCount + _config.SecondaryComputerCameraCount)) {
+            LOG_I("Camera " + QString::number(camera) + " is about to be deactivated");
+            _videoServers->deactivate(camera);
+        }
+        else {
+            LOG_E("Received camera ID out of range (" + QString::number(camera));
+        }
         break;
     default:
         break;

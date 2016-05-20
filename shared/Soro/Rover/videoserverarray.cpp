@@ -66,7 +66,7 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
 }
 
 void VideoServerArray::activate(int index, StreamFormat format) {
-    if (index < _servers.size()) {
+    if (_servers.contains(index)) {
         LOG_I("Camera " + QString::number(index) + " is about to be streamed");
         if (_flycapCameras.contains(index)) {
             _servers.value(index)->start(_flycapCameras[index], format);
@@ -78,7 +78,7 @@ void VideoServerArray::activate(int index, StreamFormat format) {
 }
 
 void VideoServerArray::deactivate(int index) {
-    if (index < _servers.size()) {
+    if (_servers.constains(index)) {
         LOG_I("Camera " + QString::number(index) + " is about to be stopped");
         _servers.value(index)->stop();
     }
