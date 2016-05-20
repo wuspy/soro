@@ -61,7 +61,7 @@ private:
     int _lastDroppedPacketPercent = 0;
     int _lastRtt = 0;
 
-    QMessageBox *messageBoxHolder;
+    QMessageBox *_messageBoxHolder = NULL;
 
 signals:
     void settingsClicked();
@@ -70,10 +70,6 @@ signals:
     void cycleVideosCounterclockwise();
     void cameraFormatChanged(int camera, const StreamFormat& format);
     void cameraNameEdited(int camera, QString name);
-    void startArmRequested();
-    void killArmRequested();
-    void startDriveGimbalRequested();
-    void killDriveGimbalRequested();
 
 public slots:
     void onFatalError(QString description);
@@ -112,8 +108,6 @@ private slots:
     void camera3NameEdited(QString newName);
     void camera4NameEdited(QString newName);
     void camera5NameEdited(QString newName);
-    //void onKillArmClicked();
-    //void onKillDriveGimbalClicked();
 
 protected:
     void keyPressEvent(QKeyEvent *e);

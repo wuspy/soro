@@ -140,8 +140,6 @@ private slots:
     void cameraFormatSelected(int camera, const StreamFormat& format);
     void cameraNameEdited(int camera, QString newName);
     void sendWelcomePackets();
-    void killArmRequested();
-    void startArmRequested();
 
 protected:
     void timerEvent(QTimerEvent *e);

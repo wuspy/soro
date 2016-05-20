@@ -279,24 +279,6 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
             _videoServers->deactivate(camera);
         }
         break;
-    case SharedMessage_RequestKillArmMbed: {
-        char message[1];
-        MbedMessageType messageType = MbedMessage_KillArmPower;
-        message[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);
-        for (int i = 0; i < 5; i++) {
-            _driveGimbalControllerMbed->sendMessage(&message[0], 1);
-        }
-    }
-        break;
-    case SharedMessage_RequestStartArmMbed: {
-        char message[1];
-        MbedMessageType messageType = MbedMessage_StartArmPower;
-        message[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);
-        for (int i = 0; i < 5; i++) {
-            _driveGimbalControllerMbed->sendMessage(&message[0], 1);
-        }
-    }
-        break;
     default:
         break;
     }

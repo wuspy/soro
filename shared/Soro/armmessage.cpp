@@ -10,7 +10,7 @@ namespace ArmMessage {
 #ifdef QT_CORE_LIB
 
 void setGamepadData(char *armMessage, short leftXAxis, short leftYAxis, short rightYAxis,
-                           short leftTriggerAxis, short rightTriggerAxis, bool rightButton, bool leftButton, bool yButton) {
+                           short leftTriggerAxis, short rightTriggerAxis, bool rightButton, bool leftButton, bool yButton, bool xButton) {
     MbedMessageType messageType = MbedMessage_ArmGamepad;
     armMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as gamepad and not master arm
     armMessage[Index_GamepadX] = axisShortToAxisByte(leftXAxis);
@@ -20,6 +20,7 @@ void setGamepadData(char *armMessage, short leftXAxis, short leftYAxis, short ri
     armMessage[Index_OpenBucket] = rightButton ? 1 : 0;
     armMessage[Index_CloseBucket] = leftButton ? 1 : 0;
     armMessage[Index_Stow] = yButton ? 1 : 0;
+    armMessage[Index_Dump] = xButton ? 1 : 0;
 }
 
 void translateMasterArmValues(char *message, const MasterArmConfig& ranges) {
@@ -56,14 +57,23 @@ void translateMasterArmValues(char *message, const MasterArmConfig& ranges) {
 #ifdef TARGET_LPC1768
 
 void setMasterArmData(char *message, unsigned short yaw, unsigned short shoulder,
-                                    unsigned short elbow, unsigned short wrist, bool stow) {
+                                    unsigned short elbow, unsigned short wrist, bool bucket, bool stow, bool dump) {
     MbedMessageType messageType = MbedMessage_ArmMaster;
-    armMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as master and not gamepad
+    message[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as master and not gamepad
     serialize<unsigned short>(message + Index_MasterYaw, yaw);
     serialize<unsigned short>(message + Index_MasterShoulder, shoulder);
     serialize<unsigned short>(message + Index_MasterElbow, elbow);
     serialize<unsigned short>(message + Index_MasterWrist, wrist);
+    if (bucket) {
+        message[Index_OpenBucket] = 1;
+        message[Index_CloseBucket] = 0;
+    }
+    else {
+        message[Index_OpenBucket] = 0;
+        message[Index_CloseBucket] = 1
+    }
     message[Index_Stow] = stow ? 1 : 0;
+    message[Index_Dump] = dump ? 1 : 0;
 }
 
 

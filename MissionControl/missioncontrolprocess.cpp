@@ -42,10 +42,6 @@ MissionControlProcess::MissionControlProcess(QString name, bool masterSubnetNode
             this, SLOT(cameraFormatSelected(int,StreamFormat)));
     connect(ui, SIGNAL(cameraNameEdited(int,QString)),
             this, SLOT(cameraNameEdited(int,QString)));
-    connect(ui, SIGNAL(startArmRequested()),
-            this, SLOT(startArmRequested()));
-    connect(ui, SIGNAL(killArmRequested()),
-            this, SLOT(killArmRequested()));
 
     QTimer::singleShot(1, this, SLOT(init()));
 }
@@ -750,7 +746,8 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                                            SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT),
                                            SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER),
                                            SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER),
-                                           SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y));
+                                           SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y),
+                                           SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_X));
                 _controlChannel->sendMessage(_buffer, ArmMessage::RequiredSize_Gamepad);
                 break;
             case DriverRole:
@@ -775,7 +772,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 //send the rover a gimbal gamepad packet
                 GimbalMessage::setGamepadData(_buffer,
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
-                                              SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY),
+                                              -SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_X),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_B),
@@ -894,26 +891,6 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
 
         broadcastSharedMessage(message.constData(), message.size(), false);
     }
-}
-
-void MissionControlProcess::startArmRequested() {
-    QByteArray byteArray;
-    QDataStream stream(&byteArray, QIODevice::WriteOnly);
-    SharedMessageType messageType = SharedMessage_RequestStartArmMbed;
-
-    stream << reinterpret_cast<quint32&>(messageType);
-
-    _sharedChannel->sendMessage(byteArray);
-}
-
-void MissionControlProcess::killArmRequested() {
-    QByteArray byteArray;
-    QDataStream stream(&byteArray, QIODevice::WriteOnly);
-    SharedMessageType messageType = SharedMessage_RequestKillArmMbed;
-
-    stream << reinterpret_cast<quint32&>(messageType);
-
-    _sharedChannel->sendMessage(byteArray);
 }
 
 void MissionControlProcess::cycleVideosClockwise() {

@@ -605,7 +605,7 @@ margin-right: 10px;</string>
         <enum>QTabWidget::North</enum>
        </property>
        <property name="currentIndex">
-        <number>3</number>
+        <number>2</number>
        </property>
        <widget class="QWidget" name="notificationTab">
         <attribute name="title">
@@ -890,118 +890,6 @@ margin-right: 10px;</string>
         <attribute name="title">
          <string>Settings</string>
         </attribute>
-        <widget class="QPushButton" name="killArmButton">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>40</y>
-           <width>171</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">border-radius: 5px;
-color: white;
-background-color: #b71c1c;</string>
-         </property>
-         <property name="text">
-          <string>KILL ARM</string>
-         </property>
-         <property name="flat">
-          <bool>true</bool>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="startArmButton">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>5</y>
-           <width>171</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">border-radius: 5px;
-color: white;
-background-color: #1B5E20;</string>
-         </property>
-         <property name="text">
-          <string>START ARM</string>
-         </property>
-         <property name="flat">
-          <bool>true</bool>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="startDriveGimbalCamera">
-         <property name="geometry">
-          <rect>
-           <x>200</x>
-           <y>5</y>
-           <width>171</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">border-radius: 5px;
-color: white;
-background-color: #1B5E20;</string>
-         </property>
-         <property name="text">
-          <string>START DRIVE/GIMBAL</string>
-         </property>
-         <property name="flat">
-          <bool>true</bool>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="killDriveGimbalCamera">
-         <property name="geometry">
-          <rect>
-           <x>200</x>
-           <y>40</y>
-           <width>171</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">border-radius: 5px;
-color: white;
-background-color: #b71c1c;</string>
-         </property>
-         <property name="text">
-          <string>KILL DRIVE/GIMBAL</string>
-         </property>
-         <property name="flat">
-          <bool>true</bool>
-         </property>
-        </widget>
        </widget>
        <widget class="QWidget" name="masterArmTab">
         <attribute name="title">

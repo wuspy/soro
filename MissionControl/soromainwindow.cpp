@@ -66,15 +66,6 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     connect(ui->media_camera5ControlWidget, SIGNAL(userEditedName(QString)),
             this, SLOT(camera5NameEdited(QString)));
 
-    connect(ui->startArmButton, SIGNAL(clicked(bool)),
-            this, SIGNAL(startArmRequested()));
-    connect(ui->killArmButton, SIGNAL(clicked(bool)),
-            this, SIGNAL(killArmRequested()));
-    connect(ui->startDriveGimbalCamera, SIGNAL(clicked(bool)),
-            this, SIGNAL(startDriveGimbalRequested()));
-    connect(ui->killDriveGimbalCamera, SIGNAL(clicked(bool)),
-            this, SIGNAL(killDriveGimbalRequested()));
-
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
     addWidgetShadow(ui->videoContainer, 10, 0);
@@ -96,14 +87,6 @@ void SoroMainWindow::updateStatusBar() {
         break;
     }
 }
-
-/*void SoroMainWindow::onKillArmClicked() {
-    _messageBoxHolder = new QMessageBox(QMessageBox::Critical, "Confirm action",
-                "Press OK to confirm you want to kill the arm system.",
-                QMessageBox::Ok | QMessageBox::Cancel, this);
-
-
-}*/
 
 void SoroMainWindow::updateConnectionStateInformation() {
 

@@ -98,11 +98,7 @@ enum MbedMessageType {
     MbedMessage_ArmMaster = 1,
     MbedMessage_ArmGamepad,
     MbedMessage_Drive,
-    MbedMessage_Gimbal,
-    MbedMessage_KillArmPower,
-    MbedMessage_StartArmPower,
-    MbedMessage_KillDriveGimbalPower,
-    MbedMessage_StartDriveGimbalPower
+    MbedMessage_Gimbal
 };
 
 namespace Soro {

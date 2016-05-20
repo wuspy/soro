@@ -22,27 +22,28 @@ namespace ArmMessage  {
 
     /* The size each type of arm message should be
      */
-    const int RequiredSize_Gamepad = 8;
-    const int RequiredSize_Master = 11;
+    const int RequiredSize_Gamepad = 9;
+    const int RequiredSize_Master = 12;
     /* These list the indicies of values in an arm message
      */
     const int Index_CloseBucket = 1;
     const int Index_OpenBucket = 2;
     const int Index_Stow = 3;
-    const int Index_GamepadYaw = 4;
-    const int Index_GamepadX = 5;
-    const int Index_GamepadY = 6;
-    const int Index_GamepadWrist = 7;
-    const int Index_MasterYaw = 4;
-    const int Index_MasterShoulder = 6;
-    const int Index_MasterElbow = 8;
-    const int Index_MasterWrist = 10;
+    const int Index_Dump = 4;
+    const int Index_GamepadYaw = 5;
+    const int Index_GamepadX = 6;
+    const int Index_GamepadY = 7;
+    const int Index_GamepadWrist = 8;
+    const int Index_MasterYaw = 5;
+    const int Index_MasterShoulder = 7;
+    const int Index_MasterElbow = 9;
+    const int Index_MasterWrist = 11;
 
 #ifdef QT_CORE_LIB
     /* Fills an arm message with SDL gamepad data
      */
     void setGamepadData(char *armMessage, short leftXAxis, short leftYAxis, short rightYAxis,
-                               short leftTriggerAxis, short rightTriggerAxis, bool rightButton, bool leftButton, bool yButton);
+                               short leftTriggerAxis, short rightTriggerAxis, bool rightButton, bool leftButton, bool yButton, bool xButton);
 
     /* Translates a master arm message from potentiometer values to servo values that the slave arm can use.
      * Requires a MasterRanges mapping to do this.
@@ -54,7 +55,7 @@ namespace ArmMessage  {
     /* Fills an arm message with instructions based on readings from a master arm
      */
     void setMasterArmData(char *message, unsigned short yaw, unsigned short shoulder,
-                                        unsigned short elbow, unsigned short wrist, bool stow);
+                                        unsigned short elbow, unsigned short wrist, bool bucket, bool stow, bool dump);
 #endif
 
     /* Gets the X speed value in a gamepad arm message, and
@@ -132,6 +133,13 @@ namespace ArmMessage  {
      */
     inline bool getStow(const char *message) {
         return message[Index_Stow] == 1;
+    }
+
+    /* Gets the state of the stow command in an arm message.
+     * This applies to both gamepad and master arm messages.
+     */
+    inline bool getDump(const char *message) {
+        return message[Index_Dump] == 1;
     }
 }
 
