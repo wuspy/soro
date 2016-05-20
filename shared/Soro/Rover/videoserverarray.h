@@ -58,7 +58,7 @@ private:
 
     // These hold the video server objects which spawn child processes to
     // stream the data to mission control
-    QList<VideoServer*> _servers;
+    QMap<int, VideoServer*> _servers;
     // These hold the gst elements for the cameras that flycapture
     QMap<int, FlyCapture2::PGRGuid> _flycapCameras;
     // These hold the gst elements for the cameras that not flycapture

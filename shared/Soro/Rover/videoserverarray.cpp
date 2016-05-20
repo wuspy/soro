@@ -26,7 +26,7 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
         LOG_I("Found flycapture camera *-" + QString::number(guid.value[3]));
         // create associated video server
         VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
-        _servers.append(server);
+        _servers.insert(firstId, server);
         _flycapCameras.insert(firstId, guid);
         connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(serverStateChanged(VideoServer*, VideoServer::State)));
         connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(serverError(VideoServer*,QString)));
@@ -53,7 +53,7 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
         LOG_I("Found UVD/Webcam device at " + videoDevice);
         // create associated video server
         VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
-        _servers.append(server);
+        _servers.insert(firstId, server);
         _uvdCameras.insert(firstId, videoDevice);
         connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(serverStateChanged(VideoServer*, VideoServer::State)));
         connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(serverError(VideoServer*,QString)));
@@ -69,10 +69,10 @@ void VideoServerArray::activate(int index, StreamFormat format) {
     if (index < _servers.size()) {
         LOG_I("Camera " + QString::number(index) + " is about to be streamed");
         if (_flycapCameras.contains(index)) {
-            _servers[index]->start(_flycapCameras[index], format);
+            _servers.value(index)->start(_flycapCameras[index], format);
         }
         else {
-            _servers[index]->start(_uvdCameras[index], format);
+            _servers.value(index)->start(_uvdCameras[index], format);
         }
     }
 }
@@ -80,7 +80,7 @@ void VideoServerArray::activate(int index, StreamFormat format) {
 void VideoServerArray::deactivate(int index) {
     if (index < _servers.size()) {
         LOG_I("Camera " + QString::number(index) + " is about to be stopped");
-        _servers[index]->stop();
+        _servers.value(index)->stop();
     }
 }
 
@@ -99,11 +99,7 @@ void VideoServerArray::clear() {
 }
 
 void VideoServerArray::remove(int index) {
-    if (index < _servers.size()) {
-        _servers.at(index)->stop();
-        delete _servers.at(index);
-        _servers.removeAt(index);
-    }
+    _servers.remove(index);
 }
 
 void VideoServerArray::serverStateChanged(VideoServer *server, VideoServer::State state) {
