@@ -78,7 +78,7 @@ void VideoServerArray::activate(int index, StreamFormat format) {
 }
 
 void VideoServerArray::deactivate(int index) {
-    if (_servers.constains(index)) {
+    if (_servers.contains(index)) {
         LOG_I("Camera " + QString::number(index) + " is about to be stopped");
         _servers.value(index)->stop();
     }
