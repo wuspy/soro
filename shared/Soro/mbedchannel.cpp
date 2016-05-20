@@ -30,14 +30,16 @@ void MbedChannel::socketError(QAbstractSocket::SocketError err) {
 
 void MbedChannel::socketReadyRead() {
     qint64 length;
+    SocketAddress peer;
     while (_socket->hasPendingDatagrams()) {
-        length = _socket->readDatagram(&_buffer[0], 512, &_peer.host, &_peer.port);
+        length = _socket->readDatagram(&_buffer[0], 512, &peer.host, &peer.port);
         if ((length < 6) | (length == 512)) continue;
         if (_buffer[0] != reinterpret_cast<char&>(_mbedId)) {
             LOG_W("Recieved message from incorrect mbed ID "
                   + QString::number(reinterpret_cast<unsigned char&>(_buffer[0])));
             continue;
         }
+        _peer = peer;
         unsigned int sequence = deserialize<unsigned int>(_buffer + 2);
         if (_state == ConnectingState) {
             LOG_I("Connected to mbed client");

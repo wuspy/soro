@@ -255,7 +255,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
             stream2 << reinterpret_cast<quint32&>(messageType);
-            stream2 << camera - _config.MainComputerCameraCount;
+            stream2 << camera;
             stream2 << format;
             _secondaryComputerChannel->sendMessage(byteArray2);
         }
