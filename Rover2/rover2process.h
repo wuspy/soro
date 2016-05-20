@@ -32,7 +32,7 @@ private:
     Channel *_masterComputerChannel = NULL;
     QUdpSocket *_masterComputerBroadcastSocket = NULL;
 
-    VideoServerArray _videoServers;
+    VideoServerArray *_videoServers = NULL;
 
     SoroIniLoader _config;
 

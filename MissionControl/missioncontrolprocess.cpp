@@ -772,7 +772,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
                 //send the rover a gimbal gamepad packet
                 GimbalMessage::setGamepadData(_buffer,
                                               SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_LEFTX),
-                                              -SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY),
+                                              SDL_GameControllerGetAxis(_gameController, SDL_CONTROLLER_AXIS_RIGHTY),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_X),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_Y),
                                               SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_B),

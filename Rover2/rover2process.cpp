@@ -37,15 +37,16 @@ void Rover2Process::timerEvent(QTimerEvent *e) {
 
         LOG_I("*****************Initializing Video system*******************");
 
-        _videoServers.populate(_config.BlacklistedUvdCameras, _config.FirstVideoPort + _config.MainComputerCameraCount);
+        _videoServers = new VideoServerArray(_log, this);
+        _videoServers->populate(_config.BlacklistedUvdCameras, _config.FirstVideoPort + _config.MainComputerCameraCount);
 
-        if (_videoServers.cameraCount() > _config.SecondaryComputerCameraCount) {
+        if (_videoServers->cameraCount() > _config.SecondaryComputerCameraCount) {
             LOG_E("The configuration specifies less cameras than this, the last ones will be removed");
-            while (_videoServers.cameraCount() > _config.SecondaryComputerCameraCount) {
-                _videoServers.remove(_videoServers.cameraCount() - 1);
+            while (_videoServers->cameraCount() > _config.SecondaryComputerCameraCount) {
+                _videoServers->remove(_videoServers->cameraCount() - 1);
             }
         }
-        else if (_videoServers.cameraCount() < _config.SecondaryComputerCameraCount) {
+        else if (_videoServers->cameraCount() < _config.SecondaryComputerCameraCount) {
             LOG_E("The configuration specifies more cameras than this, check cable connections");
         }
 
@@ -143,14 +144,14 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
         stream >> camera;
         stream >> format;
         LOG_I("Camera " + QString::number(camera) + " is about to be activated");
-        _videoServers.activate(camera, format);
+        _videoServers->activate(camera, format);
     }
         break;
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
         LOG_I("Camera " + QString::number(camera) + " is about to be deactivated");
-        _videoServers.deactivate(camera);
+        _videoServers->deactivate(camera);
         break;
     default:
         break;

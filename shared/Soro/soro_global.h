@@ -5,6 +5,8 @@
 
 #ifdef QT_CORE_LIB ///////////////////////////////////////////////////////////////////////////////
 
+#include <qmath.h>
+
 //QObject timer macros to make shit easier
 #define TIMER_INACTIVE -1
 #define START_TIMER(X,Y) if (X == TIMER_INACTIVE) X = startTimer(Y)
@@ -31,6 +33,15 @@
 #define STREAMPROCESS_IPC_START 's'
 #define STREAMPROCESS_IPC_STREAMING 'v'
 #define STREAMPROCESS_IPC_EXIT 'e'
+
+#define GAMEPAD_DEADZONE 0.2
+
+inline qint16 filterGamepadDeadzone(qint16 raw, float percent) {
+    if (((raw > 0) && (raw < (SHRT_MAX * percent))) || ((raw < 0) && (raw > (SHRT_MIN * percent)))) {
+        return 0;
+    }
+    return raw;
+}
 
 enum SharedMessageType {
     SharedMessage_RoverSharedChannelStateChanged = 1,
@@ -94,14 +105,14 @@ inline void addWidgetShadow(QWidget *target, int radius, int offset) {
 #define MBED_ID_ARM 2
 #define MBED_ID_DRIVE_CAMERA 3
 
+namespace Soro {
+
 enum MbedMessageType {
     MbedMessage_ArmMaster = 1,
     MbedMessage_ArmGamepad,
     MbedMessage_Drive,
     MbedMessage_Gimbal
 };
-
-namespace Soro {
 
 template <typename T>
 inline void serialize(char *arr, T data) {

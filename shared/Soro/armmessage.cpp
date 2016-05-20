@@ -13,10 +13,10 @@ void setGamepadData(char *armMessage, short leftXAxis, short leftYAxis, short ri
                            short leftTriggerAxis, short rightTriggerAxis, bool rightButton, bool leftButton, bool yButton, bool xButton) {
     MbedMessageType messageType = MbedMessage_ArmGamepad;
     armMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as gamepad and not master arm
-    armMessage[Index_GamepadX] = axisShortToAxisByte(leftXAxis);
-    armMessage[Index_GamepadY] = axisShortToAxisByte(rightYAxis);
-    armMessage[Index_GamepadYaw] = axisShortToAxisByte(leftYAxis);
-    armMessage[Index_GamepadWrist] = axisShortToAxisByte(rightTriggerAxis - leftTriggerAxis);
+    armMessage[Index_GamepadX] = axisShortToAxisByte(filterGamepadDeadzone(leftXAxis, GAMEPAD_DEADZONE));
+    armMessage[Index_GamepadY] = axisShortToAxisByte(filterGamepadDeadzone(rightYAxis, GAMEPAD_DEADZONE));
+    armMessage[Index_GamepadYaw] = axisShortToAxisByte(filterGamepadDeadzone(leftYAxis, GAMEPAD_DEADZONE));
+    armMessage[Index_GamepadWrist] = axisShortToAxisByte(filterGamepadDeadzone(rightTriggerAxis - leftTriggerAxis, GAMEPAD_DEADZONE));
     armMessage[Index_OpenBucket] = rightButton ? 1 : 0;
     armMessage[Index_CloseBucket] = leftButton ? 1 : 0;
     armMessage[Index_Stow] = yButton ? 1 : 0;
@@ -65,12 +65,12 @@ void setMasterArmData(char *message, unsigned short yaw, unsigned short shoulder
     serialize<unsigned short>(message + Index_MasterElbow, elbow);
     serialize<unsigned short>(message + Index_MasterWrist, wrist);
     if (bucket) {
-        message[Index_OpenBucket] = 1;
-        message[Index_CloseBucket] = 0;
+        message[Index_OpenBucket] = 0;
+        message[Index_CloseBucket] = 1;
     }
     else {
-        message[Index_OpenBucket] = 0;
-        message[Index_CloseBucket] = 1
+        message[Index_OpenBucket] = 1;
+        message[Index_CloseBucket] = 0;
     }
     message[Index_Stow] = stow ? 1 : 0;
     message[Index_Dump] = dump ? 1 : 0;

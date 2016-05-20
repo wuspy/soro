@@ -21,10 +21,10 @@ void setGamepadData_DualStick(char *driveMessage, short leftYAxis, short rightYA
     clampMiddleSkidSteerFactor(middleSkidSteerFactor);
 
     float midScale = middleSkidSteerFactor * ((float)qAbs(leftYAxis - rightYAxis)/SHRT_MAX);
-    driveMessage[Index_LeftOuter] = axisShortToAxisByte(leftYAxis);
-    driveMessage[Index_RightOuter] = axisShortToAxisByte(rightYAxis);
-    driveMessage[Index_LeftMiddle] = axisShortToAxisByte(leftYAxis - (short)(midScale * leftYAxis));
-    driveMessage[Index_RightMiddle] = axisShortToAxisByte(rightYAxis - (short)(midScale * rightYAxis));
+    driveMessage[Index_LeftOuter] = axisShortToAxisByte(filterGamepadDeadzone(leftYAxis, GAMEPAD_DEADZONE));
+    driveMessage[Index_RightOuter] = axisShortToAxisByte(filterGamepadDeadzone(rightYAxis, GAMEPAD_DEADZONE));
+    driveMessage[Index_LeftMiddle] = axisShortToAxisByte(filterGamepadDeadzone(leftYAxis - (short)(midScale * leftYAxis), GAMEPAD_DEADZONE));
+    driveMessage[Index_RightMiddle] = axisShortToAxisByte(filterGamepadDeadzone(rightYAxis - (short)(midScale * rightYAxis), GAMEPAD_DEADZONE));
 }
 
 void setGamepadData_SingleStick(char *driveMessage, short XAxis, short YAxis,
@@ -75,10 +75,10 @@ void setGamepadData_SingleStick(char *driveMessage, short XAxis, short YAxis,
 
     float midScale = middleSkidSteerFactor * (qAbs(x)/1.0);
 
-    driveMessage[Index_LeftOuter] = axisFloatToAxisByte(left);
-    driveMessage[Index_RightOuter] = axisFloatToAxisByte(right);
-    driveMessage[Index_LeftMiddle] = axisFloatToAxisByte(left - (midScale * left));
-    driveMessage[Index_RightMiddle] = axisFloatToAxisByte(right - (midScale * right));
+    driveMessage[Index_LeftOuter] = axisFloatToAxisByte(filterGamepadDeadzone(left, 0.1));
+    driveMessage[Index_RightOuter] = axisFloatToAxisByte(filterGamepadDeadzone(right, 0.1));
+    driveMessage[Index_LeftMiddle] = axisFloatToAxisByte(filterGamepadDeadzone(left - (midScale * left), GAMEPAD_DEADZONE));
+    driveMessage[Index_RightMiddle] = axisFloatToAxisByte(filterGamepadDeadzone(right - (midScale * right), GAMEPAD_DEADZONE));
 }
 
 #endif
