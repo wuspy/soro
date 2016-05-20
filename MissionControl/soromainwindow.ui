@@ -28,7 +28,7 @@
    <widget class="QWidget" name="statusBarWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>140</x>
       <y>560</y>
       <width>811</width>
       <height>41</height>
@@ -109,7 +109,7 @@ margin-right: 10px;</string>
    <widget class="Soro::MissionControl::GoogleMapView" name="googleMapView" native="true">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>140</x>
       <y>290</y>
       <width>811</width>
       <height>271</height>
@@ -119,7 +119,7 @@ margin-right: 10px;</string>
    <widget class="QWidget" name="infoContainer" native="true">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>140</x>
       <y>0</y>
       <width>811</width>
       <height>291</height>
@@ -1391,7 +1391,7 @@ background-color: #b71c1c;</string>
    <widget class="QWidget" name="videoContainer" native="true">
     <property name="geometry">
      <rect>
-      <x>810</x>
+      <x>0</x>
       <y>0</y>
       <width>141</width>
       <height>601</height>
@@ -1417,7 +1417,9 @@ background-color: #b71c1c;</string>
       <widget class="Soro::MissionControl::CameraWidget" name="topVideoWidget" native="true"/>
      </item>
      <item>
-      <widget class="Soro::MissionControl::CameraWidget" name="bottomVideoWidget" native="true"/>
+      <widget class="Soro::MissionControl::CameraWidget" name="bottomVideoWidget" native="true">
+       <zorder>topVideoWidget</zorder>
+      </widget>
      </item>
     </layout>
    </widget>

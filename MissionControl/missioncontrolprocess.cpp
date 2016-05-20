@@ -76,6 +76,8 @@ void MissionControlProcess::init() {
         _masterArmChannel = new MbedChannel(SocketAddress(QHostAddress::Any, _config.MasterArmPort), MBED_ID_MASTER_ARM, _log);
         connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
                 this, SLOT(arm_masterArmMessageReceived(const char*,int)));
+        connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
+                this, SLOT(arm_masterArmStateChanged(MbedChannel::State)));
         _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.ArmChannelPort), CHANNEL_NAME_ARM,
                 Channel::UdpProtocol, QHostAddress::Any, _log);
         ui->arm_onMasterArmStateChanged(MbedChannel::ConnectingState);
@@ -981,6 +983,10 @@ void MissionControlProcess::quitSDL() {
         _gameController = NULL;
         _sdlInitialized = false;
     }
+}
+
+void MissionControlProcess::arm_masterArmStateChanged(MbedChannel::State state) {
+    ui->arm_onMasterArmStateChanged(state);
 }
 
 void MissionControlProcess::arm_masterArmMessageReceived(const char *message, int size) {

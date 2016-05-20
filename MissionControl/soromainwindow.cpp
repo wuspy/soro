@@ -74,16 +74,16 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
 void SoroMainWindow::updateStatusBar() {
     switch (_lastRole) {
     case ArmOperatorRole:
-        ui->statusLabel->setText(_lastName + " (Arm Operator)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
+        ui->statusLabel->setText("<html>" + _lastName + " <i>(Arm Operator)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
         break;
     case DriverRole:
-        ui->statusLabel->setText(_lastName + " (Driver)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
+        ui->statusLabel->setText("<html>" + _lastName + " <i>(Driver)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
         break;
     case CameraOperatorRole:
-        ui->statusLabel->setText(_lastName + " (Camera Operator)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
+        ui->statusLabel->setText("<html>" + _lastName + " <i>(Camera Operator)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
         break;
     case SpectatorRole:
-        ui->statusLabel->setText(_lastName + " (Spectator)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
+        ui->statusLabel->setText("<html>" + _lastName + " <i>(Spectator)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
         break;
     }
 }
@@ -556,13 +556,26 @@ CameraWidget* SoroMainWindow::getFullscreenCameraWidget() {
 
 void SoroMainWindow::resizeEvent(QResizeEvent* event) {
    QMainWindow::resizeEvent(event);
-   ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
+   // video on right
+   /*ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
+   ui->infoContainer->move(0, 0);
    ui->googleMapView->move(0, ui->infoContainer->height());
    ui->statusBarWidget->resize(width() / 2, 30);
    ui->statusBarWidget->move(0, height() - 30);
    ui->googleMapView->resize(width() / 2 + 2,
                              height() - ui->statusBarWidget->height() - ui->infoContainer->height() + 1);
    ui->videoContainer->move(width() / 2, 0);
+   ui->videoContainer->resize(width() / 2, height());*/
+
+   //video on left
+   ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
+   ui->infoContainer->move(width() / 2, 0);
+   ui->googleMapView->move(width() / 2, ui->infoContainer->height());
+   ui->statusBarWidget->resize(width() / 2, 30);
+   ui->statusBarWidget->move(width() / 2, height() - 30);
+   ui->googleMapView->resize(width() / 2 + 2,
+                             height() - ui->statusBarWidget->height() - ui->infoContainer->height() + 1);
+   ui->videoContainer->move(0, 0);
    ui->videoContainer->resize(width() / 2, height());
 }
 

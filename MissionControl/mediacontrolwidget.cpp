@@ -128,6 +128,9 @@ void MediaControlWidget::editButtonClicked() {
     ui->editNameButton->setVisible(false);
     ui->nameLineEdit->setVisible(true);
     ui->nameLineEdit->setText(getName());
+
+    ui->nameLineEdit->setFocus();
+    ui->nameLineEdit->selectAll();
 }
 
 QString MediaControlWidget::getName() {

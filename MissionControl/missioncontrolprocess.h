@@ -129,6 +129,7 @@ private slots:
     void master_roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void master_slaveSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void arm_masterArmMessageReceived(const char *message, int size);
+    void arm_masterArmStateChanged(MbedChannel::State state);
     void master_broadcastSocketReadyRead();
     void controlChannelStateChanged(Channel *channel, Channel::State state);
     void videoClientStateChanged(VideoClient *client, VideoClient::State state);
