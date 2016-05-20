@@ -50,7 +50,6 @@ private:
     Logger *_log;
     QUdpSocket *_socket;
     SocketAddress _host;
-    SocketAddress _peer;
     State _state;
     char _buffer[512];
     bool _active;
@@ -103,9 +102,11 @@ private:
     /* Called in the event of an invalid or missing config file
      */
     void panic();
-    /* Loads the config file containg the server address
+    /* Loads the config file containg the server port, and sets the server
+     * address as broadcast on that port. Ethernet must be initialized and
+     * connected before this is called
      */
-    int loadConfig();
+    bool setServerAddress();
     /* Resets the mbed after calling the reset listener (if it is set)
      */
     void reset();

@@ -34,12 +34,15 @@ void MbedChannel::socketReadyRead() {
     while (_socket->hasPendingDatagrams()) {
         length = _socket->readDatagram(&_buffer[0], 512, &peer.host, &peer.port);
         if ((length < 6) | (length == 512)) continue;
-        if (_buffer[0] != reinterpret_cast<char&>(_mbedId)) {
-            LOG_W("Recieved message from incorrect mbed ID "
-                  + QString::number(reinterpret_cast<unsigned char&>(_buffer[0])));
+        if (_buffer[0] == '\0') {
             continue;
         }
-        _peer = peer;
+        if ((_buffer[0] != _mbedId) || (peer.port != _host.port)) {
+            LOG_W("Received invalid message (got Mbed ID) "
+                  + QString::number(reinterpret_cast<unsigned char&>(_buffer[0]))
+                  + " on port " + QString::number(peer.port));
+            continue;
+        }
         unsigned int sequence = deserialize<unsigned int>(_buffer + 2);
         if (_state == ConnectingState) {
             LOG_I("Connected to mbed client");
@@ -58,7 +61,7 @@ void MbedChannel::socketReadyRead() {
             LOG_I("Mbed:" + QString(_buffer + 6));
             break;
         case _MBED_MSG_TYPE_BROADCAST:
-            _socket->writeDatagram(BROADCAST_PACKET, strlen(BROADCAST_PACKET) + 1, _peer.host, _peer.port);
+            _socket->writeDatagram(BROADCAST_PACKET, strlen(BROADCAST_PACKET) + 1, QHostAddress::Broadcast, _host.port);
             break;
         case _MBED_MSG_TYPE_HEARTBEAT:
             break;
@@ -74,8 +77,6 @@ void MbedChannel::resetConnection() {
     setChannelState(ConnectingState);
     _lastReceiveId = 0;
     _active = false;
-    _peer.host = QHostAddress::Null;
-    _peer.port = 0;
     _socket->abort();
     if (_socket->bind(_host.host, _host.port)) {
         LOG_I("Listening on UDP port " + _host.toString());
@@ -109,9 +110,10 @@ MbedChannel::~MbedChannel() {
 void MbedChannel::sendMessage(const char *message, int length) {
     if ((_state == ConnectedState) && (length < 500)) {
         _buffer[0] = '\0';
-        serialize<unsigned int>(_buffer + 1, _nextSendId++);
-        memcpy(_buffer + 5, message, length);
-        _socket->writeDatagram(_buffer, length + 5, _peer.host, _peer.port);
+        _buffer[1] = _mbedId;
+        serialize<unsigned int>(_buffer + 2, _nextSendId++);
+        memcpy(_buffer + 6, message, length);
+        _socket->writeDatagram(_buffer, length + 6, QHostAddress::Broadcast, _host.port);
     }
 }
 
@@ -165,7 +167,7 @@ void MbedChannel::reset() {
     mbed_reset();
 }
 
-void MbedChannel::loadConfig() {
+/*void MbedChannel::loadConfig() {
     LocalFileSystem local("local");
     FILE *configFile = fopen("/local/server.txt", "r");
     if (configFile != NULL) {
@@ -186,6 +188,27 @@ void MbedChannel::loadConfig() {
     }
     //an error occurred
     panic();
+}*/
+
+bool MbedChannel::setServerAddress() {
+    LocalFileSystem local("local");
+    FILE *configFile = fopen("/local/server.txt", "r");
+    if (configFile != NULL) {
+        char *line = new char[64];
+        fgets(line, 64, configFile);
+        fclose(configFile);
+        unsigned int port = (unsigned int)atoi(line);
+        if ((port == 0) | (port > 65535)) {
+            return false;
+        }
+        char *ip = _eth->getIPAddress();
+        char *broadcast = new char[strlen(ip) + 3]; //make sure we have enough room to add 2 more digits
+        strcpy(broadcast, ip);
+        strcpy(strrchr(broadcast, '.'), ".255");
+        // set address as broadcast address and port from file
+        _server.set_address(broadcast, port);
+    }
+    return true;
 }
 
 void MbedChannel::initConnection() {
@@ -206,65 +229,46 @@ void MbedChannel::initConnection() {
         reset();
     }
     led3 = 1;
-    loadConfig();
+
+    if (!setServerAddress()) {
+        panic();
+    }
     setTimeout(IDLE_CONNECTION_TIMEOUT / 3);
     //initialize socket
-    while (_socket->init() != 0) {
+    while (_socket->bind(_server.get_port()) != 0) {
         wait(0.2);
         led3 = 0;
         wait(0.2);
         led3 = 1;
     }
-    /*if (strcmp(_server.get_address(), "0.0.0.0") == 0) {
-        // find server through UDP broadcast
-        char *ip = _eth->getIPAddress();
-        char *broadcast = new char[strlen(ip) + 3]; //make sure we have enough room to add 2 more digits
-        strcpy(broadcast, ip);
-        strcpy(strrchr(broadcast, '.'), ".255");
-        _server.set_address(broadcast, _server.get_port());
-        if (_socket->set_broadcasting(true) != 0) {
-            wait(0.2);
-            led3 = 0;
-            wait(0.2);
-            led3 = 1;
-            reset();
-        }
-        led4 = 1;
-        //find server through LAN broadcast
-        Endpoint peer;
-        int packet_len = strlen(BROADCAST_PACKET) + 1;
-        char buffer[packet_len];
-        while (1) {
-            //send broadcast handshake
-            sendMessage(BROADCAST_PACKET, packet_len, _MBED_MSG_TYPE_BROADCAST);
-            while (1) {
-                //recieve any responses
-                int len = _socket->receiveFrom(peer, &buffer[0], packet_len);
-                if (len <= 0) break;
-                if ((len == packet_len) && (strcmp(&buffer[0], BROADCAST_PACKET) == 0))  {
-                    //received a response from the server
-                    _server = peer;
-                    led1 = 0;
-                    led2 = 0;
-                    led3 = 0;
-                    led4 = 0;
-                    _socket->set_broadcasting(false);
-                    return;
-                }
-            }
-            wait(0.2);
-            led4 = 0;
-            wait(0.2);
-            led4 = 1;
-        }
+    if (_socket->set_broadcasting(true) != 0) {
+        panic();
     }
-    else {*/
-        // provided a static server address
-        led1 = 0;
-        led2 = 0;
-        led3 = 0;
+
+    Endpoint peer;
+    int packet_len = strlen(BROADCAST_PACKET) + 1;
+    char buffer[packet_len];
+    while (1) {
+        //send broadcast handshake
+        sendMessage(BROADCAST_PACKET, packet_len, _MBED_MSG_TYPE_BROADCAST);
+        while (1) {
+            //recieve any responses
+            int len = _socket->receiveFrom(peer, &buffer[0], packet_len);
+            if (len <= 0) break;
+            if ((len == packet_len) && (strcmp(&buffer[0], BROADCAST_PACKET) == 0))  {
+                //received a response from the server
+                led1 = 0;
+                led2 = 0;
+                led3 = 0;
+                led4 = 0;
+                return;
+            }
+        }
+        wait(0.2);
         led4 = 0;
-    //}
+        wait(0.2);
+        led4 = 1;
+    }
 }
 
 MbedChannel::MbedChannel(unsigned char mbedId) {
@@ -317,11 +321,17 @@ int MbedChannel::read(char *outMessage, int maxLength) {
         sendMessage(NULL, 0, _MBED_MSG_TYPE_HEARTBEAT);
     }
     int len = _socket->receiveFrom(peer, _buffer, maxLength);
-    unsigned int sequence = deserialize<unsigned int>(_buffer + 1);
-    if ((len < 5) || (sequence < _lastReceiveId) || (peer.get_port() != _server.get_port())) return -1;
+    unsigned int sequence = deserialize<unsigned int>(_buffer + 2);
+    if ((len < 6)
+            || (sequence < _lastReceiveId)
+            || (peer.get_port() != _server.get_port())
+            || (_buffer[0] != '\0')
+            || (_buffer[1] != _mbedId)) {
+        return -1;
+    }
     _lastReceiveId = sequence;
-    memcpy(outMessage, _buffer + 5, len - 5);
-    return len - 5;
+    memcpy(outMessage, _buffer + 6, len - 6);
+    return len - 6;
 }
 #endif
 
