@@ -119,7 +119,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         LOG_I("*****************Initializing Video system*******************");
 
         _videoServers = new VideoServerArray(_log, this);
-        _videoServers->populate(_config.BlacklistedUvdCameras, _config.FirstVideoPort);
+        _videoServers->populate(_config.BlacklistedUvdCameras, _config.FirstVideoPort, 0);
 
         if (_videoServers->cameraCount() > _config.MainComputerCameraCount) {
             LOG_E("The configuration specifies less cameras than this, the last ones will be removed");

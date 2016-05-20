@@ -35,7 +35,7 @@ public:
     /* Scans the system for cameras and returns
      * the number of cameras found
      */
-    int populate(const QStringList& uvdBlacklist, quint16 firstNetworkPort);
+    int populate(const QStringList& uvdBlacklist, quint16 firstNetworkPort, int firstId);
 
     /* Gets the number of cameras connected
      */

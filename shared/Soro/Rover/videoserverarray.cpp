@@ -14,7 +14,7 @@ VideoServerArray::~VideoServerArray() {
     clear();
 }
 
-int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNetworkPort) {
+int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNetworkPort, int firstId) {
     clear();
 
     LOG_I("Searching for flycapture cameras");
@@ -22,17 +22,16 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
     int flycapCount = flycapEnum.loadCameras();
     LOG_I("Number of flycap cameras detected: " + QString::number(flycapCount));
 
-    int cameraId = 0;
     foreach (FlyCapture2::PGRGuid guid, flycapEnum.listByGuid()) {
         LOG_I("Found flycapture camera *-" + QString::number(guid.value[3]));
         // create associated video server
-        VideoServer *server = new VideoServer(cameraId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
+        VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
         _servers.append(server);
-        _flycapCameras.insert(cameraId, guid);
+        _flycapCameras.insert(firstId, guid);
         connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(serverStateChanged(VideoServer*, VideoServer::State)));
         connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(serverError(VideoServer*,QString)));
 
-        cameraId++;
+        firstId++;
         firstNetworkPort++;
     }
 
@@ -53,17 +52,17 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
         if (blacklisted) continue;
         LOG_I("Found UVD/Webcam device at " + videoDevice);
         // create associated video server
-        VideoServer *server = new VideoServer(cameraId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
+        VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
         _servers.append(server);
-        _uvdCameras.insert(cameraId, videoDevice);
+        _uvdCameras.insert(firstId, videoDevice);
         connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(serverStateChanged(VideoServer*, VideoServer::State)));
         connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(serverError(VideoServer*,QString)));
 
-        cameraId++;
+        firstId++;
         firstNetworkPort++;
     }
 
-    return cameraId - 1;
+    return firstId - 1;
 }
 
 void VideoServerArray::activate(int index, StreamFormat format) {
