@@ -731,10 +731,10 @@ void MissionControlProcess::sendWelcomePackets() {
         VideoClient::State state = _audioClient->getState();
         AudioFormat format = _audioClient->getAudioFormat();
 
-        stream3 << reinterpret_cast<quint32&>(messageType);
-        stream3 << reinterpret_cast<quint32&>(state);
-        stream3 << reinterpret_cast<quint32&>(format);
-        stream3 << _audioClient->getErrorString();
+        stream4 << reinterpret_cast<quint32&>(messageType);
+        stream4 << reinterpret_cast<quint32&>(state);
+        stream4 << reinterpret_cast<quint32&>(format);
+        stream4 << _audioClient->getErrorString();
 
         channel->sendMessage(audioClientState);
 
