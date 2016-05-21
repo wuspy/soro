@@ -8,15 +8,21 @@ VideoServer::VideoServer(int mediaId, SocketAddress host, Logger *log, QObject *
 }
 
 void VideoServer::onStreamStoppedInternal() {
-    _videoDevice = "";
-    _format = VideoFormat_Null;
+    if (!_starting) {
+        _videoDevice = "";
+        _format = VideoFormat_Null;
+    }
 }
 
 void VideoServer::start(QString deviceName, VideoFormat format) {
     _videoDevice = deviceName;
     _format = format;
 
+    // prevent onStreamStoppedInternal from resetting the stream parameters
+    // in the event a running stream must be stopped
+    _starting = true;
     initStream();
+    _starting = false;
 }
 
 void VideoServer::start(FlyCapture2::PGRGuid camera, VideoFormat format) {
