@@ -19,8 +19,7 @@ CameraWidget::~CameraWidget() {
     resetPipeline();
 }
 
-void CameraWidget::play(SocketAddress address, VideoEncoding encoding) {
-    qDebug() << "Play";
+void CameraWidget::play(SocketAddress address, VideoFormat encoding) {
     resetPipeline();
     ui->messageLabel->setVisible(false);
 
@@ -33,26 +32,19 @@ void CameraWidget::play(SocketAddress address, VideoEncoding encoding) {
 
     // append encoding-specific elements
     switch (encoding) {
-    case MjpegEncoding:
-        binStr += " ! application/x-rtp,encoding=JPEG,payload=26 ! "
-                                       "rtpjpegdepay ! "
-                                       "jpegdec ! "
-                                       "videoconvert";
-        break;
-    case Mpeg2Encoding:
+    case Mpeg2_144p_300Kpbs:
+    case Mpeg2_360p_750Kpbs:
+    case Mpeg2_480p_1500Kpbs:
+    case Mpeg2_720p_3000Kpbs:
+    case Mpeg2_720p_5000Kpbs:
         binStr += " ! application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
                                        "rtpmp4vdepay ! "
                                        "avdec_mpeg4 ! "
                                        "videoconvert";
         break;
-    case x264Encoding:
-        binStr += " ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
-                                       "rtph264depay ! "
-                                       "avdec_h264 ! "
-                                       "videoconvert";
-        break;
     default:
         stop("The video player doesn't recognize the encoding");
+        emit error();
         return;
     }
 
@@ -140,9 +132,7 @@ void CameraWidget::onBusMessage(const QGst::MessagePtr & message) {
         emit eosMessage();
         break;
     case QGst::MessageError:
-        //stop("Decoding Error: " + message.staticCast<QGst::ErrorMessage>()->error().message() + "<br><br>Resetting...");
-        //emit error();
-        //break;
+        emit error();
     default:
         break;
     }

@@ -22,6 +22,8 @@
 #include "soroini.h"
 #include "camerawidget.h"
 #include "videoclient.h"
+#include "audioclient.h"
+#include "audioplayer.h"
 #include "soromainwindow.h"
 
 namespace Soro {
@@ -96,10 +98,14 @@ private:
 
     // These hold the video clients when in master configuration
     QList<VideoClient*> _videoClients; // camera ID is by index
-    QList<StreamFormat> _streamFormats; // camera ID is by index
+    QList<VideoFormat> _videoFormats; // camera ID is by index
     QMap<int, CameraWidget*> _assignedCameraWidgets; // camera ID is by key
     QList<QString> _cameraNames; // camera ID is by index
     QList<CameraWidget*> _freeCameraWidgets;
+
+    // Audio stream subsystem
+    AudioClient *_audioClient;
+    AudioPlayer *_audioPlayer;
 
     // Master arm stuff
     MbedChannel *_masterArmChannel = NULL;
@@ -115,10 +121,11 @@ private:
     void quitSDL();
     void handleSharedChannelMessage(const char *message, Channel::MessageSize size);
     void broadcastSharedMessage(const char *message, int size, bool includeRover, Channel *exclude = 0);
-    void handleCameraStateChange(int cameraID, VideoClient::State state, StreamFormat encoding, QString errorString);
+    void handleCameraStateChange(int cameraID, VideoClient::State state, VideoFormat encoding, QString errorString);
+    void handleAudioStateChanged(AudioClient::State state, AudioFormat encoding, QString errorString);
     void handleRoverSharedChannelStateChanged(Channel::State state);
     void handleCameraNameChanged(int camera, QString newName);
-    void playStreamOnWidget(int cameraID, CameraWidget *widget, StreamFormat format);
+    void playStreamOnWidget(int cameraID, CameraWidget *widget, VideoFormat format);
     void endStreamOnWidget(CameraWidget *widget, QString reason);
 
 private slots:
@@ -129,16 +136,19 @@ private slots:
     void master_roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void master_slaveSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void arm_masterArmMessageReceived(const char *message, int size);
-    void arm_masterArmStateChanged(MbedChannel::State state);
+    void arm_masterArmStateChanged(MbedChannel *channel, MbedChannel::State state);
     void master_broadcastSocketReadyRead();
     void controlChannelStateChanged(Channel *channel, Channel::State state);
-    void videoClientStateChanged(VideoClient *client, VideoClient::State state);
+    void videoClientStateChanged(MediaClient *client, MediaClient::State state);
+    void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void init();
     void chatMessageEntered(QString message);
 
     void cycleVideosClockwise();
     void cycleVideosCounterClockwise();
-    void cameraFormatSelected(int camera, const StreamFormat& format);
+    void cameraFormatSelected(int camera, VideoFormat format);
+    void audioStreamFormatSelected(AudioFormat format);
+    void audioStreamMuteSelected(bool mute);
     void cameraNameEdited(int camera, QString newName);
     void sendWelcomePackets();
 

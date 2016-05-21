@@ -5,7 +5,6 @@
 #include <QMap>
 #include <QList>
 
-#include "videoencoding.h"
 #include "videoserver.h"
 #include "flycapenumerator.h"
 #include "uvdcameraenumerator.h"
@@ -25,7 +24,7 @@ public:
     /* Starts streaming a camera at the
      * specified index
      */
-    void activate(int index, StreamFormat format);
+    void activate(int index, VideoFormat format);
 
     /* Stops streaming a camera at the
      * specified index
@@ -65,8 +64,8 @@ private:
     QMap<int, QString> _uvdCameras;
 
 private slots:
-    void serverStateChanged(VideoServer *server, VideoServer::State state);
-    void serverError(VideoServer *server, QString error);
+    void serverStateChanged(MediaServer *server, MediaServer::State state);
+    void serverError(MediaServer *server, QString error);
 };
 
 }

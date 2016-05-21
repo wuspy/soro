@@ -1,5 +1,5 @@
-#ifndef STREAMPROCESS_H
-#define STREAMPROCESS_H
+#ifndef MEDIASTREAMER_H
+#define MEDIASTREAMER_H
 
 #include <QObject>
 #include <QCoreApplication>
@@ -18,28 +18,25 @@
 
 #include "socketaddress.h"
 #include "soro_global.h"
-#include "videoencoding.h"
 
 #include "logger.h"
 
 namespace Soro {
 namespace Rover {
 
-class StreamProcess : public QObject {
+class MediaStreamer : public QObject {
     Q_OBJECT
 public:
+    ~MediaStreamer();
 
-    StreamProcess(QGst::ElementPtr source, StreamFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);
-    StreamProcess(QString deviceName, StreamFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);
-    ~StreamProcess();
+protected:
+    MediaStreamer(QObject *parent = 0);
 
-private:
     QGst::PipelinePtr _pipeline;
     QGst::PipelinePtr createPipeline();
     QTcpSocket *_ipcSocket = NULL;
 
     bool connectToParent(quint16 port);
-    QString makeEncodingBinString(StreamFormat format, SocketAddress bindAddress, SocketAddress address);
     void stop();
 
 private slots:
@@ -56,4 +53,4 @@ signals:
 } // namespace Rover
 } // namespace Soro
 
-#endif // STREAMPROCESS_H
+#endif // MEDIASTREAMER_H

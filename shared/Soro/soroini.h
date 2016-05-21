@@ -23,6 +23,8 @@ struct SoroIniLoader {
     quint16 FirstVideoPort;
     quint16 ArmMbedPort, DriveCameraMbedPort;
     quint16 McBroadcastPort, MasterArmPort;
+    quint16 AudioStreamPort;
+    quint16 RoverGpsServerPort;
     QList<QString> BlacklistedUvdCameras;
 
     /* Loads the configuration from the default path, and returns true if successful.

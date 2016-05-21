@@ -1,12 +1,12 @@
-#include "mediacontrolwidget.h"
-#include "ui_mediacontrolwidget.h"
+#include "videocontrolwidget.h"
+#include "ui_videocontrolwidget.h"
 
 namespace Soro {
 namespace MissionControl {
 
-MediaControlWidget::MediaControlWidget(QWidget *parent) :
+VideoControlWidget::VideoControlWidget(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::MediaControlWidget) {
+    ui(new Ui::VideoControlWidget) {
     ui->setupUi(this);
 
     connect(ui->disabledRadioButton, SIGNAL(clicked(bool)),
@@ -23,95 +23,64 @@ MediaControlWidget::MediaControlWidget(QWidget *parent) :
             this, SLOT(editButtonClicked()));
     connect(ui->nameLineEdit, SIGNAL(returnPressed()),
             this, SLOT(nameEditReturnClicked()));
-    // default to video mode
-    setMode(VideoMode);
+
+    setAvailable(true);
 }
 
-MediaControlWidget::~MediaControlWidget() {
+VideoControlWidget::~VideoControlWidget() {
     delete ui;
 }
 
-void MediaControlWidget::setMode(MediaControlWidget::Mode mode) {
-    _mode = mode;
-
-    switch (mode) {
-    case AudioMode:
-        ui->graphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/volume_up_black_18px.png);");
-        ui->editNameButton->setVisible(false);
-        break;
-    case VideoMode:
-        ui->graphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/camera_black_18px.png);");
-        ui->editNameButton->setVisible(true);
-        break;
-    }
-
-    ui->nameLineEdit->setVisible(false);
-
-    // default to disabled
-    ui->disabledRadioButton->setChecked(true);
-
-    // force button layout update
-    setAvailable(_available);
-}
-
-void MediaControlWidget::setName(QString name) {
+void VideoControlWidget::setName(QString name) {
     ui->nameLabel->setText(name);
 }
 
-void MediaControlWidget::selectOption(MediaControlWidget::Option option) {
+void VideoControlWidget::selectOption(VideoFormat option) {
     switch (option) {
-    case DisabledOption:
+    case VideoFormat_Null:
         ui->disabledRadioButton->setChecked(true);
         break;
-    case LowOption:
+    case Mpeg2_360p_750Kpbs:
         ui->lowRadioButton->setChecked(true);
         break;
-    case NormalOption:
+    case Mpeg2_480p_1500Kpbs:
         ui->normalRadioButton->setChecked(true);
         break;
-    case HighOption:
+    case Mpeg2_720p_3000Kpbs:
         ui->highRadioButton->setChecked(true);
         break;
-    case UltraOption:
+    case Mpeg2_720p_5000Kpbs:
         ui->ultraRadioButton->setChecked(true);
         break;
     }
 }
 
-void MediaControlWidget::optionButtonClicked() {
+void VideoControlWidget::optionButtonClicked() {
     if (ui->disabledRadioButton->isChecked()) {
-        emit optionSelected(DisabledOption);
+        emit optionSelected(VideoFormat_Null);
     }
     else if (ui->lowRadioButton->isChecked()) {
-        emit optionSelected(LowOption);
+        emit optionSelected(Mpeg2_360p_750Kpbs);
     }
     else if (ui->normalRadioButton->isChecked()) {
-        emit optionSelected(NormalOption);
+        emit optionSelected(Mpeg2_480p_1500Kpbs);
     }
     else if (ui->highRadioButton->isChecked()) {
-        emit optionSelected(HighOption);
+        emit optionSelected(Mpeg2_720p_3000Kpbs);
     }
     else if (ui->ultraRadioButton->isChecked()) {
-        emit optionSelected(UltraOption);
+        emit optionSelected(Mpeg2_720p_5000Kpbs);
     }
 }
 
-void MediaControlWidget::setAvailable(bool available) {
+void VideoControlWidget::setAvailable(bool available) {
     if (available) {
         ui->unavailableLabel->hide();
         ui->disabledRadioButton->show();
         ui->lowRadioButton->show();
         ui->normalRadioButton->show();
-        switch (_mode) {
-        case AudioMode:
-            ui->highRadioButton->hide();
-            ui->ultraRadioButton->hide();
-            break;
-        case VideoMode:
-            ui->highRadioButton->show();
-            ui->ultraRadioButton->show();
-            break;
-        }
+        ui->highRadioButton->show();
+        ui->ultraRadioButton->show();
     }
     else {
         ui->unavailableLabel->show();
@@ -123,7 +92,7 @@ void MediaControlWidget::setAvailable(bool available) {
     }
 }
 
-void MediaControlWidget::editButtonClicked() {
+void VideoControlWidget::editButtonClicked() {
     ui->nameLabel->setVisible(false);
     ui->editNameButton->setVisible(false);
     ui->nameLineEdit->setVisible(true);
@@ -133,11 +102,11 @@ void MediaControlWidget::editButtonClicked() {
     ui->nameLineEdit->selectAll();
 }
 
-QString MediaControlWidget::getName() {
+QString VideoControlWidget::getName() {
     return ui->nameLabel->text();
 }
 
-void MediaControlWidget::nameEditReturnClicked() {
+void VideoControlWidget::nameEditReturnClicked() {
     setName(ui->nameLineEdit->text());
     ui->nameLineEdit->setVisible(false);
     ui->nameLabel->setVisible(true);

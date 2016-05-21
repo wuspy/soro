@@ -56,8 +56,23 @@ enum SharedMessageType {
     SharedMessage_CameraChanged,
     SharedMessage_BitrateUpdate,
     SharedMessage_CameraNameChanged,
-    SharedMessage_RequestKillArmMbed,
-    SharedMessage_RequestStartArmMbed
+    SharedMessage_RequestActivateAudioStream,
+    SharedMessage_RequestDeactivateAudioStream,
+    SharedMessage_AudioStreamChanged
+};
+
+enum VideoFormat {
+    VideoFormat_Null = 0,
+    Mpeg2_144p_300Kpbs,
+    Mpeg2_360p_750Kpbs,
+    Mpeg2_480p_1500Kpbs,
+    Mpeg2_720p_3000Kpbs,
+    Mpeg2_720p_5000Kpbs,
+};
+
+enum AudioFormat {
+    AudioFormat_Null = 0,
+    AC3
 };
 
 enum RoverSubsystemState {

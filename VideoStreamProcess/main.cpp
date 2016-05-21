@@ -9,10 +9,9 @@
 #include <Qt5GStreamer/QGst/Element>
 #include <Qt5GStreamer/QGst/ElementFactory>
 
-#include "videoencoding.h"
 #include "socketaddress.h"
 #include "soro_global.h"
-#include "streamprocess.h"
+#include "videostreamer.h"
 #include "flycapcamera.h"
 
 using namespace Soro;
@@ -25,15 +24,15 @@ int main(int argc, char *argv[]) {
 
     qDebug() << "Starting up";
 
-    if (argc < 10) {
+    if (argc < 8) {
         //no arguments
         qCritical() << "Invalid arguments";
-        qCritical() << "Example: VideoStreamProcess [device] [encoding] [height] [bitrate/quality] [address] [port] [bindAddress] [bindPort] [IPCPort]";
+        qCritical() << "Example: VideoStreamProcess [device] [encoding] [address] [port] [bindAddress] [bindPort] [IPCPort]";
         return STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS;
     }
 
     bool ok;
-    StreamFormat format;
+    VideoFormat format;
     QString device;
     SocketAddress address;
     SocketAddress bindAddress;
@@ -42,25 +41,9 @@ int main(int argc, char *argv[]) {
     //parse device
     device = argv[1];
     //parse encoding
-    unsigned int encodingUInt = QString(argv[2]).toUInt(&ok);
+    quint32 encodingUInt = QString(argv[2]).toUInt(&ok);
     if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-    format.Encoding = reinterpret_cast<VideoEncoding&>(encodingUInt);
-    //parse height
-    format.Height = QString(argv[3]).toInt(&ok);
-    if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-
-    switch (format.Encoding) {
-    case MjpegEncoding:
-        //parse mjpeg quality
-        format.Mjpeg_Quality = QString(argv[4]).toInt(&ok);
-        if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-        break;
-    default:
-        //parse bitrate
-        format.Bitrate = QString(argv[4]).toInt(&ok);
-        if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-        break;
-    }
+    format = reinterpret_cast<VideoFormat&>(encodingUInt);
 
     //parse address/port
     address.host = QHostAddress(argv[5]);
@@ -105,13 +88,13 @@ int main(int argc, char *argv[]) {
         source = camera.element();
 
         qDebug() << "Parset parameters for FlyCapture successfully";
-        StreamProcess stream(source, format, bindAddress, address, ipcPort, &a);
+        VideoStreamer stream(source, format, bindAddress, address, ipcPort, &a);
         qDebug() << "Stream initialized for FlyCapture successfully";
         return a.exec();
     }
     else {
         qDebug() << "Setting UVD device " << device;
-        StreamProcess stream(device, format, bindAddress, address, ipcPort, &a);
+        VideoStreamer stream(device, format, bindAddress, address, ipcPort, &a);
         qDebug() << "Stream initialized successfully";
         return a.exec();
     }

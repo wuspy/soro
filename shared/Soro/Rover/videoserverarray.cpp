@@ -65,7 +65,7 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
     return firstId - 1;
 }
 
-void VideoServerArray::activate(int index, StreamFormat format) {
+void VideoServerArray::activate(int index, VideoFormat format) {
     if (_servers.contains(index)) {
         LOG_I("Camera " + QString::number(index) + " is about to be streamed");
         if (_flycapCameras.contains(index)) {
@@ -102,12 +102,12 @@ void VideoServerArray::remove(int index) {
     _servers.remove(index);
 }
 
-void VideoServerArray::serverStateChanged(VideoServer *server, VideoServer::State state) {
-    emit videoServerStateChanged(server->getCameraId(), state);
+void VideoServerArray::serverStateChanged(MediaServer *server, MediaServer::State state) {
+    emit videoServerStateChanged(server->getMediaId(), state);
 }
 
-void VideoServerArray::serverError(VideoServer *server, QString error) {
-    emit videoServerError(server->getCameraId(), error);
+void VideoServerArray::serverError(MediaServer *server, QString error) {
+    emit videoServerError(server->getMediaId(), error);
 }
 
 }

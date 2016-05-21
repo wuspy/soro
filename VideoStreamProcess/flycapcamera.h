@@ -12,7 +12,7 @@
 //#include <flycapture/C/FlyCapture2_C.h>
 
 #include "logger.h"
-#include "videoencoding.h"
+#include "mediaencoding.h"
 #include "soro_global.h"
 
 namespace Soro {

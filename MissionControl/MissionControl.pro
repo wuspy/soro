@@ -29,7 +29,11 @@ SOURCES += \
     videoclient.cpp \
     camerawidget.cpp \
     camerawindow.cpp \
-    mediacontrolwidget.cpp
+    mediaclient.cpp \
+    audioclient.cpp \
+    videocontrolwidget.cpp \
+    audiocontrolwidget.cpp \
+    audioplayer.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -49,17 +53,21 @@ HEADERS  += \
     missioncontrolprocess.h \
     setupdialog.h \
     clickablelabel.h \
-    ../shared/Soro/videoencoding.h \
     videoclient.h \
     camerawidget.h \
     camerawindow.h \
-    mediacontrolwidget.h
+    mediaclient.h \
+    audioclient.h \
+    videocontrolwidget.h \
+    audiocontrolwidget.h \
+    audioplayer.h
 
 FORMS    += \
     soromainwindow.ui \
     setupdialog.ui \
     camerawidget.ui \
-    mediacontrolwidget.ui
+    videocontrolwidget.ui \
+    audiocontrolwidget.ui
 
 RESOURCES += \
     Resources/MissionControl.qrc

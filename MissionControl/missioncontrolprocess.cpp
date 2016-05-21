@@ -38,10 +38,14 @@ MissionControlProcess::MissionControlProcess(QString name, bool masterSubnetNode
             this, SLOT(cycleVideosClockwise()));
     connect(ui, SIGNAL(cycleVideosCounterclockwise()),
             this, SLOT(cycleVideosCounterClockwise()));
-    connect(ui, SIGNAL(cameraFormatChanged(int,StreamFormat)),
-            this, SLOT(cameraFormatSelected(int,StreamFormat)));
+    connect(ui, SIGNAL(cameraFormatChanged(int,VideoFormat)),
+            this, SLOT(cameraFormatSelected(int,VideoFormat)));
     connect(ui, SIGNAL(cameraNameEdited(int,QString)),
             this, SLOT(cameraNameEdited(int,QString)));
+    connect(ui, SIGNAL(audioStreamFormatChanged(AudioFormat)),
+            this, SLOT(audioStreamFormatSelected(AudioFormat)));
+    connect(ui, SIGNAL(audioStreamMuteChanged(bool)),
+            this, SLOT(audioStreamMuteSelected(bool)));
 
     QTimer::singleShot(1, this, SLOT(init()));
 }
@@ -77,7 +81,7 @@ void MissionControlProcess::init() {
         connect(_masterArmChannel, SIGNAL(messageReceived(const char*,int)),
                 this, SLOT(arm_masterArmMessageReceived(const char*,int)));
         connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
-                this, SLOT(arm_masterArmStateChanged(MbedChannel::State)));
+                this, SLOT(arm_masterArmStateChanged(MbedChannel*,MbedChannel::State)));
         _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.ArmChannelPort), CHANNEL_NAME_ARM,
                 Channel::UdpProtocol, QHostAddress::Any, _log);
         ui->arm_onMasterArmStateChanged(MbedChannel::ConnectingState);
@@ -191,9 +195,8 @@ void MissionControlProcess::init() {
         for (int i = 0; i < _config.MainComputerCameraCount + _config.SecondaryComputerCameraCount; i++) {
             VideoClient *client = new VideoClient(i, SocketAddress(_config.ServerAddress, _config.FirstVideoPort + i), QHostAddress::Any, _log, this);
 
-            connect(client, SIGNAL(stateChanged(VideoClient*,VideoClient::State)),
-                    this, SLOT(videoClientStateChanged(VideoClient*,VideoClient::State)));
-
+            connect(client, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
+                    this, SLOT(videoClientStateChanged(MediaClient*,MediaClient::State)));
 
             // add localhost bounce to the video stream so the in-app player can display it from a udpsrc
             client->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, client->getServerAddress().port));
@@ -201,10 +204,19 @@ void MissionControlProcess::init() {
         }
     }
     for (int i = 0; i < _config.MainComputerCameraCount + _config.SecondaryComputerCameraCount; i++) {
-        _streamFormats.append(StreamFormat());
+        _videoFormats.append(VideoFormat_Null);
         _cameraNames.append("Camera " + QString::number(i + 1));
     }
 
+    LOG_I("***************Initializing Audio system******************");
+    _audioClient = new AudioClient(69, SocketAddress(_config.ServerAddress, _config.AudioStreamPort), QHostAddress::Any, _log, this);
+
+    // forward audio stream through localhost
+    _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _audioClient->getServerAddress().port));
+    connect(_audioClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
+            this, SLOT(audioClientStateChanged(MediaClient*,MediaClient::State)));
+
+    _audioPlayer = new AudioPlayer(this);
 
     // update UI
 
@@ -213,26 +225,47 @@ void MissionControlProcess::init() {
     ui->onSecondaryComputerStateChanged(UnknownSubsystemState);
 }
 
-void MissionControlProcess::videoClientStateChanged(VideoClient *client, VideoClient::State state) {
-    handleCameraStateChange(client->getCameraId(), state, client->getStreamFormat(), client->getErrorString());
+void MissionControlProcess::videoClientStateChanged(MediaClient *client, MediaClient::State state) {
+    VideoClient *videoClient = reinterpret_cast<VideoClient*>(client);
+
+    handleCameraStateChange(videoClient->getMediaId(), state, videoClient->getVideoFormat(), videoClient->getErrorString());
 
     // rebroadcast to other mission controls
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_CameraChanged;
+    VideoFormat format = videoClient->getVideoFormat();
 
     stream << reinterpret_cast<quint32&>(messageType);
-    stream << (qint32)client->getCameraId();
+    stream << (qint32)client->getMediaId();
     stream << reinterpret_cast<quint32&>(state);
-    stream << client->getStreamFormat();
+    stream << reinterpret_cast<quint32&>(format);
     stream << client->getErrorString();
 
     broadcastSharedMessage(message.constData(), message.size(), false);
 }
 
+void MissionControlProcess::audioClientStateChanged(MediaClient *client, MediaClient::State state) {
+    AudioClient *audioClient = reinterpret_cast<AudioClient*>(client);
 
-void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::State state, StreamFormat format, QString errorString) {
-    _streamFormats[cameraID] = format;
+    handleAudioStateChanged(state, audioClient->getAudioFormat(), audioClient->getErrorString());
+
+    // rebroadcast to other mission controls
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_AudioStreamChanged;
+    AudioFormat format = audioClient->getAudioFormat();
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << reinterpret_cast<quint32&>(state);
+    stream << reinterpret_cast<quint32&>(format);
+    stream << client->getErrorString();
+
+    broadcastSharedMessage(message.constData(), message.size(), false);
+}
+
+void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::State state, VideoFormat format, QString errorString) {
+    _videoFormats[cameraID] = format;
     switch (state) {
     case VideoClient::ConnectingState:
         if (_assignedCameraWidgets.contains(cameraID)) {
@@ -267,6 +300,19 @@ void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::S
     }
 }
 
+void MissionControlProcess::handleAudioStateChanged(AudioClient::State state, AudioFormat encoding, QString errorString) {
+    switch (state) {
+    case AudioClient::StreamingState:
+        if (!ui->isMuteAudioSelected()) {
+            _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, _audioClient->getServerAddress().port), encoding);
+        }
+        break;
+    default:
+        _audioPlayer->stop();
+        break;
+    }
+}
+
 void MissionControlProcess::handleRoverSharedChannelStateChanged(Channel::State state) {
     switch (state) {
     case Channel::ConnectedState:
@@ -287,8 +333,8 @@ void MissionControlProcess::endStreamOnWidget(CameraWidget *widget, QString reas
     int oldCamera = _assignedCameraWidgets.key(widget, -1);
     if (oldCamera != -1) {
         _assignedCameraWidgets.remove(oldCamera);
-        _streamFormats.replace(oldCamera, StreamFormat());
-        ui->onCameraFormatChanged(oldCamera, StreamFormat());
+        _videoFormats.replace(oldCamera, VideoFormat_Null);
+        ui->onCameraFormatChanged(oldCamera, VideoFormat_Null);
     }
     if (_freeCameraWidgets.indexOf(widget) < 0) {
         _freeCameraWidgets.insert(0, widget);
@@ -297,7 +343,7 @@ void MissionControlProcess::endStreamOnWidget(CameraWidget *widget, QString reas
     widget->setCameraName("No Video");
 }
 
-void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widget, StreamFormat format) {
+void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widget, VideoFormat format) {
     if (_assignedCameraWidgets.contains(cameraID)) {
         CameraWidget *oldWidget = _assignedCameraWidgets.value(cameraID, NULL);
         if (oldWidget != widget) {
@@ -308,13 +354,13 @@ void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widge
     }
     _freeCameraWidgets.removeAll(widget);
     _assignedCameraWidgets.insert(cameraID, widget);
-    _streamFormats.replace(cameraID, format);
+    _videoFormats.replace(cameraID, format);
     ui->onCameraFormatChanged(cameraID, format);
     if (_isMaster) {
-        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::LocalHost, _config.FirstVideoPort + cameraID), format.Encoding);
+        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::LocalHost, _config.FirstVideoPort + cameraID), format);
     }
     else {
-        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + cameraID), format.Encoding);
+        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, _config.FirstVideoPort + cameraID), format);
     }
     _assignedCameraWidgets.value(cameraID)->setCameraName(_cameraNames.at(cameraID));
 }
@@ -373,6 +419,8 @@ void MissionControlProcess::master_broadcastSocketReadyRead() {
             foreach (VideoClient *client, _videoClients) {
                 client->addForwardingAddress(SocketAddress(peer.host, client->getServerAddress().port));
             }
+            // and audio stream
+            _audioClient->addForwardingAddress(SocketAddress(peer.host, _audioClient->getServerAddress().port));
         }
     }
 }
@@ -445,16 +493,28 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         break;
     case SharedMessage_CameraChanged: {
         qint32 cameraID;
-        StreamFormat format;
+        VideoFormat format;
         VideoClient::State state;
         QString errorString;
 
         stream >> cameraID;
         stream >> reinterpret_cast<quint32&>(state);
-        stream >> format;
+        stream >> reinterpret_cast<quint32&>(format);
         stream >> errorString;
 
         handleCameraStateChange(cameraID, state, format, errorString);
+    }
+        break;
+    case SharedMessage_AudioStreamChanged: {
+        AudioFormat format;
+        AudioClient::State state;
+        QString errorString;
+
+        stream >> reinterpret_cast<quint32&>(state);
+        stream >> reinterpret_cast<quint32&>(format);
+        stream >> errorString;
+
+        handleAudioStateChanged(state, format, errorString);
     }
         break;
     case SharedMessage_BitrateUpdate: {
@@ -634,11 +694,12 @@ void MissionControlProcess::sendWelcomePackets() {
             QDataStream stream3(&videoClientMessage, QIODevice::WriteOnly);
             messageType = SharedMessage_CameraChanged;
             VideoClient::State state = client->getState();
+            VideoFormat format = client->getVideoFormat();
 
             stream3 << reinterpret_cast<quint32&>(messageType);
-            stream3 << (qint32)client->getCameraId();
+            stream3 << (qint32)client->getMediaId();
             stream3 << reinterpret_cast<quint32&>(state);
-            stream3 << client->getStreamFormat();
+            stream3 << reinterpret_cast<quint32&>(format);
             stream3 << client->getErrorString();
 
             channel->sendMessage(videoClientMessage);
@@ -676,12 +737,12 @@ void MissionControlProcess::chatMessageEntered(QString message) {
     broadcastSharedMessage(byteArray.constData(), byteArray.size(), false);
 }
 
-void MissionControlProcess::cameraFormatSelected(int camera, const StreamFormat &format) {
+void MissionControlProcess::cameraFormatSelected(int camera, VideoFormat format) {
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType;
 
-    if (format.isNull()) {
+    if (format == VideoFormat_Null) {
         messageType = SharedMessage_RequestDeactivateCamera;
 
         stream << reinterpret_cast<quint32&>(messageType);
@@ -692,7 +753,7 @@ void MissionControlProcess::cameraFormatSelected(int camera, const StreamFormat 
 
         stream << reinterpret_cast<quint32&>(messageType);
         stream << (qint32)camera;
-        stream << format;
+        stream << reinterpret_cast<quint32&>(format);
     }
 
     _sharedChannel->sendMessage(message);
@@ -711,6 +772,29 @@ void MissionControlProcess::cameraNameEdited(int camera, QString newName) {
     stream << newName;
 
     broadcastSharedMessage(message.constData(), message.length(), false);
+}
+
+void MissionControlProcess::audioStreamFormatSelected(AudioFormat format) {
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    SharedMessageType messageType;
+
+    if (format == AudioFormat_Null) {
+        messageType = SharedMessage_RequestDeactivateAudioStream;
+
+        stream << reinterpret_cast<quint32&>(messageType);
+    }
+    else {
+        messageType = SharedMessage_RequestActivateAudioStream;
+        stream << reinterpret_cast<quint32&>(messageType);
+        stream << reinterpret_cast<quint32&>(format);
+    }
+
+    _sharedChannel->sendMessage(message);
+}
+
+void MissionControlProcess::audioStreamMuteSelected(bool mute) {
+    _audioPlayer->stop();
 }
 
 void MissionControlProcess::handleCameraNameChanged(int camera, QString newName) {
@@ -872,7 +956,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
          */
         quint64 bpsRoverDown = 0, bpsRoverUp = 0;
         foreach (VideoClient *client, _videoClients) {
-            bpsRoverUp += client->getVideoBitrate();
+            bpsRoverUp += client->getBitrate();
         }
         bpsRoverUp += _sharedChannel->getBitsPerSecondDown();
         bpsRoverDown += _sharedChannel->getBitsPerSecondUp();
@@ -904,19 +988,19 @@ void MissionControlProcess::cycleVideosClockwise() {
     ui->getFullscreenCameraWidget()->stop("Switching video mode...");
     _assignedCameraWidgets.clear();
     if (oldFullscreen >= 0) {
-        playStreamOnWidget(oldFullscreen, ui->getBottomCameraWidget(), _streamFormats.at(oldFullscreen));
+        playStreamOnWidget(oldFullscreen, ui->getBottomCameraWidget(), _videoFormats.at(oldFullscreen));
     }
     else {
         endStreamOnWidget(ui->getBottomCameraWidget(), "This camera isn't being streamed right now.");
     }
     if (oldTop >= 0) {
-        playStreamOnWidget(oldTop, ui->getFullscreenCameraWidget(), _streamFormats.at(oldTop));
+        playStreamOnWidget(oldTop, ui->getFullscreenCameraWidget(), _videoFormats.at(oldTop));
     }
     else {
         endStreamOnWidget(ui->getFullscreenCameraWidget(), "This camera isn't being streamed right now.");
     }
     if (oldBottom >= 0) {
-        playStreamOnWidget(oldBottom, ui->getTopCameraWidget(), _streamFormats.at(oldBottom));
+        playStreamOnWidget(oldBottom, ui->getTopCameraWidget(), _videoFormats.at(oldBottom));
     }
     else {
         endStreamOnWidget(ui->getTopCameraWidget(), "This camera isn't being streamed right now.");
@@ -932,19 +1016,19 @@ void MissionControlProcess::cycleVideosCounterClockwise() {
     ui->getFullscreenCameraWidget()->stop("Switching video mode...");
     _assignedCameraWidgets.clear();
     if (oldFullscreen >= 0) {
-        playStreamOnWidget(oldFullscreen, ui->getTopCameraWidget(), _streamFormats.at(oldFullscreen));
+        playStreamOnWidget(oldFullscreen, ui->getTopCameraWidget(), _videoFormats.at(oldFullscreen));
     }
     else {
         endStreamOnWidget(ui->getTopCameraWidget(), "This camera isn't being streamed right now.");
     }
     if (oldTop >= 0) {
-        playStreamOnWidget(oldTop, ui->getBottomCameraWidget(), _streamFormats.at(oldTop));
+        playStreamOnWidget(oldTop, ui->getBottomCameraWidget(), _videoFormats.at(oldTop));
     }
     else {
         endStreamOnWidget(ui->getBottomCameraWidget(), "This camera isn't being streamed right now.");
     }
     if (oldBottom >= 0) {
-        playStreamOnWidget(oldBottom, ui->getFullscreenCameraWidget(), _streamFormats.at(oldBottom));
+        playStreamOnWidget(oldBottom, ui->getFullscreenCameraWidget(), _videoFormats.at(oldBottom));
     }
     else {
         endStreamOnWidget(ui->getFullscreenCameraWidget(), "This camera isn't being streamed right now.");
@@ -985,7 +1069,8 @@ void MissionControlProcess::quitSDL() {
     }
 }
 
-void MissionControlProcess::arm_masterArmStateChanged(MbedChannel::State state) {
+void MissionControlProcess::arm_masterArmStateChanged(MbedChannel *channel, MbedChannel::State state) {
+    Q_UNUSED(channel);
     ui->arm_onMasterArmStateChanged(state);
 }
 

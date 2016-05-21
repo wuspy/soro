@@ -114,7 +114,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         LOG_I("*****************Initializing GPS system*******************");
 
-        _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, 5499), _log);
+        _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, _config.RoverGpsServerPort), _log);
 
         LOG_I("*****************Initializing Video system*******************");
 
@@ -130,6 +130,10 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         else if (_videoServers->cameraCount() < _config.MainComputerCameraCount) {
             LOG_E("The configuration specifies more cameras than this, check cable connections");
         }
+
+        LOG_I("*****************Initializing Audio system*******************");
+
+        _audioServer = new AudioServer(69, SocketAddress(QHostAddress::Any, _config.AudioStreamPort), _log, this);
 
         LOG_I("-------------------------------------------------------");
         LOG_I("-------------------------------------------------------");
@@ -247,9 +251,9 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     switch (messageType) {
     case SharedMessage_RequestActivateCamera: {
         qint32 camera;
-        StreamFormat format;
+        VideoFormat format;
         stream >> camera;
-        stream >> format;
+        stream >> reinterpret_cast<quint32&>(format);
         if (camera >= _config.MainComputerCameraCount) {
             // this is the second odroid's camera
             QByteArray byteArray2;
@@ -279,7 +283,16 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
             _videoServers->deactivate(camera);
         }
         break;
+    case SharedMessage_RequestActivateAudioStream:
+        AudioFormat format;
+        stream >> reinterpret_cast<quint32&>(format);
+        _audioServer->start("hw0", format);
+        break;
+    case SharedMessage_RequestDeactivateAudioStream:
+        _audioServer->stop();
+        break;
     default:
+        LOG_W("Got unknown shared channel message");
         break;
     }
 }

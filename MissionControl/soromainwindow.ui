@@ -698,7 +698,7 @@ margin-right: 10px;</string>
           <number>6</number>
          </property>
          <item>
-          <widget class="Soro::MissionControl::MediaControlWidget" name="media_audioControlWidget" native="true">
+          <widget class="Soro::MissionControl::AudioControlWidget" name="media_audioControlWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -727,7 +727,7 @@ margin-right: 10px;</string>
           </widget>
          </item>
          <item>
-          <widget class="Soro::MissionControl::MediaControlWidget" name="media_camera1ControlWidget" native="true">
+          <widget class="Soro::MissionControl::VideoControlWidget" name="media_camera1ControlWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -756,7 +756,7 @@ margin-right: 10px;</string>
           </widget>
          </item>
          <item>
-          <widget class="Soro::MissionControl::MediaControlWidget" name="media_camera2ControlWidget" native="true">
+          <widget class="Soro::MissionControl::VideoControlWidget" name="media_camera2ControlWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -785,7 +785,7 @@ margin-right: 10px;</string>
           </widget>
          </item>
          <item>
-          <widget class="Soro::MissionControl::MediaControlWidget" name="media_camera3ControlWidget" native="true">
+          <widget class="Soro::MissionControl::VideoControlWidget" name="media_camera3ControlWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -814,7 +814,7 @@ margin-right: 10px;</string>
           </widget>
          </item>
          <item>
-          <widget class="Soro::MissionControl::MediaControlWidget" name="media_camera4ControlWidget" native="true">
+          <widget class="Soro::MissionControl::VideoControlWidget" name="media_camera4ControlWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -843,7 +843,7 @@ margin-right: 10px;</string>
           </widget>
          </item>
          <item>
-          <widget class="Soro::MissionControl::MediaControlWidget" name="media_camera5ControlWidget" native="true">
+          <widget class="Soro::MissionControl::VideoControlWidget" name="media_camera5ControlWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -1417,9 +1417,7 @@ background-color: #b71c1c;</string>
       <widget class="Soro::MissionControl::CameraWidget" name="topVideoWidget" native="true"/>
      </item>
      <item>
-      <widget class="Soro::MissionControl::CameraWidget" name="bottomVideoWidget" native="true">
-       <zorder>topVideoWidget</zorder>
-      </widget>
+      <widget class="Soro::MissionControl::CameraWidget" name="bottomVideoWidget" native="true"/>
      </item>
     </layout>
    </widget>
@@ -1444,9 +1442,15 @@ background-color: #b71c1c;</string>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Soro::MissionControl::MediaControlWidget</class>
+   <class>Soro::MissionControl::VideoControlWidget</class>
    <extends>QWidget</extends>
-   <header>mediacontrolwidget.h</header>
+   <header>videocontrolwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Soro::MissionControl::AudioControlWidget</class>
+   <extends>QWidget</extends>
+   <header>audiocontrolwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

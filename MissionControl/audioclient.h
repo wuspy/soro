@@ -1,5 +1,5 @@
-#ifndef VIDEOCLIENT_H
-#define VIDEOCLIENT_H
+#ifndef AUDIOCLIENT_H
+#define AUDIOCLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -16,27 +16,27 @@
 namespace Soro {
 namespace MissionControl {
 
-class VideoClient : public MediaClient {
+class AudioClient : public MediaClient {
     Q_OBJECT
 
 public:
-    explicit VideoClient(int mediaId, SocketAddress server, QHostAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit AudioClient(int mediaId, SocketAddress server, QHostAddress host, Logger *log = 0, QObject *parent = 0);
 
-    VideoFormat getVideoFormat() const;
+    AudioFormat getAudioFormat() const;
 
 private:
-    VideoFormat _format;
+    AudioFormat _format = AudioFormat_Null;
 
 protected:
     void onServerStreamingMessageInternal(QDataStream& stream) Q_DECL_OVERRIDE;
     void onServerStartMessageInternal() Q_DECL_OVERRIDE;
     void onServerEosMessageInternal() Q_DECL_OVERRIDE;
     void onServerErrorMessageInternal() Q_DECL_OVERRIDE;
-    void onServerConnectedInternal() Q_DECL_OVERRIDE;
-    void onServerDisconnectedInternal() Q_DECL_OVERRIDE;
+    void onServerConnectedInternal();
+    void onServerDisconnectedInternal();
 };
 
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // VIDEOCLIENT_H
+#endif // AUDIOCLIENT_H

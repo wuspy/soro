@@ -1,26 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MediaControlWidget</class>
- <widget class="QWidget" name="MediaControlWidget">
+ <class>AudioControlWidget</class>
+ <widget class="QWidget" name="AudioControlWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>879</width>
-    <height>24</height>
+    <width>781</width>
+    <height>32</height>
    </rect>
-  </property>
-  <property name="minimumSize">
-   <size>
-    <width>0</width>
-    <height>24</height>
-   </size>
-  </property>
-  <property name="maximumSize">
-   <size>
-    <width>16777215</width>
-    <height>24</height>
-   </size>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -31,7 +19,7 @@
 	border-radius: 5px;
 }
 
-QRadioButton::indicator {
+QRadioButton::indicator,QCheckBox:indicator {
 	width: 0px; 
 	height: 0px; 
 }
@@ -49,6 +37,25 @@ QRadioButton {
 
 QRadioButton:checked {
 	background-color: black;
+	color: white;
+}
+
+QCheckBox {
+	background-color: transparent;
+	color: #b71c1c;
+	border-radius: 5px;
+	border-color: #b71c1c;
+	border-width: 2px;
+	border-style: solid;
+	padding-left:5px;
+	padding-right:5px;
+	font-family: &quot;Roboto&quot;;
+	font-size: 10pt;
+	font-weight: bold;
+}
+
+QCheckBox:checked {
+	background-color: #b71c1c;
 	color: white;
 }</string>
   </property>
@@ -80,7 +87,7 @@ QRadioButton:checked {
       </size>
      </property>
      <property name="styleSheet">
-      <string notr="true">qproperty-pixmap: url(:/icons/camera_black_18px.png);</string>
+      <string notr="true">qproperty-pixmap: url(:/icons/volume_up_black_18px.png);</string>
      </property>
     </widget>
    </item>
@@ -92,33 +99,7 @@ QRadioButton:checked {
       </font>
      </property>
      <property name="text">
-      <string>Camera Name</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLineEdit" name="nameLineEdit">
-     <property name="minimumSize">
-      <size>
-       <width>150</width>
-       <height>0</height>
-      </size>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="editNameButton">
-     <property name="cursor">
-      <cursorShape>PointingHandCursor</cursorShape>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">qproperty-icon: url(:/icons/edit_black_18px.png);</string>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="flat">
-      <bool>true</bool>
+      <string>Audio Stream</string>
      </property>
     </widget>
    </item>
@@ -129,7 +110,7 @@ QRadioButton:checked {
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>386</width>
+       <width>326</width>
        <height>16</height>
       </size>
      </property>
@@ -161,19 +142,9 @@ QRadioButton:checked {
     </widget>
    </item>
    <item>
-    <widget class="QRadioButton" name="lowRadioButton">
+    <widget class="QRadioButton" name="playRadioButton">
      <property name="text">
-      <string>LOW </string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="normalRadioButton">
-     <property name="text">
-      <string>NORMAL </string>
+      <string>ON </string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -181,16 +152,12 @@ QRadioButton:checked {
     </widget>
    </item>
    <item>
-    <widget class="QRadioButton" name="highRadioButton">
+    <widget class="QCheckBox" name="muteCheckBox">
      <property name="text">
-      <string>HIGH </string>
+      <string>Mute </string>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="ultraRadioButton">
-     <property name="text">
-      <string>ULTRA </string>
+     <property name="checked">
+      <bool>false</bool>
      </property>
     </widget>
    </item>

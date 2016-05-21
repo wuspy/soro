@@ -1,5 +1,5 @@
-#ifndef VIDEOSERVER_H
-#define VIDEOSERVER_H
+#ifndef AUDIOSERVER_H
+#define AUDIOSERVER_H
 
 #include <QObject>
 
@@ -8,25 +8,22 @@
 #include "logger.h"
 #include "mediaserver.h"
 
-#include <flycapture/FlyCapture2.h>
-
 namespace Soro {
 namespace Rover {
 
-class VideoServer: public MediaServer {
+class AudioServer: public MediaServer {
     Q_OBJECT
 public:
 
-    explicit VideoServer(int mediaId, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit AudioServer(int mediaId, SocketAddress host, Logger *log = 0, QObject *parent = 0);
 
-    void start(QString deviceName, VideoFormat format);
-    void start(FlyCapture2::PGRGuid camera, VideoFormat format);
+    void start(QString deviceName, AudioFormat format);
 
-    VideoFormat getVideoFormat() const;
+    AudioFormat getAudioFormat() const;
 
 private:
-    VideoFormat _format;
-    QString _videoDevice;
+    AudioFormat _format;
+    QString _audioDevice;
 
 protected:
     /* Begins streaming video to the provided address.
@@ -42,4 +39,4 @@ protected:
 } // namespace Rover
 } // namespace Soro
 
-#endif // VIDEOSERVER_H
+#endif // AUDIOSERVER_H

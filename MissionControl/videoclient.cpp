@@ -1,194 +1,39 @@
 #include "videoclient.h"
 
-#define LOG_TAG "Video Client " + QString::number(_cameraId)
-
 namespace Soro {
 namespace MissionControl {
 
-VideoClient::VideoClient(int cameraId, SocketAddress server, QHostAddress host, Logger *log, QObject *parent)
-    : QObject(parent) {
-
-    _cameraId = cameraId;
-    _server = server;
-    _log = log;
-
-    LOG_I("Creating new video client for server at " + server.toString());
-
-    _controlChannel = new Channel(this, _server, "camera" + QString::number(cameraId), Channel::TcpProtocol, host, _log);
-    _videoSocket = new QUdpSocket(this);
-
-    _buffer = new char[65536];
-
-    connect(_controlChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-            this, SLOT(controlMessageReceived(Channel*, const char*, Channel::MessageSize)));
-    connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
-            this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
-
-    _controlChannel->open();
-
-    if (!_videoSocket->bind(host)) {
-        LOG_E("Failed to bind to UDP socket");
-    }
-
-    _videoSocket->open(QIODevice::ReadWrite);
-
-    START_TIMER(_calculateBitrateTimerId, 1000);
+void VideoClient::onServerStreamingMessageInternal(QDataStream& stream) {
+    stream >> reinterpret_cast<quint32&>(_format);
 }
 
-VideoClient::~VideoClient() {
-    if (_controlChannel) {
-        _controlChannel->close();
-        delete _controlChannel;
-    }
-    if (_videoSocket) {
-        if (_videoSocket->isOpen()) _videoSocket->close();
-        delete _videoSocket;
-    }
+void VideoClient::onServerStartMessageInternal() {
+    _format = VideoFormat_Null;
 }
 
-void VideoClient::addForwardingAddress(SocketAddress address) {
-    foreach (SocketAddress existing, _forwardAddresses) {
-        if (existing == address) return;
-    }
-    _forwardAddresses.append(address);
+void VideoClient::onServerEosMessageInternal() {
+    _format = VideoFormat_Null;
 }
 
-void VideoClient::removeForwardingAddress(SocketAddress address) {
-    int index = _forwardAddresses.indexOf(address);
-    if (index >= 0) {
-        _forwardAddresses.removeAt(index);
-    }
+void VideoClient::onServerErrorMessageInternal() {
+    _format = VideoFormat_Null;
 }
 
-StreamFormat VideoClient::getStreamFormat() const {
+VideoClient::VideoClient(int mediaId, SocketAddress server, QHostAddress host, Logger *log, QObject *parent)
+    : MediaClient("VideoClient " + QString::number(mediaId), mediaId, server, host, log, parent) {
+
+    _format = VideoFormat_Null;
+}
+
+VideoFormat VideoClient::getVideoFormat() const {
     return _format;
 }
 
-void VideoClient::controlMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(size); Q_UNUSED(channel);
-    QByteArray byteArray = QByteArray::fromRawData(message, size);
-    QDataStream stream(byteArray);
-    stream.setByteOrder(QDataStream::BigEndian);
-    QString messageType;
-    stream >> messageType;
-    LOG_E("Got message: " + messageType);
-    if (messageType.compare("start", Qt::CaseInsensitive) == 0) {
-        LOG_I("Server has notified us of a new video stream");
-        _format.Encoding = UnknownOrNoEncoding;
-        disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
-        START_TIMER(_punchTimerId, 100);
-        setState(ConnectedState);
-    }
-    else if (messageType.compare("streaming", Qt::CaseInsensitive) == 0) {
-        // we were successful and are now receiving a video stream
-        LOG_I("Server has confirmed our address and should begin streaming");
-        _errorString = ""; // clear error string since we have an active connection;
-        videoSocketReadyRead();
-        connect(_videoSocket, SIGNAL(readyRead()),
-                this, SLOT(videoSocketReadyRead()));
-        stream >> _format;
-        KILL_TIMER(_punchTimerId);
-        setState(StreamingState);
-    }
-    else if (messageType.compare("eos", Qt::CaseInsensitive) == 0) {
-        LOG_I("Got EOS message from server");
-        _format.Encoding = UnknownOrNoEncoding;
-        KILL_TIMER(_punchTimerId);
-        disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
-        _lastBitrate = 0;
-        setState(ConnectedState);
-    }
-    else if (messageType.compare("error", Qt::CaseInsensitive) == 0) {
-        stream >> _errorString;
-        LOG_I("Got error message from server: " + _errorString);
-        _format.Encoding = UnknownOrNoEncoding;
-        disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
-        _lastBitrate = 0;
-        KILL_TIMER(_punchTimerId);
-        setState(ConnectedState);
-    }
-    else {
-        LOG_E("Got unknown message from video server");
-    }
-}
+void VideoClient::onServerConnectedInternal() { }
 
-void VideoClient::videoSocketReadyRead() {
-    qint64 size;
-    while (_videoSocket->hasPendingDatagrams()) {
-        size = _videoSocket->readDatagram(_buffer, 65536);
-        // update bit total
-        _bitCount += size * 8;
-        // forward the datagram to all specified addresses
-        foreach (SocketAddress address, _forwardAddresses) {
-            _videoSocket->writeDatagram(_buffer, size, address.host, address.port);
-        }
-    }
+void VideoClient::onServerDisconnectedInternal() {
+    _format = VideoFormat_Null;
 }
-
-void VideoClient::timerEvent(QTimerEvent *e) {
-    QObject::timerEvent(e);
-    if (e->timerId() == _punchTimerId) {
-        LOG_I("punch timer tick");
-        // send data to the the server so it can figure out our address
-        QByteArray message;
-        QDataStream stream(&message, QIODevice::WriteOnly);
-        stream << QString("camera");
-        stream << _cameraId;
-        _videoSocket->writeDatagram(message.constData(), message.size(), _server.host, _server.port);
-    }
-    else if (e->timerId() == _calculateBitrateTimerId) {
-        // this timer runs twice per second to calculate the bitrate received by the client
-        _lastBitrate = _bitCount;
-        _bitCount = 0;
-    }
-}
-
-void VideoClient::controlChannelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
-    switch (state) {
-    case Channel::ConnectedState:
-        setState(ConnectedState);
-        break;
-    default:
-        setState(ConnectingState);
-        _format.Encoding = UnknownOrNoEncoding;
-        disconnect(_videoSocket, SIGNAL(readyRead()), 0, 0);
-        KILL_TIMER(_punchTimerId);
-        break;
-    }
-}
-
-QString VideoClient::getErrorString() const {
-    return _errorString;
-}
-
-int VideoClient::getCameraId() const {
-    return _cameraId;
-}
-
-quint64 VideoClient::getVideoBitrate() const {
-    return _lastBitrate;
-}
-
-VideoClient::State VideoClient::getState() const {
-    return _state;
-}
-
-SocketAddress VideoClient::getServerAddress() const {
-    return _server;
-}
-
-SocketAddress VideoClient::getHostAddress() const {
-    return SocketAddress(_videoSocket->localAddress(), _videoSocket->localPort());
-}
-
-void VideoClient::setState(State state) {
-    if (_state != state) {
-        _state = state;
-        emit stateChanged(this, _state);
-    }
-}
-
 
 } // namespace MissionControl
 } // namespace Soro

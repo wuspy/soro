@@ -21,7 +21,7 @@
 #include "latlng.h"
 #include "camerawidget.h"
 #include "camerawindow.h"
-#include "mediacontrolwidget.h"
+#include "videocontrolwidget.h"
 
 namespace Ui {
     class SoroMainWindow;
@@ -40,6 +40,8 @@ public:
     CameraWidget* getTopCameraWidget();
     CameraWidget* getBottomCameraWidget();
     CameraWidget* getFullscreenCameraWidget();
+
+    bool isMuteAudioSelected();
 
 
 private:
@@ -68,7 +70,9 @@ signals:
     void chatMessageEntered(QString message);
     void cycleVideosClockwise();
     void cycleVideosCounterclockwise();
-    void cameraFormatChanged(int camera, const StreamFormat& format);
+    void cameraFormatChanged(int camera, VideoFormat format);
+    void audioStreamFormatChanged(AudioFormat format);
+    void audioStreamMuteChanged(bool mute);
     void cameraNameEdited(int camera, QString name);
 
 public slots:
@@ -90,19 +94,19 @@ public slots:
     void onRoleChanged(Role role);
     void onNameChanged(QString name);
     void onMasterChanged(bool isMaster);
-    void onCameraFormatChanged(int camera, const StreamFormat& format);
+    void onCameraFormatChanged(int camera, VideoFormat format);
     void setCameraName(int camera, QString name);
 
 private slots:
     void updateStatusBar();
     void updateConnectionStateInformation();
     void updateSubsystemStateInformation();
-    void camera1ControlOptionChanged(MediaControlWidget::Option option);
-    void camera2ControlOptionChanged(MediaControlWidget::Option option);
-    void camera3ControlOptionChanged(MediaControlWidget::Option option);
-    void camera4ControlOptionChanged(MediaControlWidget::Option option);
-    void camera5ControlOptionChanged(MediaControlWidget::Option option);
-    void cameraControlOptionChanged(int camera, MediaControlWidget::Option option);
+    void camera1ControlOptionChanged(VideoFormat option);
+    void camera2ControlOptionChanged(VideoFormat option);
+    void camera3ControlOptionChanged(VideoFormat option);
+    void camera4ControlOptionChanged(VideoFormat option);
+    void camera5ControlOptionChanged(VideoFormat option);
+    void cameraControlOptionChanged(int camera, VideoFormat option);
     void camera1NameEdited(QString newName);
     void camera2NameEdited(QString newName);
     void camera3NameEdited(QString newName);

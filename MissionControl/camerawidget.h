@@ -19,7 +19,7 @@
 
 #include "socketaddress.h"
 #include "soro_global.h"
-#include "videoencoding.h"
+#include "mediaencoding.h"
 
 namespace Ui {
 class CameraWidget;
@@ -37,7 +37,7 @@ public:
     /* Configure the widget to receive a video stream from a UDP socket. If succesful,
      * the widget should start playing the stream immediately.
      */
-    void play(SocketAddress address, VideoEncoding encoding);
+    void play(SocketAddress address, VideoFormat encoding);
 
     /* Stops video playback, and displays they reason why
      * if one is provided.

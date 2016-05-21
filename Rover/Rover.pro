@@ -20,7 +20,9 @@ SOURCES += main.cpp \
     ../shared/Soro/Rover/flycapenumerator.cpp \
     ../shared/Soro/Rover/uvdcameraenumerator.cpp \
     ../shared/Soro/Rover/videoserver.cpp \
-    ../shared/Soro/Rover/videoserverarray.cpp
+    ../shared/Soro/Rover/videoserverarray.cpp \
+    ../shared/Soro/Rover/mediaserver.cpp \
+    ../shared/Soro/Rover/audioserver.cpp
 
 HEADERS += \
     ../shared/Soro/soro_global.h \
@@ -35,15 +37,14 @@ HEADERS += \
     gpsserver.h \
     ../shared/Soro/mbedchannel.h \
     roverprocess.h \
-    ../shared/Soro/videoencoding.h \
     ../shared/Soro/Rover/flycapenumerator.h \
     ../shared/Soro/Rover/uvdcameraenumerator.h \
     ../shared/Soro/Rover/videoserver.h \
-    ../shared/Soro/Rover/videoserverarray.h
+    ../shared/Soro/Rover/videoserverarray.h \
+    ../shared/Soro/Rover/mediaserver.h \
+    ../shared/Soro/Rover/audioserver.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover
 
 LIBS += -lflycapture
-
-DISTFILES +=

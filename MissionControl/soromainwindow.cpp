@@ -35,25 +35,26 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     _preloaderMovie = new QMovie(this);
     _preloaderMovie->setFileName(":/icons/preloader_white_yellow_36px.gif");
 
-    ui->media_audioControlWidget->setName("Audio Stream");
-    ui->media_audioControlWidget->setMode(MediaControlWidget::AudioMode);
-
     ui->media_camera1ControlWidget->setName("Camera 1");
     ui->media_camera2ControlWidget->setName("Camera 2");
     ui->media_camera3ControlWidget->setName("Camera 3");
     ui->media_camera4ControlWidget->setName("Camera 4");
     ui->media_camera5ControlWidget->setName("Camera 5");
 
-    connect(ui->media_camera1ControlWidget, SIGNAL(optionSelected(MediaControlWidget::Option)),
-            this, SLOT(camera1ControlOptionChanged(MediaControlWidget::Option)));
-    connect(ui->media_camera2ControlWidget, SIGNAL(optionSelected(MediaControlWidget::Option)),
-            this, SLOT(camera2ControlOptionChanged(MediaControlWidget::Option)));
-    connect(ui->media_camera3ControlWidget, SIGNAL(optionSelected(MediaControlWidget::Option)),
-            this, SLOT(camera3ControlOptionChanged(MediaControlWidget::Option)));
-    connect(ui->media_camera4ControlWidget, SIGNAL(optionSelected(MediaControlWidget::Option)),
-            this, SLOT(camera4ControlOptionChanged(MediaControlWidget::Option)));
-    connect(ui->media_camera5ControlWidget, SIGNAL(optionSelected(MediaControlWidget::Option)),
-            this, SLOT(camera5ControlOptionChanged(MediaControlWidget::Option)));
+    connect(ui->media_audioControlWidget, SIGNAL(optionSelected(AudioFormat)),
+            this, SIGNAL(audioStreamFormatChanged(AudioFormat)));
+    connect(ui->media_audioControlWidget, SIGNAL(muteToggled(bool)),
+            this, SIGNAL(audioStreamMuteChanged(bool)));
+    connect(ui->media_camera1ControlWidget, SIGNAL(optionSelected(VideoFormat)),
+            this, SLOT(camera1ControlOptionChanged(VideoFormat)));
+    connect(ui->media_camera2ControlWidget, SIGNAL(optionSelected(VideoFormat)),
+            this, SLOT(camera2ControlOptionChanged(VideoFormat)));
+    connect(ui->media_camera3ControlWidget, SIGNAL(optionSelected(VideoFormat)),
+            this, SLOT(camera3ControlOptionChanged(VideoFormat)));
+    connect(ui->media_camera4ControlWidget, SIGNAL(optionSelected(VideoFormat)),
+            this, SLOT(camera4ControlOptionChanged(VideoFormat)));
+    connect(ui->media_camera5ControlWidget, SIGNAL(optionSelected(VideoFormat)),
+            this, SLOT(camera5ControlOptionChanged(VideoFormat)));
 
     connect(ui->media_camera1ControlWidget, SIGNAL(userEditedName(QString)),
             this, SLOT(camera1NameEdited(QString)));
@@ -286,23 +287,27 @@ void SoroMainWindow::updateSubsystemStateInformation() {
     }
 }
 
-void SoroMainWindow::camera1ControlOptionChanged(MediaControlWidget::Option option) {
+bool SoroMainWindow::isMuteAudioSelected() {
+    return ui->media_audioControlWidget->isMuted();
+}
+
+void SoroMainWindow::camera1ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(0, option);
 }
 
-void SoroMainWindow::camera2ControlOptionChanged(MediaControlWidget::Option option) {
+void SoroMainWindow::camera2ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(1, option);
 }
 
-void SoroMainWindow::camera3ControlOptionChanged(MediaControlWidget::Option option) {
+void SoroMainWindow::camera3ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(2, option);
 }
 
-void SoroMainWindow::camera4ControlOptionChanged(MediaControlWidget::Option option) {
+void SoroMainWindow::camera4ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(3, option);
 }
 
-void SoroMainWindow::camera5ControlOptionChanged(MediaControlWidget::Option option) {
+void SoroMainWindow::camera5ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(4, option);
 }
 
@@ -326,30 +331,12 @@ void SoroMainWindow::camera5NameEdited(QString newName) {
     emit cameraNameEdited(4, newName);
 }
 
-void SoroMainWindow::cameraControlOptionChanged(int camera, MediaControlWidget::Option option) {
-    switch (option) {
-    case MediaControlWidget::DisabledOption:
-        emit cameraFormatChanged(camera, StreamFormat());
-        break;
-    case MediaControlWidget::LowOption:
-        emit cameraFormatChanged(camera, streamFormatLow());
-        break;
-    case MediaControlWidget::NormalOption:
-        emit cameraFormatChanged(camera, streamFormatMedium());
-        break;
-    case MediaControlWidget::HighOption:
-        emit cameraFormatChanged(camera, streamFormatHigh());
-        break;
-    case MediaControlWidget::UltraOption:
-        emit cameraFormatChanged(camera, streamFormatUltra());
-        break;
-    default:
-        return;
-    }
+void SoroMainWindow::cameraControlOptionChanged(int camera, VideoFormat option) {
+    emit cameraFormatChanged(camera, option);
 }
 
 void SoroMainWindow::setCameraName(int camera, QString name) {
-    MediaControlWidget *widget;
+    VideoControlWidget *widget;
     switch (camera) {
     case 0:
         widget = ui->media_camera1ControlWidget;
@@ -503,8 +490,8 @@ void SoroMainWindow::onRoleChanged(Role role) {
     updateStatusBar();
 }
 
-void SoroMainWindow::onCameraFormatChanged(int camera, const StreamFormat &format) {
-    MediaControlWidget *widget;
+void SoroMainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
+    VideoControlWidget *widget;
     switch (camera) {
     case 0:
         widget = ui->media_camera1ControlWidget;
@@ -525,21 +512,7 @@ void SoroMainWindow::onCameraFormatChanged(int camera, const StreamFormat &forma
         return;
     }
 
-    if (format.isNull()) {
-        widget->selectOption(MediaControlWidget::DisabledOption);
-    }
-    else if (format == streamFormatLow()) {
-        widget->selectOption(MediaControlWidget::LowOption);
-    }
-    else if (format == streamFormatMedium()) {
-        widget->selectOption(MediaControlWidget::NormalOption);
-    }
-    else if (format == streamFormatHigh()) {
-        widget->selectOption(MediaControlWidget::HighOption);
-    }
-    else if (format == streamFormatUltra()) {
-        widget->selectOption(MediaControlWidget::UltraOption);
-    }
+    widget->selectOption(format);
 }
 
 CameraWidget* SoroMainWindow::getTopCameraWidget() {

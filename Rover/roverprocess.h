@@ -16,8 +16,8 @@
 #include "socketaddress.h"
 #include "gpsserver.h"
 #include "videoserver.h"
-#include "videoencoding.h"
 #include "videoserverarray.h"
+#include "audioserver.h"
 
 using namespace Soro;
 
@@ -47,6 +47,8 @@ private:
     MbedChannel *_driveGimbalControllerMbed = NULL;
 
     VideoServerArray *_videoServers = NULL;
+
+    AudioServer *_audioServer = NULL;
 
     // These hold the current stream formats for each camera.
     // If a camera currently isn't being streamed, the format will have an

@@ -1,5 +1,5 @@
-#ifndef VIDEOSERVER_H
-#define VIDEOSERVER_H
+#ifndef MEDIASERVER_H
+#define MEDIASERVER_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -7,16 +7,13 @@
 
 #include "socketaddress.h"
 #include "soro_global.h"
-#include "videoencoding.h"
 #include "logger.h"
 #include "channel.h"
-
-#include <flycapture/FlyCapture2.h>
 
 namespace Soro {
 namespace Rover {
 
-class VideoServer: public QObject {
+class MediaServer: public QObject {
     Q_OBJECT
 public:
     enum State {
@@ -32,55 +29,55 @@ public:
         StreamingState
     };
 
-    explicit VideoServer(QString name, SocketAddress host, Logger *log = 0, QObject *parent = 0);
-    ~VideoServer();
+    ~MediaServer();
 
     void stop();
-    void start(QString deviceName, StreamFormat format);
-    void start(FlyCapture2::PGRGuid camera, StreamFormat format);
-    QString getCameraName();
-    VideoServer::State getState();
-    const StreamFormat& getCurrentStreamFormat() const;
+    int getMediaId();
+    MediaServer::State getState() const;
 
 private:
-
     Logger *_log = NULL;
-    QString _name;
+    int _mediaId;
     SocketAddress _host;
     Channel *_controlChannel = NULL;
-    QUdpSocket *_videoSocket = NULL;
-    StreamFormat _format;
+    QUdpSocket *_mediaSocket = NULL;
     State _state = IdleState;
     QProcess _child;
-    QString _deviceDescription;
     QTcpServer *_ipcServer = NULL;
     QTcpSocket *_ipcSocket = NULL;
     int _startInternalTimerId = TIMER_INACTIVE;
+    QString LOG_TAG;
+
+    void beginStream(SocketAddress address);
 
     /* Internal state change method
      */
-    void setState(VideoServer::State state);
+    void setState(MediaServer::State state);
 
 private slots:
-    void videoSocketReadyRead();
+    void mediaSocketReadyRead();
     void controlChannelStateChanged(Channel *channel, Channel::State state);
-    void startInternal();
+    void beginClientHandshake();
     void childStateChanged(QProcess::ProcessState state);
-
-    /* Begins streaming video to the provided address.
-     * This will fail if the stream is not in WaitingState
-     */
-    void beginStream(SocketAddress address);
-
     void ipcServerClientAvailable();
 
 signals:
-    void stateChanged(VideoServer *server, VideoServer::State state);
-    void eos(VideoServer *server);
-    void error(VideoServer *server, QString message);
+    void stateChanged(MediaServer *server, MediaServer::State state);
+    void eos(MediaServer *server);
+    void error(MediaServer *server, QString message);
+
+protected:
+    MediaServer(QString logTag, int mediaId, QString childProcessPath, SocketAddress host, Logger *log, QObject *parent);
+
+    void initStream();
+
+    virtual void onStreamStoppedInternal() = 0;
+    virtual void constructChildArguments(QStringList& outArgs, SocketAddress host, SocketAddress address, quint16 ipcPort)=0;
+    virtual void constructStreamingMessage(QDataStream& stream)=0;
+
 };
 
 } // namespace Rover
 } // namespace Soro
 
-#endif // VIDEOSERVER_H
+#endif // MEDIASERVER_H

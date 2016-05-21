@@ -22,6 +22,8 @@ const char *_tag_DriveCameraMbedPort = "DriveCameraMbedPort";
 const char *_tag_SecondaryComputerPort = "SecondaryComputerPort";
 const char *_tag_MasterArmPort = "MasterArmPort";
 const char *_tag_McSubnetBroadcastPort = "McSubnetBroadcastPort";
+const char *_tag_AudioStreamPort = "AudioStreamPort";
+const char *_tag_RoverGpsServerPort = "RoverGpsServerPort";
 
 namespace Soro {
 
@@ -105,6 +107,16 @@ bool SoroIniLoader::load(QString *err) {
         return false;
     }
     SecondaryComputerPort = tmp;
+    if (!configParser.valueAsInt(_tag_AudioStreamPort, &tmp)) {
+        *err = "No audio stream port found in configuration file";
+        return false;
+    }
+    AudioStreamPort = tmp;
+    if (!configParser.valueAsInt(_tag_RoverGpsServerPort, &tmp)) {
+        *err = "No rover GPS server port found in configuration file";
+        return false;
+    }
+    RoverGpsServerPort = tmp;
     BlacklistedUvdCameras = configParser.valueAsStringList(_tag_UvdCameraBlacklist);
     if (!configParser.valueAsInt(_tag_MainComputerCameraCount, &MainComputerCameraCount)) {
         *err = "No main computer camera count found in configuration file";
