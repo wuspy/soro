@@ -27,6 +27,7 @@ public:
 private:
     VideoFormat _format;
     QString _videoDevice;
+    bool _starting = false;
 
 protected:
     /* Begins streaming video to the provided address.

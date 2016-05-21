@@ -55,8 +55,8 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
         VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
         _servers.insert(firstId, server);
         _uvdCameras.insert(firstId, videoDevice);
-        connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(serverStateChanged(VideoServer*, VideoServer::State)));
-        connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(serverError(VideoServer*,QString)));
+        connect(server, SIGNAL(stateChanged(MediaServer*, MediaServer::State)), this, SLOT(serverStateChanged(MediaServer*, MediaServer::State)));
+        connect(server, SIGNAL(error(MediaServer*,QString)), this, SLOT(serverError(MediaServer*,QString)));
 
         firstId++;
         firstNetworkPort++;

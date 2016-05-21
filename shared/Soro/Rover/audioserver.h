@@ -24,6 +24,7 @@ public:
 private:
     AudioFormat _format;
     QString _audioDevice;
+    bool _starting = false;
 
 protected:
     /* Begins streaming video to the provided address.

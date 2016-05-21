@@ -57,19 +57,19 @@ QString VideoStreamer::makeEncodingBinString(VideoFormat format, SocketAddress b
                      "video/x-raw,height=";
     switch (format) {
     case Mpeg2_144p_300Kpbs:
-        binStr += "144 ! avenc_mpeg4 bitrate=300000 bitrate-tolerance=300000";
+        binStr += "144 ! avenc_mpeg4 bitrate=300000 bitrate-tolerance=1000000";
         break;
     case Mpeg2_360p_750Kpbs:
-        binStr += "360 ! avenc_mpeg4 bitrate=750000 bitrate-tolerance=500000 max-threads=3";
+        binStr += "360 ! avenc_mpeg4 bitrate=750000 bitrate-tolerance=1000000";
         break;
     case Mpeg2_480p_1500Kpbs:
-        binStr += "480 ! avenc_mpeg4 bitrate=1500000 bitrate-tolerance=1000000 max-threads=3";
+        binStr += "480 ! avenc_mpeg4 bitrate=1500000 bitrate-tolerance=1000000";
         break;
     case Mpeg2_720p_3000Kpbs:
-        binStr += "720 ! avenc_mpeg4 bitrate=3000000 bitrate-tolerance=1000000 max-threads=3";
+        binStr += "720 ! avenc_mpeg4 bitrate=3000000 bitrate-tolerance=1000000";
         break;
     case Mpeg2_720p_5000Kpbs:
-        binStr += "720 ! avenc_mpeg4 bitrate=5000000 bitrate-tolerance=2000000 max-threads=3";
+        binStr += "720 ! avenc_mpeg4 bitrate=5000000 bitrate-tolerance=2000000";
         break;
     default:
         //unknown codec

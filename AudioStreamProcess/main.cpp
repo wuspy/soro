@@ -40,20 +40,20 @@ int main(int argc, char *argv[]) {
     format = reinterpret_cast<AudioFormat&>(encodingUInt);
 
     //parse address/port
-    address.host = QHostAddress(argv[5]);
-    address.port = QString(argv[6]).toInt(&ok);
+    address.host = QHostAddress(argv[3]);
+    address.port = QString(argv[4]).toInt(&ok);
     if ((address.host == QHostAddress::Null) | (address.host == QHostAddress::Any) | !ok) {
         // invalid address
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
     //parse bindAddress/bindPort
-    bindAddress.host = QHostAddress(argv[7]);
-    bindAddress.port = QString(argv[8]).toInt(&ok);
+    bindAddress.host = QHostAddress(argv[5]);
+    bindAddress.port = QString(argv[6]).toInt(&ok);
     if ((bindAddress.host == QHostAddress::Null) | !ok) {
         // invalid host
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
-    ipcPort = QString(argv[9]).toInt(&ok);
+    ipcPort = QString(argv[7]).toInt(&ok);
     if (!ok) {
         // invalid IPC port
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;

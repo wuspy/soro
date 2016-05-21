@@ -8,15 +8,22 @@ AudioServer::AudioServer(int mediaId, SocketAddress host, Logger *log, QObject *
 }
 
 void AudioServer::onStreamStoppedInternal() {
-    _audioDevice = "";
-    _format = AudioFormat_Null;
+    if (!_starting) {
+        _audioDevice = "";
+        _format = AudioFormat_Null;
+    }
 }
 
 void AudioServer::start(QString deviceName, AudioFormat format) {
     _audioDevice = deviceName;
+
     _format = format;
 
+    // prevent onStreamStoppedInternal from resetting the stream parameters
+    // in the event a running stream must be stopped
+    _starting = true;
     initStream();
+    _starting = false;
 }
 
 void AudioServer::constructChildArguments(QStringList& outArgs, SocketAddress host, SocketAddress address, quint16 ipcPort) {
