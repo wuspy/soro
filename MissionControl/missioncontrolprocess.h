@@ -104,8 +104,8 @@ private:
     QList<CameraWidget*> _freeCameraWidgets;
 
     // Audio stream subsystem
-    AudioClient *_audioClient;
-    AudioPlayer *_audioPlayer;
+    AudioClient *_audioClient = NULL;
+    AudioPlayer *_audioPlayer = NULL;
     AudioFormat _audioFormat = AudioFormat_Null;
 
     // Master arm stuff
