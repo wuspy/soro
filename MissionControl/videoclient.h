@@ -10,7 +10,6 @@
 #include "soro_global.h"
 #include "channel.h"
 #include "socketaddress.h"
-#include "mediaencoding.h"
 #include "mediaclient.h"
 
 namespace Soro {

@@ -19,7 +19,6 @@
 
 #include "socketaddress.h"
 #include "soro_global.h"
-#include "mediaencoding.h"
 
 namespace Ui {
 class CameraWidget;

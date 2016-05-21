@@ -300,11 +300,23 @@ void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::S
     }
 }
 
+void MissionControlProcess::playAudio() {
+    if (_audioFormat != AudioFormat_Null) {
+        if (_isMaster) {
+            _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, _audioClient->getServerAddress().port), _audioFormat);
+        }
+        else {
+            _audioPlayer->play(SocketAddress(QHostAddress::Any, _audioClient->getServerAddress().port), _audioFormat);
+        }
+    }
+}
+
 void MissionControlProcess::handleAudioStateChanged(AudioClient::State state, AudioFormat encoding, QString errorString) {
+    _audioFormat = encoding;
     switch (state) {
     case AudioClient::StreamingState:
         if (!ui->isMuteAudioSelected()) {
-            _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, _audioClient->getServerAddress().port), encoding);
+            playAudio();
         }
         break;
     default:
@@ -794,7 +806,12 @@ void MissionControlProcess::audioStreamFormatSelected(AudioFormat format) {
 }
 
 void MissionControlProcess::audioStreamMuteSelected(bool mute) {
-    _audioPlayer->stop();
+    if (mute) {
+        _audioPlayer->stop();
+    }
+    else if (_audioFormat) {
+        playAudio();
+    }
 }
 
 void MissionControlProcess::handleCameraNameChanged(int camera, QString newName) {
@@ -958,6 +975,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
         foreach (VideoClient *client, _videoClients) {
             bpsRoverUp += client->getBitrate();
         }
+        bpsRoverUp += _audioClient->getBitrate();
         bpsRoverUp += _sharedChannel->getBitsPerSecondDown();
         bpsRoverDown += _sharedChannel->getBitsPerSecondUp();
         if (_controlChannel != NULL) {

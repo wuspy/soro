@@ -106,6 +106,7 @@ private:
     // Audio stream subsystem
     AudioClient *_audioClient;
     AudioPlayer *_audioPlayer;
+    AudioFormat _audioFormat = AudioFormat_Null;
 
     // Master arm stuff
     MbedChannel *_masterArmChannel = NULL;
@@ -127,6 +128,7 @@ private:
     void handleCameraNameChanged(int camera, QString newName);
     void playStreamOnWidget(int cameraID, CameraWidget *widget, VideoFormat format);
     void endStreamOnWidget(CameraWidget *widget, QString reason);
+    void playAudio();
 
 private slots:
     void slave_masterSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);

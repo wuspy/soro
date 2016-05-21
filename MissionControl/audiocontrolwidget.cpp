@@ -18,6 +18,7 @@ AudioControlWidget::AudioControlWidget(QWidget *parent) :
             this, SIGNAL(muteToggled(bool)));
 
     setAvailable(true);
+    selectOption(AudioFormat_Null);
 }
 
 AudioControlWidget::~AudioControlWidget() {
