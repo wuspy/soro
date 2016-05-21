@@ -217,6 +217,7 @@ void MissionControlProcess::init() {
             this, SLOT(audioClientStateChanged(MediaClient*,MediaClient::State)));
 
     _audioPlayer = new AudioPlayer(this);
+    _audioFormat = AudioFormat_Null;
 
     // update UI
 
@@ -721,6 +722,21 @@ void MissionControlProcess::sendWelcomePackets() {
 
             channel->sendMessage(videoClientMessage);
         }
+
+        // send audio state
+
+        QByteArray audioClientState;
+        QDataStream stream4(&audioClientState, QIODevice::WriteOnly);
+        messageType = SharedMessage_AudioStreamChanged;
+        VideoClient::State state = _audioClient->getState();
+        AudioFormat format = _audioClient->getAudioFormat();
+
+        stream3 << reinterpret_cast<quint32&>(messageType);
+        stream3 << reinterpret_cast<quint32&>(state);
+        stream3 << reinterpret_cast<quint32&>(format);
+        stream3 << _audioClient->getErrorString();
+
+        channel->sendMessage(audioClientState);
 
         // send camera names
 
