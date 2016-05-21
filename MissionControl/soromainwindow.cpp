@@ -487,6 +487,14 @@ void SoroMainWindow::onMasterChanged(bool isMaster) {
 
 void SoroMainWindow::onRoleChanged(Role role) {
     _lastRole = role;
+    if (role == SpectatorRole) {
+        ui->hid_inputDeviceLabel->setStyleSheet("color: black;");
+        ui->hid_inputDeviceLabel->setText("Not available for spectators");
+        ui->hid_inputDeviceGraphicLabel->setStyleSheet("");
+        ui->comm_controlStateLabel->setStyleSheet("color: black;");
+        ui->comm_controlStateLabel->setText("Not available for spectators");
+        ui->comm_controlStateGraphicLabel->setStyleSheet("");
+    }
     updateStatusBar();
 }
 

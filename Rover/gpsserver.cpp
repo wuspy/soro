@@ -23,6 +23,24 @@ GpsServer::~GpsServer() {
     delete _socket;
 }
 
+double parseNMEALatitude(QString nmea){
+    int degrees;
+    int minutes;
+    int seconds;
+    sscanf(nmea.toLatin1().data(), "%2d%2d.%5d", &degrees, &minutes, &seconds);
+
+    return degrees + minutes/60 + seconds/3600;
+}
+
+double parseNMEALongitude(QString nmea){
+    int degrees;
+    int minutes;
+    int seconds;
+    sscanf(nmea.toLatin1().data(), "%3d%2d.%5d", &degrees, &minutes, &seconds);
+
+    return degrees + minutes/60 + seconds/3600;
+}
+
 void GpsServer::socketReadyRead() {
     LOG_D("socketReadyRead() called");
     SocketAddress address;
@@ -34,12 +52,14 @@ void GpsServer::socketReadyRead() {
             //an error occurred reading from the socket, the onSocketError slot will handle it
             return;
         }
-        if (_buffer[0] != '$') {
-            LOG_W("Received non-NMEA message from gps provider");
-            return;
-        }
         QString nmea = QString(_buffer);
         LOG_I(nmea);
+
+        QStringList nmeas = nmea.split(",");
+        double latitude = parseNMEALatitude(nmeas[3]);
+        double longitude = parseNMEALongitude(nmeas[5]);
+        LatLng coords(latitude, longitude);
+        emit gpsUpdate(coords);
     }
 }
 

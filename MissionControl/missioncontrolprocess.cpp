@@ -102,12 +102,12 @@ void MissionControlProcess::init() {
     }
 
     // start statistic timers
-    START_TIMER(_rttStatTimerId, 1000);
     if (_isMaster) {
         START_TIMER(_bitrateUpdateTimerId, 1000);
     }
     if (_role != SpectatorRole) { // spectator has no UDP connection to monitor
         START_TIMER(_droppedPacketTimerId, 5000);
+        START_TIMER(_rttStatTimerId, 1000);
     }
 
     LOG_I("****************Initializing Mission Control network connections*******************");
@@ -555,6 +555,11 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         LOG_E("Streaming error on camera " + QString::number(cameraId) + ": " + error);
     }
         break;
+    case SharedMessage_RoverGpsUpdate: {
+        LatLng coords;
+        stream >> coords;
+        ui->onLocationUpdate(coords);
+    }
     default:
         LOG_E("Got unknown message header on shared channel");
         break;

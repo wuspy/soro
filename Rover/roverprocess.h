@@ -77,6 +77,8 @@ private slots:
 
     void videoServerError(int cameraId, QString message);
 
+    void gpsUpdate(LatLng coords);
+
 protected:
     void timerEvent(QTimerEvent *e);
 };
