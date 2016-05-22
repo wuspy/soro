@@ -323,13 +323,16 @@ int MbedChannel::read(char *outMessage, int maxLength) {
     int len = _socket->receiveFrom(peer, _buffer, maxLength);
     unsigned int sequence = deserialize<unsigned int>(_buffer + 2);
     if ((len < 6)
-            || (sequence < _lastReceiveId)
             || (peer.get_port() != _server.get_port())
             || (_buffer[0] != '\0')
             || (_buffer[1] != _mbedId)) {
         return -1;
     }
+    if ((sequence < _lastReceiveId) && (time(NULL) - _lastReceiveTime < 2)) {
+        return -1;
+    }
     _lastReceiveId = sequence;
+    _lastReceiveTime = time(NULL);
     memcpy(outMessage, _buffer + 6, len - 6);
     return len - 6;
 }

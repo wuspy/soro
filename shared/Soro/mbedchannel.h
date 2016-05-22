@@ -93,6 +93,7 @@ private:
     UDPSocket *_socket;
     Endpoint _server;
     time_t _lastSendTime;
+    time_t _lastReceiveTime;
     unsigned int _nextSendId;
     unsigned int _lastReceiveId;
     char _mbedId;

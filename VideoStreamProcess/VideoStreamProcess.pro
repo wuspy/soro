@@ -19,7 +19,8 @@ HEADERS += \
     ../shared/Soro/socketaddress.h \
     videostreamer.h \
     flycapcamera.h \
-    ../shared/Soro/Rover/mediastreamer.h
+    ../shared/Soro/Rover/mediastreamer.h \
+    videostreamer.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover
