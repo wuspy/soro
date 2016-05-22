@@ -114,7 +114,7 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         LOG_I("*****************Initializing GPS system*******************");
 
-        _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, 1911), _log);
+        _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, _config.RoverGpsServerPort), _log);
         connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
                 this, SLOT(gpsUpdate(NmeaMessage)));
 
