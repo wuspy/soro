@@ -11,7 +11,6 @@
 #include "soroini.h"
 #include "socketaddress.h"
 #include "videoserver.h"
-#include "videoencoding.h"
 #include "videoserverarray.h"
 
 using namespace Soro;
