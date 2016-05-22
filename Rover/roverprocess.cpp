@@ -289,7 +289,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     case SharedMessage_RequestActivateAudioStream:
         AudioFormat format;
         stream >> reinterpret_cast<quint32&>(format);
-        _audioServer->start("hw:0", format);
+        _audioServer->start("hw:1", format);
         break;
     case SharedMessage_RequestDeactivateAudioStream:
         _audioServer->stop();
