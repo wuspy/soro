@@ -560,9 +560,16 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
     }
         break;
     case SharedMessage_RoverGpsUpdate: {
-        LatLng coords;
-        stream >> coords;
-        ui->onLocationUpdate(coords);
+        NmeaMessage *message = new NmeaMessage;
+        stream >> *message;
+        ui->onLocationUpdate(*message);
+
+        if (_isMaster) {
+            _gpsMessages.append(message);
+        }
+        else {
+            delete message;
+        }
     }
     default:
         LOG_E("Got unknown message header on shared channel");
@@ -753,7 +760,21 @@ void MissionControlProcess::sendWelcomePackets() {
             stream << (qint32)i;
             stream << _cameraNames.at(i);
 
-            broadcastSharedMessage(message.constData(), message.size(), false);
+            channel->sendMessage(message.constData(), message.size());
+        }
+
+        // send gps locations
+
+        foreach (NmeaMessage *nmeaMessage, _gpsMessages) {
+            // rebroadcast to other mission controls
+            QByteArray message;
+            QDataStream stream(&message, QIODevice::WriteOnly);
+            SharedMessageType messageType = SharedMessage_RoverGpsUpdate;
+
+            stream << reinterpret_cast<quint32&>(messageType);
+            stream << *nmeaMessage;
+
+            channel->sendMessage(message.constData(), message.size());
         }
     }
 

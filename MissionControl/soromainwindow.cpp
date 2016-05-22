@@ -379,8 +379,14 @@ void SoroMainWindow::onBitrateUpdate(quint64 bpsRoverDown, quint64 bpsRoverUp) {
     ui->comm_bitrateLabel->setText("Rover ▲ " + formatDataRate(bpsRoverUp, "b/s") + " ▼ " + formatDataRate(bpsRoverDown, "b/s"));
 }
 
-void SoroMainWindow::onLocationUpdate(const LatLng &location) {
+void SoroMainWindow::onLocationUpdate(const NmeaMessage &location) {
     ui->googleMapView->updateLocation(location);
+    ui->gpsStatusLabel->setText("<html><b>GPS:</b> "
+                                + QString::number(location.Satellites) + " Satellites, "
+                                + QString::number(location.GroundSpeed) + "kph, "
+                                + QString::number(location.Altitude) + "m Elevation");
+
+    START_TIMER(_clearGpsStatusTimerId, 15000);
 }
 
 /*void SoroMainWindow::timerEvent(QTimerEvent *e) {
@@ -434,6 +440,13 @@ void SoroMainWindow::onConnectionStateChanged(Channel::State controlChannelState
     ui->googleMapView->updateHeading(rand() % 360);
 }*/
 
+void SoroMainWindow::timerEvent(QTimerEvent *e) {
+    QMainWindow::timerEvent(e);
+    if (e->timerId() == _clearGpsStatusTimerId) {
+        ui->gpsStatusLabel->setText("Waiting for GPS...");
+        KILL_TIMER(_clearGpsStatusTimerId);
+    }
+}
 
 void SoroMainWindow::onControlChannelStateChanged(Channel::State state) {
     _lastControlChannelState = state;

@@ -13,20 +13,11 @@ void GoogleMapView::addMarker(QString type) {
     page()->runJavaScript("addMarker(\"" + type + "\");");
 }
 
-void GoogleMapView::updateLocation(const LatLng& location) {
-    if (_lastSetLocation.isEmpty() || (_lastSetLocation.metersTo(location) >= MIN_UPDATE_DISTANCE)) {
-        page()->runJavaScript("updateLocation(" + location.toString() + ");");
-        _lastSetLocation = location;
-    }
-    _lastLocation = location;
-}
-
-void GoogleMapView::updateHeading(int degrees) {
-     page()->runJavaScript("updateHeading(" + QString::number(degrees) + ");");
-}
-
-const Soro::LatLng& GoogleMapView::getLastLocation() const {
-    return _lastLocation;
+void GoogleMapView::updateLocation(const NmeaMessage& location) {
+    page()->runJavaScript("updateLocation("
+                          + QString::number(location.Latitude) + ", "
+                          + QString::number(location.Longitude) + ", "
+                          + QString::number(location.Heading) + ");");
 }
 
 }

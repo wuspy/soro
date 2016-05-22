@@ -42,7 +42,8 @@ HEADERS += \
     ../shared/Soro/Rover/videoserver.h \
     ../shared/Soro/Rover/videoserverarray.h \
     ../shared/Soro/Rover/mediaserver.h \
-    ../shared/Soro/Rover/audioserver.h
+    ../shared/Soro/Rover/audioserver.h \
+    ../shared/Soro/nmeamessage.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover

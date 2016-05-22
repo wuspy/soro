@@ -24,7 +24,9 @@ VideoControlWidget::VideoControlWidget(QWidget *parent) :
     connect(ui->nameLineEdit, SIGNAL(returnPressed()),
             this, SLOT(nameEditReturnClicked()));
 
-    setAvailable(true);
+    ui->nameLineEdit->setVisible(false);
+    ui->nameLabel->setVisible(true);
+    ui->editNameButton->setVisible(true);
     selectOption(VideoFormat_Null);
 }
 
@@ -75,9 +77,6 @@ void VideoControlWidget::optionButtonClicked() {
 }
 
 void VideoControlWidget::setAvailable(bool available) {
-    ui->nameLineEdit->setVisible(false);
-    ui->nameLabel->setVisible(true);
-    ui->editNameButton->setVisible(true);
     if (available) {
         ui->unavailableLabel->hide();
         ui->disabledRadioButton->show();

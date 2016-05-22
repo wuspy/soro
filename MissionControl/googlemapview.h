@@ -5,7 +5,7 @@
 #include <QWebEnginePage>
 #include <QWebEngineView>
 
-#include "latlng.h"
+#include "nmeamessage.h"
 
 namespace Soro {
 namespace MissionControl {
@@ -14,14 +14,10 @@ namespace MissionControl {
         Q_OBJECT
     public:
         explicit GoogleMapView(QWidget *parent = 0);
-        const LatLng& getLastLocation() const;
+
     public slots:
         void addMarker(QString type);
-        void updateLocation(const LatLng& location);
-        void updateHeading(int degrees);
-    private:
-        LatLng _lastSetLocation;
-        LatLng _lastLocation;
+        void updateLocation(const NmeaMessage& location);
     };
 
 }

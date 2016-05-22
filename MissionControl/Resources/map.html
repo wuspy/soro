@@ -44,7 +44,7 @@
 
 		/* Called by the host application when the position has changed
 		 */
-		function updateLocation(lat, long) {
+		function updateLocation(lat, long, heading) {
 			var newLocation = new google.maps.LatLng(lat, long);
 			if (located) {
 				//add a polyline from the last location to the current one
@@ -63,23 +63,19 @@
 				lastLocation = newLocation;
 				recenter();
 			}
-			setPositionMarker();
-		}
+			// set heading marker
 
-		function setPositionMarker() {
-			lastHeading = degrees;
-			if (!located) return;
 			if (headingMarker != null) {
 				headingMarker.setMap(null);
 			}
 			headingMarker = new google.maps.Marker({
-			    position: lastLocation,
+			    position: newLocation,
 			    icon: {
-					path: google.maps.SymbolPath.CIRCLE,
+					path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
 				    fillColor: 'red',
 				    fillOpacity: 1,
 				    scale: 4,
-				    rotation: lastHeading,
+				    rotation: heading,
 					strokeColor: 'white',
 					strokeWeight: 2
 				},

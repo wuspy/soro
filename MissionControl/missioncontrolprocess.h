@@ -103,6 +103,9 @@ private:
     QList<QString> _cameraNames; // camera ID is by index
     QList<CameraWidget*> _freeCameraWidgets;
 
+    // stored by the master mission control
+    QList<NmeaMessage*> _gpsMessages;
+
     // Audio stream subsystem
     AudioClient *_audioClient = NULL;
     AudioPlayer *_audioPlayer = NULL;

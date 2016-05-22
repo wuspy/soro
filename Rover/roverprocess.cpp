@@ -114,10 +114,9 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         LOG_I("*****************Initializing GPS system*******************");
 
-        _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, _config.RoverGpsServerPort), _log);
-
-        connect(_gpsServer, SIGNAL(gpsUpdate(LatLng)),
-                this, SLOT(gpsUpdate(LatLng)));
+        _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, 1911), _log);
+        connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
+                this, SLOT(gpsUpdate(NmeaMessage)));
 
         LOG_I("*****************Initializing Video system*******************");
 
@@ -326,14 +325,14 @@ void RoverProcess::videoServerError(int cameraId, QString message) {
     _sharedChannel->sendMessage(byteArray);
 }
 
-void RoverProcess::gpsUpdate(LatLng coords) {
+void RoverProcess::gpsUpdate(NmeaMessage message) {
     QByteArray byteArray;
     QDataStream stream(&byteArray, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_RoverGpsUpdate;
     stream.setByteOrder(QDataStream::BigEndian);
 
     stream << reinterpret_cast<quint32&>(messageType);
-    stream << coords;
+    stream << message;
 
     _sharedChannel->sendMessage(byteArray);
 }

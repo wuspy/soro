@@ -104,6 +104,35 @@ margin-right: 10px;</string>
        </property>
       </spacer>
      </item>
+     <item>
+      <widget class="QLabel" name="gpsStatusLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Roboto</family>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">margin-left: 10px;
+margin-right: 10px;</string>
+       </property>
+       <property name="text">
+        <string>Waiting for GPS...</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
    <widget class="Soro::MissionControl::GoogleMapView" name="googleMapView" native="true">

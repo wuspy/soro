@@ -18,7 +18,7 @@
 #include "channel.h"
 #include "soro_global.h"
 #include "mbedchannel.h"
-#include "latlng.h"
+#include "nmeamessage.h"
 #include "camerawidget.h"
 #include "camerawindow.h"
 #include "videocontrolwidget.h"
@@ -63,6 +63,8 @@ private:
     int _lastDroppedPacketPercent = 0;
     int _lastRtt = 0;
 
+    int _clearGpsStatusTimerId = TIMER_INACTIVE;
+
     QMessageBox *_messageBoxHolder = NULL;
 
 signals:
@@ -79,7 +81,7 @@ public slots:
     void onFatalError(QString description);
     void onWarning(QString description);
     void onGamepadChanged(SDL_GameController *controller);
-    void onLocationUpdate(const LatLng& location);
+    void onLocationUpdate(const NmeaMessage& location);
     void onControlChannelStateChanged(Channel::State state);
     void onMccChannelStateChanged(Channel::State state);
     void onSharedChannelStateChanged(Channel::State state);
@@ -115,6 +117,7 @@ private slots:
     void camera5NameEdited(QString newName);
 
 protected:
+    void timerEvent(QTimerEvent *e);
     void keyPressEvent(QKeyEvent *e);
     void resizeEvent(QResizeEvent *e);
 };

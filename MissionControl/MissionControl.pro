@@ -38,7 +38,7 @@ SOURCES += \
 HEADERS  += \
     ../shared/Soro/channel.h \
     ../shared/Soro/iniparser.h \
-    ../shared/Soro/latlng.h \
+    ../shared/Soro/nmeamessage.h \
     ../shared/Soro/logger.h \
     ../shared/Soro/socketaddress.h \
     ../shared/Soro/armmessage.h \
@@ -71,7 +71,6 @@ FORMS    += \
 
 RESOURCES += \
     Resources/MissionControl.qrc
-
 
 INCLUDEPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro
 DEPENDPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro

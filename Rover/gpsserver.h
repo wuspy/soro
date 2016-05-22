@@ -8,7 +8,7 @@
 #include "logger.h"
 #include "soro_global.h"
 #include "socketaddress.h"
-#include "latlng.h"
+#include "nmeamessage.h"
 
 namespace Soro {
 namespace Rover {
@@ -29,7 +29,7 @@ private:
 
 signals:
     void connectionError(QAbstractSocket::SocketError err);
-    void gpsUpdate(LatLng coordinates);
+    void gpsUpdate(NmeaMessage update);
 
 private slots:
     void socketReadyRead();

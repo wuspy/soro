@@ -14,10 +14,10 @@
 #include "drivemessage.h"
 #include "gimbalmessage.h"
 #include "socketaddress.h"
-#include "gpsserver.h"
 #include "videoserver.h"
 #include "videoserverarray.h"
 #include "audioserver.h"
+#include "gpsserver.h"
 
 using namespace Soro;
 
@@ -77,7 +77,7 @@ private slots:
 
     void videoServerError(int cameraId, QString message);
 
-    void gpsUpdate(LatLng coords);
+    void gpsUpdate(NmeaMessage message);
 
 protected:
     void timerEvent(QTimerEvent *e);
