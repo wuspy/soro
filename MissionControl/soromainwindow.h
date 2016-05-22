@@ -15,6 +15,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gamecontroller.h>
 
+#include "armmessage.h"
 #include "channel.h"
 #include "soro_global.h"
 #include "mbedchannel.h"
@@ -76,6 +77,7 @@ signals:
     void audioStreamFormatChanged(AudioFormat format);
     void audioStreamMuteChanged(bool mute);
     void cameraNameEdited(int camera, QString name);
+    void reloadMasterArmClicked();
 
 public slots:
     void onFatalError(QString description);
@@ -92,6 +94,7 @@ public slots:
     void onDriveCameraSubsystemStateChanged(RoverSubsystemState state);
     void onSecondaryComputerStateChanged(RoverSubsystemState state);
     void arm_onMasterArmStateChanged(MbedChannel::State state);
+    void arm_onMasterArmUpdate(const char *armMessage);
     void onNotification(NotificationType type, QString sender, QString message);
     void onRoleChanged(Role role);
     void onNameChanged(QString name);

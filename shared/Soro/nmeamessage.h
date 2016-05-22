@@ -41,9 +41,10 @@ struct NmeaMessage {
         stream >> temp;
         message.Satellites = (int)temp;
         stream >> temp;
-        message.Heading = (int)temp;
+        message.Altitude = (int)temp;
         stream >> temp;
-        message.GroundSpeed = temp;
+        message.Heading = (int)temp;
+        stream >> message.GroundSpeed;
 
         return stream;
     }

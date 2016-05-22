@@ -120,7 +120,6 @@ private:
     RoverSubsystemState _lastDriveGimbalSubsystemState = UnknownSubsystemState;
     RoverSubsystemState _lastSecondaryComputerSubsystemState = UnknownSubsystemState;
 
-    void arm_loadMasterArmConfig();
     void initSDL();
     void quitSDL();
     void handleSharedChannelMessage(const char *message, Channel::MessageSize size);
@@ -148,6 +147,7 @@ private slots:
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void init();
     void chatMessageEntered(QString message);
+    void arm_loadMasterArmConfig();
 
     void cycleVideosClockwise();
     void cycleVideosCounterClockwise();

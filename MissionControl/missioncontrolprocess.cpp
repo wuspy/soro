@@ -47,6 +47,9 @@ MissionControlProcess::MissionControlProcess(QString name, bool masterSubnetNode
     connect(ui, SIGNAL(audioStreamMuteChanged(bool)),
             this, SLOT(audioStreamMuteSelected(bool)));
 
+    connect(ui, SIGNAL(reloadMasterArmClicked()),
+            this, SLOT(arm_loadMasterArmConfig()));
+
     QTimer::singleShot(1, this, SLOT(init()));
 }
 
@@ -1142,10 +1145,7 @@ void MissionControlProcess::arm_masterArmMessageReceived(const char *message, in
     memcpy(_buffer, message, size);
     //translate message from master pot values to slave servo values
     ArmMessage::translateMasterArmValues(_buffer, _masterArmRanges);
-    qDebug() << "yaw=" << ArmMessage::getMasterYaw(_buffer)
-             << ", shldr=" << ArmMessage::getMasterShoulder(_buffer)
-             << ", elbow=" << ArmMessage::getMasterElbow(_buffer)
-             << ", wrist=" << ArmMessage::getMasterWrist(_buffer); /**/
+    ui->arm_onMasterArmUpdate(message);
     if (_controlChannel != NULL) {
         _controlChannel->sendMessage(_buffer, size);
     }

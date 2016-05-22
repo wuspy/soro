@@ -67,6 +67,9 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     connect(ui->media_camera5ControlWidget, SIGNAL(userEditedName(QString)),
             this, SLOT(camera5NameEdited(QString)));
 
+    connect(ui->masterarm_reloadFileButton, SIGNAL(clicked(bool)),
+            this, SIGNAL(reloadMasterArmClicked()));
+
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
     addWidgetShadow(ui->videoContainer, 10, 0);
@@ -224,11 +227,29 @@ void SoroMainWindow::arm_onMasterArmStateChanged(MbedChannel::State state) {
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
         break;
     case MbedChannel::ConnectingState:
+        ui->masterarm_yawValueLabel->setText("N/A");
+        ui->masterarm_shoulderValueLabel->setText("N/A");
+        ui->masterarm_elbowValueLabel->setText("N/A");
+        ui->masterarm_wristValueLabel->setText("N/A");
+        ui->masterarm_bucketToggleValueLabel->setText("N/A");
+        ui->masterarm_dumpMacroValueLabel->setText("N/A");
+        ui->masterarm_stowMacroValueLabel->setText("N/A");
+
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->hid_inputDeviceLabel->setText("Connecting to master arm...");
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
         break;
     }
+}
+
+void SoroMainWindow::arm_onMasterArmUpdate(const char *armMessage) {
+    ui->masterarm_yawValueLabel->setText(QString::number(ArmMessage::getMasterYaw(armMessage)));
+    ui->masterarm_shoulderValueLabel->setText(QString::number(ArmMessage::getMasterShoulder(armMessage)));
+    ui->masterarm_elbowValueLabel->setText(QString::number(ArmMessage::getMasterElbow(armMessage)));
+    ui->masterarm_wristValueLabel->setText(QString::number(ArmMessage::getMasterWrist(armMessage)));
+    ui->masterarm_bucketToggleValueLabel->setText(ArmMessage::getBucketClose(armMessage) ? "CLOSE" : "OPEN");
+    ui->masterarm_dumpMacroValueLabel->setText(ArmMessage::getDump(armMessage) ? "ON" : "OFF");
+    ui->masterarm_stowMacroValueLabel->setText(ArmMessage::getStow(armMessage) ? "ON" : "OFF");
 }
 
 void SoroMainWindow::updateSubsystemStateInformation() {
