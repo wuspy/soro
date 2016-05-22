@@ -523,6 +523,11 @@ void SoroMainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
     widget->selectOption(format);
 }
 
+void SoroMainWindow::onAudioFormatChanged(AudioFormat format) {
+    ui->media_audioControlWidget->selectOption(format);
+}
+
+
 CameraWidget* SoroMainWindow::getTopCameraWidget() {
     return ui->topVideoWidget;
 }

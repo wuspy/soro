@@ -95,6 +95,7 @@ public slots:
     void onNameChanged(QString name);
     void onMasterChanged(bool isMaster);
     void onCameraFormatChanged(int camera, VideoFormat format);
+    void onAudioFormatChanged(AudioFormat format);
     void setCameraName(int camera, QString name);
 
 private slots:

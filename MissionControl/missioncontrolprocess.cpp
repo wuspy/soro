@@ -213,7 +213,7 @@ void MissionControlProcess::init() {
     if (_isMaster) {
         _audioClient = new AudioClient(69, SocketAddress(_config.ServerAddress, _config.AudioStreamPort), QHostAddress::Any, _log, this);
         // forward audio stream through localhost
-        _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _audioClient->getServerAddress().port));
+        _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _config.AudioStreamPort));
         connect(_audioClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
                 this, SLOT(audioClientStateChanged(MediaClient*,MediaClient::State)));
     }
@@ -306,16 +306,17 @@ void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::S
 void MissionControlProcess::playAudio() {
     if (_audioFormat != AudioFormat_Null) {
         if (_isMaster) {
-            _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, _audioClient->getServerAddress().port), _audioFormat);
+            _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, _config.AudioStreamPort), _audioFormat);
         }
         else {
-            _audioPlayer->play(SocketAddress(QHostAddress::Any, _audioClient->getServerAddress().port), _audioFormat);
+            _audioPlayer->play(SocketAddress(QHostAddress::Any, _config.AudioStreamPort), _audioFormat);
         }
     }
 }
 
 void MissionControlProcess::handleAudioStateChanged(AudioClient::State state, AudioFormat encoding, QString errorString) {
     _audioFormat = encoding;
+    ui->onAudioFormatChanged(encoding);
     switch (state) {
     case AudioClient::StreamingState:
         if (!ui->isMuteAudioSelected()) {
@@ -435,7 +436,7 @@ void MissionControlProcess::master_broadcastSocketReadyRead() {
                 client->addForwardingAddress(SocketAddress(peer.host, client->getServerAddress().port));
             }
             // and audio stream
-            _audioClient->addForwardingAddress(SocketAddress(peer.host, _audioClient->getServerAddress().port));
+            _audioClient->addForwardingAddress(SocketAddress(peer.host, _config.AudioStreamPort));
         }
     }
 }
