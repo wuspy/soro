@@ -61,7 +61,7 @@ void GpsServer::socketReadyRead() {
             if (latDirection.compare("S", Qt::CaseInsensitive) && (nmeaMessage.Latitude != -1) == 0) {
                 nmeaMessage.Latitude *= -1;
             }
-            if (lngDirection.compare("W", Qt::CaseInsensitive) && (nmeaMessage.Longitude != -1) == 0) {
+            if (lngDirection.compare("E", Qt::CaseInsensitive) && (nmeaMessage.Longitude != -1) == 0) {
                 nmeaMessage.Longitude *= -1;
             }
 
