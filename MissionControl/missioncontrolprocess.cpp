@@ -209,11 +209,10 @@ void MissionControlProcess::init() {
     }
 
     LOG_I("***************Initializing Audio system******************");
-    _audioClient = new AudioClient(69, SocketAddress(_config.ServerAddress, _config.AudioStreamPort), QHostAddress::Any, _log, this);
-
-    // forward audio stream through localhost
 
     if (_isMaster) {
+        _audioClient = new AudioClient(69, SocketAddress(_config.ServerAddress, _config.AudioStreamPort), QHostAddress::Any, _log, this);
+        // forward audio stream through localhost
         _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _audioClient->getServerAddress().port));
         connect(_audioClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
                 this, SLOT(audioClientStateChanged(MediaClient*,MediaClient::State)));
