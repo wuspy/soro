@@ -19,7 +19,7 @@ SOURCES += main.cpp \
     ../shared/Soro/Rover/videoserver.cpp \
     rover2process.cpp \
     ../shared/Soro/Rover/videoserverarray.cpp \
-../shared/Soro/Rover/mediaserver.cpp
+    ../shared/Soro/Rover/mediaserver.cpp
 
 HEADERS += \
     ../shared/Soro/iniparser.h \

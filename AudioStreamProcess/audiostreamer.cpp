@@ -28,7 +28,7 @@ AudioStreamer::AudioStreamer(QString sourceDevice, AudioFormat format, SocketAdd
 }
 
 QString AudioStreamer::makeEncodingBinString(AudioFormat format, SocketAddress bindAddress, SocketAddress address) {
-    QString binStr = "audioconvert ! ";
+    QString binStr = "audioconvert ! audio/x-raw,rate=32000 ! ";
     switch (format) {
     case AC3:
         binStr += "avenc_ac3 ! rtpac3pay ! ";
