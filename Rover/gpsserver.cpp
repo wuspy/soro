@@ -58,12 +58,7 @@ void GpsServer::socketReadyRead() {
             nmeaMessage.Longitude = longitude.isEmpty() ? -1 :
                                             (longitude.mid(0, longitude.indexOf(".") - 2).toDouble()
                                                         + (longitude.mid(longitude.indexOf(".") - 2).toDouble() / 60.0));
-            if (latDirection.compare("S", Qt::CaseInsensitive) && (nmeaMessage.Latitude != -1) == 0) {
-                nmeaMessage.Latitude *= -1;
-            }
-            if (lngDirection.compare("E", Qt::CaseInsensitive) && (nmeaMessage.Longitude != -1) == 0) {
-                nmeaMessage.Longitude *= -1;
-            }
+            nmeaMessage.Longitude = -nmeaMessage.Longitude;
 
             nmeaMessage.Satellites = satellites.isEmpty() ? 0 : satellites.toInt();
             nmeaMessage.Altitude = altitude.isEmpty() ? -1 :  qRound(altitude.toDouble());
