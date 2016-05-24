@@ -634,7 +634,7 @@ margin-right: 10px;</string>
         <enum>QTabWidget::North</enum>
        </property>
        <property name="currentIndex">
-        <number>4</number>
+        <number>3</number>
        </property>
        <widget class="QWidget" name="notificationTab">
         <attribute name="title">
@@ -915,9 +915,9 @@ margin-right: 10px;</string>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="settingsTab">
+       <widget class="QWidget" name="cartographyTab">
         <attribute name="title">
-         <string>Settings</string>
+         <string>Cartography</string>
         </attribute>
        </widget>
        <widget class="QWidget" name="masterArmTab">

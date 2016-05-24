@@ -15,9 +15,9 @@ void GoogleMapView::addMarker(QString type) {
 
 void GoogleMapView::updateLocation(const NmeaMessage& location) {
     page()->runJavaScript("updateLocation("
-                          + QString::number(location.Latitude) + ", "
-                          + QString::number(location.Longitude) + ", "
-                          + QString::number(location.Heading) + ");");
+                          + QString::number(location.Latitude, 'f', 10) + ", "
+                          + QString::number(location.Longitude, 'f', 10) + ", "
+                          + QString::number(location.Heading, 'f', 10) + ");");
 }
 
 }

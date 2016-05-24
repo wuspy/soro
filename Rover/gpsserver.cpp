@@ -52,6 +52,8 @@ void GpsServer::socketReadyRead() {
             QString altitude = ggaList[9];
             QString altitudeUnits = ggaList[10];
 
+            // Hardcoded for northern/western hemisphere
+
             nmeaMessage.Latitude = latitude.isEmpty() ? -1 :
                                             (latitude.mid(0, latitude.indexOf(".") - 2).toDouble()
                                                         + (latitude.mid(latitude.indexOf(".") - 2).toDouble() / 60.0));
