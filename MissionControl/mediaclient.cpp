@@ -13,7 +13,7 @@ MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHos
 
     LOG_I("Creating new media client for server at " + server.toString());
 
-    _controlChannel = new Channel(this, _server, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host, _log);
+    _controlChannel = Channel::createClient(this, _server, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host, _log);
     _mediaSocket = new QUdpSocket(this);
 
     _buffer = new char[65536];

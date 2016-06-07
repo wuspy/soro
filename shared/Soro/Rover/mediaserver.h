@@ -1,5 +1,5 @@
-#ifndef MEDIASERVER_H
-#define MEDIASERVER_H
+#ifndef SORO_ROVER_MEDIASERVER_H
+#define SORO_ROVER_MEDIASERVER_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -13,6 +13,9 @@
 namespace Soro {
 namespace Rover {
 
+/* Abstract class implementing the base functionality for sending a UDP
+ * stream to a MediaClient.
+ */
 class MediaServer: public QObject {
     Q_OBJECT
 public:
@@ -80,4 +83,4 @@ protected:
 } // namespace Rover
 } // namespace Soro
 
-#endif // MEDIASERVER_H
+#endif // SORO_ROVER_MEDIASERVER_H

@@ -1,5 +1,5 @@
-#ifndef MEDIACONTROLWIDGET_H
-#define MEDIACONTROLWIDGET_H
+#ifndef SORO_MISSIONCONTROL_VIDEOCONTROLWIDGET_H
+#define SORO_MISSIONCONTROL_VIDEOCONTROLWIDGET_H
 
 #include <QWidget>
 #include <QRadioButton>
@@ -13,6 +13,9 @@ class VideoControlWidget;
 namespace Soro {
 namespace MissionControl {
 
+/* UI control for controlling the quality of a video
+ * stream.
+ */
 class VideoControlWidget : public QWidget {
     Q_OBJECT
 
@@ -43,4 +46,4 @@ private slots:
 }
 }
 
-#endif // MEDIACONTROLWIDGET_H
+#endif // SORO_MISSIONCONTROL_VIDEOCONTROLWIDGET_H

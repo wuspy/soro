@@ -1,5 +1,5 @@
-#ifndef CAMERAWINDOW_H
-#define CAMERAWINDOW_H
+#ifndef SORO_MISSIONCONTROL_CAMERAWINDOW_H
+#define SORO_MISSIONCONTROL_CAMERAWINDOW_H
 
 #include <QMainWindow>
 #include <QResizeEvent>
@@ -9,6 +9,9 @@
 namespace Soro {
 namespace MissionControl {
 
+/* Wrapper for a CameraWidget that displays it in its
+ * own window.
+ */
 class CameraWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -26,4 +29,4 @@ protected:
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // CAMERAWINDOW_H
+#endif // SORO_MISSIONCONTROL_CAMERAWINDOW_H

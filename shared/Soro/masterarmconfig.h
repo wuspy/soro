@@ -1,5 +1,5 @@
-#ifndef MASTERARMCONFIG_H
-#define MASTERARMCONFIG_H
+#ifndef SORO_MASTERARMCONFIG_H
+#define SORO_MASTERARMCONFIG_H
 
 #include "iniparser.h"
 
@@ -24,4 +24,4 @@ struct MasterArmConfig {
 
 }
 
-#endif // MASTERARMCONFIG_H
+#endif // SORO_MASTERARMCONFIG_H

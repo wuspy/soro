@@ -1,5 +1,5 @@
-#ifndef CHANNEL_H
-#define CHANNEL_H
+#ifndef SORO_CHANNEL_H
+#define SORO_CHANNEL_H
 
 #include <QtCore>
 #include <QtNetwork>
@@ -58,6 +58,9 @@ private:
     static const MessageSize TCP_HEADER_SIZE = sizeof(MessageSize) + sizeof(MessageID) + 1;
     static const MessageSize UDP_HEADER_SIZE = sizeof(MessageID) + 1;
 
+    /* Private constructor */
+    Channel(QObject *parent);
+
 public:
 
     /* Protocol modes supported by a channel
@@ -86,12 +89,12 @@ public:
 
     /* Creates a new channel to act as the server end point for communication
      */
-    Channel (QObject *parent, quint16 port, QString name, Protocol protocol,
+    static Channel* createServer(QObject *parent, quint16 port, QString name, Protocol protocol,
              QHostAddress hostAddress = QHostAddress::Any, Logger *log = NULL);
 
     /* Creates a new channel to act as the client end point for communication
      */
-    Channel (QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
+    static Channel* createClient(QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
              QHostAddress hostAddress = QHostAddress::Any, Logger *log = NULL);
 
     ~Channel();
@@ -307,4 +310,4 @@ protected:
 
 }
 
-#endif // CHANNEL_H
+#endif // SORO_CHANNEL_H

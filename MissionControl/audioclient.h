@@ -1,5 +1,5 @@
-#ifndef AUDIOCLIENT_H
-#define AUDIOCLIENT_H
+#ifndef SORO_MISSIONCONTROL_AUDIOCLIENT_H
+#define SORO_MISSIONCONTROL_AUDIOCLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -15,6 +15,9 @@
 namespace Soro {
 namespace MissionControl {
 
+/* Receives an audio stream from an AudioServer by
+ * implementing MediaClient
+ */
 class AudioClient : public MediaClient {
     Q_OBJECT
 
@@ -38,4 +41,4 @@ protected:
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // AUDIOCLIENT_H
+#endif // SORO_MISSIONCONTROL_AUDIOCLIENT_H

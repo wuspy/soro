@@ -13,6 +13,9 @@
 namespace Soro {
 namespace Rover {
 
+/* Sends a video stream to a VideoClient by
+ * implementing MediaServer
+ */
 class VideoServer: public MediaServer {
     Q_OBJECT
 public:

@@ -147,8 +147,12 @@
     </property>
     <property name="font">
      <font>
-      <family>Roboto</family>
+      <weight>75</weight>
+      <bold>true</bold>
      </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-weight: bold;</string>
     </property>
     <property name="text">
      <string>Set up as Master Mission Control</string>

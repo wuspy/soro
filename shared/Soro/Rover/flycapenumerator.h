@@ -1,5 +1,5 @@
-#ifndef FLYCAPENUMERATOR_H
-#define FLYCAPENUMERATOR_H
+#ifndef SORO_ROVER_FLYCAPENUMERATOR_H
+#define SORO_ROVER_FLYCAPENUMERATOR_H
 
 #include <flycapture/FlyCapture2.h>
 #include <QMap>
@@ -28,4 +28,4 @@ private:
 } // namespace Rover
 } // namespace Soro
 
-#endif // FLYCAPENUMERATOR_H
+#endif // SORO_ROVER_FLYCAPENUMERATOR_H

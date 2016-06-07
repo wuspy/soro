@@ -1,5 +1,5 @@
-#ifndef ROVERPROCESS_H
-#define ROVERPROCESS_H
+#ifndef SORO_ROVER_ROVERPROCESS_H
+#define SORO_ROVER_ROVERPROCESS_H
 
 #include <QtCore>
 #include <QCoreApplication>
@@ -86,4 +86,4 @@ protected:
 } // namespace Rover
 } // namespace Soro
 
-#endif // ROVERPROCESS_H
+#endif // SORO_ROVER_ROVERPROCESS_H

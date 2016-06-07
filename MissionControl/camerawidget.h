@@ -1,5 +1,5 @@
-#ifndef CAMERAWIDGET_H
-#define CAMERAWIDGET_H
+#ifndef SORO_MISSIONCONTROL_CAMERAWIDGET_H
+#define SORO_MISSIONCONTROL_CAMERAWIDGET_H
 
 #include <QWidget>
 #include <QLabel>
@@ -27,6 +27,9 @@ class CameraWidget;
 namespace Soro {
 namespace MissionControl {
 
+/* UI control for playing a UDP video stream using the
+ * gstreamer-1.0 backend
+ */
 class CameraWidget : public QWidget {
     Q_OBJECT
 public:
@@ -77,4 +80,4 @@ signals:
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // CAMERAWIDGET_H
+#endif // SORO_MISSIONCONTROL_CAMERAWIDGET_H

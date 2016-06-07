@@ -9,7 +9,7 @@ MediaServer::MediaServer(QString logTag, int mediaId, QString childProcessPath, 
     _host = host;
     _mediaId = mediaId;
 
-    _controlChannel = new Channel(this, host.port, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host.host);
+    _controlChannel = Channel::createServer(this, host.port, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host.host);
     _controlChannel->open();
 
     connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),

@@ -2,8 +2,8 @@
  * This code can be compiled on a Qt or mbed enviornment *
  *********************************************************/
 
-#ifndef DRIVEMESSAGE_H
-#define DRIVEMESSAGE_H
+#ifndef SORO_DRIVEMESSAGE_H
+#define SORO_DRIVEMESSAGE_H
 
 #ifdef QT_CORE_LIB
 #   include <QtCore>
@@ -75,4 +75,4 @@ namespace DriveMessage  {
 }
 }
 
-#endif // DRIVEMESSAGE_H
+#endif // SORO_DRIVEMESSAGE_H

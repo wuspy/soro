@@ -1,10 +1,12 @@
-#ifndef NMEAMESSAGE_H
-#define NMEAMESSAGE_H
+#ifndef SORO_NMEAMESSAGE_H
+#define SORO_NMEAMESSAGE_H
 
 #include <QDataStream>
 
 namespace Soro {
 
+/* Structure for holding GPS information and parsing NMEA messages
+ */
 struct NmeaMessage {
 
     double Latitude, Longitude;
@@ -52,4 +54,4 @@ struct NmeaMessage {
 
 }
 
-#endif // NMEAMESSAGE_H
+#endif // SORO_NMEAMESSAGE_H

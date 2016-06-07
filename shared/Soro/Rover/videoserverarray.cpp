@@ -84,7 +84,7 @@ void VideoServerArray::deactivate(int index) {
     }
 }
 
-int VideoServerArray::cameraCount() {
+int VideoServerArray::serverCount() {
     return _servers.size();
 }
 

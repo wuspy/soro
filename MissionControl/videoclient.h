@@ -1,5 +1,5 @@
-#ifndef VIDEOCLIENT_H
-#define VIDEOCLIENT_H
+#ifndef SORO_MISSIONCONTROL_VIDEOCLIENT_H
+#define SORO_MISSIONCONTROL_VIDEOCLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -15,6 +15,9 @@
 namespace Soro {
 namespace MissionControl {
 
+/* Receives a video stream from a VideoServer by
+ * implementing MediaClient
+ */
 class VideoClient : public MediaClient {
     Q_OBJECT
 

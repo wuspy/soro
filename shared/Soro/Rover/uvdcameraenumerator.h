@@ -1,5 +1,5 @@
-#ifndef UVDCAMERAENUMERATOR_H
-#define UVDCAMERAENUMERATOR_H
+#ifndef SORO_ROVER_UVDCAMERAENUMERATOR_H
+#define SORO_ROVER_UVDCAMERAENUMERATOR_H
 
 #include <QMap>
 
@@ -25,4 +25,4 @@ private:
 } // namespace Rover
 } // namespace Soro
 
-#endif // UVDCAMERAENUMERATOR_H
+#endif // SORO_ROVER_UVDCAMERAENUMERATOR_H

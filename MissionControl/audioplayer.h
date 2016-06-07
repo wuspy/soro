@@ -1,5 +1,5 @@
-#ifndef AUDIOPLAYER_H
-#define AUDIOPLAYER_H
+#ifndef SORO_MISSIONCONTROL_AUDIOPLAYER_H
+#define SORO_MISSIONCONTROL_AUDIOPLAYER_H
 
 #include <QObject>
 
@@ -20,9 +20,11 @@
 namespace Soro {
 namespace MissionControl {
 
-class AudioPlayer : public QObject
-{
+/* Plays a UDP audio stream using the gstreamer-1.0 backend
+ */
+class AudioPlayer : public QObject {
     Q_OBJECT
+
 public:
     explicit AudioPlayer(QObject *parent = 0);
     ~AudioPlayer();
@@ -55,4 +57,4 @@ signals:
 }
 }
 
-#endif // AUDIOPLAYER_H
+#endif // SORO_MISSIONCONTROL_AUDIOPLAYER_H

@@ -11,6 +11,9 @@
 namespace Soro {
 namespace Rover {
 
+/* Sends an audio stream to an AudioClient by
+ * implementing MediaServer
+ */
 class AudioServer: public MediaServer {
     Q_OBJECT
 public:

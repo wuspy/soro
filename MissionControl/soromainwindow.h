@@ -1,5 +1,5 @@
-#ifndef SOROMAINWINDOW_H
-#define SOROMAINWINDOW_H
+#ifndef SORO_MISSIONCONTROL_SOROMAINWINDOW_H
+#define SORO_MISSIONCONTROL_SOROMAINWINDOW_H
 
 #include <QMainWindow>
 #include <QTimerEvent>
@@ -128,4 +128,4 @@ protected:
 }
 }
 
-#endif // SOROMAINWINDOW_H
+#endif // SORO_MISSIONCONTROL_SOROMAINWINDOW_H

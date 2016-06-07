@@ -2,8 +2,8 @@
  * This code can be compiled on a Qt or mbed enviornment *
  *********************************************************/
 
-#ifndef MBEDCHANNEL_H
-#define MBEDCHANNEL_H
+#ifndef SORO_MBEDCHANNEL_H
+#define SORO_MBEDCHANNEL_H
 
 #ifdef QT_CORE_LIB
 #   include <QtCore>
@@ -167,4 +167,4 @@ public:
 #endif
 
 }
-#endif // MBEDCHANNEL_H
+#endif // SORO_MBEDCHANNEL_H

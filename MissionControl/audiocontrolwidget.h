@@ -1,5 +1,5 @@
-#ifndef AUDIOCONTROLWIDGET_H
-#define AUDIOCONTROLWIDGET_H
+#ifndef SORO_MISSIONCONTROL_AUDIOCONTROLWIDGET_H
+#define SORO_MISSIONCONTROL_AUDIOCONTROLWIDGET_H
 
 #include <QWidget>
 
@@ -12,6 +12,8 @@ class AudioControlWidget;
 namespace Soro {
 namespace MissionControl {
 
+/* UI control for controlling the state of an audio stream
+ */
 class AudioControlWidget : public QWidget {
     Q_OBJECT
 
@@ -38,4 +40,4 @@ private slots:
 }
 }
 
-#endif // AUDIOCONTROLWIDGET_H
+#endif // SORO_MISSIONCONTROL_AUDIOCONTROLWIDGET_H

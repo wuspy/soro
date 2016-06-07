@@ -37,15 +37,15 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
 
         LOG_I("*************Initializing core networking*****************");
 
-        _armChannel = new Channel(this, _config.ArmChannelPort, CHANNEL_NAME_ARM,
+        _armChannel = Channel::createServer(this, _config.ArmChannelPort, CHANNEL_NAME_ARM,
                                   Channel::UdpProtocol, QHostAddress::Any, _log);
-        _driveChannel = new Channel(this, _config.DriveChannelPort, CHANNEL_NAME_DRIVE,
+        _driveChannel = Channel::createServer(this, _config.DriveChannelPort, CHANNEL_NAME_DRIVE,
                                   Channel::UdpProtocol, QHostAddress::Any, _log);
-        _gimbalChannel = new Channel(this, _config.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
+        _gimbalChannel = Channel::createServer(this, _config.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
                                   Channel::UdpProtocol, QHostAddress::Any, _log);
-        _sharedChannel = new Channel(this, _config.SharedChannelPort, CHANNEL_NAME_SHARED,
+        _sharedChannel = Channel::createServer(this, _config.SharedChannelPort, CHANNEL_NAME_SHARED,
                                   Channel::TcpProtocol, QHostAddress::Any, _log);
-        _secondaryComputerChannel = new Channel(this, _config.SecondaryComputerPort, CHANNEL_NAME_SECONDARY_COMPUTER,
+        _secondaryComputerChannel = Channel::createServer(this, _config.SecondaryComputerPort, CHANNEL_NAME_SECONDARY_COMPUTER,
                                         Channel::TcpProtocol, QHostAddress::Any, _log);
 
         if (_armChannel->getState() == Channel::ErrorState) {
@@ -123,13 +123,13 @@ void RoverProcess::timerEvent(QTimerEvent *e) {
         _videoServers = new VideoServerArray(_log, this);
         _videoServers->populate(_config.BlacklistedUvdCameras, _config.FirstVideoPort, 0);
 
-        if (_videoServers->cameraCount() > _config.MainComputerCameraCount) {
+        if (_videoServers->serverCount() > _config.MainComputerCameraCount) {
             LOG_E("The configuration specifies less cameras than this, the last ones will be removed");
-            while (_videoServers->cameraCount() > _config.MainComputerCameraCount) {
-                _videoServers->remove(_videoServers->cameraCount() - 1);
+            while (_videoServers->serverCount() > _config.MainComputerCameraCount) {
+                _videoServers->remove(_videoServers->serverCount() - 1);
             }
         }
-        else if (_videoServers->cameraCount() < _config.MainComputerCameraCount) {
+        else if (_videoServers->serverCount() < _config.MainComputerCameraCount) {
             LOG_E("The configuration specifies more cameras than this, check cable connections");
         }
 

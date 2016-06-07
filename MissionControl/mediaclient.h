@@ -1,5 +1,5 @@
-#ifndef MEDIACLIENT_H
-#define MEDIACLIENT_H
+#ifndef SORO_MISSIONCONTROL_MEDIACLIENT_H
+#define SORO_MISSIONCONTROL_MEDIACLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -14,6 +14,9 @@
 namespace Soro {
 namespace MissionControl {
 
+/* Abstract class implementing the base functionality
+ * for receiving a UDP stream from a MediaServer.
+ */
 class MediaClient : public QObject {
     Q_OBJECT
 public:
@@ -80,4 +83,4 @@ protected:
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // MEDIACLIENT_H
+#endif // SORO_MISSIONCONTROL_MEDIACLIENT_H

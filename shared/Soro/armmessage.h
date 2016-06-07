@@ -2,8 +2,8 @@
  * This code can be compiled on a Qt or mbed enviornment *
  *********************************************************/
 
-#ifndef ARMMESSAGE_H
-#define ARMMESSAGE_H
+#ifndef SORO_ARMMESSAGE_H
+#define SORO_ARMMESSAGE_H
 
 #ifdef QT_CORE_LIB
 #   include "iniparser.h"
@@ -145,4 +145,4 @@ namespace ArmMessage  {
 
 }
 
-#endif // ARMMESSAGE_H
+#endif // SORO_ARMMESSAGE_H

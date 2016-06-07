@@ -1,5 +1,5 @@
-#ifndef SETUPDIALOG_H
-#define SETUPDIALOG_H
+#ifndef SORO_MISSIONCONTROL_SETUPDIALOG_H
+#define SORO_MISSIONCONTROL_SETUPDIALOG_H
 
 #include <QDialog>
 #include <QNetworkInterface>
@@ -46,4 +46,4 @@ private slots:
 }
 }
 
-#endif // SETUPDIALOG_H
+#endif // SORO_MISSIONCONTROL_SETUPDIALOG_H

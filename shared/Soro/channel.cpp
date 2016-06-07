@@ -31,29 +31,37 @@
 
 namespace Soro {
 
-Channel::Channel(QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
-                 QHostAddress hostAddress, Logger *log) : QObject(parent) {
-    _log = log;
-    _serverAddress = serverAddress;
-    _protocol = protocol;
-    _isServer = false;
-    _hostAddress.host = hostAddress;
+Channel::Channel(QObject *parent) : QObject(parent) { }
 
-    setName(name);
-    init();
+Channel* Channel::createClient(QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
+                 QHostAddress hostAddress, Logger *log){
+    Channel *c = new Channel(parent);
+    c->_log = log;
+    c->_serverAddress = serverAddress;
+    c->_protocol = protocol;
+    c->_isServer = false;
+    c->_hostAddress.host = hostAddress;
+    c->_name = name;
+
+    c->init();
+
+    return c;
 }
 
-Channel::Channel(QObject *parent, quint16 port, QString name, Protocol protocol,
-                 QHostAddress hostAddress, Logger *log) : QObject(parent) {
-    _log = log;
-    _serverAddress.host = QHostAddress::Any;
-    _serverAddress.port = port;
-    _protocol = protocol;
-    _isServer = true;
-    _hostAddress.host = hostAddress;
+Channel* Channel::createServer(QObject *parent, quint16 port, QString name, Protocol protocol,
+                 QHostAddress hostAddress, Logger *log) {
+    Channel *c = new Channel(parent);
+    c->_log = log;
+    c->_serverAddress.host = QHostAddress::Any;
+    c->_serverAddress.port = port;
+    c->_protocol = protocol;
+    c->_isServer = true;
+    c->_hostAddress.host = hostAddress;
+    c->_name = name;
 
-    setName(name);
-    init();
+    c->init();
+
+    return c;
 }
 
 Channel::~Channel() {
@@ -83,21 +91,15 @@ Channel::~Channel() {
  ***************************************************************************
  ***************************************************************************/
 
-void Channel::setName(QString name) {   //PRIVATE
-    _name = name;
-    QByteArray toUtf8 = name.toUtf8();
-    _nameUtf8 = new char[toUtf8.size() + 1];
-    strcpy(_nameUtf8, toUtf8.constData());
-    _nameUtf8Size = strlen(_nameUtf8) + 1; //include \0 char
-    if (_nameUtf8Size > 64) {
-        LOG_E("Name is too long (max 64 characters)");
-        setChannelState(ErrorState, true);
-    }
-}
-
 void Channel::init() {  //PRIVATE
     //log tag for debugging
     LOG_TAG = _name + (_isServer ? "(S)" : "(C)");
+
+    //format the name as a UTF8 byte array
+    QByteArray toUtf8 = _name.toUtf8();
+    _nameUtf8 = new char[toUtf8.size() + 1];
+    strcpy(_nameUtf8, toUtf8.constData());
+    _nameUtf8Size = strlen(_nameUtf8) + 1; //include \0 char
 
     //create a buffer for storing received messages
     _sentTimeLog = new qint64[SENT_LOG_CAP];
@@ -138,9 +140,14 @@ void Channel::init() {  //PRIVATE
 
 void Channel::open() {
     LOG_D("open() called");
-    setChannelState(_state, true); //force emit the stateChanged signal
     switch (_state) {
     case ReadyState:
+        //verify the name length
+        if (_nameUtf8Size > 64) {
+            LOG_E("Name is too long (max 64 characters)");
+            setChannelState(ErrorState, true);
+            return;
+        }
         //If this is the server, we will bind to the server port
         if (_isServer) {
             _hostAddress.port = _serverAddress.port;

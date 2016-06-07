@@ -42,13 +42,13 @@ void Rover2Process::timerEvent(QTimerEvent *e) {
                                 _config.FirstVideoPort + _config.MainComputerCameraCount,
                                 _config.MainComputerCameraCount);
 
-        if (_videoServers->cameraCount() > _config.SecondaryComputerCameraCount) {
+        if (_videoServers->serverCount() > _config.SecondaryComputerCameraCount) {
             LOG_E("The configuration specifies less cameras than this, the last ones will be removed");
-            while (_videoServers->cameraCount() > _config.SecondaryComputerCameraCount) {
-                _videoServers->remove(_videoServers->cameraCount() - 1);
+            while (_videoServers->serverCount() > _config.SecondaryComputerCameraCount) {
+                _videoServers->remove(_videoServers->serverCount() - 1);
             }
         }
-        else if (_videoServers->cameraCount() < _config.SecondaryComputerCameraCount) {
+        else if (_videoServers->serverCount() < _config.SecondaryComputerCameraCount) {
             LOG_E("The configuration specifies more cameras than this, check cable connections");
         }
 
@@ -98,7 +98,7 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
 
             // initialize the tcp channel
             if (!_masterComputerChannel) {
-                _masterComputerChannel = new Channel(this, peer, CHANNEL_NAME_SECONDARY_COMPUTER,
+                _masterComputerChannel = Channel::createClient(this, peer, CHANNEL_NAME_SECONDARY_COMPUTER,
                                           Channel::TcpProtocol, QHostAddress::Any, _log);
 
                 if (_masterComputerChannel->getState() == Channel::ErrorState) {

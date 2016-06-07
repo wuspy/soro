@@ -1,5 +1,5 @@
-#ifndef VIDEOSERVERARRAY_H
-#define VIDEOSERVERARRAY_H
+#ifndef SORO_ROVER_VIDEOSERVERARRAY_H
+#define SORO_ROVER_VIDEOSERVERARRAY_H
 
 #include <QObject>
 #include <QMap>
@@ -15,30 +15,33 @@
 namespace Soro {
 namespace Rover {
 
+/* Stores an array of VideoServer objects and populates
+ * itself from available cameras
+ */
 class VideoServerArray : public QObject {
     Q_OBJECT
 public:
     explicit VideoServerArray(Logger *log = 0, QObject *parent = 0);
     ~VideoServerArray();
 
-    /* Starts streaming a camera at the
-     * specified index
+    /* Starts streaming a video server at the specified index
      */
     void activate(int index, VideoFormat format);
 
-    /* Stops streaming a camera at the
-     * specified index
+    /* Stops streaming a video server at the specified index
      */
     void deactivate(int index);
 
-    /* Scans the system for cameras and returns
-     * the number of cameras found
+    /* Creates video servers by scanning the system for cameras, and returns the number of cameras found.
+     * This will not add any camera's matching names in the provided blacklist, and will assign the
+     * new video servers contiguous port numbers and ID's starting with firstNetworkPort and firstId,
+     * respectively.
      */
     int populate(const QStringList& uvdBlacklist, quint16 firstNetworkPort, int firstId);
 
-    /* Gets the number of cameras connected
+    /* Gets the number of video servers currently contained in the array
      */
-    int cameraCount();
+    int serverCount();
 
     /* Clears the array and all stops all servers
      */
@@ -71,4 +74,4 @@ private slots:
 }
 }
 
-#endif // VIDEOSERVERARRAY_H
+#endif // SORO_ROVER_VIDEOSERVERARRAY_H

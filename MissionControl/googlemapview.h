@@ -1,5 +1,5 @@
-#ifndef GOOGLEMAPVIEW_H
-#define GOOGLEMAPVIEW_H
+#ifndef SORO_MISSIONCONTROL_GOOGLEMAPVIEW_H
+#define SORO_MISSIONCONTROL_GOOGLEMAPVIEW_H
 
 #include <QWidget>
 #include <QWebEnginePage>
@@ -10,17 +10,21 @@
 namespace Soro {
 namespace MissionControl {
 
-    class GoogleMapView: public QWebEngineView {
-        Q_OBJECT
-    public:
-        explicit GoogleMapView(QWidget *parent = 0);
+/* UI control for displaying a location track using the
+ * Google Maps API.
+ */
+class GoogleMapView: public QWebEngineView {
+    Q_OBJECT
 
-    public slots:
-        void addMarker(QString type);
-        void updateLocation(const NmeaMessage& location);
-    };
+public:
+    explicit GoogleMapView(QWidget *parent = 0);
+
+public slots:
+    void addMarker(QString type);
+    void updateLocation(const NmeaMessage& location);
+};
 
 }
 }
 
-#endif // GOOGLEMAPVIEW_H
+#endif // SORO_MISSIONCONTROL_GOOGLEMAPVIEW_H

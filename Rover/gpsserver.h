@@ -1,5 +1,5 @@
-#ifndef GPSSERVER_H
-#define GPSSERVER_H
+#ifndef SORO_ROVER_GPSSERVER_H
+#define SORO_ROVER_GPSSERVER_H
 
 #include <QtCore>
 #include <QObject>
@@ -13,6 +13,8 @@
 namespace Soro {
 namespace Rover {
 
+/* Listens for NMEA formatted GPS messages on a UDP socket
+ */
 class GpsServer : public QObject {
     Q_OBJECT
 public:
@@ -42,4 +44,4 @@ protected:
 } // namespace Rover
 } // namespace Soro
 
-#endif // GPSSERVER_H
+#endif // SORO_ROVER_GPSSERVER_H

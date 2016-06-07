@@ -85,18 +85,18 @@ void MissionControlProcess::init() {
                 this, SLOT(arm_masterArmMessageReceived(const char*,int)));
         connect(_masterArmChannel, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
                 this, SLOT(arm_masterArmStateChanged(MbedChannel*,MbedChannel::State)));
-        _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.ArmChannelPort), CHANNEL_NAME_ARM,
+        _controlChannel = Channel::createClient(this, SocketAddress(_config.ServerAddress, _config.ArmChannelPort), CHANNEL_NAME_ARM,
                 Channel::UdpProtocol, QHostAddress::Any, _log);
         ui->arm_onMasterArmStateChanged(MbedChannel::ConnectingState);
         break;
     case DriverRole:
         initSDL();
-        _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.DriveChannelPort), CHANNEL_NAME_DRIVE,
+        _controlChannel = Channel::createClient(this, SocketAddress(_config.ServerAddress, _config.DriveChannelPort), CHANNEL_NAME_DRIVE,
                 Channel::UdpProtocol, QHostAddress::Any, _log);
         break;
     case CameraOperatorRole:
         initSDL();
-        _controlChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
+        _controlChannel = Channel::createClient(this, SocketAddress(_config.ServerAddress, _config.GimbalChannelPort), CHANNEL_NAME_GIMBAL,
                 Channel::UdpProtocol, QHostAddress::Any, _log);
         break;
     case SpectatorRole:
@@ -119,7 +119,7 @@ void MissionControlProcess::init() {
     if (_isMaster) {
         LOG_I("Setting up as master subnet node");
         // create the main shared channel to connect to the rover
-        _sharedChannel = new Channel(this, SocketAddress(_config.ServerAddress, _config.SharedChannelPort), CHANNEL_NAME_SHARED,
+        _sharedChannel = Channel::createClient(this, SocketAddress(_config.ServerAddress, _config.SharedChannelPort), CHANNEL_NAME_SHARED,
                 Channel::TcpProtocol, QHostAddress::Any, _log);
         _sharedChannel->open();
         connect(_sharedChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
@@ -146,8 +146,7 @@ void MissionControlProcess::init() {
         // create a tcp channel on a random port to act as a server, and
         // create a udp socket on the same port to send out broadcasts with the
         // server's information so the master node can connect
-        _sharedChannel = new Channel(this, 0, _name,
-                Channel::TcpProtocol, QHostAddress::Any, _log);
+        _sharedChannel = Channel::createServer(this, 0, _name, Channel::TcpProtocol, QHostAddress::Any, _log);
         _sharedChannel->open();
         connect(_sharedChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
                 this, SLOT(slave_masterSharedChannelStateChanged(Channel*, Channel::State)));
@@ -422,8 +421,8 @@ void MissionControlProcess::master_broadcastSocketReadyRead() {
         }
         if (!conflict) {
             // not already added, create a channel for them
-            LOG_I("Creating new channel for node " + peer.toString());
-            Channel *channel = new Channel(this, peer, peerName,
+            LOG_I("Creating Channel::createServer for node " + peer.toString());
+            Channel *channel = Channel::createClient(this, peer, peerName,
                                Channel::TcpProtocol, _broadcastSocket->localAddress(), _log);
             channel->open();
             _slaveMissionControlChannels.append(channel);

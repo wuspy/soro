@@ -22,7 +22,8 @@ SOURCES += main.cpp \
     ../shared/Soro/Rover/videoserver.cpp \
     ../shared/Soro/Rover/videoserverarray.cpp \
     ../shared/Soro/Rover/mediaserver.cpp \
-    ../shared/Soro/Rover/audioserver.cpp
+    ../shared/Soro/Rover/audioserver.cpp \
+    ../shared/Soro/configuration.cpp
 
 HEADERS += \
     ../shared/Soro/soro_global.h \
@@ -43,7 +44,8 @@ HEADERS += \
     ../shared/Soro/Rover/videoserverarray.h \
     ../shared/Soro/Rover/mediaserver.h \
     ../shared/Soro/Rover/audioserver.h \
-    ../shared/Soro/nmeamessage.h
+    ../shared/Soro/nmeamessage.h \
+    ../shared/Soro/configuration.h
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover
 DEPENDPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover

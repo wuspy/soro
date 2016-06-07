@@ -1,5 +1,5 @@
-#ifndef SOCKETADDRESS_H
-#define SOCKETADDRESS_H
+#ifndef SORO_SOCKETADDRESS_H
+#define SORO_SOCKETADDRESS_H
 
 #include <QHostAddress>
 
@@ -48,4 +48,4 @@ struct SocketAddress {
 
 }
 
-#endif // SOCKETADDRESS_H
+#endif // SORO_SOCKETADDRESS_H

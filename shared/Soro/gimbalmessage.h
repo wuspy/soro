@@ -2,8 +2,8 @@
  * This code can be compiled on a Qt or mbed enviornment *
  *********************************************************/
 
-#ifndef GIMBALMESSAGE_H
-#define GIMBALMESSAGE_H
+#ifndef SORO_GIMBALMESSAGE_H
+#define SORO_GIMBALMESSAGE_H
 
 #ifdef TARGET_LPC1768
 #   include "mbed.h"
@@ -70,4 +70,4 @@ namespace GimbalMessage  {
 }
 
 
-#endif // GIMBALMESSAGE_H
+#endif // SORO_GIMBALMESSAGE_H
