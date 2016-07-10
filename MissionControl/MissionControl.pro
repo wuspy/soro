@@ -17,14 +17,12 @@ SOURCES += \
     main.cpp \
     googlemapview.cpp \
     soromainwindow.cpp \
-    ../shared/Soro/soroini.cpp \
     ../shared/Soro/masterarmconfig.cpp \
     ../shared/Soro/armmessage.cpp \
     ../shared/Soro/drivemessage.cpp \
     ../shared/Soro/gimbalmessage.cpp \
     ../shared/Soro/mbedchannel.cpp \
     missioncontrolprocess.cpp \
-    setupdialog.cpp \
     clickablelabel.cpp \
     videoclient.cpp \
     camerawidget.cpp \
@@ -33,7 +31,17 @@ SOURCES += \
     audioclient.cpp \
     videocontrolwidget.cpp \
     audiocontrolwidget.cpp \
-    audioplayer.cpp
+    audioplayer.cpp \
+    ../shared/Soro/nmeamessage.cpp \
+    ../shared/Soro/configuration.cpp \
+    ../shared/Soro/socketaddress.cpp \
+    missioncontrolnetwork.cpp \
+    gamepadmanager.cpp \
+    controlsystem.cpp \
+    cameracontrolsystem.cpp \
+    armcontrolsystem.cpp \
+    drivecontrolsystem.cpp \
+    initwindow.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -48,10 +56,8 @@ HEADERS  += \
     ../shared/Soro/mbedchannel.h \
     soromainwindow.h \
     ../shared/Soro/soro_global.h \
-    ../shared/Soro/soroini.h \
     ../shared/Soro/masterarmconfig.h \
     missioncontrolprocess.h \
-    setupdialog.h \
     clickablelabel.h \
     videoclient.h \
     camerawidget.h \
@@ -60,14 +66,23 @@ HEADERS  += \
     audioclient.h \
     videocontrolwidget.h \
     audiocontrolwidget.h \
-    audioplayer.h
+    audioplayer.h \
+    ../shared/Soro/configuration.h \
+    ../shared/Soro/initcommon.h \
+    missioncontrolnetwork.h \
+    gamepadmanager.h \
+    controlsystem.h \
+    cameracontrolsystem.h \
+    armcontrolsystem.h \
+    drivecontrolsystem.h \
+    initwindow.h
 
 FORMS    += \
     soromainwindow.ui \
-    setupdialog.ui \
     camerawidget.ui \
     videocontrolwidget.ui \
-    audiocontrolwidget.ui
+    audiocontrolwidget.ui \
+    initwindow.ui
 
 RESOURCES += \
     Resources/MissionControl.qrc

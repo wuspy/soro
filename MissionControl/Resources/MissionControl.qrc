@@ -26,11 +26,20 @@
         <file>preloader_white_yellow_36px.gif</file>
         <file>volume_up_black_18px.png</file>
         <file>edit_black_18px.png</file>
+        <file>arm_operator_black_36px.png</file>
+        <file>camera_black_36px.png</file>
+        <file>driver_black_36px.png</file>
+        <file>spectator_black_36px.png</file>
+        <file>arm_operator_white_36px.png</file>
+        <file>camera_white_36px.png</file>
+        <file>driver_white_36px.png</file>
+        <file>spectator_white_36px.png</file>
     </qresource>
     <qresource prefix="/">
         <file>map.html</file>
     </qresource>
     <qresource prefix="/images">
         <file>splash.jpg</file>
+        <file>splash2.jpg</file>
     </qresource>
 </RCC>

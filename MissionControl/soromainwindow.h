@@ -23,6 +23,12 @@
 #include "camerawidget.h"
 #include "camerawindow.h"
 #include "videocontrolwidget.h"
+#include "controlsystem.h"
+#include "gamepadmanager.h"
+#include "missioncontrolnetwork.h"
+#include "armcontrolsystem.h"
+#include "drivecontrolsystem.h"
+#include "cameracontrolsystem.h"
 
 namespace Ui {
     class SoroMainWindow;
@@ -35,7 +41,8 @@ class SoroMainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit SoroMainWindow(QWidget *parent = 0);
+    explicit SoroMainWindow(const Configuration *config, GamepadManager *gamepad,
+                            MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent = 0);
     ~SoroMainWindow();
 
     CameraWidget* getTopCameraWidget();
@@ -44,20 +51,19 @@ public:
 
     bool isMuteAudioSelected();
 
-
 private:
     Ui::SoroMainWindow *ui;
     CameraWindow *_videoWindow;
 
+    const Configuration *_config;
+    MissionControlNetwork *_mcNetwork;
+    GamepadManager *_gamepad;
+    ControlSystem *_controlSystem;
     bool _fullscreen = false;
     QMovie *_preloaderMovie;
     static const QString _logLevelFormattersHTML[4];
-    QString _lastName = "Unnamed";
-    bool _lastIsMaster = false;
-    Role _lastRole;
     Channel::State _lastControlChannelState;
-    Channel::State _lastSharedChannelState;
-    Channel::State _lastMccChannelState;
+    Channel::State _lastRoverChannelState;
     RoverSubsystemState _lastArmSubsystemState;
     RoverSubsystemState _lastDriveCameraSubsystemState;
     RoverSubsystemState _lastSecondaryComputerState;
@@ -69,44 +75,36 @@ private:
     QMessageBox *_messageBoxHolder = NULL;
 
 signals:
-    void settingsClicked();
-    void chatMessageEntered(QString message);
     void cycleVideosClockwise();
     void cycleVideosCounterclockwise();
     void cameraFormatChanged(int camera, VideoFormat format);
     void audioStreamFormatChanged(AudioFormat format);
     void audioStreamMuteChanged(bool mute);
     void cameraNameEdited(int camera, QString name);
-    void reloadMasterArmClicked();
 
 public slots:
     void onFatalError(QString description);
     void onWarning(QString description);
-    void onGamepadChanged(SDL_GameController *controller);
     void onLocationUpdate(const NmeaMessage& location);
-    void onControlChannelStateChanged(Channel::State state);
-    void onMccChannelStateChanged(Channel::State state);
-    void onSharedChannelStateChanged(Channel::State state);
+    void onRoverChannelStateChanged(Channel::State state);
     void onRttUpdate(int rtt);
     void onBitrateUpdate(quint64 bpsRoverDown, quint64 bpsRoverUp);
     void onDroppedPacketRateUpdate(int droppedRatePercent);
     void onArmSubsystemStateChanged(RoverSubsystemState state);
     void onDriveCameraSubsystemStateChanged(RoverSubsystemState state);
     void onSecondaryComputerStateChanged(RoverSubsystemState state);
-    void arm_onMasterArmStateChanged(MbedChannel::State state);
-    void arm_onMasterArmUpdate(const char *armMessage);
-    void onNotification(NotificationType type, QString sender, QString message);
-    void onRoleChanged(Role role);
-    void onNameChanged(QString name);
-    void onMasterChanged(bool isMaster);
+    void onMasterArmStateChanged(bool connected);
+    void onMasterArmUpdate(const char *armMessage);
     void onCameraFormatChanged(int camera, VideoFormat format);
     void onAudioFormatChanged(AudioFormat format);
     void setCameraName(int camera, QString name);
 
 private slots:
-    void updateStatusBar();
+    void onGamepadChanged(SDL_GameController *controller, QString name);
+    void onControlChannelStateChanged(Channel *channel, Channel::State state);
     void updateConnectionStateInformation();
     void updateSubsystemStateInformation();
+    void reloadMasterArmClicked();
     void camera1ControlOptionChanged(VideoFormat option);
     void camera2ControlOptionChanged(VideoFormat option);
     void camera3ControlOptionChanged(VideoFormat option);

@@ -1,25 +1,16 @@
-#ifndef LOGGER_H
-#define LOGGER_H
-
-#define LOG_LEVEL_DEBUG 3
-#define LOG_LEVEL_INFORMATION 2
-#define LOG_LEVEL_WARN 1
-#define LOG_LEVEL_ERROR 0
-#define LOG_LEVEL_DISABLED -1
+#ifndef SORO_LOGGER_H
+#define SORO_LOGGER_H
 
 #include <QtCore>
 
-/* If a class has a Logger named _log, and a variable (or define)
- * named LOG_TAG, it can use these macros to more concisely
- * write log messages.
- * These macros also check to make sure _log isn't null, which
- * can also make it easier to add support for disabling the log
- * entirely.
+#include "soro_global.h"
+
+/* These macros allow more consise output to the root logger
  */
-#define LOG_D(X) if (_log != NULL) _log->d(LOG_TAG, X)
-#define LOG_I(X) if (_log != NULL) _log->i(LOG_TAG, X)
-#define LOG_W(X) if (_log != NULL) _log->w(LOG_TAG, X)
-#define LOG_E(X) if (_log != NULL) _log->e(LOG_TAG, X)
+#define LOG_D(Tag, Msg) Logger::rootLogger()->d(Tag, Msg)
+#define LOG_I(Tag, Msg) Logger::rootLogger()->i(Tag, Msg)
+#define LOG_W(Tag, Msg) Logger::rootLogger()->w(Tag, Msg)
+#define LOG_E(Tag, Msg) Logger::rootLogger()->e(Tag, Msg)
 
 namespace Soro {
 
@@ -31,47 +22,95 @@ namespace Soro {
  */
 class Logger: public QObject {
     Q_OBJECT
+public:
+    enum Level {
+        LogLevelDisabled = 0,
+        LogLevelError,
+        LogLevelWarning,
+        LogLevelInformation,
+        LogLevelDebug
+    };
 
 private:
     static const QString _levelFormatters[];
     static const QString _levelFormattersHTML[];
     QFile* _file = NULL;
     QTextStream* _fileStream = NULL;
-    void publish(int level, QString tag, QString message);
+    void publish(Level level, QString tag, QString message);
+
+    Level _maxFileLevel = LogLevelDebug;
+    Level _maxQtLogLevel = LogLevelDisabled;
+
+    // These format the log messages to the desiered text appearance
+    QStringList _textFormat;
+    QStringList _qtLoggerFormat;
+
+    // Singleton root logger
+    static Logger *_root;
 
 public:
-    Logger(QObject *parent);
+    Logger(QObject *parent = NULL);
     ~Logger();
 
+    /* Set a file to direct log output to
+     */
     bool setLogfile(QString fileName);
 
+    /* Closes any existing log file and
+     * stops output to it.
+     */
     void closeLogfile();
 
+    /* Gets a pointer to the global root logger instance.
+     *
+     * This class can still be instantiated and used
+     * separately elsewhere.
+     */
+    static inline Logger* rootLogger() {
+        return _root;
+    }
+
     inline void d(QString tag, QString message) {
-        publish(LOG_LEVEL_DEBUG, tag, message);
+        publish(LogLevelDebug, tag, message);
     }
 
     inline void i(QString tag, QString message) {
-        publish(LOG_LEVEL_INFORMATION, tag, message);
+        publish(LogLevelInformation, tag, message);
     }
 
     inline void w(QString tag, QString message) {
-        publish(LOG_LEVEL_WARN, tag, message);
+        publish(LogLevelWarning, tag, message);
     }
 
     inline void e(QString tag, QString message) {
-        publish(LOG_LEVEL_ERROR, tag, message);
+        publish(LogLevelError, tag, message);
     }
 
-    int MaxLevel;
-    int MaxQtLoggerLevel;
-    bool RouteToQtLogger;
+    /* Specify the maximum level that will be written to an
+     * output file.
+     */
+    void setMaxFileLevel(Logger::Level maxLevel);
 
-signals:
-    void logMessagePublished(int level, QString tag, QString message);
-    void logMessagePublished(QString messageFormatted);
+    /* Specify the maximum level that will be forwarded to the
+     * Qt logging system.
+     */
+    void setMaxQtLoggerLevel(Logger::Level maxLevel);
+
+    /* Specify the formatting to be applied to log messages published to the
+     * output file. The list should have 4 elements, with the first corresponding
+     * to the highest log level (error) and the lowest corresponding to the lowest
+     * (debug).
+     *
+     * Each item in the list should have 3 Qt-style placeholders (%1, %2, %3)
+     * which correspond to, in order:
+     * 1) The timestamp
+     * 2) The tag
+     * 3) The message
+     */
+    void setOutputFileTextFormat(const QStringList& format);
+
 };
 
 }
 
-#endif // LOGGER_H
+#endif // SORO_LOGGER_H

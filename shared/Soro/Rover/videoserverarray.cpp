@@ -5,27 +5,26 @@
 namespace Soro {
 namespace Rover {
 
-VideoServerArray::VideoServerArray(Logger *log, QObject *parent) : QObject(parent) {
-    _log = log;
-    LOG_I("Creating new video server array");
+VideoServerArray::VideoServerArray(QObject *parent) : QObject(parent) {
+    LOG_I(LOG_TAG, "Creating new video server array");
 }
 
 VideoServerArray::~VideoServerArray() {
     clear();
 }
 
-int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNetworkPort, int firstId) {
+int VideoServerArray::populate(const QStringList& usbCamBlacklist, quint16 firstNetworkPort, int firstId) {
     clear();
 
-    LOG_I("Searching for flycapture cameras");
+    /*LOG_I(LOG_TAG, "Searching for flycapture cameras");
     FlycapEnumerator flycapEnum;
     int flycapCount = flycapEnum.loadCameras();
-    LOG_I("Number of flycap cameras detected: " + QString::number(flycapCount));
+    LOG_I(LOG_TAG, "Number of flycap cameras detected: " + QString::number(flycapCount));
 
     foreach (FlyCapture2::PGRGuid guid, flycapEnum.listByGuid()) {
-        LOG_I("Found flycapture camera *-" + QString::number(guid.value[3]));
+        LOG_I(LOG_TAG, "Found flycapture camera *-" + QString::number(guid.value[3]));
         // create associated video server
-        VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
+        VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), this);
         _servers.insert(firstId, server);
         _flycapCameras.insert(firstId, guid);
         connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(serverStateChanged(VideoServer*, VideoServer::State)));
@@ -33,28 +32,28 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
 
         firstId++;
         firstNetworkPort++;
-    }
+    }*/
 
-    LOG_I("Searching for UVD cameras (" + QString::number(uvdBlacklist.size()) + " blacklist entries)");
-    UvdCameraEnumerator uvdEnum;
-    int uvdCount = uvdEnum.loadCameras();
-    LOG_I("Number of UVD\'s/webcams detected: " + QString::number(uvdCount));
+    LOG_I(LOG_TAG, "Searching for USB cameras (" + QString::number(usbCamBlacklist.size()) + " blacklist entries)");
+    UsbCameraEnumerator usbCamEnum;
+    int uvdCount = usbCamEnum.loadCameras();
+    LOG_I(LOG_TAG, "Number of USB cameras detected: " + QString::number(uvdCount));
 
-    foreach (QString videoDevice, uvdEnum.listByDeviceName()) {
+    foreach (QString videoDevice, usbCamEnum.listByDeviceName()) {
         bool blacklisted = false;
-        foreach (QString blacklistedDevice, uvdBlacklist) {
+        foreach (QString blacklistedDevice, usbCamBlacklist) {
             if (videoDevice.mid(videoDevice.size() - 1).compare(blacklistedDevice.mid(blacklistedDevice.size() - 1)) == 0) {
-                LOG_I("Found UVD device " + videoDevice + ", however it is blacklisted");
+                LOG_I(LOG_TAG, "Found USB camera " + videoDevice + ", however it is blacklisted");
                 blacklisted = true;
                 break;
             }
         }
         if (blacklisted) continue;
-        LOG_I("Found UVD/Webcam device at " + videoDevice);
+        LOG_I(LOG_TAG, "Found USB camera at " + videoDevice);
         // create associated video server
-        VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), _log, this);
+        VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), this);
         _servers.insert(firstId, server);
-        _uvdCameras.insert(firstId, videoDevice);
+        _usbCameras.insert(firstId, videoDevice);
         connect(server, SIGNAL(stateChanged(MediaServer*, MediaServer::State)), this, SLOT(serverStateChanged(MediaServer*, MediaServer::State)));
         connect(server, SIGNAL(error(MediaServer*,QString)), this, SLOT(serverError(MediaServer*,QString)));
 
@@ -67,19 +66,20 @@ int VideoServerArray::populate(const QStringList& uvdBlacklist, quint16 firstNet
 
 void VideoServerArray::activate(int index, VideoFormat format) {
     if (_servers.contains(index)) {
-        LOG_I("Camera " + QString::number(index) + " is about to be streamed");
-        if (_flycapCameras.contains(index)) {
+        LOG_I(LOG_TAG, "Camera " + QString::number(index) + " is about to be streamed");
+        /*if (_flycapCameras.contains(index)) {
             _servers.value(index)->start(_flycapCameras[index], format);
         }
         else {
-            _servers.value(index)->start(_uvdCameras[index], format);
-        }
+            _servers.value(index)->start(_usbCameras[index], format);
+        }*/
+        _servers.value(index)->start(_usbCameras[index], format);
     }
 }
 
 void VideoServerArray::deactivate(int index) {
     if (_servers.contains(index)) {
-        LOG_I("Camera " + QString::number(index) + " is about to be stopped");
+        LOG_I(LOG_TAG, "Camera " + QString::number(index) + " is about to be stopped");
         _servers.value(index)->stop();
     }
 }
@@ -94,8 +94,8 @@ void VideoServerArray::clear() {
         delete server;
     }
     _servers.clear();
-    _flycapCameras.clear();
-    _uvdCameras.clear();
+    //_flycapCameras.clear();
+    _usbCameras.clear();
 }
 
 void VideoServerArray::remove(int index) {

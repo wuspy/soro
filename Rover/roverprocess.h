@@ -10,7 +10,7 @@
 #include "armmessage.h"
 #include "soro_global.h"
 #include "mbedchannel.h"
-#include "soroini.h"
+#include "configuration.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
 #include "socketaddress.h"
@@ -28,12 +28,10 @@ class RoverProcess : QObject {
     Q_OBJECT
 
 public:
-    explicit RoverProcess(QObject *parent = 0);
+    explicit RoverProcess(const Configuration *config, QObject *parent = 0);
     ~RoverProcess();
 
 private:
-
-    Logger *_log = NULL;
 
     Channel *_armChannel = NULL;
     Channel *_driveChannel = NULL;
@@ -55,11 +53,14 @@ private:
     // encoding value of UnknownEncoding.
     GpsServer *_gpsServer = NULL;
 
-    SoroIniLoader _config;
+    const Configuration *_config;
 
     int _initTimerId = TIMER_INACTIVE;
 
 private slots:
+    void init();
+
+    // slots for received network messages
     void armChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void driveChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void gimbalChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
@@ -79,8 +80,6 @@ private slots:
 
     void gpsUpdate(NmeaMessage message);
 
-protected:
-    void timerEvent(QTimerEvent *e);
 };
 
 } // namespace Rover

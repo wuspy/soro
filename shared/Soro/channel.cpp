@@ -34,9 +34,8 @@ namespace Soro {
 Channel::Channel(QObject *parent) : QObject(parent) { }
 
 Channel* Channel::createClient(QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
-                 QHostAddress hostAddress, Logger *log){
+                 QHostAddress hostAddress){
     Channel *c = new Channel(parent);
-    c->_log = log;
     c->_serverAddress = serverAddress;
     c->_protocol = protocol;
     c->_isServer = false;
@@ -49,9 +48,8 @@ Channel* Channel::createClient(QObject *parent, SocketAddress serverAddress, QSt
 }
 
 Channel* Channel::createServer(QObject *parent, quint16 port, QString name, Protocol protocol,
-                 QHostAddress hostAddress, Logger *log) {
+                 QHostAddress hostAddress) {
     Channel *c = new Channel(parent);
-    c->_log = log;
     c->_serverAddress.host = QHostAddress::Any;
     c->_serverAddress.port = port;
     c->_protocol = protocol;
@@ -104,7 +102,7 @@ void Channel::init() {  //PRIVATE
     //create a buffer for storing received messages
     _sentTimeLog = new qint64[SENT_LOG_CAP];
 
-    LOG_I("Initializing with serverAddress=" + _serverAddress.toString()
+    LOG_I(LOG_TAG, "Initializing with serverAddress=" + _serverAddress.toString()
           + ",protocol=" + (_protocol == TcpProtocol ? "TCP" : "UDP"));
 
     //create socket and connect signals
@@ -139,23 +137,23 @@ void Channel::init() {  //PRIVATE
  ***************************************************************************/
 
 void Channel::open() {
-    LOG_D("open() called");
+    LOG_D(LOG_TAG, "open() called");
     switch (_state) {
     case ReadyState:
         //verify the name length
         if (_nameUtf8Size > 64) {
-            LOG_E("Name is too long (max 64 characters)");
+            LOG_E(LOG_TAG, "Name is too long (max 64 characters)");
             setChannelState(ErrorState, true);
             return;
         }
         //If this is the server, we will bind to the server port
         if (_isServer) {
             _hostAddress.port = _serverAddress.port;
-            LOG_I("Attempting to bind to " + _hostAddress.toString());
+            LOG_I(LOG_TAG, "Attempting to bind to " + _hostAddress.toString());
         }
         else {
             _hostAddress.port = 0;
-            LOG_I("Attempting to bind to an available port on " + _hostAddress.host.toString());
+            LOG_I(LOG_TAG, "Attempting to bind to an available port on " + _hostAddress.host.toString());
         }
         if (_tcpServer != NULL) {
             _tcpServer->setMaxPendingConnections(1);
@@ -164,13 +162,13 @@ void Channel::open() {
         resetConnection();
         break;
     default:
-        LOG_E("Cannot call open() in the current channel state");
+        LOG_E(LOG_TAG, "Cannot call open() in the current channel state");
         break;
     }
 }
 
 void Channel::resetConnectionVars() {   //PRIVATE
-    LOG_D("resetConnectionVars() called");
+    LOG_D(LOG_TAG, "resetConnectionVars() called");
     _receiveBufferLength = 0;
     _lastReceiveID = 0;
     _lastRtt = -1;
@@ -188,7 +186,7 @@ void Channel::resetConnectionVars() {   //PRIVATE
 }
 
 void Channel::resetConnection() {   //PRIVATE
-    LOG_I("Attempting to connect to other side of channel...");
+    LOG_I(LOG_TAG, "Attempting to connect to other side of channel...");
     resetConnectionVars();
     KILL_TIMER(_connectionMonitorTimerID);
     KILL_TIMER(_handshakeTimerID);
@@ -202,35 +200,35 @@ void Channel::resetConnection() {   //PRIVATE
         setPeerAddress(_serverAddress);
     }
     if (_tcpSocket != NULL) {
-        LOG_D("Cancelling any previous TCP operations...");
+        LOG_D(LOG_TAG, "Cancelling any previous TCP operations...");
         _tcpSocket->abort();
         if (_isServer) {
-            LOG_D("Cleaning up TCP connection with old client...");
+            LOG_D(LOG_TAG, "Cleaning up TCP connection with old client...");
             _tcpSocket->close();
             delete _tcpSocket;
             _tcpSocket = NULL;
         }
         else {
-            LOG_D("Trying to establish TCP connection with server " + _serverAddress.toString());
+            LOG_D(LOG_TAG, "Trying to establish TCP connection with server " + _serverAddress.toString());
             _tcpSocket->bind(_hostAddress.host, _hostAddress.port);
             if (!_tcpSocket->isOpen()) _tcpSocket->open(QIODevice::ReadWrite);
             _tcpSocket->connectToHost(_serverAddress.host, _serverAddress.port);
-            LOG_I("Bound to TCP port " + QString::number(_tcpSocket->localPort()));
+            LOG_I(LOG_TAG, "Bound to TCP port " + QString::number(_tcpSocket->localPort()));
         }
     }
     else if (_udpSocket != NULL) {
-        LOG_D("Cancelling any previous UDP operations...");
+        LOG_D(LOG_TAG, "Cancelling any previous UDP operations...");
         _udpSocket->abort();
         _udpSocket->bind(_hostAddress.host, _hostAddress.port);
         if (!_udpSocket->isOpen()) _udpSocket->open(QIODevice::ReadWrite);
         if (!_isServer) START_TIMER(_handshakeTimerID, HANDSHAKE_FREQUENCY);
-        LOG_I("Bound to UDP port " + QString::number(_udpSocket->localPort()));
+        LOG_I(LOG_TAG, "Bound to UDP port " + QString::number(_udpSocket->localPort()));
     }
     if (_tcpServer != NULL) {
         if (!_tcpServer->isListening()) {
-            LOG_D("Waiting for TCP client to connect on port " + QString::number(_hostAddress.port));
+            LOG_D(LOG_TAG, "Waiting for TCP client to connect on port " + QString::number(_hostAddress.port));
             _tcpServer->listen(_hostAddress.host, _hostAddress.port);
-            LOG_I("Listenign to TCP port " + QString::number(_tcpServer->serverPort()));
+            LOG_I(LOG_TAG, "Listenign to TCP port " + QString::number(_tcpServer->serverPort()));
         }
         if (_tcpServer->hasPendingConnections()) {
             //allow the next pending connection since we just dropped the old one
@@ -247,7 +245,7 @@ void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
         qint64 now = QDateTime::currentMSecsSinceEpoch();
         //check for a stale connection (several seconds without a message)
         if (now - _lastReceiveTime >= IDLE_CONNECTION_TIMEOUT) {
-            LOG_E("Peer has stopped responding, dropping connection");
+            LOG_E(LOG_TAG, "Peer has stopped responding, dropping connection");
             resetConnection();
         }
         else if (now - _lastSendTime >= HEARTBEAT_INTERVAL) {
@@ -257,7 +255,7 @@ void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
         }
     }
     else if (id == _resetTcpTimerID) {
-        LOG_E("Connected TCP peer did not verify identity in time");
+        LOG_E(LOG_TAG, "Connected TCP peer did not verify identity in time");
         resetConnection();
         KILL_TIMER(_resetTcpTimerID); //single shot
     }
@@ -291,7 +289,7 @@ void Channel::tcpConnected() {  //PRIVATE SLOT
     sendHandshake();
     //Close the connection if it is not verified in time
     START_TIMER(_resetTcpTimerID, IDLE_CONNECTION_TIMEOUT);
-    LOG_I("TCP peer " + _peerAddress.toString() + " has connected");
+    LOG_I(LOG_TAG, "TCP peer " + _peerAddress.toString() + " has connected");
 
     setChannelState(ConnectingState, false);
 }
@@ -312,7 +310,7 @@ void Channel::newTcpClient() {  //PRIVATE SLOT
 inline void Channel::setChannelState(Channel::State state, bool forceUpdate) {   //PRIVATE
     //signals the stateChanged event
      if ((_state != state) | forceUpdate) {
-         LOG_D("Setting state to " + QString::number(state));
+         LOG_D(LOG_TAG, "Setting state to " + QString::number(state));
          _state = state;
          emit stateChanged(this, _state);
      }
@@ -321,7 +319,7 @@ inline void Channel::setChannelState(Channel::State state, bool forceUpdate) {  
 inline void Channel::setPeerAddress(Soro::SocketAddress address) {    //PRIVATE
     //signals the peerAddressChanged event
     if (_peerAddress != address) {
-        LOG_D("Setting peer address to " + address.toString());
+        LOG_D(LOG_TAG, "Setting peer address to " + address.toString());
         _peerAddress = address;
         emit peerAddressChanged(this, _peerAddress);
     }
@@ -332,7 +330,7 @@ void Channel::close() {
 }
 
 void Channel::close(Channel::State closeState) {   //PRIVATE
-    LOG_W("Closing channel in state " + QString::number(closeState));
+    LOG_W(LOG_TAG, "Closing channel in state " + QString::number(closeState));
     if (_socket) {
         _socket->abort();
     }
@@ -355,7 +353,7 @@ void Channel::close(Channel::State closeState) {   //PRIVATE
 
 void Channel::connectionErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
     emit connectionError(this, err);
-    LOG_E("Connection Error: " + _socket->errorString());
+    LOG_E(LOG_TAG, "Connection Error: " + _socket->errorString());
     //Attempt to reconnect after RECOVERY_DELAY
     //we should NOT directly call resetConnectio() here as that could
     //potentially force an error loop
@@ -364,7 +362,7 @@ void Channel::connectionErrorInternal(QAbstractSocket::SocketError err) { //PRIV
 
 void Channel::serverErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
     emit connectionError(this, err);
-    LOG_E("Server Error: " + _tcpServer->errorString());
+    LOG_E(LOG_TAG, "Server Error: " + _tcpServer->errorString());
     //don't automatically kill the connection if it's still active, only the listening server
     //experienced the error
     if (_tcpSocket == NULL || _tcpSocket->state() != QAbstractSocket::ConnectedState) {
@@ -379,7 +377,7 @@ void Channel::serverErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE 
  ***************************************************************************/
 
 void Channel::udpReadyRead() {  //PRIVATE SLOT
-    LOG_D("udpReadyRead() called");
+    LOG_D(LOG_TAG, "udpReadyRead() called");
     SocketAddress address;
     MessageID ID;
     MessageType type;
@@ -396,12 +394,12 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
         //ensure the datagram either came from the correct address, or is marked as a handshake
         if (_isServer) {
             if ((address != _peerAddress) & (type != MSGTYPE_CLIENT_HANDSHAKE)) {
-                LOG_D("Received non-handshake UDP packet from unknown peer");
+                LOG_D(LOG_TAG, "Received non-handshake UDP packet from unknown peer");
                 continue;
             }
         }
         else if ((address != _peerAddress) & (address != _serverAddress)) {
-            LOG_D("Received UDP packet that was not from server");
+            LOG_D(LOG_TAG, "Received UDP packet that was not from server");
             continue;
         }
         _bytesDown += status;
@@ -411,7 +409,7 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
 }
 
 void Channel::tcpReadyRead() {  //PRIVATE SLOT
-    LOG_D("tcpReadyRead() called");
+    LOG_D(LOG_TAG, "tcpReadyRead() called");
     qint64 status;
     while (_tcpSocket->bytesAvailable() > 0) {
         if (_receiveBufferLength < TCP_HEADER_SIZE) {
@@ -427,7 +425,7 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
             //The header is in the buffer, so we know how long the packet is
             MessageSize length = deserialize<MessageSize>(_receiveBuffer);
             if (length > MAX_MESSAGE_LENGTH + TCP_HEADER_SIZE) {
-                LOG_W("TCP peer sent a message with an invalid header (length=" + QString::number(length) + ")");
+                LOG_W(LOG_TAG, "TCP peer sent a message with an invalid header (length=" + QString::number(length) + ")");
                 resetConnection();
                 return;
             }
@@ -457,7 +455,7 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
         //normal data packet
         //check the packet sequence ID
         if ((ID > _lastReceiveID) | !_dropOldPackets){
-            LOG_D("Received normal packet " + QString::number(ID));
+            LOG_D(LOG_TAG, "Received normal packet " + QString::number(ID));
             _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
             _receivedPackets++;
             _droppedPackets += ID - _lastReceiveID + 1;
@@ -467,7 +465,7 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
         break;
     case MSGTYPE_SERVER_HANDSHAKE:
         //this packet is a handshake request
-        LOG_D("Received server handshake packet " + QString::number(ID));
+        LOG_D(LOG_TAG, "Received server handshake packet " + QString::number(ID));
         if (!_isServer) {
             if (compareHandshake(message, size)) {
                 //we are the client, and we got a respoonse from the server (yay)
@@ -479,18 +477,18 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
                 _lastReceiveID = ID;
                 _wasConnected = true;
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
-                LOG_D("Received handshake response from server " + _serverAddress.toString());
+                LOG_D(LOG_TAG, "Received handshake response from server " + _serverAddress.toString());
 
                 setChannelState(ConnectedState, false);
             }
             else {
-                LOG_W("Received server handshake with invalid channel name");
+                LOG_W(LOG_TAG, "Received server handshake with invalid channel name");
             }
         }
         return; //don't calculate statistics on handshake messages
     case MSGTYPE_CLIENT_HANDSHAKE:
         if (_isServer) {
-            LOG_D("Received client handshake packet " + QString::number(ID));
+            LOG_D(LOG_TAG, "Received client handshake packet " + QString::number(ID));
             if (compareHandshake(message, size)) {
                 //We are the server getting a new (valid) handshake request, respond back and record the address
                 resetConnectionVars();
@@ -504,26 +502,26 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
                 _lastReceiveID = ID;
                 _wasConnected = true;
                 START_TIMER(_connectionMonitorTimerID, (int)(HEARTBEAT_INTERVAL / 3.1415926));
-                LOG_D("Received handshake request from client " + _peerAddress.toString());
+                LOG_D(LOG_TAG, "Received handshake request from client " + _peerAddress.toString());
 
                 setChannelState(ConnectedState, false);
             }
             else {
-                LOG_W("Received client handshake with invalid channel name");
+                LOG_W(LOG_TAG, "Received client handshake with invalid channel name");
             }
         }
         return; //don't calculate statistics on handshake messages
     case MSGTYPE_HEARTBEAT:
-        LOG_D("Received heartbeat packet " + QString::number(ID));
+        LOG_D(LOG_TAG, "Received heartbeat packet " + QString::number(ID));
         //no reason to update or check _lastReceiveID
         _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
         break;
     default:
-        LOG_E("Peer sent a message with an invalid header (type=" + QString::number(type) + ")");
+        LOG_E(LOG_TAG, "Peer sent a message with an invalid header (type=" + QString::number(type) + ")");
         resetConnection();
         return;
     case MSGTYPE_ACK:
-        LOG_D("Received ack packet " + QString::number(ID));
+        LOG_D(LOG_TAG, "Received ack packet " + QString::number(ID));
         _lastReceiveTime = QDateTime::currentMSecsSinceEpoch();
         int time = _lastReceiveTime - _lastAckReceiveTime;
         _lastAckReceiveTime = _lastReceiveTime;
@@ -538,7 +536,7 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
         int logIndex = _sentTimeLogIndex - (_nextSendID - ackID);
         if (logIndex < 0) {
             if (logIndex < -SENT_LOG_CAP) {
-                LOG_W("Received ack for message that had already been discarded from the log, consider increasing SentLogCap in configuration");
+                LOG_W(LOG_TAG, "Received ack for message that had already been discarded from the log, consider increasing SentLogCap in configuration");
                 break;
             }
             logIndex += SENT_LOG_CAP;
@@ -568,7 +566,7 @@ inline bool Channel::compareHandshake(const char *message, MessageSize size)  co
  ***************************************************************************/
 
 inline void Channel::sendHandshake() {   //PRIVATE SLOT
-    LOG_D("Sending handshake to " + _peerAddress.toString());
+    LOG_D(LOG_TAG, "Sending handshake to " + _peerAddress.toString());
     sendMessage(_nameUtf8, (MessageSize)_nameUtf8Size, (_isServer ? MSGTYPE_SERVER_HANDSHAKE : MSGTYPE_CLIENT_HANDSHAKE));
 }
 
@@ -579,20 +577,20 @@ inline void Channel::sendHeartbeat() {   //PRIVATE SLOT
 bool Channel::sendMessage(const char *message, MessageSize size) {
     if (_state == ConnectedState) {
         if (size > MAX_MESSAGE_LENGTH) {
-            LOG_W("Attempted to send a message that is too long, it will be truncated");
+            LOG_W(LOG_TAG, "Attempted to send a message that is too long, it will be truncated");
             return sendMessage(message, MAX_MESSAGE_LENGTH, MSGTYPE_NORMAL);
         }
         return sendMessage(message, size, MSGTYPE_NORMAL);
     }
     else {
-        LOG_W("Channel not connected, a message was not sent");
+        LOG_W(LOG_TAG, "Channel not connected, a message was not sent");
         return false;
     }
 }
 
 bool Channel::sendMessage(const char *message, MessageSize size, MessageType type) {   //PRIVATE
     qint64 status;
-    //LOG_D("Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
+    //LOG_D(LOG_TAG, "Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
     if (_protocol == UdpProtocol) {
         _sendBuffer[0] = reinterpret_cast<char&>(type);
         serialize<MessageID>(_sendBuffer + 1, _nextSendID);
@@ -608,11 +606,11 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
         status = _tcpSocket->write(_sendBuffer, newSize);
     }
     else {
-        LOG_E("Attempted to send a message through a null TCP socket");
+        LOG_E(LOG_TAG, "Attempted to send a message through a null TCP socket");
         return false;
     }
     if (status <= 0) {
-        LOG_W("Could not send message (status=" + QString::number(status) + ")");
+        LOG_W(LOG_TAG, "Could not send message (status=" + QString::number(status) + ")");
         return false;
     }
     //log statistics and increment _nextSendID

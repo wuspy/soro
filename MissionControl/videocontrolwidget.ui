@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>879</width>
+    <width>837</width>
     <height>24</height>
    </rect>
   </property>
@@ -21,6 +21,11 @@
     <width>16777215</width>
     <height>24</height>
    </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Arial</family>
+   </font>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -42,7 +47,7 @@ QRadioButton {
 	border-radius: 5px;
 	padding-left:5px;
 	padding-right:5px;
-	font-family: &quot;Roboto&quot;;
+	font-family: &quot;Arial&quot;;
 	font-size: 10pt;
 	font-weight: bold;
 }
@@ -54,16 +59,16 @@ QRadioButton:checked {
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="leftMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="topMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="rightMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="bottomMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <item>
     <widget class="QLabel" name="graphicLabel">
@@ -88,7 +93,7 @@ QRadioButton:checked {
     <widget class="QLabel" name="nameLabel">
      <property name="font">
       <font>
-       <family>Roboto</family>
+       <family>Arial</family>
       </font>
      </property>
      <property name="text">
@@ -103,6 +108,11 @@ QRadioButton:checked {
        <width>150</width>
        <height>0</height>
       </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Arial</family>
+      </font>
      </property>
     </widget>
    </item>
@@ -139,7 +149,7 @@ QRadioButton:checked {
     <widget class="QLabel" name="unavailableLabel">
      <property name="font">
       <font>
-       <family>Roboto</family>
+       <family>Arial</family>
       </font>
      </property>
      <property name="styleSheet">
@@ -151,46 +161,12 @@ QRadioButton:checked {
     </widget>
    </item>
    <item>
-    <widget class="QRadioButton" name="disabledRadioButton">
-     <property name="text">
-      <string>OFF </string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="lowRadioButton">
-     <property name="text">
-      <string>LOW </string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="normalRadioButton">
-     <property name="text">
-      <string>NORMAL </string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="highRadioButton">
-     <property name="text">
-      <string>HIGH </string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="ultraRadioButton">
-     <property name="text">
-      <string>ULTRA </string>
+    <widget class="QComboBox" name="comboBox">
+     <property name="minimumSize">
+      <size>
+       <width>200</width>
+       <height>0</height>
+      </size>
      </property>
     </widget>
    </item>

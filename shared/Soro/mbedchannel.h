@@ -47,7 +47,6 @@ public:
 
 private:
     QString LOG_TAG;
-    Logger *_log;
     QUdpSocket *_socket;
     SocketAddress _host;
     State _state;
@@ -66,7 +65,7 @@ private slots:
     void resetConnection();
 
 public:
-    MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent = NULL, Logger *log = NULL);
+    MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent = NULL);
     ~MbedChannel();
 
     void sendMessage(const char *message, int length);

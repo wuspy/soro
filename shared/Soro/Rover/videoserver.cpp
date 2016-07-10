@@ -3,8 +3,8 @@
 namespace Soro {
 namespace Rover {
 
-VideoServer::VideoServer(int mediaId, SocketAddress host, Logger *log, QObject *parent)
-    : MediaServer("VideoServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/VideoStreamProcess" , host, log, parent) {
+VideoServer::VideoServer(int mediaId, SocketAddress host, QObject *parent)
+    : MediaServer("VideoServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/VideoStreamProcess" , host, parent) {
 }
 
 void VideoServer::onStreamStoppedInternal() {
@@ -25,13 +25,13 @@ void VideoServer::start(QString deviceName, VideoFormat format) {
     _starting = false;
 }
 
-void VideoServer::start(FlyCapture2::PGRGuid camera, VideoFormat format) {
+/*void VideoServer::start(FlyCapture2::PGRGuid camera, VideoFormat format) {
     start("FlyCapture2:" + QString::number(camera.value[0]) + ":"
                         + QString::number(camera.value[1]) + ":"
                         + QString::number(camera.value[2]) + ":"
                         + QString::number(camera.value[3]),
                         format);
-}
+}*/
 
 void VideoServer::constructChildArguments(QStringList& outArgs, SocketAddress host, SocketAddress address, quint16 ipcPort) {
     outArgs << _videoDevice;

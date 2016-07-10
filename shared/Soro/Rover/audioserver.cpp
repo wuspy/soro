@@ -3,8 +3,8 @@
 namespace Soro {
 namespace Rover {
 
-AudioServer::AudioServer(int mediaId, SocketAddress host, Logger *log, QObject *parent)
-    : MediaServer("AudioServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/AudioStreamProcess" , host, log, parent) {
+AudioServer::AudioServer(int mediaId, SocketAddress host, QObject *parent)
+    : MediaServer("AudioServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/AudioStreamProcess" , host, parent) {
 }
 
 void AudioServer::onStreamStoppedInternal() {

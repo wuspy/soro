@@ -37,6 +37,7 @@ void CameraWidget::play(SocketAddress address, VideoFormat encoding) {
     case Mpeg2_480p_1500Kpbs:
     case Mpeg2_720p_3000Kpbs:
     case Mpeg2_720p_5000Kpbs:
+    case Mpeg2_360p_500Kbps_BW:
         binStr += " ! application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
                                        "rtpmp4vdepay ! "
                                        "avdec_mpeg4 ! "

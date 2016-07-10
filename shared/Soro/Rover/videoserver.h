@@ -8,7 +8,7 @@
 #include "logger.h"
 #include "mediaserver.h"
 
-#include <flycapture/FlyCapture2.h>
+//#include <flycapture/FlyCapture2.h>
 
 namespace Soro {
 namespace Rover {
@@ -20,10 +20,10 @@ class VideoServer: public MediaServer {
     Q_OBJECT
 public:
 
-    explicit VideoServer(int mediaId, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit VideoServer(int mediaId, SocketAddress host, QObject *parent = 0);
 
     void start(QString deviceName, VideoFormat format);
-    void start(FlyCapture2::PGRGuid camera, VideoFormat format);
+    //void start(FlyCapture2::PGRGuid camera, VideoFormat format);
 
     VideoFormat getVideoFormat() const;
 

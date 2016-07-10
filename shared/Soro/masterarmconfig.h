@@ -19,6 +19,8 @@ struct MasterArmConfig {
 
     bool yawReverse, shoulderReverse, elbowReverse, wristReverse;
 
+    bool isLoaded = false;
+
     bool load(QFile& file);
 };
 

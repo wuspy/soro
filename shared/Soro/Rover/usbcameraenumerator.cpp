@@ -1,4 +1,4 @@
-#include "uvdcameraenumerator.h"
+#include "usbcameraenumerator.h"
 
 #define LOG_TAG "UvdCameraEnumerator"
 #define _log log
@@ -6,16 +6,16 @@
 namespace Soro {
 namespace Rover {
 
-int UvdCameraEnumerator::loadCameras() {
+int UsbCameraEnumerator::loadCameras() {
     _cameras.clear();
     int total = 0;
 #ifdef __linux__
     QDir dev("/dev");
     QStringList allFiles = dev.entryList(QDir::NoDotAndDotDot
-                                                 | QDir::System
-                                                 | QDir::Hidden
-                                                 | QDir::AllDirs
-                                                 | QDir::Files, QDir::DirsFirst);
+                                     | QDir::System
+                                     | QDir::Hidden
+                                     | QDir::AllDirs
+                                     | QDir::Files, QDir::DirsFirst);
     foreach (QString file, allFiles) {
         if (file.contains("video")) {
             _cameras.append("/dev/" + file);
@@ -26,7 +26,7 @@ int UvdCameraEnumerator::loadCameras() {
     return total;
 }
 
-const QList<QString>& UvdCameraEnumerator::listByDeviceName() {
+const QList<QString>& UsbCameraEnumerator::listByDeviceName() {
     return _cameras;
 }
 

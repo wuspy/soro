@@ -24,11 +24,17 @@ const QString SoroMainWindow::_logLevelFormattersHTML[4] = {
     "<div style=\"color:#dddddd\">%1&emsp;D/<i>%2</i>:&emsp;%3</div>"
 };
 
-SoroMainWindow::SoroMainWindow(QWidget *parent) :
+SoroMainWindow::SoroMainWindow(const Configuration *config, GamepadManager *gamepad,
+                               MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SoroMainWindow) {
 
     ui->setupUi(this);
+    _config = config;
+    _mcNetwork = mcNetwork;
+    _gamepad = gamepad;
+    _controlSystem = controlSystem;
+
     _videoWindow = new CameraWindow(this);
     _videoWindow->show();
 
@@ -73,34 +79,57 @@ SoroMainWindow::SoroMainWindow(QWidget *parent) :
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
     addWidgetShadow(ui->videoContainer, 10, 0);
-}
 
-void SoroMainWindow::updateStatusBar() {
-    switch (_lastRole) {
-    case ArmOperatorRole:
-        ui->statusLabel->setText("<html>" + _lastName + " <i>(Arm Operator)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+    switch (_mcNetwork->getRole()) {
+    case ArmOperatorRole: {
+        ArmControlSystem *armControlSystem = reinterpret_cast<ArmControlSystem*>(_controlSystem);
+        ui->statusLabel->setText("<html>Arm Operator" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+        connect(armControlSystem, SIGNAL(masterArmStateChanged(bool)),
+                this, SLOT(onMasterArmStateChanged(bool)));
+        connect(armControlSystem, SIGNAL(masterArmUpdate(const char*)),
+                this, SLOT(onMasterArmUpdate(const char*)));
+        onMasterArmStateChanged(armControlSystem->isMasterArmConnected());
+    }
         break;
     case DriverRole:
-        ui->statusLabel->setText("<html>" + _lastName + " <i>(Driver)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+        ui->statusLabel->setText("<html>Driver" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+        onGamepadChanged(_gamepad->getGamepad(), _gamepad->getGamepadName());
         break;
     case CameraOperatorRole:
-        ui->statusLabel->setText("<html>" + _lastName + " <i>(Camera Operator)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+        ui->statusLabel->setText("<html>Camera Operator" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+        onGamepadChanged(_gamepad->getGamepad(), _gamepad->getGamepadName());
         break;
     case SpectatorRole:
-        ui->statusLabel->setText("<html>" + _lastName + " <i>(Spectator)</i>" + (_lastIsMaster ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+        ui->statusLabel->setText("<html>Spectator" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[MASTER]</b></span>" : "") + "</html>");
+        ui->hid_inputDeviceLabel->setStyleSheet("color: black;");
+        ui->hid_inputDeviceLabel->setText("Not available for spectators");
+        ui->hid_inputDeviceGraphicLabel->setStyleSheet("");
+        ui->comm_controlStateLabel->setStyleSheet("color: black;");
+        ui->comm_controlStateLabel->setText("Not available for spectators");
+        ui->comm_controlStateGraphicLabel->setStyleSheet("");
         break;
     }
+
+    // With the new network architecture, this window will not be shown if the mcc connection goes out
+    ui->comm_mccStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
+    ui->comm_mccStateLabel->setText("Connected to MCC network");
+    ui->comm_mccStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/check_circle_green_18px.png);");
+
+    connect(_gamepad, SIGNAL(gamepadChanged(SDL_GameController*,QString)),
+            this, SLOT(onGamepadChanged(SDL_GameController*,QString)));
+    if (_controlSystem) {
+        connect(_controlSystem->getChannel(), SIGNAL(stateChanged(Channel*,Channel::State)),
+                this, SLOT(onControlChannelStateChanged(Channel*,Channel::State)));
+    }
+
+    onArmSubsystemStateChanged(UnknownSubsystemState);
+    onDriveCameraSubsystemStateChanged(UnknownSubsystemState);
+    onSecondaryComputerStateChanged(UnknownSubsystemState);
 }
 
 void SoroMainWindow::updateConnectionStateInformation() {
-
     // update control channel state UI
-    if (_lastRole == SpectatorRole) {
-        ui->comm_controlStateLabel->setText("Not available for spectators");
-        ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
-        ui->comm_controlStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
-    }
-    else {
+    if (_mcNetwork->getRole() != SpectatorRole) {
         switch (_lastControlChannelState) {
         case Channel::ConnectedState:
             ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
@@ -121,28 +150,8 @@ void SoroMainWindow::updateConnectionStateInformation() {
         }
     }
 
-    // update MCC network state UI
-    switch (_lastMccChannelState) {
-    case Channel::ConnectedState:
-        ui->comm_mccStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
-        ui->comm_mccStateLabel->setText("Connected to MCC network");
-        ui->comm_mccStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/check_circle_green_18px.png);");
-        break;
-    case Channel::ErrorState:
-        QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",
-                    "The mission control center network channel experienced a fatal error. This is most likely due to a configuration problem.",
-                    QMessageBox::Ok, this).exec();
-        exit(1);
-        return;
-    default:
-        ui->comm_mccStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
-        ui->comm_mccStateLabel->setText("Connecting to MCC network...");
-        ui->comm_mccStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
-        break;
-    }
-
     // update shared network state UI
-    switch (_lastSharedChannelState) {
+    switch (_lastRoverChannelState) {
     case Channel::ConnectedState:
         ui->comm_sharedStateLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->comm_sharedStateLabel->setText("Connected to Shared Link");
@@ -176,9 +185,8 @@ void SoroMainWindow::updateConnectionStateInformation() {
     }
 
     // update main status label
-    if (((_lastControlChannelState == Channel::ConnectedState) || (_lastRole == SpectatorRole))
-            && (_lastMccChannelState == Channel::ConnectedState)
-            && (_lastSharedChannelState == Channel::ConnectedState)) {
+    if (((_lastControlChannelState == Channel::ConnectedState) || (_mcNetwork->getRole() == SpectatorRole))
+            && (_lastRoverChannelState == Channel::ConnectedState)) {
         ui->comm_statusContainer->setStyleSheet("background-color: #1B5E20;\
                                                 color: white;\
                                                 border-radius: 10px;");
@@ -196,21 +204,26 @@ void SoroMainWindow::updateConnectionStateInformation() {
         ui->comm_mainStatusGraphicLabel->setMovie(_preloaderMovie);
         _preloaderMovie->start();
 
-        int connections = 1;
+        int connections = 2;
         if (_lastControlChannelState == Channel::ConnectedState) connections++;
-        if (_lastSharedChannelState == Channel::ConnectedState) connections++;
-        if (_lastMccChannelState == Channel::ConnectedState) connections++;
+        if (_lastRoverChannelState == Channel::ConnectedState) connections++;
 
         ui->comm_detailStatusLabel->setText("Waiting for connection " + QString::number(connections) + " of 3");
         ui->comm_mainStatusLabel->setText("Connecting...");
     }
 }
 
-void SoroMainWindow::onGamepadChanged(SDL_GameController *controller) {
-    if (controller && SDL_GameControllerGetAttached(controller)) {
+void SoroMainWindow::reloadMasterArmClicked() {
+    if (_mcNetwork->getRole() == ArmOperatorRole) {
+        reinterpret_cast<ArmControlSystem*>(_controlSystem)->reloadMasterArmConfig();
+    }
+}
+
+void SoroMainWindow::onGamepadChanged(SDL_GameController *controller, QString name) {
+    if (controller) {
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
-        ui->hid_inputDeviceLabel->setText(SDL_GameControllerName(controller));
+        ui->hid_inputDeviceLabel->setText(name);
     }
     else {
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
@@ -219,14 +232,13 @@ void SoroMainWindow::onGamepadChanged(SDL_GameController *controller) {
     }
 }
 
-void SoroMainWindow::arm_onMasterArmStateChanged(MbedChannel::State state) {
-    switch (state) {
-    case MbedChannel::ConnectedState:
+void SoroMainWindow::onMasterArmStateChanged(bool connected) {
+    if (connected) {
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->hid_inputDeviceLabel->setText("Master arm connected");
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
-        break;
-    case MbedChannel::ConnectingState:
+    }
+    else {
         ui->masterarm_yawValueLabel->setText("N/A");
         ui->masterarm_shoulderValueLabel->setText("N/A");
         ui->masterarm_elbowValueLabel->setText("N/A");
@@ -238,11 +250,10 @@ void SoroMainWindow::arm_onMasterArmStateChanged(MbedChannel::State state) {
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #F57F17; }");
         ui->hid_inputDeviceLabel->setText("Connecting to master arm...");
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_yellow_18px.png);");
-        break;
     }
 }
 
-void SoroMainWindow::arm_onMasterArmUpdate(const char *armMessage) {
+void SoroMainWindow::onMasterArmUpdate(const char *armMessage) {
     ui->masterarm_yawValueLabel->setText(QString::number(ArmMessage::getMasterYaw(armMessage)));
     ui->masterarm_shoulderValueLabel->setText(QString::number(ArmMessage::getMasterShoulder(armMessage)));
     ui->masterarm_elbowValueLabel->setText(QString::number(ArmMessage::getMasterElbow(armMessage)));
@@ -381,10 +392,6 @@ void SoroMainWindow::setCameraName(int camera, QString name) {
     widget->setName(name);
 }
 
-void SoroMainWindow::onNotification(NotificationType type, QString sender, QString message) {
-
-}
-
 void SoroMainWindow::onFatalError(QString description) {
     QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",description,
         QMessageBox::Ok, this).exec();
@@ -410,57 +417,6 @@ void SoroMainWindow::onLocationUpdate(const NmeaMessage &location) {
     START_TIMER(_clearGpsStatusTimerId, 15000);
 }
 
-/*void SoroMainWindow::timerEvent(QTimerEvent *e) {
-    QMainWindow::timerEvent(e);
-    if (e->timerId() == _initTimerId) {
-        KILL_TIMER(_initTimerId);
-        _controller->init();
-        setWindowTitle("Mission Control");
-        switch (_controller->getRole()) {
-        case ArmOperatorRole:
-            ui->statusLabel->setText(_lastName + " (Arm Operator)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
-            arm_onMasterArmStateChanged(MbedChannel::ConnectingState);
-            onRttUpdate(-1);
-            break;
-        case DriverRole:
-            ui->statusLabel->setText(_lastName + " (Driver)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
-            onGamepadChanged(NULL);
-            onRttUpdate(-1);
-            break;
-        case CameraOperatorRole:
-            ui->statusLabel->setText(_lastName + " (Camera Operator)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
-            onGamepadChanged(NULL);
-            onRttUpdate(-1);
-            break;
-        case MissionControlP
-void SoroMainWindow::onConnectionStateChanged(Channel::State controlChannelState, Channel::State mccNetworkState, Channel::State sharedChannelState) {
-    _lastControlChannelState = controlChannelState;
-    _lastMccChannelState = mccNetworkState;
-    _lastSharedChannelState = sharedChannelState;
-
-    updateConnectionStateInformation();
-}rocess::SpectatorRole:
-            ui->statusLabel->setText(_lastName + " (Spectator)" + (_lastIsMaster ? " [MASTER MCC]" : ""));
-            ui->comm_controlStateLabel->setText("Not Available");
-            ui->comm_controlStateLabel->setStyleSheet("QLabel { color : #F57F17; }");
-            ui->comm_controlStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/minus_circle_yellow_18px.png);");
-            break;
-        }
-
-        // initialize the UI by invoking listeners on initial values
-        onConnectionStateChanged(Channel::ConnectingState,
-                                 _lastIsMaster ? Channel::ConnectedState : Channel::ConnectingState,
-                                 Channel::ConnectingState);
-        onRoverSystemStateUpdate(NormalSubsystemState, NormalSubsystemState, NormalSubsystemState);
-        //onRoverCameraUpdate(StreamingCameraState, StreamingCameraState, DisabledCameraState, UnavailableCameraState, UnavailableCameraState);
-    }
-    //JUST TESTING SHIT
-    float lat = 29.564844 + qrand() % 1000 * 0.000001;
-    float lng = -95.081317 + qrand() % 1000 * 0.000001;
-    ui->googleMapView->updateLocation(LatLng(lat, lng));
-    ui->googleMapView->updateHeading(rand() % 360);
-}*/
-
 void SoroMainWindow::timerEvent(QTimerEvent *e) {
     QMainWindow::timerEvent(e);
     if (e->timerId() == _clearGpsStatusTimerId) {
@@ -469,18 +425,14 @@ void SoroMainWindow::timerEvent(QTimerEvent *e) {
     }
 }
 
-void SoroMainWindow::onControlChannelStateChanged(Channel::State state) {
+void SoroMainWindow::onControlChannelStateChanged(Channel *channel, Channel::State state) {
+    Q_UNUSED(channel);
     _lastControlChannelState = state;
     updateConnectionStateInformation();
 }
 
-void SoroMainWindow::onSharedChannelStateChanged(Channel::State state) {
-    _lastSharedChannelState = state;
-    updateConnectionStateInformation();
-}
-
-void SoroMainWindow::onMccChannelStateChanged(Channel::State state) {
-    _lastMccChannelState = state;
+void SoroMainWindow::onRoverChannelStateChanged(Channel::State state) {
+    _lastRoverChannelState = state;
     updateConnectionStateInformation();
 }
 
@@ -499,11 +451,6 @@ void SoroMainWindow::onSecondaryComputerStateChanged(RoverSubsystemState state) 
     updateSubsystemStateInformation();
 }
 
-void SoroMainWindow::onNameChanged(QString name) {
-    _lastName = name;
-    updateStatusBar();
-}
-
 void SoroMainWindow::onRttUpdate(int rtt) {
     _lastRtt = rtt;
     updateConnectionStateInformation();
@@ -512,24 +459,6 @@ void SoroMainWindow::onRttUpdate(int rtt) {
 void SoroMainWindow::onDroppedPacketRateUpdate(int droppedRatePercent) {
     _lastDroppedPacketPercent = droppedRatePercent;
     updateConnectionStateInformation();
-}
-
-void SoroMainWindow::onMasterChanged(bool isMaster) {
-    _lastIsMaster = isMaster;
-    updateStatusBar();
-}
-
-void SoroMainWindow::onRoleChanged(Role role) {
-    _lastRole = role;
-    if (role == SpectatorRole) {
-        ui->hid_inputDeviceLabel->setStyleSheet("color: black;");
-        ui->hid_inputDeviceLabel->setText("Not available for spectators");
-        ui->hid_inputDeviceGraphicLabel->setStyleSheet("");
-        ui->comm_controlStateLabel->setStyleSheet("color: black;");
-        ui->comm_controlStateLabel->setText("Not available for spectators");
-        ui->comm_controlStateGraphicLabel->setStyleSheet("");
-    }
-    updateStatusBar();
 }
 
 void SoroMainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
@@ -576,7 +505,7 @@ CameraWidget* SoroMainWindow::getFullscreenCameraWidget() {
 
 void SoroMainWindow::resizeEvent(QResizeEvent* event) {
    QMainWindow::resizeEvent(event);
-   // video on right
+   /// Video on right
    /*ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
    ui->infoContainer->move(0, 0);
    ui->googleMapView->move(0, ui->infoContainer->height());
@@ -587,7 +516,7 @@ void SoroMainWindow::resizeEvent(QResizeEvent* event) {
    ui->videoContainer->move(width() / 2, 0);
    ui->videoContainer->resize(width() / 2, height());*/
 
-   //video on left
+   /// Video on left
    ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
    ui->infoContainer->move(width() / 2, 0);
    ui->googleMapView->move(width() / 2, ui->infoContainer->height());

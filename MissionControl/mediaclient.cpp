@@ -3,17 +3,16 @@
 namespace Soro {
 namespace MissionControl {
 
-MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHostAddress host, Logger *log, QObject *parent)
+MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHostAddress host, QObject *parent)
     : QObject(parent) {
 
     LOG_TAG = logTag;
     _mediaId = mediaId;
     _server = server;
-    _log = log;
 
-    LOG_I("Creating new media client for server at " + server.toString());
+    LOG_I(LOG_TAG, "Creating new media client for server at " + server.toString());
 
-    _controlChannel = Channel::createClient(this, _server, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host, _log);
+    _controlChannel = Channel::createClient(this, _server, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host);
     _mediaSocket = new QUdpSocket(this);
 
     _buffer = new char[65536];
@@ -31,11 +30,11 @@ MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHos
             this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
 
     if (_controlChannel->getState() == Channel::ErrorState) {
-        LOG_E("The TCP channel could not be initialized");
+        LOG_E(LOG_TAG, "The TCP channel could not be initialized");
     }
 
     if (!_mediaSocket->bind(host)) {
-        LOG_E("Failed to bind to UDP socket");
+        LOG_E(LOG_TAG, "Failed to bind to UDP socket");
     }
 
     _mediaSocket->open(QIODevice::ReadWrite);
@@ -77,9 +76,9 @@ void MediaClient::controlMessageReceived(Channel *channel, const char *message, 
     stream.setByteOrder(QDataStream::BigEndian);
     QString messageType;
     stream >> messageType;
-    LOG_E("Got message: " + messageType);
+    LOG_E(LOG_TAG, "Got message: " + messageType);
     if (messageType.compare("start", Qt::CaseInsensitive) == 0) {
-        LOG_I("Server has notified us of a new media stream");
+        LOG_I(LOG_TAG, "Server has notified us of a new media stream");
         disconnect(_mediaSocket, SIGNAL(readyRead()), 0, 0);
         START_TIMER(_punchTimerId, 100);
         onServerStartMessageInternal();
@@ -87,7 +86,7 @@ void MediaClient::controlMessageReceived(Channel *channel, const char *message, 
     }
     else if (messageType.compare("streaming", Qt::CaseInsensitive) == 0) {
         // we were successful and are now receiving a media stream
-        LOG_I("Server has confirmed our address and should begin streaming");
+        LOG_I(LOG_TAG, "Server has confirmed our address and should begin streaming");
         _errorString = ""; // clear error string since we have an active connection;
         mediaSocketReadyRead();
         connect(_mediaSocket, SIGNAL(readyRead()),
@@ -97,7 +96,7 @@ void MediaClient::controlMessageReceived(Channel *channel, const char *message, 
         setState(StreamingState);
     }
     else if (messageType.compare("eos", Qt::CaseInsensitive) == 0) {
-        LOG_I("Got EOS message from server");
+        LOG_I(LOG_TAG, "Got EOS message from server");
         KILL_TIMER(_punchTimerId);
         disconnect(_mediaSocket, SIGNAL(readyRead()), 0, 0);
         _lastBitrate = 0;
@@ -106,7 +105,7 @@ void MediaClient::controlMessageReceived(Channel *channel, const char *message, 
     }
     else if (messageType.compare("error", Qt::CaseInsensitive) == 0) {
         stream >> _errorString;
-        LOG_I("Got error message from server: " + _errorString);
+        LOG_I(LOG_TAG, "Got error message from server: " + _errorString);
         disconnect(_mediaSocket, SIGNAL(readyRead()), 0, 0);
         _lastBitrate = 0;
         KILL_TIMER(_punchTimerId);
@@ -114,7 +113,7 @@ void MediaClient::controlMessageReceived(Channel *channel, const char *message, 
         setState(ConnectedState);
     }
     else {
-        LOG_E("Got unknown message from media server");
+        LOG_E(LOG_TAG, "Got unknown message from media server");
     }
 }
 
@@ -134,7 +133,7 @@ void MediaClient::mediaSocketReadyRead() {
 void MediaClient::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
     if (e->timerId() == _punchTimerId) {
-        LOG_I("punch timer tick");
+        LOG_I(LOG_TAG, "punch timer tick");
         // send data to the the server so it can figure out our address
         QByteArray message;
         QDataStream stream(&message, QIODevice::WriteOnly);

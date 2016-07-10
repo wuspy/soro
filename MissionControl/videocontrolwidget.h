@@ -38,7 +38,7 @@ private:
     bool _available = true;
 
 private slots:
-    void optionButtonClicked();
+    void uiOptionSelected(int index);
     void editButtonClicked();
     void nameEditReturnClicked();
 };

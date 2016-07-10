@@ -18,7 +18,7 @@ class AudioServer: public MediaServer {
     Q_OBJECT
 public:
 
-    explicit AudioServer(int mediaId, SocketAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit AudioServer(int mediaId, SocketAddress host, QObject *parent = NULL);
 
     void start(QString deviceName, AudioFormat format);
 

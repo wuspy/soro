@@ -1,10 +1,7 @@
 #ifndef SORO_CHANNEL_H
 #define SORO_CHANNEL_H
 
-#include <QtCore>
 #include <QtNetwork>
-
-#include <cstring>  //for memcmp
 
 #include "logger.h"
 #include "iniparser.h"
@@ -13,7 +10,9 @@
 
 namespace Soro {
 
-/* Channels abstract over message-based internet communication in a super easy way,
+/* The Channel class is the core networking component in the Sooner Rover project.
+ *
+ * Channels abstract over message-based internet communication in a super easy way,
  * supporting either TCP or UDP as the transport protocol.
  *
  * The following information describes the inner workings of this class and is not
@@ -90,12 +89,12 @@ public:
     /* Creates a new channel to act as the server end point for communication
      */
     static Channel* createServer(QObject *parent, quint16 port, QString name, Protocol protocol,
-             QHostAddress hostAddress = QHostAddress::Any, Logger *log = NULL);
+             QHostAddress hostAddress = QHostAddress::Any);
 
     /* Creates a new channel to act as the client end point for communication
      */
     static Channel* createClient(QObject *parent, SocketAddress serverAddress, QString name, Protocol protocol,
-             QHostAddress hostAddress = QHostAddress::Any, Logger *log = NULL);
+             QHostAddress hostAddress = QHostAddress::Any);
 
     ~Channel();
 
@@ -201,8 +200,6 @@ private:
     SocketAddress _peerAddress = SocketAddress(QHostAddress::Null, 0); //The address of the currently connected peer
 
     Protocol _protocol; //Protocol used by the channel (UDP or TCP)
-
-    Logger* _log = NULL;   //Logger object we are writing log messages to (can be null)
 
     bool _isServer;         //Holders for configuration preferences
     bool _dropOldPackets = true;

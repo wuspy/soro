@@ -16,6 +16,11 @@
     <height>600</height>
    </size>
   </property>
+  <property name="font">
+   <font>
+    <family>Arial</family>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>Mission Control</string>
   </property>
@@ -75,7 +80,7 @@
        </property>
        <property name="font">
         <font>
-         <family>Roboto</family>
+         <family>Arial</family>
          <pointsize>11</pointsize>
         </font>
        </property>
@@ -120,7 +125,7 @@ margin-right: 10px;</string>
        </property>
        <property name="font">
         <font>
-         <family>Roboto</family>
+         <family>Arial</family>
          <pointsize>11</pointsize>
         </font>
        </property>
@@ -144,15 +149,25 @@ margin-right: 10px;</string>
       <height>271</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+     </font>
+    </property>
    </widget>
    <widget class="QWidget" name="infoContainer" native="true">
     <property name="geometry">
      <rect>
       <x>140</x>
       <y>0</y>
-      <width>811</width>
-      <height>291</height>
+      <width>714</width>
+      <height>314</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+     </font>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <property name="leftMargin">
@@ -192,7 +207,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>10</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -213,7 +228,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>9</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -237,7 +252,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>9</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -303,7 +318,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>9</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -343,7 +358,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>9</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -399,7 +414,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>9</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -436,7 +451,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>9</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -457,7 +472,7 @@ margin-right: 10px;</string>
         </property>
         <property name="font">
          <font>
-          <family>Roboto</family>
+          <family>Arial</family>
           <pointsize>9</pointsize>
           <weight>50</weight>
           <bold>false</bold>
@@ -573,7 +588,7 @@ margin-right: 10px;</string>
          </property>
          <property name="font">
           <font>
-           <family>Roboto</family>
+           <family>Arial</family>
            <pointsize>22</pointsize>
            <weight>50</weight>
            <bold>false</bold>
@@ -597,7 +612,7 @@ margin-right: 10px;</string>
          </property>
          <property name="font">
           <font>
-           <family>Roboto</family>
+           <family>Arial</family>
           </font>
          </property>
          <property name="styleSheet">
@@ -627,85 +642,18 @@ margin-right: 10px;</string>
       <widget class="QTabWidget" name="mainTabWidget">
        <property name="font">
         <font>
-         <family>Roboto</family>
+         <family>Arial</family>
         </font>
        </property>
        <property name="tabPosition">
         <enum>QTabWidget::North</enum>
        </property>
        <property name="currentIndex">
-        <number>3</number>
+        <number>1</number>
        </property>
-       <widget class="QWidget" name="notificationTab">
-        <attribute name="title">
-         <string>Notifications</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <property name="leftMargin">
-          <number>6</number>
-         </property>
-         <property name="topMargin">
-          <number>6</number>
-         </property>
-         <property name="rightMargin">
-          <number>6</number>
-         </property>
-         <property name="bottomMargin">
-          <number>6</number>
-         </property>
-         <item>
-          <widget class="QListWidget" name="eventListWidget"/>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="chatLineEdit"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="systemLogTab">
-        <attribute name="title">
-         <string>System Log</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <property name="leftMargin">
-          <number>6</number>
-         </property>
-         <property name="topMargin">
-          <number>6</number>
-         </property>
-         <property name="rightMargin">
-          <number>6</number>
-         </property>
-         <property name="bottomMargin">
-          <number>6</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="font">
-            <font>
-             <family>Roboto</family>
-             <pointsize>10</pointsize>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">color: #b71c1c;</string>
-           </property>
-           <property name="text">
-            <string>Unless your name is Jacob or Kevin, do not pay attention to anything you read here.</string>
-           </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTextEdit" name="loggingTextEdit">
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
+       <property name="documentMode">
+        <bool>false</bool>
+       </property>
        <widget class="QWidget" name="mediaControlsTab">
         <attribute name="title">
          <string>Media Control</string>
@@ -740,6 +688,11 @@ margin-right: 10px;</string>
              <height>24</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <family>Arial</family>
+            </font>
+           </property>
           </widget>
          </item>
          <item>
@@ -768,6 +721,11 @@ margin-right: 10px;</string>
              <width>16777215</width>
              <height>24</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Arial</family>
+            </font>
            </property>
           </widget>
          </item>
@@ -798,6 +756,11 @@ margin-right: 10px;</string>
              <height>24</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <family>Arial</family>
+            </font>
+           </property>
           </widget>
          </item>
          <item>
@@ -826,6 +789,11 @@ margin-right: 10px;</string>
              <width>16777215</width>
              <height>24</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Arial</family>
+            </font>
            </property>
           </widget>
          </item>
@@ -856,6 +824,11 @@ margin-right: 10px;</string>
              <height>24</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <family>Arial</family>
+            </font>
+           </property>
           </widget>
          </item>
          <item>
@@ -884,6 +857,11 @@ margin-right: 10px;</string>
              <width>16777215</width>
              <height>24</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Arial</family>
+            </font>
            </property>
           </widget>
          </item>
@@ -915,337 +893,451 @@ margin-right: 10px;</string>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="cartographyTab">
-        <attribute name="title">
-         <string>Cartography</string>
-        </attribute>
-       </widget>
        <widget class="QWidget" name="masterArmTab">
         <attribute name="title">
          <string>Master Arm</string>
         </attribute>
-        <widget class="QPushButton" name="masterarm_reloadFileButton">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>200</y>
-           <width>181</width>
-           <height>31</height>
-          </rect>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <property name="leftMargin">
+          <number>6</number>
          </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
+         <property name="topMargin">
+          <number>6</number>
          </property>
-         <property name="styleSheet">
-          <string notr="true">border-radius: 5px;
+         <property name="rightMargin">
+          <number>6</number>
+         </property>
+         <property name="bottomMargin">
+          <number>6</number>
+         </property>
+         <item>
+          <widget class="QWidget" name="masterArmConfigContainer" native="true">
+           <property name="maximumSize">
+            <size>
+             <width>180</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <layout class="QFormLayout" name="masterArmValuesFormLayout">
+              <property name="fieldGrowthPolicy">
+               <enum>QFormLayout::ExpandingFieldsGrow</enum>
+              </property>
+              <property name="horizontalSpacing">
+               <number>8</number>
+              </property>
+              <property name="verticalSpacing">
+               <number>4</number>
+              </property>
+              <item row="1" column="0">
+               <widget class="QLabel" name="sys_armSubsystemLabel_2">
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Current Yaw:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="masterarm_yawValueLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>48</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>N/A</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="sys_armSubsystemLabel_3">
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Current Shoulder:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLabel" name="masterarm_shoulderValueLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>48</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>N/A</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="sys_armSubsystemLabel_4">
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Current Elbow:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QLabel" name="masterarm_elbowValueLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>48</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>N/A</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="sys_armSubsystemLabel_5">
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Current Wrist:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QLabel" name="masterarm_wristValueLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>48</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>N/A</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="0">
+               <widget class="QLabel" name="sys_armSubsystemLabel_11">
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Bucket Toggle:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QLabel" name="masterarm_bucketToggleValueLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>48</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>N/A</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0">
+               <widget class="QLabel" name="sys_armSubsystemLabel_10">
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Stow Macro:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="1">
+               <widget class="QLabel" name="masterarm_stowMacroValueLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>48</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>N/A</string>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="0">
+               <widget class="QLabel" name="sys_armSubsystemLabel_12">
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Dump Macro:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="1">
+               <widget class="QLabel" name="masterarm_dumpMacroValueLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>48</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <family>Arial</family>
+                  <pointsize>11</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>N/A</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="masterarm_reloadFileButton">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Arial</family>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">border-radius: 5px;
 color: white;
 background-color: #b71c1c;</string>
+              </property>
+              <property name="text">
+               <string>SAVE &amp;&amp; RELOAD</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTextEdit" name="masterArmFileTextEdit">
+           <property name="font">
+            <font>
+             <family>Arial</family>
+            </font>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="testingTab">
+        <attribute name="title">
+         <string>Testing</string>
+        </attribute>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <property name="leftMargin">
+          <number>6</number>
          </property>
-         <property name="text">
-          <string>RELOAD LIMIT FILE</string>
+         <property name="topMargin">
+          <number>6</number>
          </property>
-         <property name="flat">
-          <bool>true</bool>
+         <property name="rightMargin">
+          <number>6</number>
          </property>
-        </widget>
-        <widget class="QLabel" name="sys_armSubsystemLabel_2">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>10</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
+         <property name="bottomMargin">
+          <number>6</number>
          </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Current Yaw:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="sys_armSubsystemLabel_3">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>30</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Current Shoulder:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="sys_armSubsystemLabel_4">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>50</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Current Elbow:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="sys_armSubsystemLabel_5">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>70</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Current Wrist:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="masterarm_yawValueLabel">
-         <property name="geometry">
-          <rect>
-           <x>150</x>
-           <y>10</y>
-           <width>71</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="masterarm_shoulderValueLabel">
-         <property name="geometry">
-          <rect>
-           <x>150</x>
-           <y>30</y>
-           <width>71</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="masterarm_elbowValueLabel">
-         <property name="geometry">
-          <rect>
-           <x>150</x>
-           <y>50</y>
-           <width>71</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="masterarm_wristValueLabel">
-         <property name="geometry">
-          <rect>
-           <x>150</x>
-           <y>70</y>
-           <width>71</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="sys_armSubsystemLabel_10">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>120</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Stow Macro:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="masterarm_stowMacroValueLabel">
-         <property name="geometry">
-          <rect>
-           <x>150</x>
-           <y>120</y>
-           <width>71</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="sys_armSubsystemLabel_12">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>140</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Dump Macro:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="masterarm_dumpMacroValueLabel">
-         <property name="geometry">
-          <rect>
-           <x>150</x>
-           <y>140</y>
-           <width>71</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="sys_armSubsystemLabel_11">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>100</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Bucket Toggle:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="masterarm_bucketToggleValueLabel">
-         <property name="geometry">
-          <rect>
-           <x>150</x>
-           <y>100</y>
-           <width>71</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>11</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>N/A</string>
-         </property>
-        </widget>
+         <item>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="sys_armSubsystemLabel_6">
+             <property name="font">
+              <font>
+               <family>Arial</family>
+               <pointsize>11</pointsize>
+               <weight>50</weight>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Simulated Delay (ms):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="testing_delaySpinBox">
+             <property name="maximum">
+              <number>100000</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="masterarm_reloadFileButton_2">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Arial</family>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="cursor">
+              <cursorShape>PointingHandCursor</cursorShape>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">border-radius: 5px;
+color: white;
+background-color: #b71c1c;</string>
+             </property>
+             <property name="text">
+              <string>SAVE &amp;&amp; RELOAD</string>
+             </property>
+             <property name="flat">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </widget>
      </item>
@@ -1277,10 +1369,22 @@ background-color: #b71c1c;</string>
       <number>0</number>
      </property>
      <item>
-      <widget class="Soro::MissionControl::CameraWidget" name="topVideoWidget" native="true"/>
+      <widget class="Soro::MissionControl::CameraWidget" name="topVideoWidget" native="true">
+       <property name="font">
+        <font>
+         <family>Arial</family>
+        </font>
+       </property>
+      </widget>
      </item>
      <item>
-      <widget class="Soro::MissionControl::CameraWidget" name="bottomVideoWidget" native="true"/>
+      <widget class="Soro::MissionControl::CameraWidget" name="bottomVideoWidget" native="true">
+       <property name="font">
+        <font>
+         <family>Arial</family>
+        </font>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>

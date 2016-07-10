@@ -6,11 +6,11 @@
 #include <QList>
 
 #include "videoserver.h"
-#include "flycapenumerator.h"
-#include "uvdcameraenumerator.h"
+//#include "flycapenumerator.h"
+#include "usbcameraenumerator.h"
 #include "logger.h"
 
-#include <flycapture/FlyCapture2.h>
+//#include <flycapture/FlyCapture2.h>
 
 namespace Soro {
 namespace Rover {
@@ -21,7 +21,7 @@ namespace Rover {
 class VideoServerArray : public QObject {
     Q_OBJECT
 public:
-    explicit VideoServerArray(Logger *log = 0, QObject *parent = 0);
+    explicit VideoServerArray(QObject *parent = 0);
     ~VideoServerArray();
 
     /* Starts streaming a video server at the specified index
@@ -56,15 +56,13 @@ signals:
     void videoServerStateChanged(int index, VideoServer::State state);
 
 private:
-    Logger *_log;
-
     // These hold the video server objects which spawn child processes to
     // stream the data to mission control
     QMap<int, VideoServer*> _servers;
     // These hold the gst elements for the cameras that flycapture
-    QMap<int, FlyCapture2::PGRGuid> _flycapCameras;
+    //QMap<int, FlyCapture2::PGRGuid> _flycapCameras;
     // These hold the gst elements for the cameras that not flycapture
-    QMap<int, QString> _uvdCameras;
+    QMap<int, QString> _usbCameras;
 
 private slots:
     void serverStateChanged(MediaServer *server, MediaServer::State state);

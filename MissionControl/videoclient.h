@@ -22,7 +22,7 @@ class VideoClient : public MediaClient {
     Q_OBJECT
 
 public:
-    explicit VideoClient(int mediaId, SocketAddress server, QHostAddress host, Logger *log = 0, QObject *parent = 0);
+    explicit VideoClient(int mediaId, SocketAddress server, QHostAddress host, QObject *parent = 0);
 
     VideoFormat getVideoFormat() const;
 

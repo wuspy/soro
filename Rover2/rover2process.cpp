@@ -5,83 +5,58 @@
 namespace Soro {
 namespace Rover {
 
-Rover2Process::Rover2Process(QObject *parent) : QObject(parent) {
-    _log = new Logger(this);
-    _log->setLogfile(QCoreApplication::applicationDirPath() + "/rover2_" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
-    _log->RouteToQtLogger = true;
-    _log->MaxQtLoggerLevel = LOG_LEVEL_DEBUG;
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("Starting up...");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    //Must initialize from the event loop
-    START_TIMER(_initTimerId, 1);
+Rover2Process::Rover2Process(const Configuration *config, QObject *parent) : QObject(parent) {
+    _config = config;
+
+    // Must initialize once the event loop has started.
+    // This can be accomplished using a single shot timer.
+    QTimer::singleShot(1, this, SLOT(init()));
+}
+
+void Rover2Process::init() {
+    LOG_I(LOG_TAG, "Configuration has been loaded successfully");
+
+    LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
+
+    _videoServers = new VideoServerArray(this);
+    _videoServers->populate(_config->BlacklistedUsbCameras,
+                            _config->FirstVideoPort + _config->MainComputerCameraCount,
+                            _config->MainComputerCameraCount);
+
+    if (_videoServers->serverCount() > _config->SecondaryComputerCameraCount) {
+        LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
+        while (_videoServers->serverCount() > _config->SecondaryComputerCameraCount) {
+            _videoServers->remove(_videoServers->serverCount() - 1);
+        }
+    }
+    else if (_videoServers->serverCount() < _config->SecondaryComputerCameraCount) {
+        LOG_E(LOG_TAG, "The configuration specifies more cameras than this, check cable connections");
+    }
+
+    LOG_I(LOG_TAG, "*************Initializing core networking*****************");
+
+    _masterComputerBroadcastSocket = new QUdpSocket(this);
+    connect(_masterComputerBroadcastSocket, SIGNAL(readyRead()),
+            this, SLOT(masterComputerBroadcastSocketReadyRead()));
+
+    beginBroadcast();
 }
 
 void Rover2Process::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
-    if (e->timerId() == _initTimerId) {
-        KILL_TIMER(_initTimerId); //single shot
-
-        LOG_I("**************Loading configuration from soro.ini****************");
-        QString err = QString::null;
-        if (!_config.load(&err)) {
-            LOG_E(err);
-            exit(1); return;
-        }
-        _config.applyLogLevel(_log);
-        LOG_I("Configuration has been loaded successfully");
-
-        LOG_I("*****************Initializing Video system*******************");
-
-        _videoServers = new VideoServerArray(_log, this);
-        _videoServers->populate(_config.BlacklistedUvdCameras,
-                                _config.FirstVideoPort + _config.MainComputerCameraCount,
-                                _config.MainComputerCameraCount);
-
-        if (_videoServers->serverCount() > _config.SecondaryComputerCameraCount) {
-            LOG_E("The configuration specifies less cameras than this, the last ones will be removed");
-            while (_videoServers->serverCount() > _config.SecondaryComputerCameraCount) {
-                _videoServers->remove(_videoServers->serverCount() - 1);
-            }
-        }
-        else if (_videoServers->serverCount() < _config.SecondaryComputerCameraCount) {
-            LOG_E("The configuration specifies more cameras than this, check cable connections");
-        }
-
-        LOG_I("*************Initializing core networking*****************");
-
-        _masterComputerBroadcastSocket = new QUdpSocket(this);
-        connect(_masterComputerBroadcastSocket, SIGNAL(readyRead()),
-                this, SLOT(masterComputerBroadcastSocketReadyRead()));
-
-        beginBroadcast();
-
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("Initialization complete");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
-
-    }
-    else if ((e->timerId() == _broadcastTimerId) && _masterComputerBroadcastSocket) {
+    if ((e->timerId() == _broadcastTimerId) && _masterComputerBroadcastSocket) {
         // broadcast to the master computer
-        LOG_I("Sending broadcast on subnet");
+        LOG_I(LOG_TAG, "Sending broadcast on subnet");
         _masterComputerBroadcastSocket->writeDatagram(SECONDARY_COMPUTER_BROADCAST_STRING, strlen(SECONDARY_COMPUTER_BROADCAST_STRING) + 1,
-                                                      QHostAddress::Broadcast, _config.SecondaryComputerPort);
+                                                      QHostAddress::Broadcast, _config->SecondaryComputerPort);
     }
 }
 
 void Rover2Process::beginBroadcast() {
-    LOG_I("Beginning UDP broadcast on port " + QString::number(_config.SecondaryComputerPort));
+    LOG_I(LOG_TAG, "Beginning UDP broadcast on port " + QString::number(_config->SecondaryComputerPort));
     if (_masterComputerBroadcastSocket) {
         _masterComputerBroadcastSocket->abort();
-        _masterComputerBroadcastSocket->bind(QHostAddress::Any, _config.SecondaryComputerPort);
+        _masterComputerBroadcastSocket->bind(QHostAddress::Any, _config->SecondaryComputerPort);
         _masterComputerBroadcastSocket->open(QIODevice::ReadWrite);
     }
     START_TIMER(_broadcastTimerId, 1000);
@@ -94,15 +69,15 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
         int len = _masterComputerBroadcastSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
         if ((strncmp(MASTER_COMPUTER_BROADCAST_STRING, buffer, len) == 0)) {
             // master computer has responded
-            LOG_I("Got response from master computer on broadcast socket");
+            LOG_I(LOG_TAG, "Got response from master computer on broadcast socket");
 
             // initialize the tcp channel
             if (!_masterComputerChannel) {
                 _masterComputerChannel = Channel::createClient(this, peer, CHANNEL_NAME_SECONDARY_COMPUTER,
-                                          Channel::TcpProtocol, QHostAddress::Any, _log);
+                                          Channel::TcpProtocol, QHostAddress::Any);
 
                 if (_masterComputerChannel->getState() == Channel::ErrorState) {
-                    LOG_E("The master computer channel experienced a fatal error during initialization");
+                    LOG_E(LOG_TAG, "The master computer channel experienced a fatal error during initialization");
                     exit(1); return;
                 }
 
@@ -123,7 +98,7 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
 void Rover2Process::masterChannelStateChanged(Channel *channel, Channel::State state) {
     if ((state != Channel::ConnectedState) && channel->wasConnected()) {
         // lost connection to master computer, start broadcasting again
-        LOG_E("Lost connection to master computer");
+        LOG_E(LOG_TAG, "Lost connection to master computer");
         _masterComputerChannel->close();
         delete _masterComputerChannel;
         _masterComputerChannel = NULL;
@@ -145,24 +120,24 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
         VideoFormat format;
         stream >> camera;
         stream >> reinterpret_cast<quint32&>(format);
-        if ((camera >= _config.MainComputerCameraCount) && (camera < _config.MainComputerCameraCount + _config.SecondaryComputerCameraCount)) {
-            LOG_I("Camera " + QString::number(camera) + " is about to be activated");
+        if ((camera >= _config->MainComputerCameraCount) && (camera < _config->MainComputerCameraCount + _config->SecondaryComputerCameraCount)) {
+            LOG_I(LOG_TAG, "Camera " + QString::number(camera) + " is about to be activated");
             _videoServers->activate(camera, format);
         }
         else {
-            LOG_E("Received camera ID out of range (" + QString::number(camera));
+            LOG_E(LOG_TAG, "Received camera ID out of range (" + QString::number(camera));
         }
     }
         break;
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
-        if ((camera >= _config.MainComputerCameraCount) && (camera < _config.MainComputerCameraCount + _config.SecondaryComputerCameraCount)) {
-            LOG_I("Camera " + QString::number(camera) + " is about to be deactivated");
+        if ((camera >= _config->MainComputerCameraCount) && (camera < _config->MainComputerCameraCount + _config->SecondaryComputerCameraCount)) {
+            LOG_I(LOG_TAG, "Camera " + QString::number(camera) + " is about to be deactivated");
             _videoServers->deactivate(camera);
         }
         else {
-            LOG_E("Received camera ID out of range (" + QString::number(camera));
+            LOG_E(LOG_TAG, "Received camera ID out of range (" + QString::number(camera));
         }
         break;
     default:
@@ -171,7 +146,6 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
 }
 
 Rover2Process::~Rover2Process() {
-    if (_log) delete _log;
     if (_masterComputerBroadcastSocket) delete _masterComputerBroadcastSocket;
     if (_masterComputerChannel) delete _masterComputerChannel;
 }

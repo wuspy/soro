@@ -3,9 +3,9 @@
 namespace Soro {
 namespace Rover {
 
-MediaServer::MediaServer(QString logTag, int mediaId, QString childProcessPath, SocketAddress host, Logger *log, QObject *parent) : QObject(parent) {
+MediaServer::MediaServer(QString logTag, int mediaId, QString childProcessPath, SocketAddress host, QObject *parent) : QObject(parent) {
     LOG_TAG = logTag;
-    _log = log;
+
     _host = host;
     _mediaId = mediaId;
 
@@ -40,13 +40,13 @@ void MediaServer::beginStream(SocketAddress address) {
                this, SLOT(childStateChanged(QProcess::ProcessState)));
     _child.start();
 
-    LOG_I("Sending streaming message to client");
+    LOG_I(LOG_TAG, "Sending streaming message to client");
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::BigEndian);
     stream << QString("streaming");
     constructStreamingMessage(stream);
-    LOG_I("Sending stream configuration to client");
+    LOG_I(LOG_TAG, "Sending stream configuration to client");
     _controlChannel->sendMessage(message.constData(), message.size());
 
     setState(StreamingState);
@@ -54,33 +54,33 @@ void MediaServer::beginStream(SocketAddress address) {
 
 void MediaServer::stop() {
     if (_state == IdleState) {
-        LOG_W("stop() called: Server is already stopped");
+        LOG_W(LOG_TAG, "stop() called: Server is already stopped");
         return;
     }
     if (_child.state() != QProcess::NotRunning) {
-        LOG_I("stop() called: asking the streaming process to stop");
+        LOG_I(LOG_TAG, "stop() called: asking the streaming process to stop");
         if (_ipcSocket) {
             _ipcSocket->write("stop");
             _ipcSocket->flush();
             if (!_child.waitForFinished(1000)) {
-                LOG_E("Streaming process did not respond to stop request, terminating it");
+                LOG_E(LOG_TAG, "Streaming process did not respond to stop request, terminating it");
                 _child.terminate();
                 _child.waitForFinished();
-                LOG_I("Streaming process has been terminated");
+                LOG_I(LOG_TAG, "Streaming process has been terminated");
             }
             else {
-                LOG_I("Streaming process has exited gracefully");
+                LOG_I(LOG_TAG, "Streaming process has exited gracefully");
             }
         }
         else {
-            LOG_E("Streaming process is not connected to the rover process, terminating it");
+            LOG_E(LOG_TAG, "Streaming process is not connected to the rover process, terminating it");
             _child.terminate();
             _child.waitForFinished();
-            LOG_I("Streaming process has been terminated");
+            LOG_I(LOG_TAG, "Streaming process has been terminated");
         }
     }
     else {
-        LOG_I("stop() called, however the child process is not running");
+        LOG_I(LOG_TAG, "stop() called, however the child process is not running");
     }
     if (_ipcSocket) {
         disconnect(_ipcSocket, 0, 0, 0);
@@ -104,9 +104,9 @@ void MediaServer::stop() {
 }
 
 void MediaServer::initStream() {
-    LOG_I("start() called");
+    LOG_I(LOG_TAG, "start() called");
     if (_state != IdleState) {
-        LOG_I("Server is not idle, stopping operations");
+        LOG_I(LOG_TAG, "Server is not idle, stopping operations");
         stop();
     }
     setState(WaitingState);
@@ -118,7 +118,7 @@ void MediaServer::beginClientHandshake() {
     if (_controlChannel->getState() == Channel::ConnectedState) {
         _mediaSocket->abort();
         if (!_mediaSocket->bind(_host.host, _host.port)) {
-            LOG_E("Cannot bind to UDP media host " + _host.toString() + ": " + _mediaSocket->errorString());
+            LOG_E(LOG_TAG, "Cannot bind to UDP media host " + _host.toString() + ": " + _mediaSocket->errorString());
             QTimer::singleShot(500, this, SLOT(beginClientHandshake()));
             return;
         }
@@ -126,7 +126,7 @@ void MediaServer::beginClientHandshake() {
         _mediaSocket->open(QIODevice::ReadWrite);
         // notify a connected client that there is about to be a stream change
         // and they should verify their UDP address
-        LOG_I("Sending stream start message to client");
+        LOG_I(LOG_TAG, "Sending stream start message to client");
         QByteArray message;
         QDataStream stream(&message, QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::BigEndian);
@@ -137,7 +137,7 @@ void MediaServer::beginClientHandshake() {
 
     }
     else {
-        LOG_I("Waiting for client to connect...");
+        LOG_I(LOG_TAG, "Waiting for client to connect...");
         QTimer::singleShot(500, this, SLOT(beginClientHandshake()));
     }
 }
@@ -145,7 +145,7 @@ void MediaServer::beginClientHandshake() {
 void MediaServer::ipcServerClientAvailable() {
     if (!_ipcSocket) {
         _ipcSocket = _ipcServer->nextPendingConnection();
-        LOG_I("Streaming process is connected to its parent through TCP");
+        LOG_I(LOG_TAG, "Streaming process is connected to its parent through TCP");
     }
 }
 
@@ -163,14 +163,14 @@ void MediaServer::mediaSocketReadyRead() {
     stream >> mediaId;
 
     if (tag.compare("soro_media", Qt::CaseInsensitive) != 0) {
-        LOG_E("Got invalid handshake packet on UDP media port");
+        LOG_E(LOG_TAG, "Got invalid handshake packet on UDP media port");
         return;
     }
     if (mediaId != _mediaId) {
-        LOG_E("Got wrong media ID during UDP handshake, check your port configuration");
+        LOG_E(LOG_TAG, "Got wrong media ID during UDP handshake, check your port configuration");
         return;
     }
-    LOG_I("Client has completed handshake on its UDP address");
+    LOG_I(LOG_TAG, "Client has completed handshake on its UDP address");
     // Disconnect the media UDP socket so udpsink can bind to it
     disconnect(_mediaSocket, SIGNAL(readyRead()), this, SLOT(mediaSocketReadyRead()));
     _mediaSocket->abort(); // MUST ABORT THE SOCKET!!!!
@@ -186,28 +186,28 @@ void MediaServer::childStateChanged(QProcess::ProcessState state) {
         switch (_child.exitCode()) {
         case 0:
         case STREAMPROCESS_ERR_GSTREAMER_EOS:
-            LOG_I("Streaming process has exited normally");
+            LOG_I(LOG_TAG, "Streaming process has exited normally");
             emit eos(this);
             break;
         case STREAMPROCESS_ERR_FLYCAP_ERROR:
-            LOG_E("Streaming processes exited due to an error in FlyCapture2 processing");
+            LOG_E(LOG_TAG, "Streaming processes exited due to an error in FlyCapture2 processing");
             break;
         case STREAMPROCESS_ERR_GSTREAMER_ERROR:
-            LOG_E("The streaming processes exited due to a gstreamer error");
+            LOG_E(LOG_TAG, "The streaming processes exited due to a gstreamer error");
             emit error(this, "Streaming process exited due to a gstreamer error");
             break;
         case STREAMPROCESS_ERR_INVALID_ARGUMENT:
         case STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS:
         case STREAMPROCESS_ERR_UNKNOWN_CODEC:
-            LOG_E("Streaming processes exited due to an argument error");
+            LOG_E(LOG_TAG, "Streaming processes exited due to an argument error");
             emit error(this, "Streaming processes exited due to an argument error");
             break;
         case STREAMPROCESS_ERR_SOCKET_ERROR:
-            LOG_E("Streaming process exited because it lost contact with the parent cameraprocess");
+            LOG_E(LOG_TAG, "Streaming process exited because it lost contact with the parent cameraprocess");
             emit error(this, "Streaming process exited because it lost contact with the parent process");
             break;
         default:
-            LOG_E("Streaming process exited due to an unknown error (exit code " + QString::number(_child.exitCode()) + ")");
+            LOG_E(LOG_TAG, "Streaming process exited due to an unknown error (exit code " + QString::number(_child.exitCode()) + ")");
             emit error(this, "Streaming process exited due to an unknown error (exit code " + QString::number(_child.exitCode()) + ")");
             break;
         }
@@ -215,10 +215,10 @@ void MediaServer::childStateChanged(QProcess::ProcessState state) {
         stop();
         break;
     case QProcess::Starting:
-        LOG_I("Child is starting...");
+        LOG_I(LOG_TAG, "Child is starting...");
         break;
     case QProcess::Running:
-        LOG_I("Child has started successfully");
+        LOG_I(LOG_TAG, "Child has started successfully");
         break;
     }
 }
@@ -240,7 +240,7 @@ MediaServer::State MediaServer::getState() const {
 
 void MediaServer::setState(MediaServer::State state) {
     if (_state != state) {
-        LOG_I("Changing to state " + QString::number(reinterpret_cast<quint32&>(state)));
+        LOG_I(LOG_TAG, "Changing to state " + QString::number(reinterpret_cast<quint32&>(state)));
         _state = state;
         emit stateChanged(this, state);
     }

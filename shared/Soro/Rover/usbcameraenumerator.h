@@ -1,5 +1,5 @@
-#ifndef SORO_ROVER_UVDCAMERAENUMERATOR_H
-#define SORO_ROVER_UVDCAMERAENUMERATOR_H
+#ifndef SORO_ROVER_USBCAMERAENUMERATOR_H
+#define SORO_ROVER_USBCAMERAENUMERATOR_H
 
 #include <QMap>
 
@@ -8,10 +8,10 @@
 namespace Soro {
 namespace Rover {
 
-class UvdCameraEnumerator {
+class UsbCameraEnumerator {
 
 public:
-    /* Enumerates all USB/UVD cameras connected. If successful, this will
+    /* Enumerates all USB cameras connected. If successful, this will
      * return the number of cameras detected, otherwise -1 will be returned.
      */
     int loadCameras();
@@ -25,4 +25,4 @@ private:
 } // namespace Rover
 } // namespace Soro
 
-#endif // SORO_ROVER_UVDCAMERAENUMERATOR_H
+#endif // SORO_ROVER_USBCAMERAENUMERATOR_H

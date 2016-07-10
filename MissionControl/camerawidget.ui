@@ -10,6 +10,11 @@
     <height>648</height>
    </rect>
   </property>
+  <property name="font">
+   <font>
+    <family>Arial</family>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
@@ -25,15 +30,15 @@
    <widget class="QWidget" name="controlsWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>719</x>
+      <x>699</x>
       <y>570</y>
-      <width>111</width>
+      <width>131</width>
       <height>38</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <family>Roboto</family>
+      <family>Arial</family>
      </font>
     </property>
     <property name="styleSheet">
@@ -56,7 +61,7 @@
       <widget class="QLabel" name="cameraNameLabel">
        <property name="font">
         <font>
-         <family>Roboto</family>
+         <family>Arial</family>
         </font>
        </property>
        <property name="text">
@@ -77,6 +82,11 @@
       <width>791</width>
       <height>561</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+     </font>
     </property>
     <property name="styleSheet">
      <string notr="true">QLabel { background-color: #A0000000; color: #FFFFFF; }</string>

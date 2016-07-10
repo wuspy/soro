@@ -5,158 +5,136 @@
 namespace Soro {
 namespace Rover {
 
-RoverProcess::RoverProcess(QObject *parent) : QObject(parent) {
-    _log = new Logger(this);
-    _log->setLogfile(QCoreApplication::applicationDirPath() + "/rover_" + QDateTime::currentDateTime().toString("M-dd_h:mm:AP") + ".log");
-    _log->RouteToQtLogger = true;
-    _log->MaxQtLoggerLevel = LOG_LEVEL_DEBUG;
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("Starting up...");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    LOG_I("-------------------------------------------------------");
-    //Must initialize from the event loop
-    START_TIMER(_initTimerId, 1);
+RoverProcess::RoverProcess(const Configuration *config, QObject *parent) : QObject(parent) {
+    _config = config;
+
+    // Must initialize once the event loop has started.
+    // This can be accomplished using a single shot timer.
+    QTimer::singleShot(1, this, SLOT(init()));
 }
 
-void RoverProcess::timerEvent(QTimerEvent *e) {
-    QObject::timerEvent(e);
-    if (e->timerId() == _initTimerId) {
-        KILL_TIMER(_initTimerId); //single shot
+void RoverProcess::init() {
+    LOG_I(LOG_TAG, "*************Initializing core networking*****************");
 
-        LOG_I("**************Loading configuration from soro.ini****************");
-        QString err = QString::null;
-        if (!_config.load(&err)) {
-            LOG_E(err);
-            exit(1); return;
-        }
-        _config.applyLogLevel(_log);
-        LOG_I("Configuration has been loaded successfully");
+    _armChannel = Channel::createServer(this, _config->ArmChannelPort, CHANNEL_NAME_ARM,
+                              Channel::UdpProtocol, QHostAddress::Any);
+    _driveChannel = Channel::createServer(this, _config->DriveChannelPort, CHANNEL_NAME_DRIVE,
+                              Channel::UdpProtocol, QHostAddress::Any);
+    _gimbalChannel = Channel::createServer(this, _config->GimbalChannelPort, CHANNEL_NAME_GIMBAL,
+                              Channel::UdpProtocol, QHostAddress::Any);
+    _sharedChannel = Channel::createServer(this, _config->SharedChannelPort, CHANNEL_NAME_SHARED,
+                              Channel::TcpProtocol, QHostAddress::Any);
+    _secondaryComputerChannel = Channel::createServer(this, _config->SecondaryComputerPort, CHANNEL_NAME_SECONDARY_COMPUTER,
+                                    Channel::TcpProtocol, QHostAddress::Any);
 
-        LOG_I("*************Initializing core networking*****************");
-
-        _armChannel = Channel::createServer(this, _config.ArmChannelPort, CHANNEL_NAME_ARM,
-                                  Channel::UdpProtocol, QHostAddress::Any, _log);
-        _driveChannel = Channel::createServer(this, _config.DriveChannelPort, CHANNEL_NAME_DRIVE,
-                                  Channel::UdpProtocol, QHostAddress::Any, _log);
-        _gimbalChannel = Channel::createServer(this, _config.GimbalChannelPort, CHANNEL_NAME_GIMBAL,
-                                  Channel::UdpProtocol, QHostAddress::Any, _log);
-        _sharedChannel = Channel::createServer(this, _config.SharedChannelPort, CHANNEL_NAME_SHARED,
-                                  Channel::TcpProtocol, QHostAddress::Any, _log);
-        _secondaryComputerChannel = Channel::createServer(this, _config.SecondaryComputerPort, CHANNEL_NAME_SECONDARY_COMPUTER,
-                                        Channel::TcpProtocol, QHostAddress::Any, _log);
-
-        if (_armChannel->getState() == Channel::ErrorState) {
-            LOG_E("The arm channel experienced a fatal error during initialization");
-            exit(1); return;
-        }
-        if (_driveChannel->getState() == Channel::ErrorState) {
-            LOG_E("The drive channel experienced a fatal error during initialization");
-            exit(1); return;
-        }
-        if (_gimbalChannel->getState() == Channel::ErrorState) {
-            LOG_E("The gimbal channel experienced a fatal error during initialization");
-            exit(1); return;
-        }
-        if (_sharedChannel->getState() == Channel::ErrorState) {
-            LOG_E("The shared channel experienced a fatal error during initialization");
-            exit(1); return;
-        }
-
-        _armChannel->open();
-        _driveChannel->open();
-        _gimbalChannel->open();
-        _sharedChannel->open();
-        _secondaryComputerChannel->open();
-
-        // create the udp broadcast socket that will listen for the secondary computer
-        _secondaryComputerBroadcastSocket = new QUdpSocket(this);
-
-        // observers for network channel connectivity changes
-        connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                this, SLOT(sharedChannelStateChanged(Channel*,Channel::State)));
-        connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                this, SLOT(secondaryComputerStateChanged(Channel*,Channel::State)));
-
-        connect(_secondaryComputerBroadcastSocket, SIGNAL(readyRead()),
-                this, SLOT(secondaryComputerBroadcastSocketReadyRead()));
-        connect(_secondaryComputerBroadcastSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-                this, SLOT(secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError)));
-
-
-        beginSecondaryComputerListening();
-
-        LOG_I("All network channels initialized successfully");
-
-        LOG_I("*****************Initializing MBED systems*******************");
-
-        // create mbed channels
-        _armControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _config.ArmMbedPort), MBED_ID_ARM, this, _log);
-        _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _config.DriveCameraMbedPort), MBED_ID_DRIVE_CAMERA, this, _log);
-
-        // observers for mbed connectivity changes
-        connect(_armControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
-                this, SLOT(mbedChannelStateChanged(MbedChannel*,MbedChannel::State)));
-        connect(_driveGimbalControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
-                this, SLOT(mbedChannelStateChanged(MbedChannel*,MbedChannel::State)));
-
-        // observers for network channels message received
-        connect(_armChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-                 this, SLOT(armChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
-        connect(_driveChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-                 this, SLOT(driveChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
-        connect(_gimbalChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
-                this, SLOT(gimbalChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
-        connect(_sharedChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-                 this, SLOT(sharedChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
-
-        LOG_I("*****************Initializing GPS system*******************");
-
-        _gpsServer = new GpsServer(this, SocketAddress(QHostAddress::Any, _config.RoverGpsServerPort), _log);
-        connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
-                this, SLOT(gpsUpdate(NmeaMessage)));
-
-        LOG_I("*****************Initializing Video system*******************");
-
-        _videoServers = new VideoServerArray(_log, this);
-        _videoServers->populate(_config.BlacklistedUvdCameras, _config.FirstVideoPort, 0);
-
-        if (_videoServers->serverCount() > _config.MainComputerCameraCount) {
-            LOG_E("The configuration specifies less cameras than this, the last ones will be removed");
-            while (_videoServers->serverCount() > _config.MainComputerCameraCount) {
-                _videoServers->remove(_videoServers->serverCount() - 1);
-            }
-        }
-        else if (_videoServers->serverCount() < _config.MainComputerCameraCount) {
-            LOG_E("The configuration specifies more cameras than this, check cable connections");
-        }
-
-        LOG_I("*****************Initializing Audio system*******************");
-
-        _audioServer = new AudioServer(69, SocketAddress(QHostAddress::Any, _config.AudioStreamPort), _log, this);
-
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("Initialization complete");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
-        LOG_I("-------------------------------------------------------");
+    if (_armChannel->getState() == Channel::ErrorState) {
+        LOG_E(LOG_TAG, "The arm channel experienced a fatal error during initialization");
+        exit(1); return;
     }
+    if (_driveChannel->getState() == Channel::ErrorState) {
+        LOG_E(LOG_TAG, "The drive channel experienced a fatal error during initialization");
+        exit(1); return;
+    }
+    if (_gimbalChannel->getState() == Channel::ErrorState) {
+        LOG_E(LOG_TAG, "The gimbal channel experienced a fatal error during initialization");
+        exit(1); return;
+    }
+    if (_sharedChannel->getState() == Channel::ErrorState) {
+        LOG_E(LOG_TAG, "The shared channel experienced a fatal error during initialization");
+        exit(1); return;
+    }
+
+    _armChannel->open();
+    _driveChannel->open();
+    _gimbalChannel->open();
+    _sharedChannel->open();
+    _secondaryComputerChannel->open();
+
+    // create the udp broadcast socket that will listen for the secondary computer
+    _secondaryComputerBroadcastSocket = new QUdpSocket(this);
+
+    // observers for network channel connectivity changes
+    connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+            this, SLOT(sharedChannelStateChanged(Channel*,Channel::State)));
+    connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+            this, SLOT(secondaryComputerStateChanged(Channel*,Channel::State)));
+
+    connect(_secondaryComputerBroadcastSocket, SIGNAL(readyRead()),
+            this, SLOT(secondaryComputerBroadcastSocketReadyRead()));
+    connect(_secondaryComputerBroadcastSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError)));
+
+
+    beginSecondaryComputerListening();
+
+    LOG_I(LOG_TAG, "All network channels initialized successfully");
+
+    LOG_I(LOG_TAG, "*****************Initializing MBED systems*******************");
+
+    // create mbed channels
+    _armControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _config->ArmMbedPort), MBED_ID_ARM, this);
+    _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _config->DriveCameraMbedPort), MBED_ID_DRIVE_CAMERA, this);
+
+    // observers for mbed connectivity changes
+    connect(_armControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
+            this, SLOT(mbedChannelStateChanged(MbedChannel*,MbedChannel::State)));
+    connect(_driveGimbalControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
+            this, SLOT(mbedChannelStateChanged(MbedChannel*,MbedChannel::State)));
+
+    // observers for network channels message received
+    connect(_armChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
+             this, SLOT(armChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
+    connect(_driveChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
+             this, SLOT(driveChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
+    connect(_gimbalChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
+            this, SLOT(gimbalChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
+    connect(_sharedChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
+             this, SLOT(sharedChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
+
+    LOG_I(LOG_TAG, "*****************Initializing GPS system*******************");
+
+    _gpsServer = new GpsServer(SocketAddress(QHostAddress::Any, _config->RoverGpsServerPort), this);
+    connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
+            this, SLOT(gpsUpdate(NmeaMessage)));
+
+    LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
+
+    _videoServers = new VideoServerArray(this);
+    _videoServers->populate(_config->BlacklistedUsbCameras, _config->FirstVideoPort, 0);
+
+    if (_videoServers->serverCount() > _config->MainComputerCameraCount) {
+        LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
+        while (_videoServers->serverCount() > _config->MainComputerCameraCount) {
+            _videoServers->remove(_videoServers->serverCount() - 1);
+        }
+    }
+    else if (_videoServers->serverCount() < _config->MainComputerCameraCount) {
+        LOG_E(LOG_TAG, "The configuration specifies more cameras than this, check cable connections");
+    }
+
+    LOG_I(LOG_TAG, "*****************Initializing Audio system*******************");
+
+    _audioServer = new AudioServer(69, SocketAddress(QHostAddress::Any, _config->AudioStreamPort), this);
+
+    LOG_I(LOG_TAG, "-------------------------------------------------------");
+    LOG_I(LOG_TAG, "-------------------------------------------------------");
+    LOG_I(LOG_TAG, "-------------------------------------------------------");
+    LOG_I(LOG_TAG, "Initialization complete");
+    LOG_I(LOG_TAG, "-------------------------------------------------------");
+    LOG_I(LOG_TAG, "-------------------------------------------------------");
+    LOG_I(LOG_TAG, "-------------------------------------------------------");
 }
 
 void RoverProcess::beginSecondaryComputerListening() {
     if (_secondaryComputerBroadcastSocket) {
         _secondaryComputerBroadcastSocket->abort();
     }
-    _secondaryComputerBroadcastSocket->bind(QHostAddress::Any, _config.SecondaryComputerPort);
+    _secondaryComputerBroadcastSocket->bind(QHostAddress::Any, _config->SecondaryComputerPort);
     _secondaryComputerBroadcastSocket->open(QIODevice::ReadWrite);
 }
 
 void RoverProcess::secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError err) {
-    LOG_E("Error on secondary computer broadcast socket: " + _secondaryComputerBroadcastSocket->errorString());
+    LOG_E(LOG_TAG, "Error on secondary computer broadcast socket: " + _secondaryComputerBroadcastSocket->errorString());
     QTimer::singleShot(500, this, SLOT(beginSecondaryComputerListening()));
 }
 
@@ -208,7 +186,7 @@ void RoverProcess::armChannelMessageReceived(Channel * channel, const char *mess
         _armControllerMbed->sendMessage(message, (int)size);
         break;
     default:
-        LOG_E("Received invalid message from mission control on arm control channel");
+        LOG_E(LOG_TAG, "Received invalid message from mission control on arm control channel");
         break;
     }
 }
@@ -223,7 +201,7 @@ void RoverProcess::driveChannelMessageReceived(Channel * channel, const char *me
         _driveGimbalControllerMbed->sendMessage(message, (int)size);
         break;
     default:
-        LOG_E("Received invalid message from mission control on drive control channel");
+        LOG_E(LOG_TAG, "Received invalid message from mission control on drive control channel");
         break;
     }
 }
@@ -238,7 +216,7 @@ void RoverProcess::gimbalChannelMessageReceived(Channel * channel, const char *m
         _driveGimbalControllerMbed->sendMessage(message, (int)size);
         break;
     default:
-        LOG_E("Received invalid message from mission control on gimbal control channel");
+        LOG_E(LOG_TAG, "Received invalid message from mission control on gimbal control channel");
         break;
     }
 }
@@ -256,7 +234,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         VideoFormat format;
         stream >> camera;
         stream >> reinterpret_cast<quint32&>(format);
-        if (camera >= _config.MainComputerCameraCount) {
+        if (camera >= _config->MainComputerCameraCount) {
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
@@ -273,7 +251,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
-        if (camera >= _config.MainComputerCameraCount) {
+        if (camera >= _config->MainComputerCameraCount) {
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
@@ -294,7 +272,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         _audioServer->stop();
         break;
     default:
-        LOG_W("Got unknown shared channel message");
+        LOG_W(LOG_TAG, "Got unknown shared channel message");
         break;
     }
 }
@@ -306,7 +284,7 @@ void RoverProcess::secondaryComputerBroadcastSocketReadyRead() {
         int len = _secondaryComputerBroadcastSocket->readDatagram(&buffer[0], 100, &peer.host, &peer.port);
         if (strncmp(SECONDARY_COMPUTER_BROADCAST_STRING, buffer, len) == 0) {
             // secondary computer is broadcasting, respond
-            LOG_I("Getting broadcast from secondary computer");
+            LOG_I(LOG_TAG, "Getting broadcast from secondary computer");
             _secondaryComputerBroadcastSocket->writeDatagram(MASTER_COMPUTER_BROADCAST_STRING, strlen(MASTER_COMPUTER_BROADCAST_STRING) + 1, peer.host, peer.port);
         }
     }
@@ -370,8 +348,6 @@ RoverProcess::~RoverProcess() {
         disconnect(_gpsServer, 0, 0, 0);
         delete _gpsServer;
     }
-
-    if (_log) delete _log;
 }
 
 } // namespace Rover

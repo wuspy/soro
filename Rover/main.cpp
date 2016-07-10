@@ -1,13 +1,20 @@
 #include <QCoreApplication>
 
+#include "soro_global.h"
+#include "initcommon.h"
+#include "configuration.h"
 #include "roverprocess.h"
-
-using namespace Soro::Rover;
 
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
+    Soro::Configuration config;
 
-    RoverProcess worker(&a);
+    if (!Soro::init(&config, "rover")) {
+        return 1;
+    }
+
+    // create main rover worker object
+    Soro::Rover::RoverProcess worker(&config, &a);
 
     return a.exec();
 }

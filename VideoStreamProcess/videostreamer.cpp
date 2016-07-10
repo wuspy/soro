@@ -71,6 +71,9 @@ QString VideoStreamer::makeEncodingBinString(VideoFormat format, SocketAddress b
     case Mpeg2_720p_5000Kpbs:
         binStr += "720 ! avenc_mpeg4 bitrate=5000000 bitrate-tolerance=2000000";
         break;
+    case Mpeg2_360p_500Kbps_BW:
+        binStr += "144 ! avenc_mpeg4 bitrate=100000 bitrate-tolerance=100000";
+        break;
     default:
         //unknown codec
         QCoreApplication::exit(STREAMPROCESS_ERR_UNKNOWN_CODEC);

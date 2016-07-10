@@ -7,12 +7,12 @@
 
 #include <qmath.h>
 
-//QObject timer macros to make shit easier
+// QObject timer macros to make shit easier
 #define TIMER_INACTIVE -1
 #define START_TIMER(X,Y) if (X == TIMER_INACTIVE) X = startTimer(Y)
 #define KILL_TIMER(X) if (X != TIMER_INACTIVE) { killTimer(X); X = TIMER_INACTIVE; }
 
-//channel names, must be the same on the rover and mission control builds
+// Channel names, must be the same on the rover and mission control builds
 #define CHANNEL_NAME_ARM "Soro_ArmChannel"
 #define CHANNEL_NAME_DRIVE "Soro_DriveChannel"
 #define CHANNEL_NAME_GIMBAL "Soro_GimbalChannel"
@@ -68,6 +68,7 @@ enum VideoFormat {
     Mpeg2_480p_1500Kpbs,
     Mpeg2_720p_3000Kpbs,
     Mpeg2_720p_5000Kpbs,
+    Mpeg2_360p_500Kbps_BW
 };
 
 enum AudioFormat {

@@ -19,8 +19,8 @@ void AudioClient::onServerErrorMessageInternal() {
     _format = AudioFormat_Null;
 }
 
-AudioClient::AudioClient(int mediaId, SocketAddress server, QHostAddress host, Logger *log, QObject *parent)
-    : MediaClient("AudioClient " + QString::number(mediaId), mediaId, server, host, log, parent) {
+AudioClient::AudioClient(int mediaId, SocketAddress server, QHostAddress host, QObject *parent)
+    : MediaClient("AudioClient " + QString::number(mediaId), mediaId, server, host, parent) {
 }
 
 AudioFormat AudioClient::getAudioFormat() const {

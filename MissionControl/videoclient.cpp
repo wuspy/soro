@@ -19,8 +19,8 @@ void VideoClient::onServerErrorMessageInternal() {
     _format = VideoFormat_Null;
 }
 
-VideoClient::VideoClient(int mediaId, SocketAddress server, QHostAddress host, Logger *log, QObject *parent)
-    : MediaClient("VideoClient " + QString::number(mediaId), mediaId, server, host, log, parent) {
+VideoClient::VideoClient(int mediaId, SocketAddress server, QHostAddress host, QObject *parent)
+    : MediaClient("VideoClient " + QString::number(mediaId), mediaId, server, host, parent) {
 
     _format = VideoFormat_Null;
 }

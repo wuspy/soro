@@ -48,7 +48,6 @@ private:
     int _mediaId;
     bool _needsData = true;
     SocketAddress _server;
-    Logger *_log;
     State _state = ConnectingState;
     QUdpSocket *_mediaSocket;
     Channel *_controlChannel;
@@ -70,7 +69,7 @@ private slots:
 protected:
     void timerEvent(QTimerEvent *e);
 
-    MediaClient(QString logTag, int mediaId, SocketAddress server, QHostAddress host, Logger *log = 0, QObject *parent = 0);
+    MediaClient(QString logTag, int mediaId, SocketAddress server, QHostAddress host, QObject *parent = 0);
 
     virtual void onServerStreamingMessageInternal(QDataStream& stream)=0;
     virtual void onServerStartMessageInternal()=0;

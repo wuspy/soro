@@ -6,9 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>781</width>
-    <height>32</height>
+    <width>789</width>
+    <height>26</height>
    </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Arial</family>
+   </font>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -30,7 +35,7 @@ QRadioButton {
 	border-radius: 5px;
 	padding-left:5px;
 	padding-right:5px;
-	font-family: &quot;Roboto&quot;;
+	font-family: &quot;Arial&quot;;
 	font-size: 10pt;
 	font-weight: bold;
 }
@@ -49,7 +54,7 @@ QCheckBox {
 	border-style: solid;
 	padding-left:5px;
 	padding-right:5px;
-	font-family: &quot;Roboto&quot;;
+	font-family: &quot;Arial&quot;;
 	font-size: 10pt;
 	font-weight: bold;
 }
@@ -61,16 +66,16 @@ QCheckBox:checked {
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="leftMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="topMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="rightMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="bottomMargin">
-    <number>0</number>
+    <number>2</number>
    </property>
    <item>
     <widget class="QLabel" name="graphicLabel">
@@ -95,7 +100,7 @@ QCheckBox:checked {
     <widget class="QLabel" name="nameLabel">
      <property name="font">
       <font>
-       <family>Roboto</family>
+       <family>Arial</family>
       </font>
      </property>
      <property name="text">
@@ -120,7 +125,7 @@ QCheckBox:checked {
     <widget class="QLabel" name="unavailableLabel">
      <property name="font">
       <font>
-       <family>Roboto</family>
+       <family>Arial</family>
       </font>
      </property>
      <property name="styleSheet">
@@ -133,6 +138,12 @@ QCheckBox:checked {
    </item>
    <item>
     <widget class="QRadioButton" name="disabledRadioButton">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>22</height>
+      </size>
+     </property>
      <property name="text">
       <string>OFF </string>
      </property>
@@ -143,6 +154,12 @@ QCheckBox:checked {
    </item>
    <item>
     <widget class="QRadioButton" name="playRadioButton">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>22</height>
+      </size>
+     </property>
      <property name="text">
       <string>ON </string>
      </property>
@@ -153,6 +170,20 @@ QCheckBox:checked {
    </item>
    <item>
     <widget class="QCheckBox" name="muteCheckBox">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Arial</family>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="text">
       <string>Mute </string>
      </property>

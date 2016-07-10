@@ -18,12 +18,11 @@ namespace Rover {
 class GpsServer : public QObject {
     Q_OBJECT
 public:
-    explicit GpsServer(QObject *parent = NULL, SocketAddress hostAddress = SocketAddress(QHostAddress::Any, 8999), Logger *log = NULL);
+    explicit GpsServer(SocketAddress hostAddress, QObject *parent = NULL);
     ~GpsServer();
 
 private:
     QUdpSocket *_socket;
-    Logger *_log;
     char _buffer[1024];
     void resetConnection();
     SocketAddress _hostAddress;

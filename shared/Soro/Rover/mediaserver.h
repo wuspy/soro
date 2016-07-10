@@ -39,7 +39,6 @@ public:
     MediaServer::State getState() const;
 
 private:
-    Logger *_log = NULL;
     int _mediaId;
     SocketAddress _host;
     Channel *_controlChannel = NULL;
@@ -70,7 +69,7 @@ signals:
     void error(MediaServer *server, QString message);
 
 protected:
-    MediaServer(QString logTag, int mediaId, QString childProcessPath, SocketAddress host, Logger *log, QObject *parent);
+    MediaServer(QString logTag, int mediaId, QString childProcessPath, SocketAddress host, QObject *parent);
 
     void initStream();
 

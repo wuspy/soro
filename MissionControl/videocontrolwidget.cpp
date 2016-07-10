@@ -9,16 +9,8 @@ VideoControlWidget::VideoControlWidget(QWidget *parent) :
     ui(new Ui::VideoControlWidget) {
     ui->setupUi(this);
 
-    connect(ui->disabledRadioButton, SIGNAL(clicked(bool)),
-            this, SLOT(optionButtonClicked()));
-    connect(ui->lowRadioButton, SIGNAL(clicked(bool)),
-            this, SLOT(optionButtonClicked()));
-    connect(ui->normalRadioButton, SIGNAL(clicked(bool)),
-            this, SLOT(optionButtonClicked()));
-    connect(ui->highRadioButton, SIGNAL(clicked(bool)),
-            this, SLOT(optionButtonClicked()));
-    connect(ui->ultraRadioButton, SIGNAL(clicked(bool)),
-            this, SLOT(optionButtonClicked()));
+    connect(ui->comboBox, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(uiOptionSelected(int)));
     connect(ui->editNameButton, SIGNAL(clicked(bool)),
             this, SLOT(editButtonClicked()));
     connect(ui->nameLineEdit, SIGNAL(returnPressed()),
@@ -27,6 +19,14 @@ VideoControlWidget::VideoControlWidget(QWidget *parent) :
     ui->nameLineEdit->setVisible(false);
     ui->nameLabel->setVisible(true);
     ui->editNameButton->setVisible(true);
+
+    // Populate combo box
+    ui->comboBox->addItem("Disabled", QVariant(VideoFormat_Null));
+    ui->comboBox->addItem("[ULTRA]  MPEG2/720p/5000Kbps/C", QVariant(Mpeg2_720p_5000Kpbs));
+    ui->comboBox->addItem("[HIGH]   MPEG2/720p/3000Kbps/C", QVariant(Mpeg2_720p_3000Kpbs));
+    ui->comboBox->addItem("[MEDIUM] MPEG2/480p/1500Kbps/C", QVariant(Mpeg2_480p_1500Kpbs));
+    ui->comboBox->addItem("[LOW]    MPEG2/360p/750Kbps/C", QVariant(Mpeg2_360p_750Kpbs));
+    ui->comboBox->addItem("[LOW]    MPEG2/360p/500Kbps/B", QVariant(Mpeg2_360p_500Kbps_BW));
     selectOption(VideoFormat_Null);
 }
 
@@ -39,59 +39,26 @@ void VideoControlWidget::setName(QString name) {
 }
 
 void VideoControlWidget::selectOption(VideoFormat option) {
-    switch (option) {
-    case VideoFormat_Null:
-        ui->disabledRadioButton->setChecked(true);
-        break;
-    case Mpeg2_360p_750Kpbs:
-        ui->lowRadioButton->setChecked(true);
-        break;
-    case Mpeg2_480p_1500Kpbs:
-        ui->normalRadioButton->setChecked(true);
-        break;
-    case Mpeg2_720p_3000Kpbs:
-        ui->highRadioButton->setChecked(true);
-        break;
-    case Mpeg2_720p_5000Kpbs:
-        ui->ultraRadioButton->setChecked(true);
-        break;
+    int index = ui->comboBox->findData(QVariant(option));
+    if (index >= 0) {
+        ui->comboBox->setCurrentIndex(index);
     }
 }
 
-void VideoControlWidget::optionButtonClicked() {
-    if (ui->disabledRadioButton->isChecked()) {
-        emit optionSelected(VideoFormat_Null);
-    }
-    else if (ui->lowRadioButton->isChecked()) {
-        emit optionSelected(Mpeg2_360p_750Kpbs);
-    }
-    else if (ui->normalRadioButton->isChecked()) {
-        emit optionSelected(Mpeg2_480p_1500Kpbs);
-    }
-    else if (ui->highRadioButton->isChecked()) {
-        emit optionSelected(Mpeg2_720p_3000Kpbs);
-    }
-    else if (ui->ultraRadioButton->isChecked()) {
-        emit optionSelected(Mpeg2_720p_5000Kpbs);
-    }
+void VideoControlWidget::uiOptionSelected(int index) {
+    int data = ui->comboBox->currentData().toInt();
+    VideoFormat option = reinterpret_cast<VideoFormat&>(data);
+    emit optionSelected(option);
 }
 
 void VideoControlWidget::setAvailable(bool available) {
     if (available) {
         ui->unavailableLabel->hide();
-        ui->disabledRadioButton->show();
-        ui->lowRadioButton->show();
-        ui->normalRadioButton->show();
-        ui->highRadioButton->show();
-        ui->ultraRadioButton->show();
+        ui->comboBox->show();
     }
     else {
         ui->unavailableLabel->show();
-        ui->disabledRadioButton->hide();
-        ui->lowRadioButton->hide();
-        ui->normalRadioButton->hide();
-        ui->highRadioButton->hide();
-        ui->ultraRadioButton->hide();
+        ui->comboBox->hide();
     }
 }
 

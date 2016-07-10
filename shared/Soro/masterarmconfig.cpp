@@ -1,5 +1,6 @@
 #include "masterarmconfig.h"
 
+// Tags for loading from a file
 const char *_tag_YawMin = "YawMin";
 const char *_tag_YawMax = "YawMax";
 const char *_tag_YawAdd = "YawAdd";
@@ -41,6 +42,7 @@ bool MasterArmConfig::load(QFile& file) {
     if (!parser.valueAsBool(_tag_ShoulderReverse, &shoulderReverse)) shoulderReverse = false;
     if (!parser.valueAsBool(_tag_ElbowReverse, &elbowReverse)) elbowReverse = false;
     if (!parser.valueAsBool(_tag_WristReverse, &wristReverse)) wristReverse = false;
+    isLoaded = success;
     return success;
 }
 

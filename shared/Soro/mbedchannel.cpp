@@ -24,7 +24,7 @@ void MbedChannel::setChannelState(MbedChannel::State state) {
 
 void MbedChannel::socketError(QAbstractSocket::SocketError err) {
     Q_UNUSED(err);
-    LOG_E("Error: " + _socket->errorString());
+    LOG_E(LOG_TAG, "Error: " + _socket->errorString());
     START_TIMER(_resetConnectionTimerId, 500);
 }
 
@@ -38,14 +38,14 @@ void MbedChannel::socketReadyRead() {
             continue;
         }
         if ((_buffer[0] != _mbedId) || (peer.port != _host.port)) {
-            LOG_W("Received invalid message (got Mbed ID) "
+            LOG_W(LOG_TAG, "Received invalid message (got Mbed ID) "
                   + QString::number(reinterpret_cast<unsigned char&>(_buffer[0]))
                   + " on port " + QString::number(peer.port));
             continue;
         }
         unsigned int sequence = deserialize<unsigned int>(_buffer + 2);
         if (_state == ConnectingState) {
-            LOG_I("Connected to mbed client");
+            LOG_I(LOG_TAG, "Connected to mbed client");
             setChannelState(ConnectedState);
         }
         else if (sequence < _lastReceiveId) continue;
@@ -58,7 +58,7 @@ void MbedChannel::socketReadyRead() {
             }
             break;
         case _MBED_MSG_TYPE_LOG:
-            LOG_I("Mbed:" + QString(_buffer + 6));
+            LOG_I(LOG_TAG, "Mbed:" + QString(_buffer + 6));
             break;
         case _MBED_MSG_TYPE_BROADCAST:
             _socket->writeDatagram(BROADCAST_PACKET, strlen(BROADCAST_PACKET) + 1, QHostAddress::Broadcast, _host.port);
@@ -66,34 +66,33 @@ void MbedChannel::socketReadyRead() {
         case _MBED_MSG_TYPE_HEARTBEAT:
             break;
         default:
-            LOG_E("Got message with unknown type");
+            LOG_E(LOG_TAG, "Got message with unknown type");
             break;
         }
     }
 }
 
 void MbedChannel::resetConnection() {
-    LOG_I("Connection is resetting...");
+    LOG_I(LOG_TAG, "Connection is resetting...");
     setChannelState(ConnectingState);
     _lastReceiveId = 0;
     _active = false;
     _socket->abort();
     if (_socket->bind(_host.host, _host.port)) {
-        LOG_I("Listening on UDP port " + _host.toString());
+        LOG_I(LOG_TAG, "Listening on UDP port " + _host.toString());
         _socket->open(QIODevice::ReadWrite);
     }
     else {
-        LOG_E("Failed to bind to " + _host.toString());
+        LOG_E(LOG_TAG, "Failed to bind to " + _host.toString());
     }
 }
 
-MbedChannel::MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent, Logger *log) : QObject(parent) {
+MbedChannel::MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent) : QObject(parent) {
     _host = host;
     _socket = new QUdpSocket(this);
     _mbedId = reinterpret_cast<char&>(mbedId);
-    _log = log;
     LOG_TAG = "Mbed(" + QString::number(mbedId) + ")";
-    LOG_I("Creating new mbed channel");
+    LOG_I(LOG_TAG, "Creating new mbed channel");
     connect(_socket, SIGNAL(readyRead()),
             this, SLOT(socketReadyRead()));
     connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
@@ -121,7 +120,7 @@ void MbedChannel::timerEvent(QTimerEvent *e) {
     QObject::timerEvent(e);
     if (e->timerId() == _watchdogTimerId) {
         if ((_state == ConnectedState) & !_active) {
-            LOG_E("Mbed client has timed out");
+            LOG_E(LOG_TAG, "Mbed client has timed out");
             setChannelState(ConnectingState);
         }
         _active = false;
