@@ -21,7 +21,7 @@
 #include "videoclient.h"
 #include "audioclient.h"
 #include "audioplayer.h"
-#include "soromainwindow.h"
+#include "mainwindow.h"
 #include "armcontrolsystem.h"
 #include "drivecontrolsystem.h"
 #include "cameracontrolsystem.h"
@@ -41,10 +41,13 @@ public:
 
     const Configuration* getConfiguration() const;
 
+signals:
+    void windowClosed();
+
 private:
     //the main UI components
 
-    SoroMainWindow *_ui;
+    MainWindow *_ui;
 
     bool _roverSharedChannelConnected = false;
     bool _ignoreGamepadVideoButtons = false;

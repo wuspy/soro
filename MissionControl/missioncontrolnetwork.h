@@ -44,6 +44,10 @@ private:
     struct Connection {
         Channel *channel = NULL;
         Role role = SpectatorRole;
+
+        ~Connection() {
+            delete channel;
+        }
     };
     char _buffer[100];
     bool _isBroker = false;
@@ -51,7 +55,7 @@ private:
     bool _connected = false;
     const Configuration *_config;
     QUdpSocket *_broadcastSocket = NULL;
-    QList<Connection> _brokerConnections;
+    QList<Connection*> _brokerConnections;
     Channel *_clientChannel = NULL;
     Role _role = SpectatorRole;
     Role _pendingRole;

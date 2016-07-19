@@ -26,6 +26,24 @@ InitWindow::InitWindow(QWidget *parent) :
     QTimer::singleShot(1, this, SLOT(init_start()));
 }
 
+void InitWindow::closeEvent(QCloseEvent *e) {
+    // Exit the application when this window is closed
+    if (_mcNetwork && _mcNetwork->isBroker()) {
+        QMessageBox::StandardButton resBtn = QMessageBox::warning(this, "Mission Control",
+                    "Warning: This mission control is acting as broker, and closing it will reset the entire mission control network.",
+                    QMessageBox::Cancel | QMessageBox::Ok,
+                    QMessageBox::Ok);
+        if (resBtn != QMessageBox::Ok) {
+            e->ignore();
+        } else {
+            QCoreApplication::exit(0);
+        }
+    }
+    else {
+        QCoreApplication::exit(0);
+    }
+}
+
 void InitWindow::init_start() {
     showStatus();
     ui->retryButton->hide();
@@ -46,9 +64,10 @@ void InitWindow::init_start() {
 
 void InitWindow::init_address() {
     ui->retryButton->hide();
+    setStatusText("Checking for internet connection");
     QTcpSocket socket;
     socket.connectToHost("8.8.8.8", 53);
-    if (socket.waitForConnected()) {
+    if (socket.waitForConnected(3000)) {
         ui->addressLabel->setText(socket.localAddress().toString());
     }
     else {
@@ -170,7 +189,7 @@ void InitWindow::mcNetworkDisconnected() {
     disconnect(ui->retryButton, 0, this, 0);
     connect(ui->retryButton, SIGNAL(clicked(bool)),
             this, SLOT(init_start()));
-    ui->retryButton->show();
+    ui->retryButton->hide();
 }
 
 void InitWindow::init_controlSystem() {
@@ -209,11 +228,18 @@ void InitWindow::init_controlSystem() {
         delete _mc;
     }
     _mc = new MissionControlProcess(&_config, _gamepad, _mcNetwork, _controlSystem, this);
-
+    connect(_mc, SIGNAL(windowClosed()), this, SLOT(mcWindowClosed()));
     setCompletedText("Mission control is running");
 }
 
+void InitWindow::mcWindowClosed() {
+    LOG_I(LOG_TAG, "Main window has closed");
+    reset();
+    init_start();
+}
+
 void InitWindow::reset() {
+    LOG_I(LOG_TAG, "Resetting mission control");
     if (_mc) {
         delete _mc;
         _mc = NULL;

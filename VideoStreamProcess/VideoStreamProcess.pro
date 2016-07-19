@@ -12,6 +12,7 @@ TEMPLATE = app
 SOURCES += main.cpp \
     flycapcamera.cpp \
     videostreamer.cpp \
+    ../shared/Soro/socketaddress.cpp \
     ../shared/Soro/Rover/mediastreamer.cpp
 
 HEADERS += \

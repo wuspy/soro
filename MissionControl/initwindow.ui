@@ -339,6 +339,9 @@ QPushButton:disabled {
     <property name="alignment">
      <set>Qt::AlignCenter</set>
     </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QPushButton" name="retryButton">
     <property name="geometry">
@@ -365,7 +368,7 @@ QPushButton:disabled {
 	color: #ffffff;
     background: #b71c1c;
 	border-radius: 4px;
-	padding: 5px 15px 2px 5px;
+	padding: 5px 5px 5px 5px;
 }
 
 QPushButton:hover{

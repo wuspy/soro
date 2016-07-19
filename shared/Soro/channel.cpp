@@ -63,7 +63,6 @@ Channel* Channel::createServer(QObject *parent, quint16 port, QString name, Prot
 }
 
 Channel::~Channel() {
-    close();
     if (_sentTimeLog != NULL) {
         delete [] _sentTimeLog;
     }
@@ -82,6 +81,7 @@ Channel::~Channel() {
     if (_nameUtf8) {
         delete [] _nameUtf8;
     }
+    _socket = NULL;
 }
 
 /*  Initialization, creates timers, sockets, apply configuration
@@ -270,8 +270,9 @@ void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
 
 void Channel::configureNewTcpSocket() { //PRIVATE
     //set the signals for a new TCP socket
-    if (_tcpSocket != NULL) {
+    if (_tcpSocket) {
         _socket = _tcpSocket;
+        LOG_I(LOG_TAG, "New Socket");
         _socket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
         connect(_socket, SIGNAL(readyRead()), this, SLOT(tcpReadyRead()));
         connect(_socket, SIGNAL(connected()), this, SLOT(tcpConnected()));
@@ -302,7 +303,7 @@ void Channel::newTcpClient() {  //PRIVATE SLOT
         }
         delete _tcpSocket;
     }
-    _socket = _tcpSocket = _tcpServer->nextPendingConnection();
+    _tcpSocket = _tcpServer->nextPendingConnection();
     configureNewTcpSocket();
     tcpConnected();
 }
@@ -330,20 +331,22 @@ void Channel::close() {
 }
 
 void Channel::close(Channel::State closeState) {   //PRIVATE
-    LOG_W(LOG_TAG, "Closing channel in state " + QString::number(closeState));
-    if (_socket) {
-        _socket->abort();
-    }
-    if (_tcpServer) {
-        _tcpServer->close();
-    }
-    KILL_TIMER(_connectionMonitorTimerID);
-    KILL_TIMER(_resetTcpTimerID);
-    KILL_TIMER(_resetTimerID);
-    KILL_TIMER(_handshakeTimerID);
-    resetConnectionVars();
+    if ((_state == ConnectedState) || (_state == ConnectingState)) {
+        LOG_W(LOG_TAG, "Closing channel in state " + QString::number(closeState));
+        if (_socket) {
+            _socket->abort();
+        }
+        if (_tcpServer) {
+            _tcpServer->close();
+        }
+        KILL_TIMER(_connectionMonitorTimerID);
+        KILL_TIMER(_resetTcpTimerID);
+        KILL_TIMER(_resetTimerID);
+        KILL_TIMER(_handshakeTimerID);
+        resetConnectionVars();
 
-    setChannelState(closeState, false);
+        setChannelState(closeState, false);
+    }
 }
 
 /*  Socket error handling

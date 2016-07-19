@@ -1,5 +1,5 @@
-#ifndef SORO_MISSIONCONTROL_SOROMAINWINDOW_H
-#define SORO_MISSIONCONTROL_SOROMAINWINDOW_H
+#ifndef SORO_MISSIONCONTROL_MAINWINDOW_H
+#define SORO_MISSIONCONTROL_MAINWINDOW_H
 
 #include <QMainWindow>
 #include <QTimerEvent>
@@ -11,6 +11,7 @@
 #include <QHostAddress>
 #include <QFile>
 #include <QtCore/qmath.h>
+#include <QCloseEvent>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_gamecontroller.h>
@@ -37,13 +38,13 @@ namespace Ui {
 namespace Soro {
 namespace MissionControl {
 
-class SoroMainWindow : public QMainWindow {
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit SoroMainWindow(const Configuration *config, GamepadManager *gamepad,
+    explicit MainWindow(const Configuration *config, GamepadManager *gamepad,
                             MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent = 0);
-    ~SoroMainWindow();
+    ~MainWindow();
 
     CameraWidget* getTopCameraWidget();
     CameraWidget* getBottomCameraWidget();
@@ -75,6 +76,7 @@ private:
     QMessageBox *_messageBoxHolder = NULL;
 
 signals:
+    void closed();
     void cycleVideosClockwise();
     void cycleVideosCounterclockwise();
     void cameraFormatChanged(int camera, VideoFormat format);
@@ -121,9 +123,10 @@ protected:
     void timerEvent(QTimerEvent *e);
     void keyPressEvent(QKeyEvent *e);
     void resizeEvent(QResizeEvent *e);
+    void closeEvent(QCloseEvent *e);
 };
 
 }
 }
 
-#endif // SORO_MISSIONCONTROL_SOROMAINWINDOW_H
+#endif // SORO_MISSIONCONTROL_MAINWINDOW_H

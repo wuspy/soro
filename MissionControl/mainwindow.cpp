@@ -1,4 +1,4 @@
-#include "soromainwindow.h"
+#include "mainwindow.h"
 #include "ui_soromainwindow.h"
 
 static QString formatDataRate(quint64 rate, QString units) {
@@ -17,14 +17,14 @@ static QString formatDataRate(quint64 rate, QString units) {
 namespace Soro {
 namespace MissionControl {
 
-const QString SoroMainWindow::_logLevelFormattersHTML[4] = {
+const QString MainWindow::_logLevelFormattersHTML[4] = {
     "<div style=\"color:#b71c1c\">%1&emsp;E/<i>%2</i>:&emsp;%3</div>",
     "<div style=\"color:#0d47a1\">%1&emsp;W/<i>%2</i>:&emsp;%3</div>",
     "<div>%1&emsp;I/<i>%2</i>:&emsp;%3</div>",
     "<div style=\"color:#dddddd\">%1&emsp;D/<i>%2</i>:&emsp;%3</div>"
 };
 
-SoroMainWindow::SoroMainWindow(const Configuration *config, GamepadManager *gamepad,
+MainWindow::MainWindow(const Configuration *config, GamepadManager *gamepad,
                                MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SoroMainWindow) {
@@ -127,7 +127,7 @@ SoroMainWindow::SoroMainWindow(const Configuration *config, GamepadManager *game
     onSecondaryComputerStateChanged(UnknownSubsystemState);
 }
 
-void SoroMainWindow::updateConnectionStateInformation() {
+void MainWindow::updateConnectionStateInformation() {
     // update control channel state UI
     if (_mcNetwork->getRole() != SpectatorRole) {
         switch (_lastControlChannelState) {
@@ -213,13 +213,13 @@ void SoroMainWindow::updateConnectionStateInformation() {
     }
 }
 
-void SoroMainWindow::reloadMasterArmClicked() {
+void MainWindow::reloadMasterArmClicked() {
     if (_mcNetwork->getRole() == ArmOperatorRole) {
         reinterpret_cast<ArmControlSystem*>(_controlSystem)->reloadMasterArmConfig();
     }
 }
 
-void SoroMainWindow::onGamepadChanged(SDL_GameController *controller, QString name) {
+void MainWindow::onGamepadChanged(SDL_GameController *controller, QString name) {
     if (controller) {
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
@@ -232,7 +232,7 @@ void SoroMainWindow::onGamepadChanged(SDL_GameController *controller, QString na
     }
 }
 
-void SoroMainWindow::onMasterArmStateChanged(bool connected) {
+void MainWindow::onMasterArmStateChanged(bool connected) {
     if (connected) {
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->hid_inputDeviceLabel->setText("Master arm connected");
@@ -253,7 +253,7 @@ void SoroMainWindow::onMasterArmStateChanged(bool connected) {
     }
 }
 
-void SoroMainWindow::onMasterArmUpdate(const char *armMessage) {
+void MainWindow::onMasterArmUpdate(const char *armMessage) {
     ui->masterarm_yawValueLabel->setText(QString::number(ArmMessage::getMasterYaw(armMessage)));
     ui->masterarm_shoulderValueLabel->setText(QString::number(ArmMessage::getMasterShoulder(armMessage)));
     ui->masterarm_elbowValueLabel->setText(QString::number(ArmMessage::getMasterElbow(armMessage)));
@@ -263,7 +263,7 @@ void SoroMainWindow::onMasterArmUpdate(const char *armMessage) {
     ui->masterarm_stowMacroValueLabel->setText(ArmMessage::getStow(armMessage) ? "ON" : "OFF");
 }
 
-void SoroMainWindow::updateSubsystemStateInformation() {
+void MainWindow::updateSubsystemStateInformation() {
     switch (_lastArmSubsystemState) {
     case NormalSubsystemState:
         ui->sys_armSubsystemLabel->setStyleSheet("QLabel { color : #1B5E20; }");
@@ -319,55 +319,55 @@ void SoroMainWindow::updateSubsystemStateInformation() {
     }
 }
 
-bool SoroMainWindow::isMuteAudioSelected() {
+bool MainWindow::isMuteAudioSelected() {
     return ui->media_audioControlWidget->isMuted();
 }
 
-void SoroMainWindow::camera1ControlOptionChanged(VideoFormat option) {
+void MainWindow::camera1ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(0, option);
 }
 
-void SoroMainWindow::camera2ControlOptionChanged(VideoFormat option) {
+void MainWindow::camera2ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(1, option);
 }
 
-void SoroMainWindow::camera3ControlOptionChanged(VideoFormat option) {
+void MainWindow::camera3ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(2, option);
 }
 
-void SoroMainWindow::camera4ControlOptionChanged(VideoFormat option) {
+void MainWindow::camera4ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(3, option);
 }
 
-void SoroMainWindow::camera5ControlOptionChanged(VideoFormat option) {
+void MainWindow::camera5ControlOptionChanged(VideoFormat option) {
     cameraControlOptionChanged(4, option);
 }
 
-void SoroMainWindow::camera1NameEdited(QString newName) {
+void MainWindow::camera1NameEdited(QString newName) {
     emit cameraNameEdited(0, newName);
 }
 
-void SoroMainWindow::camera2NameEdited(QString newName) {
+void MainWindow::camera2NameEdited(QString newName) {
     emit cameraNameEdited(1, newName);
 }
 
-void SoroMainWindow::camera3NameEdited(QString newName) {
+void MainWindow::camera3NameEdited(QString newName) {
     emit cameraNameEdited(2, newName);
 }
 
-void SoroMainWindow::camera4NameEdited(QString newName) {
+void MainWindow::camera4NameEdited(QString newName) {
     emit cameraNameEdited(3, newName);
 }
 
-void SoroMainWindow::camera5NameEdited(QString newName) {
+void MainWindow::camera5NameEdited(QString newName) {
     emit cameraNameEdited(4, newName);
 }
 
-void SoroMainWindow::cameraControlOptionChanged(int camera, VideoFormat option) {
+void MainWindow::cameraControlOptionChanged(int camera, VideoFormat option) {
     emit cameraFormatChanged(camera, option);
 }
 
-void SoroMainWindow::setCameraName(int camera, QString name) {
+void MainWindow::setCameraName(int camera, QString name) {
     VideoControlWidget *widget;
     switch (camera) {
     case 0:
@@ -392,22 +392,22 @@ void SoroMainWindow::setCameraName(int camera, QString name) {
     widget->setName(name);
 }
 
-void SoroMainWindow::onFatalError(QString description) {
+void MainWindow::onFatalError(QString description) {
     QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",description,
         QMessageBox::Ok, this).exec();
     exit(1);
 }
 
-void SoroMainWindow::onWarning(QString description) {
+void MainWindow::onWarning(QString description) {
     QMessageBox(QMessageBox::Warning, "Mission Control",description,
         QMessageBox::Ok, this).show(); //do not block
 }
 
-void SoroMainWindow::onBitrateUpdate(quint64 bpsRoverDown, quint64 bpsRoverUp) {
+void MainWindow::onBitrateUpdate(quint64 bpsRoverDown, quint64 bpsRoverUp) {
     ui->comm_bitrateLabel->setText("Rover ▲ " + formatDataRate(bpsRoverUp, "b/s") + " ▼ " + formatDataRate(bpsRoverDown, "b/s"));
 }
 
-void SoroMainWindow::onLocationUpdate(const NmeaMessage &location) {
+void MainWindow::onLocationUpdate(const NmeaMessage &location) {
     ui->googleMapView->updateLocation(location);
     ui->gpsStatusLabel->setText("<html><b>GPS:</b> "
                                 + QString::number(location.Satellites) + " Satellites, "
@@ -417,7 +417,7 @@ void SoroMainWindow::onLocationUpdate(const NmeaMessage &location) {
     START_TIMER(_clearGpsStatusTimerId, 15000);
 }
 
-void SoroMainWindow::timerEvent(QTimerEvent *e) {
+void MainWindow::timerEvent(QTimerEvent *e) {
     QMainWindow::timerEvent(e);
     if (e->timerId() == _clearGpsStatusTimerId) {
         ui->gpsStatusLabel->setText("Waiting for GPS...");
@@ -425,43 +425,43 @@ void SoroMainWindow::timerEvent(QTimerEvent *e) {
     }
 }
 
-void SoroMainWindow::onControlChannelStateChanged(Channel *channel, Channel::State state) {
+void MainWindow::onControlChannelStateChanged(Channel *channel, Channel::State state) {
     Q_UNUSED(channel);
     _lastControlChannelState = state;
     updateConnectionStateInformation();
 }
 
-void SoroMainWindow::onRoverChannelStateChanged(Channel::State state) {
+void MainWindow::onRoverChannelStateChanged(Channel::State state) {
     _lastRoverChannelState = state;
     updateConnectionStateInformation();
 }
 
-void SoroMainWindow::onArmSubsystemStateChanged(RoverSubsystemState state) {
+void MainWindow::onArmSubsystemStateChanged(RoverSubsystemState state) {
     _lastArmSubsystemState = state;
     updateSubsystemStateInformation();
 }
 
-void SoroMainWindow::onDriveCameraSubsystemStateChanged(RoverSubsystemState state) {
+void MainWindow::onDriveCameraSubsystemStateChanged(RoverSubsystemState state) {
     _lastDriveCameraSubsystemState = state;
     updateSubsystemStateInformation();
 }
 
-void SoroMainWindow::onSecondaryComputerStateChanged(RoverSubsystemState state) {
+void MainWindow::onSecondaryComputerStateChanged(RoverSubsystemState state) {
     _lastSecondaryComputerState = state;
     updateSubsystemStateInformation();
 }
 
-void SoroMainWindow::onRttUpdate(int rtt) {
+void MainWindow::onRttUpdate(int rtt) {
     _lastRtt = rtt;
     updateConnectionStateInformation();
 }
 
-void SoroMainWindow::onDroppedPacketRateUpdate(int droppedRatePercent) {
+void MainWindow::onDroppedPacketRateUpdate(int droppedRatePercent) {
     _lastDroppedPacketPercent = droppedRatePercent;
     updateConnectionStateInformation();
 }
 
-void SoroMainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
+void MainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
     VideoControlWidget *widget;
     switch (camera) {
     case 0:
@@ -486,24 +486,24 @@ void SoroMainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
     widget->selectOption(format);
 }
 
-void SoroMainWindow::onAudioFormatChanged(AudioFormat format) {
+void MainWindow::onAudioFormatChanged(AudioFormat format) {
     ui->media_audioControlWidget->selectOption(format);
 }
 
 
-CameraWidget* SoroMainWindow::getTopCameraWidget() {
+CameraWidget* MainWindow::getTopCameraWidget() {
     return ui->topVideoWidget;
 }
 
-CameraWidget* SoroMainWindow::getBottomCameraWidget() {
+CameraWidget* MainWindow::getBottomCameraWidget() {
     return ui->bottomVideoWidget;
 }
 
-CameraWidget* SoroMainWindow::getFullscreenCameraWidget() {
+CameraWidget* MainWindow::getFullscreenCameraWidget() {
     return _videoWindow->getCameraWidget();
 }
 
-void SoroMainWindow::resizeEvent(QResizeEvent* event) {
+void MainWindow::resizeEvent(QResizeEvent* event) {
    QMainWindow::resizeEvent(event);
    /// Video on right
    /*ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
@@ -528,7 +528,15 @@ void SoroMainWindow::resizeEvent(QResizeEvent* event) {
    ui->videoContainer->resize(width() / 2, height());
 }
 
-void SoroMainWindow::keyPressEvent(QKeyEvent *e) {
+void MainWindow::closeEvent(QCloseEvent *e) {
+    if (_videoWindow) {
+        _videoWindow->close();
+    }
+    e->accept();
+    emit closed();
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *e) {
     QMainWindow::keyPressEvent(e);
     if (e->key() == Qt::Key_F11) {
         if (_fullscreen) showNormal(); else showFullScreen();
@@ -542,7 +550,7 @@ void SoroMainWindow::keyPressEvent(QKeyEvent *e) {
     }
 }
 
-SoroMainWindow::~SoroMainWindow() {
+MainWindow::~MainWindow() {
     delete ui;
 }
 

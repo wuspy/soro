@@ -46,10 +46,9 @@ void MissionControlNetwork::clearConnections() {
         delete _clientChannel;
         _clientChannel = NULL;
     }
-    foreach (Connection connection, _brokerConnections) {
-        disconnect(connection.channel, 0, this, 0);
-
-        delete connection.channel;
+    foreach (Connection *connection, _brokerConnections) {
+        disconnect(connection->channel, 0, this, 0);
+        delete connection->channel;
     }
     _brokerConnections.clear();
 }
@@ -89,7 +88,9 @@ void MissionControlNetwork::endNegotiation() {
     disconnect(_broadcastSocket, SIGNAL(readyRead()), this, 0);
     if (_isBroker) {
         START_TIMER(_broadcastStateTimerId, 500);
-        _connected = true;      
+        _connected = true;
+        connect(_broadcastSocket, SIGNAL(readyRead()),
+                this, SLOT(broker_broadcastSocketReadyRead()));
         emit connected(true);
     }
     else {
@@ -102,6 +103,8 @@ void MissionControlNetwork::endNegotiation() {
                 this, SLOT(client_channelMessageReceived(Channel*,const char*,Channel::MessageSize)));
         connect(_clientChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
                 this, SLOT(client_channelStateChanged(Channel*,Channel::State)));
+        connect(_broadcastSocket, SIGNAL(readyRead()),
+                this, SLOT(client_broadcastSocketReadyRead()));
         _clientChannel->open();
         START_TIMER(_requestConnectionTimerId, 100);
         QTimer::singleShot(3000, this, SLOT(ensureConnection()));
@@ -150,8 +153,8 @@ void MissionControlNetwork::requestRole(Role role) {
         }
         else {
             // Check if a client has already claimed this role
-            foreach (Connection connection, _brokerConnections) {
-                if (connection.role == role) {
+            foreach (Connection *connection, _brokerConnections) {
+                if (connection->role == role) {
                     // There's already a client with this role
                     emit roleDenied(role);
                     return;
@@ -173,9 +176,9 @@ void MissionControlNetwork::sendSharedMessage(const char *message, Channel::Mess
         _clientChannel->sendMessage(message, size);
     }
     else {
-        foreach (Connection client, _brokerConnections) {
-            if (client.channel) {
-                client.channel->sendMessage(message, size);
+        foreach (Connection *connection, _brokerConnections) {
+            if (connection->channel) {
+                connection->channel->sendMessage(message, size);
             }
         }
     }
@@ -260,9 +263,9 @@ void MissionControlNetwork::acceptClientRole(SocketAddress address, Role role, Q
     responseStream << reinterpret_cast<quint32&>(role);
     _broadcastSocket->writeDatagram(response, address.host, address.port);
     // update client's role information
-    foreach (Connection connection, _brokerConnections) {
-        if (connection.channel->getName().compare(name) == 0) {
-            connection.role = role;
+    foreach (Connection *connection, _brokerConnections) {
+        if (connection->channel->getName().compare(name) == 0) {
+            connection->role = role;
             return;
         }
     }
@@ -316,9 +319,9 @@ void MissionControlNetwork::broker_broadcastSocketReadyRead() {
                     denyClientRole(address, requestRole);
                     return;
                 }
-                foreach (Connection connection, _brokerConnections) {
-                    if (connection.channel->getName().compare(requestName) == 0) continue;
-                    if (connection.role == requestRole) {
+                foreach (Connection *connection, _brokerConnections) {
+                    if (connection->channel->getName().compare(requestName) == 0) continue;
+                    if (connection->role == requestRole) {
                         // Request denied
                         denyClientRole(address, requestRole);
                         return;
@@ -330,19 +333,19 @@ void MissionControlNetwork::broker_broadcastSocketReadyRead() {
             break;
         case MSG_REQUEST_CONNECTION:
             // Ensure the client is not already in the list
-            foreach (Connection connection, _brokerConnections) {
-                if (connection.channel->getName().compare(requestName) == 0) {
+            foreach (Connection *connection, _brokerConnections) {
+                if (connection->channel->getName().compare(requestName) == 0) {
                     return;
                 }
             }
             // Create a channel for the new client
-            Connection connection;
-            connection.channel = Channel::createClient(this, address, requestName, Channel::TcpProtocol);
-            connect(connection.channel, SIGNAL(stateChanged(Channel*,Channel::State)),
+            Connection *connection = new Connection;
+            connection->channel = Channel::createClient(this, address, requestName, Channel::TcpProtocol);
+            connect(connection->channel, SIGNAL(stateChanged(Channel*,Channel::State)),
                     this, SLOT(broker_clientChannelStateChanged(Channel*,Channel::State)));
-            connect(connection.channel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
+            connect(connection->channel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
                     this, SLOT(broker_clientChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
-            connection.channel->open();
+            connection->channel->open();
             _brokerConnections.append(connection);
             break;
         }
@@ -399,12 +402,11 @@ void MissionControlNetwork::broker_clientChannelStateChanged(Channel *channel, C
         emit newClientConnected(channel);
     }
     else if(channel->wasConnected()) {
-        Connection connection;
         for (int i = 0; i < _brokerConnections.length(); ++i) {
-            if (_brokerConnections[i].channel == channel) {
+            if (_brokerConnections[i]->channel == channel) {
                 LOG_I(LOG_TAG, "Removing inactive client " + channel->getName() + " from list");
                 disconnect(channel, 0, this, 0);
-                delete channel;
+                delete _brokerConnections[i];
                 _brokerConnections.removeAt(i);
                 break;
             }
@@ -413,9 +415,9 @@ void MissionControlNetwork::broker_clientChannelStateChanged(Channel *channel, C
 }
 
 void MissionControlNetwork::broker_clientChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
-    foreach (Connection connection, _brokerConnections) {
-        if (connection.channel && (connection.channel != channel)) {
-            connection.channel->sendMessage(message, size);
+    foreach (Connection *connection, _brokerConnections) {
+        if (connection->channel && (connection->channel != channel)) {
+            connection->channel->sendMessage(message, size);
         }
     }
     emit sharedMessageReceived(message, size);
@@ -429,6 +431,7 @@ void MissionControlNetwork::client_channelMessageReceived(Channel *channel, cons
 QString MissionControlNetwork::generateName() {
     const QString chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+={}[];:`~<>,./?|");
 
+    qsrand(QTime::currentTime().msec());
     QString randomString;
     for(int i = 0; i < NAME_LENGTH; ++i) {
         randomString.append(chars.at(qrand() % chars.length()));

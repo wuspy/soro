@@ -16,7 +16,6 @@ SOURCES += \
     ../shared/Soro/logger.cpp \
     main.cpp \
     googlemapview.cpp \
-    soromainwindow.cpp \
     ../shared/Soro/masterarmconfig.cpp \
     ../shared/Soro/armmessage.cpp \
     ../shared/Soro/drivemessage.cpp \
@@ -41,7 +40,9 @@ SOURCES += \
     cameracontrolsystem.cpp \
     armcontrolsystem.cpp \
     drivecontrolsystem.cpp \
-    initwindow.cpp
+    initwindow.cpp \
+    ../shared/Soro/soroudpsocket.cpp \
+    mainwindow.cpp
 
 HEADERS  += \
     ../shared/Soro/channel.h \
@@ -54,7 +55,6 @@ HEADERS  += \
     ../shared/Soro/drivemessage.h \
     ../shared/Soro/gimbalmessage.h \
     ../shared/Soro/mbedchannel.h \
-    soromainwindow.h \
     ../shared/Soro/soro_global.h \
     ../shared/Soro/masterarmconfig.h \
     missioncontrolprocess.h \
@@ -75,7 +75,9 @@ HEADERS  += \
     cameracontrolsystem.h \
     armcontrolsystem.h \
     drivecontrolsystem.h \
-    initwindow.h
+    initwindow.h \
+    ../shared/Soro/soroudpsocket.h \
+    mainwindow.h
 
 FORMS    += \
     soromainwindow.ui \

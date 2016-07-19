@@ -24,7 +24,8 @@ MissionControlProcess::MissionControlProcess(const Configuration *config, Gamepa
     _config = config;
 
     // Create UI
-    _ui = new SoroMainWindow(config, gamepad, mcNetwork, controlSystem);
+    _ui = new MainWindow(config, gamepad, mcNetwork, controlSystem);
+    connect(_ui, SIGNAL(closed()), this, SIGNAL(windowClosed()));
     _ui->show();
 
     _freeCameraWidgets.append(_ui->getTopCameraWidget());

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QTcpSocket>
+#include <QCloseEvent>
 
 #include "missioncontrolnetwork.h"
 #include "missioncontrolprocess.h"
@@ -38,6 +39,8 @@ private slots:
     void mcNetworkRoleGranted(Role role);
     void mcNetworkRoleDenied();
 
+    void mcWindowClosed();
+
     void armOperatorSelected();
     void cameraOperatorSelected();
     void driverSelected();
@@ -50,6 +53,9 @@ private slots:
     void showRoleButtons();
 
     void reset();
+
+protected:
+    void closeEvent(QCloseEvent *e);
 
 private:
 

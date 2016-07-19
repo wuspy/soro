@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QResizeEvent>
+#include <QCloseEvent>
+#include <QShowEvent>
 
 #include "camerawidget.h"
 
@@ -18,12 +20,16 @@ public:
     explicit CameraWindow(QWidget *parent = 0);
     ~CameraWindow();
     CameraWidget *getCameraWidget();
+    void close();
 
 private:
     CameraWidget *_cameraWidget;
+    bool _shouldClose;
 
 protected:
     void resizeEvent(QResizeEvent *e);
+    void showEvent(QShowEvent *e);
+    void closeEvent(QCloseEvent *e);
 };
 
 } // namespace MissionControl

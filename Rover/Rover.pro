@@ -13,6 +13,7 @@ SOURCES += main.cpp \
     ../shared/Soro/channel.cpp \
     ../shared/Soro/logger.cpp \
     ../shared/Soro/iniparser.cpp \
+    ../shared/Soro/socketaddress.cpp \
     gpsserver.cpp \
     ../shared/Soro/mbedchannel.cpp \
     roverprocess.cpp \
