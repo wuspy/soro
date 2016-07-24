@@ -2,6 +2,7 @@
 #define SORO_CHANNEL_H
 
 #include <QtNetwork>
+#include <QQueue>
 
 #include "logger.h"
 #include "iniparser.h"
@@ -174,7 +175,15 @@ public:
      */
     bool wasConnected();
 
+    void setSimulatedDelay(int ms);
+
 private:
+    // Struct to hold packet information for delayed sending
+    struct PacketWrapper {
+        char *data;
+        qint64 len;
+    };
+
     char _receiveBuffer[1024];  //buffer for received messages
     char _sendBuffer[1024]; //buffer for constructing messages to send
     MessageSize _receiveBufferLength; //length of currently stored data in the receive buffer
@@ -192,6 +201,9 @@ private:
 
     QString LOG_TAG = "CHANNEL";    //Tag for debugging, ususally the
                                      //channel name plus (S) for server or (C) for client
+
+    QQueue<PacketWrapper*> _delayPackets;
+    int _simulatedDelay;
 
     SocketAddress _serverAddress = SocketAddress(QHostAddress::Null, 0);   //address of the server side of the channel
                                                                             //If we are the server, this may be 0 if the user

@@ -169,6 +169,12 @@ void Channel::open() {
 
 void Channel::resetConnectionVars() {   //PRIVATE
     LOG_D(LOG_TAG, "resetConnectionVars() called");
+    while (!_delayPackets.empty()) {
+        // Clear the delay packet queue
+        PacketWrapper *next = _delayPackets.dequeue();
+        delete next->data;
+        delete next;
+    }
     _receiveBufferLength = 0;
     _lastReceiveID = 0;
     _lastRtt = -1;
@@ -265,6 +271,21 @@ void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
     }
     else if (id == _handshakeTimerID) {
         sendHandshake();
+    }
+    else if (!_delayPackets.empty()) {
+        PacketWrapper* next = _delayPackets.dequeue();
+        //This must be a delay send timer
+        if (_state == ConnectedState) {
+            if (_udpSocket != NULL) {
+                _udpSocket->writeDatagram(next->data, next->len, _peerAddress.host, _peerAddress.port);
+            }
+            else if (_tcpSocket != NULL) {
+                _tcpSocket->write(next->data, next->len);
+            }
+            delete next->data;
+            delete next;
+        }
+        killTimer(e->timerId());
     }
 }
 
@@ -593,20 +614,46 @@ bool Channel::sendMessage(const char *message, MessageSize size) {
 
 bool Channel::sendMessage(const char *message, MessageSize size, MessageType type) {   //PRIVATE
     qint64 status;
+    char *buffer;
     //LOG_D(LOG_TAG, "Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
     if (_protocol == UdpProtocol) {
-        _sendBuffer[0] = reinterpret_cast<char&>(type);
-        serialize<MessageID>(_sendBuffer + 1, _nextSendID);
-        memcpy(_sendBuffer + sizeof(MessageID) + 1, message, (size_t)size);
-        status = _udpSocket->writeDatagram(_sendBuffer, size + UDP_HEADER_SIZE, _peerAddress.host, _peerAddress.port);
+        if (_simulatedDelay == 0) {
+            _sendBuffer[0] = reinterpret_cast<char&>(type);
+            serialize<MessageID>(_sendBuffer + 1, _nextSendID);
+            memcpy(_sendBuffer + sizeof(MessageID) + 1, message, (size_t)size);
+            status = _udpSocket->writeDatagram(_sendBuffer, size + UDP_HEADER_SIZE, _peerAddress.host, _peerAddress.port);
+        }
+        else {
+            PacketWrapper *wrapper = new PacketWrapper;
+            wrapper->data = new char[size + UDP_HEADER_SIZE];
+            wrapper->data[0] = reinterpret_cast<char&>(type);
+            serialize<MessageID>(wrapper->data + 1, _nextSendID);
+            memcpy(wrapper->data + sizeof(MessageID) + 1, message, (size_t)size);
+            _delayPackets.enqueue(wrapper);
+            startTimer(_simulatedDelay);
+            status = size + UDP_HEADER_SIZE;
+        }
     }
     else if (_tcpSocket != NULL) {
         MessageSize newSize = size + TCP_HEADER_SIZE;
-        serialize<MessageSize>(_sendBuffer, newSize);
-        _sendBuffer[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
-        serialize<MessageID>(_sendBuffer + sizeof(MessageSize) + 1, _nextSendID);
-        memcpy(_sendBuffer + sizeof(MessageID) + sizeof(MessageSize) + 1, message, (size_t)size);
-        status = _tcpSocket->write(_sendBuffer, newSize);
+        if (_simulatedDelay == 0) {
+            serialize<MessageSize>(_sendBuffer, newSize);
+            _sendBuffer[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
+            serialize<MessageID>(_sendBuffer + sizeof(MessageSize) + 1, _nextSendID);
+            memcpy(_sendBuffer + sizeof(MessageID) + sizeof(MessageSize) + 1, message, (size_t)size);
+            status = _tcpSocket->write(_sendBuffer, newSize);
+        }
+        else {
+            PacketWrapper *wrapper = new PacketWrapper;
+            wrapper->data = new char[newSize];
+            serialize<MessageSize>(wrapper->data, newSize);
+            wrapper->data[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
+            serialize<MessageID>(wrapper->data + sizeof(MessageSize) + 1, _nextSendID);
+            memcpy(wrapper->data + sizeof(MessageID) + sizeof(MessageSize) + 1, message, (size_t)size);
+            _delayPackets.enqueue(wrapper);
+            startTimer(_simulatedDelay);
+            status = newSize;
+        }
     }
     else {
         LOG_E(LOG_TAG, "Attempted to send a message through a null TCP socket");
@@ -693,6 +740,10 @@ int Channel::getBitsPerSecondDown() const {
 
 void Channel::setSendAcks(bool sendAcks) {
     _sendAcks = sendAcks;
+}
+
+void Channel::setSimulatedDelay(int ms) {
+    _simulatedDelay = ms;
 }
 
 SocketAddress Channel::getHostAddress() const {

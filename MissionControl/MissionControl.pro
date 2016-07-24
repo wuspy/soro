@@ -41,7 +41,6 @@ SOURCES += \
     armcontrolsystem.cpp \
     drivecontrolsystem.cpp \
     initwindow.cpp \
-    ../shared/Soro/soroudpsocket.cpp \
     mainwindow.cpp
 
 HEADERS  += \
@@ -76,7 +75,6 @@ HEADERS  += \
     armcontrolsystem.h \
     drivecontrolsystem.h \
     initwindow.h \
-    ../shared/Soro/soroudpsocket.h \
     mainwindow.h
 
 FORMS    += \
@@ -96,5 +94,5 @@ DEPENDPATH += $$PWD/Resources $$PWD/../shared $$PWD/../shared/Soro
 win32: {
     LIBS += -lkernel32 -luser32 -lwinspool -lshell32 -lglu32 -lgdi32 -lopengl32
 }
-LIBS += -lSDL2 -lflycapture -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
-
+LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
+#LIBS += -lflycapture
