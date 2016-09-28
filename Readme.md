@@ -28,11 +28,13 @@ SDL (Simple DirectMedia Layer) is a development toolkit designed primarily for m
 
 This is required to interface with Point Grey cameras.
 
-## Quick Start
+## Compiling 
 
 ### Ubuntu 16.04
 
 *This version of Ubuntu ships with Qt 5.5, which can be used to develop this software, HOWEVER, the Qt WebEngine module is not included or easily obtainable. Therefore, a separate Qt environment is required for development.*
+
+*Note that these instructions are only for the compiled Qt projects. The mbed projects should be developed using the online mbed compiler.*
 
 Download  and install Qt and the QtCreator IDE from [here](https://www.qt.io/download-open-source/#section-2).
 
@@ -53,6 +55,20 @@ I have no idea. Installing Qt will be the same process, but the other dependenci
 ### Windows
 
 Again, no idea. See above.
+
+## Using the Software
+
+### Configuration
+
+Both the mission control and rover software must be provided a configuration file to specify the IP addresse, ports used, camera configuration, ect. By default, the software will look for a file called soro.ini in the same directory as the executable, however you can specify a different file by setting the enviornment variable SORO_INI_PATH. You can find an example configuration file in the config directory.
+
+### Mission Control
+
+Refer to MissionControl/Readme.md
+
+### Rover
+
+Refer to Rover/Readme.md
 
 ## License
 
