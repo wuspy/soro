@@ -13,6 +13,7 @@ SOURCES += main.cpp \
     ../shared/Soro/iniparser.cpp \
     ../shared/Soro/channel.cpp \
     ../shared/Soro/logger.cpp \
+    ../shared/Soro/socketaddress.cpp \
     #../shared/Soro/Rover/flycapenumerator.cpp \
     ../shared/Soro/Rover/usbcameraenumerator.cpp \
     ../shared/Soro/Rover/videoserver.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
     ../shared/Soro/channel.h \
     ../shared/Soro/logger.h \
     ../shared/Soro/soro_global.h \
+    ../shared/Soro/socketaddress.h \
     #../shared/Soro/Rover/flycapenumerator.h \
     ../shared/Soro/Rover/usbcameraenumerator.h \
     ../shared/Soro/Rover/videoserver.h \

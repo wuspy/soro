@@ -11,10 +11,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     ../shared/Soro/Rover/mediastreamer.cpp \
+    ../shared/Soro/socketaddress.cpp \
     audiostreamer.cpp
 
 HEADERS += \
     ../shared/Soro/soro_global.h \
+    ../shared/Soro/socketaddress.h \
     ../shared/Soro/socketaddress.h \
     ../shared/Soro/Rover/mediastreamer.h \
     audiostreamer.h

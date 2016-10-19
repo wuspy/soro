@@ -16,7 +16,7 @@
 #include <Qt5GStreamer/QGlib/Connect>
 #include <Qt5GStreamer/QGst/Message>
 
-#include <flycapture/FlyCapture2.h>
+//#include <flycapture/FlyCapture2.h>
 
 #include "socketaddress.h"
 #include "soro_global.h"

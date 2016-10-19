@@ -18,8 +18,7 @@
 #include <QByteArray>
 #include <QDataStream>
 
-#include <flycapture/FlyCapture2.h>
-#include <flycapcamera.h>
+//#include <flycapture/FlyCapture2.h>
 
 #include <Qt5GStreamer/QGst/Init>
 #include <Qt5GStreamer/QGst/Element>
@@ -28,7 +27,7 @@
 #include "socketaddress.h"
 #include "soro_global.h"
 #include "videostreamer.h"
-#include "flycapcamera.h"
+//#include "flycapcamera.h"
 
 using namespace Soro;
 using namespace Soro::Rover;
@@ -83,7 +82,7 @@ int main(int argc, char *argv[]) {
 
     a.setApplicationName("VideoStream for " + device + " to " + address.toString());
 
-    if (device.startsWith("FlyCapture2:", Qt::CaseInsensitive)) {
+    /*if (device.startsWith("FlyCapture2:", Qt::CaseInsensitive)) {
         QGst::ElementPtr source;
         // parse GUID
         FlyCapture2::PGRGuid guid;
@@ -108,10 +107,10 @@ int main(int argc, char *argv[]) {
         qDebug() << "Stream initialized for FlyCapture successfully";
         return a.exec();
     }
-    else {
+    else {*/
         qDebug() << "Setting UVD device " << device;
         VideoStreamer stream(device, format, bindAddress, address, ipcPort, &a);
         qDebug() << "Stream initialized successfully";
         return a.exec();
-    }
+    //}
 }

@@ -8,7 +8,7 @@
 #include <Qt5GStreamer/QGst/Buffer>
 #include <Qt5GStreamer/QGst/Caps>
 #include <Qt5GStreamer/QGst/Utils/ApplicationSource>
-#include <flycapture/FlyCapture2.h>
+//#include <flycapture/FlyCapture2.h>
 //#include <flycapture/C/FlyCapture2_C.h>
 
 #include "logger.h"
