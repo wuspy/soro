@@ -30,17 +30,17 @@ This is required to interface with Point Grey cameras.
 
 ## Compiling 
 
-### Ubuntu 16.04
+### Ubuntu
 
-*This version of Ubuntu ships with Qt 5.5, which can be used to develop this software, HOWEVER, the Qt WebEngine module is not included or easily obtainable. Therefore, a separate Qt environment is required for development.*
+*Ubuntu 16.04 ships with Qt 5.5, which can be used to develop this software, HOWEVER, the Qt WebEngine module is not included or easily obtainable. Therefore, a separate Qt environment is required for development.*
 
 *Note that these instructions are only for the compiled Qt projects. The mbed projects should be developed using the online mbed compiler.*
 
-Download  and install Qt and the QtCreator IDE from [here](https://www.qt.io/download-open-source/#section-2).
+Download  and install the Qt development environment and the QtCreator IDE from [here](https://www.qt.io/download-open-source/#section-2).
 
 Install the following dependencies:
 
-    apt install -y build-essential git gstreamer1.0-* libqt5gstreamer-* libsdl2-*
+    apt install -y build-essential git gstreamer1.0-* libqt5gstreamer* libsdl2-dev
 
 Clone this repository. Since this is a private repository, you will be prompted to enter your username and password.
 
