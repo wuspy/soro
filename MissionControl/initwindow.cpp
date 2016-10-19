@@ -87,12 +87,7 @@ void InitWindow::init_address() {
         ui->addressLabel->setText(socket.localAddress().toString());
     }
     else {
-        setErrorText("You are not connected to the internet");
-        disconnect(ui->retryButton, 0, this, 0);
-        connect(ui->retryButton, SIGNAL(clicked(bool)),
-                this, SLOT(init_address()));
-        ui->retryButton->show();
-        return;
+        ui->addressLabel->setText("No Internet Connection");
     }
 
     init_gamepadManager();
