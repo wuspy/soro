@@ -32,7 +32,6 @@ SOURCES += \
     audiocontrolwidget.cpp \
     audioplayer.cpp \
     ../shared/Soro/nmeamessage.cpp \
-    ../shared/Soro/configuration.cpp \
     ../shared/Soro/socketaddress.cpp \
     missioncontrolnetwork.cpp \
     gamepadmanager.cpp \
@@ -66,8 +65,6 @@ HEADERS  += \
     videocontrolwidget.h \
     audiocontrolwidget.h \
     audioplayer.h \
-    ../shared/Soro/configuration.h \
-    ../shared/Soro/initcommon.h \
     missioncontrolnetwork.h \
     gamepadmanager.h \
     controlsystem.h \

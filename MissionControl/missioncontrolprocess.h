@@ -16,7 +16,6 @@
 #include "mbedchannel.h"
 #include "latlng.h"
 #include "masterarmconfig.h"
-#include "configuration.h"
 #include "camerawidget.h"
 #include "videoclient.h"
 #include "audioclient.h"
@@ -34,12 +33,10 @@ class MissionControlProcess : public QObject {
     Q_OBJECT
 public:
 
-    explicit MissionControlProcess(const Configuration *config, GamepadManager *gamepad,
+    explicit MissionControlProcess(QHostAddress roverAddress, GamepadManager *gamepad,
                                    MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QObject *parent = 0);
 
     ~MissionControlProcess();
-
-    const Configuration* getConfiguration() const;
 
 signals:
     void windowClosed();
@@ -52,8 +49,7 @@ private:
     bool _roverSharedChannelConnected = false;
     bool _ignoreGamepadVideoButtons = false;
 
-    // Used to load configuration options
-    const Configuration *_config;
+    QHostAddress _roverAddress;
 
     // Communicates with the rover if the mission control is configured as broker
     Channel *_roverChannel = NULL;

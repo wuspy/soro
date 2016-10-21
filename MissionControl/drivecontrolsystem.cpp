@@ -19,7 +19,7 @@
 namespace Soro {
 namespace MissionControl {
 
-DriveControlSystem::DriveControlSystem(const Configuration *config, GamepadManager *input, QObject *parent) : ControlSystem(config, parent) {
+DriveControlSystem::DriveControlSystem(const QHostAddress& roverAddress, GamepadManager *input, QObject *parent) : ControlSystem(roverAddress, parent) {
     _input = input;
 }
 
@@ -29,7 +29,7 @@ bool DriveControlSystem::init(QString *errorString) {
         if (errorString) *errorString = QString("The gamepad input handler did not initialize successfully.");
         return false;
     }
-    return ControlSystem::init(CHANNEL_NAME_DRIVE, _config->DriveChannelPort, errorString);
+    return ControlSystem::init(CHANNEL_NAME_DRIVE, NETWORK_ALL_DRIVE_CHANNEL_PORT, errorString);
 }
 
 void DriveControlSystem::enable() {

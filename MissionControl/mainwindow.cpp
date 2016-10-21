@@ -40,13 +40,11 @@ const QString MainWindow::_logLevelFormattersHTML[4] = {
     "<div style=\"color:#dddddd\">%1&emsp;D/<i>%2</i>:&emsp;%3</div>"
 };
 
-MainWindow::MainWindow(const Configuration *config, GamepadManager *gamepad,
-                               MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent) :
+MainWindow::MainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SoroMainWindow) {
 
     ui->setupUi(this);
-    _config = config;
     _mcNetwork = mcNetwork;
     _gamepad = gamepad;
     _controlSystem = controlSystem;

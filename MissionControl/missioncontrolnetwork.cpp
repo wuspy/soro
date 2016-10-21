@@ -30,8 +30,7 @@
 namespace Soro {
 namespace MissionControl {
 
-MissionControlNetwork::MissionControlNetwork(const Configuration *config, QObject *parent) : QObject(parent) {
-    _config = config;
+MissionControlNetwork::MissionControlNetwork(QObject *parent) : QObject(parent) {
     _name = generateName();
 }
 
@@ -49,7 +48,7 @@ bool MissionControlNetwork::init(QString *error) {
             this, SLOT(socketError(QAbstractSocket::SocketError)));
 
     if (!startNegotiation()) {
-        *error = "Could not start mission control network negotiation. This is most likely because your\'e already running a mission control process on this computer.";
+        if (error) *error = "Could not start mission control network negotiation. This is most likely because you are already running a mission control process on this computer.\n\nIf you are sure no other mission control is running, this could indicate a network issue or port conflict.";
         return false;
     }
     return true;
@@ -88,7 +87,7 @@ bool MissionControlNetwork::startNegotiation() {
     disconnect(_broadcastSocket, SIGNAL(readyRead()), this, 0);
     connect(_broadcastSocket, SIGNAL(readyRead()),
             this, SLOT(negotiation_broadcastSocketReadyRead()));
-    if (!_broadcastSocket->bind(_config->McBroadcastPort)) {
+    if (!_broadcastSocket->bind(NETWORK_MC_BROADCAST_PORT)) {
         return false;
     }
 
@@ -114,7 +113,7 @@ void MissionControlNetwork::endNegotiation() {
             LOG_W(LOG_TAG, "Client channel was not null post-negotiation");
             clearConnections();
         }
-        _clientChannel = Channel::createServer(this, _config->McBroadcastPort, _name, Channel::TcpProtocol);
+        _clientChannel = Channel::createServer(this, NETWORK_MC_BROADCAST_PORT, _name, Channel::TcpProtocol);
         connect(_clientChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
                 this, SLOT(client_channelMessageReceived(Channel*,const char*,Channel::MessageSize)));
         connect(_clientChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
@@ -208,7 +207,7 @@ void MissionControlNetwork::timerEvent(QTimerEvent *e) {
         stream << (quint8)MSG_NEGOTIATE;
         stream << _name;
 
-        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, _config->McBroadcastPort);
+        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, NETWORK_MC_BROADCAST_PORT);
     }
     else if (e->timerId() == _broadcastStateTimerId) {
         QByteArray message;
@@ -217,7 +216,7 @@ void MissionControlNetwork::timerEvent(QTimerEvent *e) {
         stream << _name;
         stream << (quint16)_brokerConnections.size() + 1;
 
-        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, _config->McBroadcastPort);
+        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, NETWORK_MC_BROADCAST_PORT);
         emit statisticsUpdate(_brokerConnections.size() + 1);
     }
     else if (e->timerId() == _requestConnectionTimerId) {
@@ -227,7 +226,7 @@ void MissionControlNetwork::timerEvent(QTimerEvent *e) {
         stream << (quint8)MSG_REQUEST_CONNECTION;
         stream << _name;
 
-        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, _config->McBroadcastPort);
+        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, NETWORK_MC_BROADCAST_PORT);
     }
     else if (e->timerId() == _requestRoleTimerId) {
         LOG_I(LOG_TAG, "Sending MSG_REQUEST_ROLE");
@@ -237,7 +236,7 @@ void MissionControlNetwork::timerEvent(QTimerEvent *e) {
         stream << _name;
         stream << reinterpret_cast<quint32&>(_pendingRole);
 
-        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, _config->McBroadcastPort);
+        _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, NETWORK_MC_BROADCAST_PORT);
     }
 }
 

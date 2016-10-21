@@ -19,8 +19,8 @@
 namespace Soro {
 namespace MissionControl {
 
-ControlSystem::ControlSystem(const Configuration *config, QObject *parent) : QObject(parent) {
-    _config = config;
+ControlSystem::ControlSystem(const QHostAddress& roverAddress, QObject *parent) : QObject(parent) {
+    _roverAddress = roverAddress;
 }
 
 ControlSystem::~ControlSystem() {
@@ -31,22 +31,17 @@ ControlSystem::~ControlSystem() {
 }
 
 bool ControlSystem::init(QString channelName, quint16 channelPort, QString *errorString) {
-    if (!_config || !_config->isLoaded) {
-        if (errorString) *errorString = QString("The main configuration did not load successfully.");
-        return false;
-    }
-
     if (_channel) {
         disconnect(_channel, 0, this, 0);
         delete _channel;
     }
 
-    _channel = Channel::createClient(this, SocketAddress(_config->ServerAddress, channelPort), channelName,
+    _channel = Channel::createClient(this, SocketAddress(_roverAddress, channelPort), channelName,
             Channel::UdpProtocol, QHostAddress::Any);
     _channel->open();
 
     if (_channel->getState() == Channel::ErrorState) {
-        if (errorString) *errorString = QString("Could not initialize networking for the arm system.");
+        if (errorString) *errorString = QString("Could not initialize the networking for control subsystems.");
         delete _channel;
         _channel = NULL;
         return false;

@@ -8,10 +8,10 @@
 #include "channel.h"
 #include "logger.h"
 #include "soro_global.h"
-#include "configuration.h"
 #include "socketaddress.h"
 #include "videoserver.h"
 #include "videoserverarray.h"
+#include "roverconfigloader.h"
 
 using namespace Soro;
 
@@ -22,7 +22,7 @@ class Rover2Process : QObject {
     Q_OBJECT
 
 public:
-    explicit Rover2Process(const Configuration *config, QObject *parent = 0);
+    explicit Rover2Process(QObject *parent = 0);
     ~Rover2Process();
 
 private:
@@ -31,7 +31,7 @@ private:
 
     VideoServerArray *_videoServers = NULL;
 
-    const Configuration *_config;
+    RoverConfigLoader *_config;
 
     int _initTimerId = TIMER_INACTIVE;
     int _broadcastTimerId = TIMER_INACTIVE;

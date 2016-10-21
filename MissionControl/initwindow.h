@@ -11,7 +11,6 @@
 #include "armcontrolsystem.h"
 #include "drivecontrolsystem.h"
 #include "cameracontrolsystem.h"
-#include "initcommon.h"
 
 namespace Ui {
 class InitWindow;
@@ -38,6 +37,9 @@ private slots:
     void mcNetworkDisconnected();
     void mcNetworkRoleGranted(Role role);
     void mcNetworkRoleDenied();
+    void showInvalidAddressError();
+
+    void roverAddressTextChanged(QString text);
 
     void mcWindowClosed();
 
@@ -58,13 +60,12 @@ protected:
     void closeEvent(QCloseEvent *e);
 
 private:
-
+    bool _addressValid = false;
     Ui::InitWindow *ui;
     MissionControlNetwork *_mcNetwork = NULL;
     MissionControlProcess *_mc = NULL;
     ControlSystem *_controlSystem = NULL;
     GamepadManager *_gamepad = NULL;
-    Configuration _config;
 };
 
 }

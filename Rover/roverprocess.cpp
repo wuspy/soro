@@ -21,8 +21,7 @@
 namespace Soro {
 namespace Rover {
 
-RoverProcess::RoverProcess(const Configuration *config, QObject *parent) : QObject(parent) {
-    _config = config;
+RoverProcess::RoverProcess(QObject *parent) : QObject(parent) {
 
     // Must initialize once the event loop has started.
     // This can be accomplished using a single shot timer.
@@ -30,17 +29,27 @@ RoverProcess::RoverProcess(const Configuration *config, QObject *parent) : QObje
 }
 
 void RoverProcess::init() {
+    LOG_I(LOG_TAG, "*****************Loading Configuration*******************");
+    _config = new RoverConfigLoader;
+
+    QString error;
+    if (!_config->load(&error)) {
+        LOG_E(LOG_TAG, error);
+        QCoreApplication::exit(1);
+        return;
+    }
+
     LOG_I(LOG_TAG, "*************Initializing core networking*****************");
 
-    _armChannel = Channel::createServer(this, _config->ArmChannelPort, CHANNEL_NAME_ARM,
+    _armChannel = Channel::createServer(this, NETWORK_ALL_ARM_CHANNEL_PORT, CHANNEL_NAME_ARM,
                               Channel::UdpProtocol, QHostAddress::Any);
-    _driveChannel = Channel::createServer(this, _config->DriveChannelPort, CHANNEL_NAME_DRIVE,
+    _driveChannel = Channel::createServer(this, NETWORK_ALL_DRIVE_CHANNEL_PORT, CHANNEL_NAME_DRIVE,
                               Channel::UdpProtocol, QHostAddress::Any);
-    _gimbalChannel = Channel::createServer(this, _config->GimbalChannelPort, CHANNEL_NAME_GIMBAL,
+    _gimbalChannel = Channel::createServer(this, NETWORK_ALL_GIMBAL_CHANNEL_PORT, CHANNEL_NAME_GIMBAL,
                               Channel::UdpProtocol, QHostAddress::Any);
-    _sharedChannel = Channel::createServer(this, _config->SharedChannelPort, CHANNEL_NAME_SHARED,
+    _sharedChannel = Channel::createServer(this, NETWORK_ALL_SHARED_CHANNEL_PORT, CHANNEL_NAME_SHARED,
                               Channel::TcpProtocol, QHostAddress::Any);
-    _secondaryComputerChannel = Channel::createServer(this, _config->SecondaryComputerPort, CHANNEL_NAME_SECONDARY_COMPUTER,
+    _secondaryComputerChannel = Channel::createServer(this, NETWORK_ROVER_COMPUTER2_PORT, CHANNEL_NAME_SECONDARY_COMPUTER,
                                     Channel::TcpProtocol, QHostAddress::Any);
 
     if (_armChannel->getState() == Channel::ErrorState) {
@@ -88,8 +97,8 @@ void RoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Initializing MBED systems*******************");
 
     // create mbed channels
-    _armControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _config->ArmMbedPort), MBED_ID_ARM, this);
-    _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, _config->DriveCameraMbedPort), MBED_ID_DRIVE_CAMERA, this);
+    _armControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_ARM_MBED_PORT), MBED_ID_ARM, this);
+    _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_DRIVE_MBED_PORT), MBED_ID_DRIVE_CAMERA, this);
 
     // observers for mbed connectivity changes
     connect(_armControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
@@ -109,28 +118,28 @@ void RoverProcess::init() {
 
     LOG_I(LOG_TAG, "*****************Initializing GPS system*******************");
 
-    _gpsServer = new GpsServer(SocketAddress(QHostAddress::Any, _config->RoverGpsServerPort), this);
+    _gpsServer = new GpsServer(SocketAddress(QHostAddress::Any, NETWORK_ROVER_GPS_PORT), this);
     connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
             this, SLOT(gpsUpdate(NmeaMessage)));
 
     LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
 
     _videoServers = new VideoServerArray(this);
-    _videoServers->populate(_config->BlacklistedUsbCameras, _config->FirstVideoPort, 0);
+    _videoServers->populate(_config->getBlacklistedCameras(), NETWORK_ALL_CAMERA_PORT_1, 0);
 
-    if (_videoServers->serverCount() > _config->MainComputerCameraCount) {
+    if (_videoServers->serverCount() > _config->getComputer1CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
-        while (_videoServers->serverCount() > _config->MainComputerCameraCount) {
+        while (_videoServers->serverCount() > _config->getComputer1CameraCount()) {
             _videoServers->remove(_videoServers->serverCount() - 1);
         }
     }
-    else if (_videoServers->serverCount() < _config->MainComputerCameraCount) {
+    else if (_videoServers->serverCount() < _config->getComputer1CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies more cameras than this, check cable connections");
     }
 
     LOG_I(LOG_TAG, "*****************Initializing Audio system*******************");
 
-    _audioServer = new AudioServer(69, SocketAddress(QHostAddress::Any, _config->AudioStreamPort), this);
+    _audioServer = new AudioServer(69, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
 
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
@@ -145,7 +154,7 @@ void RoverProcess::beginSecondaryComputerListening() {
     if (_secondaryComputerBroadcastSocket) {
         _secondaryComputerBroadcastSocket->abort();
     }
-    _secondaryComputerBroadcastSocket->bind(QHostAddress::Any, _config->SecondaryComputerPort);
+    _secondaryComputerBroadcastSocket->bind(QHostAddress::Any, NETWORK_ROVER_COMPUTER2_PORT);
     _secondaryComputerBroadcastSocket->open(QIODevice::ReadWrite);
 }
 
@@ -250,7 +259,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         VideoFormat format;
         stream >> camera;
         stream >> reinterpret_cast<quint32&>(format);
-        if (camera >= _config->MainComputerCameraCount) {
+        if (camera >= _config->getComputer1CameraCount()) {
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
@@ -267,7 +276,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
-        if (camera >= _config->MainComputerCameraCount) {
+        if (camera >= _config->getComputer1CameraCount()) {
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);

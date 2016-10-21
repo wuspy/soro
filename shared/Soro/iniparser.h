@@ -4,6 +4,8 @@
 #include <QtCore>
 #include <QHostAddress>
 
+#include "soro_global.h"
+
 namespace Soro {
 
 /* A simple class to parse a tag-value formatted configuration file (INI format)

@@ -34,17 +34,17 @@ bool GamepadManager::init(int interval, QString *error) {
     _interval = interval;
     _sdlInitialized = SDL_Init(SDL_INIT_GAMECONTROLLER) == 0;
     if (_sdlInitialized) {
-        QString path = QCoreApplication::applicationDirPath() + "/config/" + MAP_FILE;
+        QString path = QCoreApplication::applicationDirPath() + "/" + MAP_FILE;
         if (SDL_GameControllerAddMappingsFromFile(path.toLocal8Bit().constData()) != -1) {
             START_TIMER(_inputSelectorTimerId, 1000);
             return true;
         }
         else {
-            *error = "The gamepad map file is missing or invalid. You can obtain this file from https://github.com/gabomdq/SDL_GameControllerDB";
+            *error = "The gamepad map file is missing or invalid. You can obtain this file from https://github.com/gabomdq/SDL_GameControllerDB. After downloading, place it in the same directory as the Mission Control executable.";
         }
     }
     else {
-        *error = "SDL failed to initialize: " +QString(SDL_GetError());
+        *error = "SDL failed to initialize: " + QString(SDL_GetError());
     }
     return false;
 }

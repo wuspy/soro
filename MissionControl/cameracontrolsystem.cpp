@@ -19,7 +19,7 @@
 namespace Soro {
 namespace MissionControl {
 
-CameraControlSystem::CameraControlSystem(const Configuration *config, GamepadManager *input, QObject *parent) : ControlSystem(config, parent) {
+CameraControlSystem::CameraControlSystem(const QHostAddress& roverAddress, GamepadManager *input, QObject *parent) : ControlSystem(roverAddress, parent) {
     _input = input;
 }
 
@@ -28,7 +28,7 @@ bool CameraControlSystem::init(QString *errorString) {
         if (errorString) *errorString = QString("The gamepad input handler did not initialize successfully.");
         return false;
     }
-    return ControlSystem::init(CHANNEL_NAME_GIMBAL, _config->GimbalChannelPort, errorString);
+    return ControlSystem::init(CHANNEL_NAME_GIMBAL, NETWORK_ALL_GIMBAL_CHANNEL_PORT, errorString);
 }
 
 void CameraControlSystem::enable() {

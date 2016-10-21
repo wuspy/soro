@@ -3,9 +3,9 @@
 
 #include <QObject>
 #include <QTimerEvent>
+#include <QHostAddress>
 
 #include "soro_global.h"
-#include "configuration.h"
 #include "channel.h"
 
 namespace Soro {
@@ -13,6 +13,10 @@ namespace MissionControl {
 
 class ControlSystem : public QObject {
     Q_OBJECT
+
+private:
+    QHostAddress _roverAddress;
+
 public:
     virtual void enable()=0;
     virtual void disable()=0;
@@ -25,10 +29,9 @@ signals:
 
 protected:
     Channel *_channel = NULL;
-    const Configuration *_config;
 
     bool init(QString channelName, quint16 channelPort, QString *errorString);
-    explicit ControlSystem(const Configuration *config, QObject *parent = 0);
+    explicit ControlSystem(const QHostAddress& roverAddress, QObject *parent = 0);
 
 protected slots:
     void channelStateChanged(Channel *channel, Channel::State state);
@@ -36,10 +39,6 @@ protected slots:
 public:
     inline const Channel* getChannel() const {
         return _channel;
-    }
-
-    inline const Configuration* getConfiguration() const {
-        return _config;
     }
 
     inline Channel* getChannel() {

@@ -24,7 +24,7 @@
 namespace Soro {
 namespace MissionControl {
 
-MissionControlProcess::MissionControlProcess(const Configuration *config, GamepadManager *gamepad,
+MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadManager *gamepad,
                                               MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QObject *parent) : QObject(parent) {
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
@@ -37,10 +37,10 @@ MissionControlProcess::MissionControlProcess(const Configuration *config, Gamepa
     _mcNetwork = mcNetwork;
     _controlSystem = controlSystem;
     _gamepad = gamepad;
-    _config = config;
+    _roverAddress = roverAddress;
 
     // Create UI
-    _ui = new MainWindow(config, gamepad, mcNetwork, controlSystem);
+    _ui = new MainWindow(gamepad, mcNetwork, controlSystem);
     connect(_ui, SIGNAL(closed()), this, SIGNAL(windowClosed()));
     _ui->show();
 
@@ -69,7 +69,7 @@ MissionControlProcess::MissionControlProcess(const Configuration *config, Gamepa
     if (_mcNetwork->isBroker()) {
         LOG_I(LOG_TAG, "Setting up as rover shared connection");
         // Create the main shared channel to connect to the rover
-        _roverChannel = Channel::createClient(this, SocketAddress(_config->ServerAddress, _config->SharedChannelPort), CHANNEL_NAME_SHARED,
+        _roverChannel = Channel::createClient(this, SocketAddress(_roverAddress, NETWORK_ALL_SHARED_CHANNEL_PORT), CHANNEL_NAME_SHARED,
                 Channel::TcpProtocol, QHostAddress::Any);
         _roverChannel->open();
         connect(_roverChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
@@ -86,8 +86,8 @@ MissionControlProcess::MissionControlProcess(const Configuration *config, Gamepa
 
     if (_mcNetwork->isBroker()) {
         LOG_I(LOG_TAG, "Creating video clients for rover");
-        for (int i = 0; i < _config->MainComputerCameraCount + _config->SecondaryComputerCameraCount; i++) {
-            VideoClient *client = new VideoClient(i, SocketAddress(_config->ServerAddress, _config->FirstVideoPort + i), QHostAddress::Any, this);
+        for (int i = 0; i < MAX_CAMERAS; i++) {
+            VideoClient *client = new VideoClient(i, SocketAddress(_roverAddress, NETWORK_ALL_CAMERA_PORT_1 + i), QHostAddress::Any, this);
 
             connect(client, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
                     this, SLOT(videoClientStateChanged(MediaClient*,MediaClient::State)));
@@ -97,7 +97,7 @@ MissionControlProcess::MissionControlProcess(const Configuration *config, Gamepa
             _videoClients.append(client);
         }
     }
-    for (int i = 0; i < _config->MainComputerCameraCount + _config->SecondaryComputerCameraCount; i++) {
+    for (int i = 0; i < MAX_CAMERAS; i++) {
         _videoFormats.append(VideoFormat_Null);
         _cameraNames.append("Camera " + QString::number(i + 1));
     }
@@ -105,9 +105,9 @@ MissionControlProcess::MissionControlProcess(const Configuration *config, Gamepa
     LOG_I(LOG_TAG, "***************Initializing Audio system******************");
 
     if (_mcNetwork->isBroker()) {
-        _audioClient = new AudioClient(69, SocketAddress(_config->ServerAddress, _config->AudioStreamPort), QHostAddress::Any, this);
+        _audioClient = new AudioClient(69, SocketAddress(_roverAddress, NETWORK_ALL_AUDIO_PORT), QHostAddress::Any, this);
         // forward audio stream through localhost
-        _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, _config->AudioStreamPort));
+        _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT));
         connect(_audioClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
                 this, SLOT(audioClientStateChanged(MediaClient*,MediaClient::State)));
     }
@@ -211,11 +211,11 @@ void MissionControlProcess::playAudio() {
     if (_audioFormat != AudioFormat_Null) {
         if (_mcNetwork->isBroker()) {
             // Play direct rover audio stream
-            _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, _config->AudioStreamPort), _audioFormat);
+            _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT), _audioFormat);
         }
         else {
             // Play audio forwarded by the broker
-            _audioPlayer->play(SocketAddress(QHostAddress::Any, _config->AudioStreamPort), _audioFormat);
+            _audioPlayer->play(SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), _audioFormat);
         }
     }
 }
@@ -279,10 +279,10 @@ void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widge
     _videoFormats.replace(cameraID, format);
     _ui->onCameraFormatChanged(cameraID, format);
     if (_mcNetwork->isBroker()) {
-        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::LocalHost, _config->FirstVideoPort + cameraID), format);
+        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_CAMERA_PORT_1 + cameraID), format);
     }
     else {
-        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, _config->FirstVideoPort + cameraID), format);
+        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, NETWORK_ALL_CAMERA_PORT_1 + cameraID), format);
     }
     _assignedCameraWidgets.value(cameraID)->setCameraName(_cameraNames.at(cameraID));
 }
@@ -701,9 +701,6 @@ void MissionControlProcess::cycleVideosCounterClockwise() {
     }
 }
 
-const Configuration *MissionControlProcess::getConfiguration() const {
-    return _config;
-}
 
 MissionControlProcess::~MissionControlProcess() {
     if (_roverChannel) {

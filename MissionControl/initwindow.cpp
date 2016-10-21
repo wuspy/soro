@@ -17,9 +17,6 @@
 #include "initwindow.h"
 #include "ui_initwindow.h"
 
-//TODO possibly make these configurable
-#define GAMEPAD_POLL_INTERVAL 50
-
 #define LOG_TAG "InitWindow"
 
 namespace Soro {
@@ -38,6 +35,9 @@ InitWindow::InitWindow(QWidget *parent) :
             this, SLOT(driverSelected()));
     connect(ui->cameraOperatorButton, SIGNAL(clicked(bool)),
             this, SLOT(cameraOperatorSelected()));
+
+    connect(ui->roverAddressTextBox, SIGNAL(textChanged(QString)),
+            this, SLOT(roverAddressTextChanged(QString)));
 
     QTimer::singleShot(1, this, SLOT(init_start()));
 }
@@ -60,26 +60,25 @@ void InitWindow::closeEvent(QCloseEvent *e) {
     }
 }
 
-void InitWindow::init_start() {
-    showStatus();
-    ui->retryButton->hide();
-
-    setStatusText("Loading configuration");
-
-    if (!Soro::init(&_config, "missioncontrol")) {
-        setErrorText("Failed to load/find configuration file");
-        disconnect(ui->retryButton, 0, this, 0);
-        connect(ui->retryButton, SIGNAL(clicked(bool)),
-                this, SLOT(init_start()));
-        ui->retryButton->show();
-        return;
+void InitWindow::roverAddressTextChanged(QString text) {
+    if (QRegExp(IPV4_REGEX).exactMatch(text) || QRegExp(IPV6_REGEX).exactMatch(text)) {
+        ui->roverAddressStatusLabel->setText("✓");
+        _addressValid = true;
     }
+    else {
+        ui->roverAddressStatusLabel->setText("x");
+        _addressValid = false;
+    }
+}
 
+void InitWindow::init_start() {
     init_address();
 }
 
 void InitWindow::init_address() {
+    showStatus();
     ui->retryButton->hide();
+
     setStatusText("Checking for internet connection");
     QTcpSocket socket;
     socket.connectToHost("8.8.8.8", 53);
@@ -120,7 +119,7 @@ void InitWindow::init_mcNetwork() {
     setStatusText("Initializing mission control network");
 
     if (!_mcNetwork) {
-        _mcNetwork = new MissionControlNetwork(&_config, this);
+        _mcNetwork = new MissionControlNetwork(this);
         connect(_mcNetwork, SIGNAL(connected(bool)),
                 this, SLOT(mcNetworkConnected(bool)));
         connect(_mcNetwork, SIGNAL(disconnected()),
@@ -142,7 +141,6 @@ void InitWindow::init_mcNetwork() {
     }
 
     setStatusText("Joining mission control network");
-    // Wait for singnal from mcNetwork
 }
 
 void InitWindow::mcNetworkConnected(bool broker) {
@@ -162,6 +160,7 @@ void InitWindow::mcNetworkRoleGranted(Role role) {
 }
 
 void InitWindow::mcNetworkRoleDenied() {
+    showStatus();
     setErrorText("That role is already filled on the mission control network. Select a different role for this mission control.");
     disconnect(ui->retryButton, 0, this, 0);
     connect(ui->retryButton, SIGNAL(clicked(bool)),
@@ -169,25 +168,50 @@ void InitWindow::mcNetworkRoleDenied() {
     ui->retryButton->show();
 }
 
+void InitWindow::showInvalidAddressError() {
+    showStatus();
+    setErrorText("Please enter a valid IP address");
+    disconnect(ui->retryButton, 0, this, 0);
+    connect(ui->retryButton, SIGNAL(clicked(bool)),
+            this, SLOT(showRoleButtons()));
+    ui->retryButton->show();
+}
+
 void InitWindow::armOperatorSelected() {
+    if (!_addressValid) {
+        showInvalidAddressError();
+        return;
+    }
     showStatus();
     setStatusText("Requesting Arm Operator role");
     _mcNetwork->requestRole(ArmOperatorRole);
 }
 
 void InitWindow::driverSelected() {
+    if (!_addressValid) {
+        showInvalidAddressError();
+        return;
+    }
     showStatus();
     setStatusText("Requesting Driver role");
     _mcNetwork->requestRole(DriverRole);
 }
 
 void InitWindow::cameraOperatorSelected() {
+    if (!_addressValid) {
+        showInvalidAddressError();
+        return;
+    }
     showStatus();
     setStatusText("Requesting Camera Operator role");
     _mcNetwork->requestRole(CameraOperatorRole);
 }
 
 void InitWindow::spectatorSelected() {
+    if (!_addressValid) {
+        showInvalidAddressError();
+        return;
+    }
     showStatus();
     setStatusText("Requesting Spectator role");
     _mcNetwork->requestRole(SpectatorRole);
@@ -196,7 +220,7 @@ void InitWindow::spectatorSelected() {
 void InitWindow::mcNetworkDisconnected() {
     reset();
     showStatus();
-    setErrorText("The connection to the mission control network has unexpectedly closed");
+    setErrorText("The connection to the mission control network has unexpectedly closed.");
     disconnect(ui->retryButton, 0, this, 0);
     connect(ui->retryButton, SIGNAL(clicked(bool)),
             this, SLOT(init_start()));
@@ -206,15 +230,18 @@ void InitWindow::mcNetworkDisconnected() {
 void InitWindow::init_controlSystem() {
     ui->retryButton->hide();
     setStatusText("Initializing control system");
+
+    QHostAddress roverAddress = QHostAddress(ui->roverAddressTextBox->text());
+
     switch (_mcNetwork->getRole()) {
     case ArmOperatorRole:
-        _controlSystem = new ArmControlSystem(&_config, this);
+        _controlSystem = new ArmControlSystem(roverAddress, this);
         break;
     case DriverRole:
-        _controlSystem = new DriveControlSystem(&_config, _gamepad, this);
+        _controlSystem = new DriveControlSystem(roverAddress, _gamepad, this);
         break;
     case CameraOperatorRole:
-        _controlSystem = new CameraControlSystem(&_config, _gamepad, this);
+        _controlSystem = new CameraControlSystem(roverAddress, _gamepad, this);
         break;
     default:
         break;
@@ -238,7 +265,7 @@ void InitWindow::init_controlSystem() {
         LOG_W(LOG_TAG, "Preparing to start mission control, but it is not null");
         delete _mc;
     }
-    _mc = new MissionControlProcess(&_config, _gamepad, _mcNetwork, _controlSystem, this);
+    _mc = new MissionControlProcess(roverAddress, _gamepad, _mcNetwork, _controlSystem, this);
     connect(_mc, SIGNAL(windowClosed()), this, SLOT(mcWindowClosed()));
     setCompletedText("Mission control is running");
 }

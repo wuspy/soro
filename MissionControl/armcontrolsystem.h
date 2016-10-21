@@ -6,7 +6,6 @@
 
 #include "soro_global.h"
 #include "channel.h"
-#include "configuration.h"
 #include "logger.h"
 #include "masterarmconfig.h"
 #include "armmessage.h"
@@ -19,7 +18,7 @@ namespace MissionControl {
 class ArmControlSystem : public ControlSystem {
     Q_OBJECT
 public:
-    explicit ArmControlSystem(const Configuration *config, QObject *parent = 0);
+    explicit ArmControlSystem(const QHostAddress& roverAddress, QObject *parent = 0);
     ~ArmControlSystem();
     bool init(QString *errorString);
     void enable();

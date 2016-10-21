@@ -10,7 +10,7 @@
 #include "armmessage.h"
 #include "soro_global.h"
 #include "mbedchannel.h"
-#include "configuration.h"
+#include "roverconfigloader.h"
 #include "drivemessage.h"
 #include "gimbalmessage.h"
 #include "socketaddress.h"
@@ -28,7 +28,7 @@ class RoverProcess : QObject {
     Q_OBJECT
 
 public:
-    explicit RoverProcess(const Configuration *config, QObject *parent = 0);
+    explicit RoverProcess(QObject *parent = 0);
     ~RoverProcess();
 
 private:
@@ -53,7 +53,7 @@ private:
     // encoding value of UnknownEncoding.
     GpsServer *_gpsServer = NULL;
 
-    const Configuration *_config;
+    RoverConfigLoader *_config;
 
     int _initTimerId = TIMER_INACTIVE;
 

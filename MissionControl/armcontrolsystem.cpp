@@ -22,7 +22,7 @@
 namespace Soro {
 namespace MissionControl {
 
-ArmControlSystem::ArmControlSystem(const Configuration *config, QObject *parent) : ControlSystem(config, parent) { }
+ArmControlSystem::ArmControlSystem(const QHostAddress& roverAddress, QObject *parent) : ControlSystem(roverAddress, parent) { }
 
 ArmControlSystem::~ArmControlSystem() {
     if (_mbed) {
@@ -32,14 +32,14 @@ ArmControlSystem::~ArmControlSystem() {
 
 bool ArmControlSystem::init(QString *errorString) {
     _enabled = false;
-    if (!ControlSystem::init(CHANNEL_NAME_ARM, _config->ArmChannelPort, errorString)) return false;
+    if (!ControlSystem::init(CHANNEL_NAME_ARM, NETWORK_ALL_ARM_CHANNEL_PORT, errorString)) return false;
 
     if (_mbed) {
         disconnect(_mbed, 0, this, 0);
         delete _mbed;
     }
 
-    _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, _config->MasterArmPort), MBED_ID_MASTER_ARM);
+    _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_MC_MASTER_ARM_PORT), MBED_ID_MASTER_ARM);
 
     connect(_mbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
             this, SLOT(mbedStateChanged(MbedChannel*,MbedChannel::State)));

@@ -18,7 +18,6 @@
 
 #include "missioncontrolprocess.h"
 #include "soro_global.h"
-#include "initcommon.h"
 #include "initwindow.h"
 #include "logger.h"
 
@@ -30,6 +29,12 @@ using namespace Soro::MissionControl;
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     QGst::init();
+
+    // set root log output file
+    Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
+                                     + "/MissionControl_" + QDateTime::currentDateTime().toString("M-dd_h.mm_AP") + ".log");
+    Logger::rootLogger()->setMaxFileLevel(Logger::LogLevelDebug);
+    Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelInformation);
 
     InitWindow window;
     window.show();

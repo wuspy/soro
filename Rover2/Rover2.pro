@@ -20,7 +20,7 @@ SOURCES += main.cpp \
     rover2process.cpp \
     ../shared/Soro/Rover/videoserverarray.cpp \
     ../shared/Soro/Rover/mediaserver.cpp \
-    ../shared/Soro/configuration.cpp
+    ../shared/Soro/Rover/roverconfigloader.cpp
 
 HEADERS += \
     ../shared/Soro/iniparser.h \
@@ -34,8 +34,7 @@ HEADERS += \
     rover2process.h \
     ../shared/Soro/Rover/videoserverarray.h \
     ../shared/Soro/Rover/mediaserver.h \
-    ../shared/Soro/configuration.h \
-    ../shared/Soro/initcommon.h
+    ../shared/Soro/Rover/roverconfigloader.h
 
 
 INCLUDEPATH += $$PWD/../shared $$PWD/../shared/Soro $$PWD/../shared/Soro/Rover

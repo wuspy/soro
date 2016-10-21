@@ -42,8 +42,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit MainWindow(const Configuration *config, GamepadManager *gamepad,
-                            MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent = 0);
+    explicit MainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent = 0);
     ~MainWindow();
 
     CameraWidget* getTopCameraWidget();
@@ -56,7 +55,6 @@ private:
     Ui::SoroMainWindow *ui;
     CameraWindow *_videoWindow;
 
-    const Configuration *_config;
     MissionControlNetwork *_mcNetwork;
     GamepadManager *_gamepad;
     ControlSystem *_controlSystem;

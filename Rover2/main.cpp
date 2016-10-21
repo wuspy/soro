@@ -16,21 +16,19 @@
 
 #include <QCoreApplication>
 
-#include "soro_global.h"
-#include "configuration.h"
-#include "initcommon.h"
 #include "rover2process.h"
 
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
-    Soro::Configuration config;
 
-    if (!Soro::init(&config, "rover")) {
-        return 1;
-    }
-    
+    // set root log output file
+    Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
+                                     + "/Rover2_" + QDateTime::currentDateTime().toString("M-dd_h.mm_AP") + ".log");
+    Logger::rootLogger()->setMaxFileLevel(Logger::LogLevelDebug);
+    Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelInformation);
+
     // create secondary rover worker object
-    Soro::Rover::Rover2Process worker(&config, &a);
+    Soro::Rover::Rover2Process worker(&a);
 
     return a.exec();
 }

@@ -8,7 +8,6 @@
 #include "soro_global.h"
 #include "channel.h"
 #include "logger.h"
-#include "configuration.h"
 
 namespace Soro {
 namespace MissionControl {
@@ -18,7 +17,7 @@ namespace MissionControl {
 class MissionControlNetwork : public QObject {
     Q_OBJECT
 public:
-    MissionControlNetwork(const Configuration *config, QObject *parent);
+    MissionControlNetwork(QObject *parent);
     ~MissionControlNetwork();
 
     bool init(QString *error);
@@ -53,7 +52,6 @@ private:
     bool _isBroker = false;
     SocketAddress _brokerAddress;
     bool _connected = false;
-    const Configuration *_config;
     QUdpSocket *_broadcastSocket = NULL;
     QList<Connection*> _brokerConnections;
     Channel *_clientChannel = NULL;
