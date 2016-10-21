@@ -17,8 +17,6 @@
 #include <QCoreApplication>
 
 #include "soro_global.h"
-#include "initcommon.h"
-#include "configuration.h"
 #include "roverprocess.h"
 
 int main(int argc, char *argv[]) {

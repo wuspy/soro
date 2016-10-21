@@ -44,7 +44,6 @@ HEADERS += \
     ../shared/Soro/Rover/mediaserver.h \
     ../shared/Soro/Rover/audioserver.h \
     ../shared/Soro/nmeamessage.h \
-    ../shared/Soro/initcommon.h \
     ../shared/Soro/Rover/usbcameraenumerator.h \
     ../shared/Soro/Rover/roverconfigloader.h
 
