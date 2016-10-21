@@ -203,7 +203,7 @@ private:
                                      //channel name plus (S) for server or (C) for client
 
     QQueue<PacketWrapper*> _delayPackets;
-    int _simulatedDelay;
+    int _simulatedDelay = 0;
 
     SocketAddress _serverAddress = SocketAddress(QHostAddress::Null, 0);   //address of the server side of the channel
                                                                             //If we are the server, this may be 0 if the user

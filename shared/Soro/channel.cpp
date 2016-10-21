@@ -250,7 +250,7 @@ void Channel::resetConnection() {   //PRIVATE
         if (!_tcpServer->isListening()) {
             LOG_D(LOG_TAG, "Waiting for TCP client to connect on port " + QString::number(_hostAddress.port));
             _tcpServer->listen(_hostAddress.host, _hostAddress.port);
-            LOG_I(LOG_TAG, "Listenign to TCP port " + QString::number(_tcpServer->serverPort()));
+            LOG_I(LOG_TAG, "Listening to TCP port " + QString::number(_tcpServer->serverPort()));
         }
         if (_tcpServer->hasPendingConnections()) {
             //allow the next pending connection since we just dropped the old one
