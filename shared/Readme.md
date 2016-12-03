@@ -1,1 +1,0 @@
-This directory contains code files that are shared between various projects (including the mbed projects). This code isn't compiled into a library and then linked; it is compiled as part of the binaries themselves for simplicity.
