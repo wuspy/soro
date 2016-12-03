@@ -4,13 +4,15 @@
 
 This is the repository for the 2015-16 Sooner Rover team.
 
+This codebase is still under active development as it is being used for a teleoperation research project. [Here is the commit](https://github.com/doublejinitials/soro/tree/1b0f66f3ee376ff07cd3b8e10c90ad4633ec3a63) where you can see the state of the code as it was for the 2016 NASA/NIA Robo-Ops competition.
+
 ## Dependencies
 
 ### Qt 5.4+
 
 Qt is the main development platform for our code, with the exception of mbed programs. Our minimum version is 5.4, because the embedded Google Maps requires the increased performance of the Blink web engine which was introduced in this version. However, Qt 5.7 is the target version and this should be used if possible.
 
-### Gstreamer 1.0
+### Gstreamer 1.X
 
 Gstreamer functions as our media stack, and is used to encode and decode audio and video.
 
@@ -28,47 +30,19 @@ SDL (Simple DirectMedia Layer) is a development toolkit designed primarily for m
 
 This is required to interface with Point Grey cameras.
 
-## Compiling 
+## Compiling
 
-### Ubuntu
+This software will only compile and run on linux.
 
-*Ubuntu 16.04 ships with Qt 5.5, which can be used to develop this software, HOWEVER, the Qt WebEngine module is not included or easily obtainable. Therefore, a separate Qt environment is required for development.*
+No current linux distribution, with the possible exception of Arch/Manjaro with KDE, ships the Qt5WebEngine module which is a dependency of this software. You should have full a Qt development environment set up, and should deploy Qt libraries with this software.
 
-*Note that these instructions are only for the compiled Qt projects. The mbed projects should be developed using the online mbed compiler.*
+On Debian/Ubuntu/Mint, all the dependencies can be installed with
 
-Download  and install the Qt development environment and the QtCreator IDE from [here](https://www.qt.io/download-open-source/#section-2).
+    apt install libsdl2-dev gstreamer1.0-* libqt5gstreamer-dev
 
-Install the following dependencies:
+On Arch/Manjaro
 
-    apt install -y build-essential git gstreamer1.0-* libqt5gstreamer* libsdl2-dev
-
-Clone this repository. Since this is a private repository, you will be prompted to enter your username and password.
-
-    git clone https://github.com/doublejinitials/soro
-
-Open QtCreator, then open the project you wish to work on or compile from the location you cloned this repository to.
-
-### OSX
-
-I have no idea. Installing Qt will be the same process, but the other dependencies I'm not sure. Also, some code in this repository is Linux specific and will need to be written for OSX (ex. using video4linux as a gstreamer source, enumerating /dev/video* to search for webcams). All of this code should be wrapped in #ifdef \_\_LINUX\_\_ tags for easy searching.
-
-### Windows
-
-Again, no idea. See above.
-
-## Using the Software
-
-### Configuration
-
-Both the mission control and rover software must be provided a configuration file to specify the IP addresse, ports used, camera configuration, ect. By default, the software will look for a file called soro.ini in the same directory as the executable, however you can specify a different file by setting the enviornment variable SORO_INI_PATH. You can find an example configuration file in the config directory.
-
-### Mission Control
-
-Refer to MissionControl/Readme.md
-
-### Rover
-
-Refer to Rover/Readme.md
+    pacman -S sdl2 gstreamer gst-libav gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly qt-gstreamer
 
 ## License
 
