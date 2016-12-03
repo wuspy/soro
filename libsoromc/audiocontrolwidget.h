@@ -16,7 +16,7 @@ namespace MissionControl {
 
 /* UI control for controlling the state of an audio stream
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT AudioControlWidget : public QWidget {
+class LIBSOROMC_EXPORT AudioControlWidget : public QWidget {
     Q_OBJECT
 
 public:

@@ -27,9 +27,12 @@
 #include "libsoro/socketaddress.h"
 #include "libsoro/enums.h"
 #include "libsoro/constants.h"
+#include "libsoro/logger.h"
 //#include "libsoro/flycapcamera.h"
 
 #include "videostreamer.h"
+
+#define LOG_TAG "Main"
 
 using namespace Soro;
 using namespace Soro::Rover;
@@ -37,14 +40,16 @@ using namespace Soro::Rover;
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
 
+    Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
+                                     + "/../log/Video_" + QDateTime::currentDateTime().toString("M-dd_h.mm.ss_AP") + ".log");
+    Logger::rootLogger()->setMaxFileLevel(Logger::LogLevelDebug);
+    Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelDisabled);
+
+    LOG_I(LOG_TAG, "Starting...");
     QGst::init();
 
-    qDebug() << "Starting up";
-
     if (argc < 8) {
-        //no arguments
-        qCritical() << "Invalid arguments";
-        qCritical() << "Example: VideoStreamProcess [device] [encoding] [address] [port] [bindAddress] [bindPort] [IPCPort]";
+        LOG_E(LOG_TAG, "Not enough arguments (expected 8, got " + QString::number(argc) + ")");
         return STREAMPROCESS_ERR_NOT_ENOUGH_ARGUMENTS;
     }
 
@@ -55,32 +60,57 @@ int main(int argc, char *argv[]) {
     SocketAddress bindAddress;
     quint16 ipcPort;
 
-    //parse device
+    /*
+     * Parse device
+     */
     device = argv[1];
-    //parse encoding
+    LOG_I(LOG_TAG, "Device: " + device);
+
+    /*
+     * Parse encoding
+     */
     quint32 encodingUInt = QString(argv[2]).toUInt(&ok);
-    if (!ok) return STREAMPROCESS_ERR_INVALID_ARGUMENT;
+    if (!ok) {
+        LOG_E(LOG_TAG, "Invalid encoding option '" + QString(argv[2]) + "'");
+        return STREAMPROCESS_ERR_INVALID_ARGUMENT;
+    }
+    LOG_I(LOG_TAG, "Format: " + QString::number(encodingUInt));
     format = reinterpret_cast<VideoFormat&>(encodingUInt);
 
-    //parse address/port
+    /*
+     * Parse destination address
+     */
     address.host = QHostAddress(argv[3]);
     address.port = QString(argv[4]).toInt(&ok);
     if ((address.host == QHostAddress::Null) | (address.host == QHostAddress::Any) | !ok) {
+        LOG_E(LOG_TAG, "Invalid address '" + QString(argv[3]) + ":" + QString(argv[4]) + "'");
         // invalid address
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
-    //parse bindAddress/bindPort
+    LOG_I(LOG_TAG, "Address: " + address.toString());
+
+    /*    qDebug() << "Starting up";
+     * Parse bind address
+     */
     bindAddress.host = QHostAddress(argv[5]);
     bindAddress.port = QString(argv[6]).toInt(&ok);
     if ((bindAddress.host == QHostAddress::Null) | !ok) {
         // invalid host
+         LOG_E(LOG_TAG, "Invalid bind address '" + QString(argv[5]) + ":" + QString(argv[6]) + "'");
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
+    LOG_I(LOG_TAG, "Bind Address: " + address.toString());
+
+    /*
+     * Parse IPC Port
+     */
     ipcPort = QString(argv[7]).toInt(&ok);
     if (!ok) {
         // invalid IPC port
+        LOG_E(LOG_TAG, "Invalid IPC port '" + QString(argv[7]) + "'");
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
+    LOG_I(LOG_TAG, "IPC Port: " + QString::number(encodingUInt));
 
     a.setApplicationName("VideoStream for " + device + " to " + address.toString());
 
@@ -110,9 +140,9 @@ int main(int argc, char *argv[]) {
         return a.exec();
     }
     else {*/
-        qDebug() << "Setting UVD device " << device;
+        LOG_I(LOG_TAG, "Creating stream object");
         VideoStreamer stream(device, format, bindAddress, address, ipcPort, &a);
-        qDebug() << "Stream initialized successfully";
+        LOG_I(LOG_TAG, "Stream object created");
         return a.exec();
     //}
 }

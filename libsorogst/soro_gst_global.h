@@ -1,0 +1,12 @@
+#ifndef LIBSOROGST_GLOBAL_H
+#define LIBSOROGST_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(LIBSOROGST_LIBRARY)
+#  define LIBSOROGST_EXPORT Q_DECL_EXPORT
+#else
+#  define LIBSOROGST_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // LIBSOROGST_GLOBAL_H

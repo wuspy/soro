@@ -38,7 +38,7 @@ namespace Soro {
  * increases (newer messages have higher IDs), so they also function an a sequence number
  * in UDP mode.
  */
-class SORO_COMMON_SHARED_EXPORT Channel: public QObject {
+class LIBSORO_EXPORT Channel: public QObject {
     Q_OBJECT
 public:
     //data types used for header information

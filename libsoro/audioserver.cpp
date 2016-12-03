@@ -20,7 +20,7 @@
 namespace Soro {
 
 AudioServer::AudioServer(int mediaId, SocketAddress host, QObject *parent)
-    : MediaServer("AudioServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/AudioStreamProcess" , host, parent) {
+    : MediaServer("AudioServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/audio_streamer" , host, parent) {
 }
 
 void AudioServer::onStreamStoppedInternal() {

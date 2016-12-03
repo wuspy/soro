@@ -12,39 +12,35 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT += core network
-QT -= gui
+QT       += core network
+QT       -= gui
 
 CONFIG += c++11
+TARGET = sorogst
+TEMPLATE = lib
 
-TARGET = video_streamer
-CONFIG += console
-CONFIG -= app_bundle
+DEFINES += SOROMC_LIBRARY
 
-TEMPLATE = app
-
-BUILD_DIR = ../build/video_streamer
-DESTDIR = ../bin
+BUILD_DIR = ../build/libsorogst
+DESTDIR = ../lib
 OBJECTS_DIR = $$BUILD_DIR
 MOC_DIR = $$BUILD_DIR
 RCC_DIR = $$BUILD_DIR
 UI_DIR = $$BUILD_DIR
 PRECOMPILED_DIR = $$BUILD_DIR
 
-SOURCES += \
-    #flycapcamera.cpp \
-    videostreamer.cpp \
-    main.cpp
+SOURCES +=\
+    audioplayer.cpp \
+    mediastreamer.cpp
 
-HEADERS += \
-    videostreamer.h \
-    #flycapcamera.h \
-    videostreamer.h
+HEADERS +=\
+    soro_gst_global.h \
+    audioplayer.h \
+    mediastreamer.h
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
-LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
+LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0
 #LIBS += -lflycapture
 LIBS += -L../lib -lsoro
-LIBS += -L../lib -lsorogst

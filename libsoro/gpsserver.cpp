@@ -15,14 +15,13 @@
  */
 
 #include "gpsserver.h"
-#include "libsoro/logger.h"
+#include "logger.h"
 
 #define LOG_TAG "GpsServer"
 
 #define RECOVERY_DELAY 500
 
 namespace Soro {
-namespace Rover {
 
 GpsServer::GpsServer(SocketAddress hostAddress, QObject *parent) : QObject(parent) {
     _socket = new QUdpSocket(this);
@@ -83,5 +82,4 @@ void GpsServer::timerEvent(QTimerEvent *e) {
     }
 }
 
-} // namespace Rover
 } // namespace Soro

@@ -6,7 +6,7 @@
 
 namespace Soro {
 
-class SORO_COMMON_SHARED_EXPORT UsbCameraEnumerator {
+class LIBSORO_EXPORT UsbCameraEnumerator {
 
 public:
     /* Enumerates all USB cameras connected. If successful, this will

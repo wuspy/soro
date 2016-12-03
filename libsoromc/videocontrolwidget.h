@@ -18,7 +18,7 @@ namespace MissionControl {
 /* UI control for controlling the quality of a video
  * stream.
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT VideoControlWidget : public QWidget {
+class LIBSOROMC_EXPORT VideoControlWidget : public QWidget {
     Q_OBJECT
 
 public:

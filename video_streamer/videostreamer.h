@@ -20,12 +20,12 @@
 
 #include "libsoro/socketaddress.h"
 #include "libsoro/enums.h"
-#include "libsoro/mediastreamer.h"
+#include "libsorogst/mediastreamer.h"
 
 namespace Soro {
 namespace Rover {
 
-class VideoStreamer : public MediaStreamer {
+class VideoStreamer : public Soro::Gst::MediaStreamer {
     Q_OBJECT
 public:
     VideoStreamer(QGst::ElementPtr source, VideoFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);

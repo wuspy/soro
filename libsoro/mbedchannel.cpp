@@ -71,7 +71,7 @@ void MbedChannel::socketReadyRead() {
         switch (reinterpret_cast<unsigned char&>(_buffer[1])) {
         case _MBED_MSG_TYPE_NORMAL:
             if (length > 6) {
-                emit messageReceived(_buffer + 6, length - 6);
+                emit messageReceived(this, _buffer + 6, length - 6);
             }
             break;
         case _MBED_MSG_TYPE_LOG:

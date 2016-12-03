@@ -17,13 +17,16 @@
 #include "audiostreamer.h"
 #include "libsoro/constants.h"
 
+#include "libsoro/logger.h"
+
 namespace Soro {
 namespace Rover {
 
 AudioStreamer::AudioStreamer(QString sourceDevice, AudioFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent)
-        : MediaStreamer(parent) {
+        : Soro::Gst::MediaStreamer("AudioStreamer", parent) {
     if (!connectToParent(ipcPort)) return;
 
+    LOG_I(LOG_TAG, "Creating pipeline");
     _pipeline = createPipeline();
 
     // create gstreamer command
@@ -33,14 +36,16 @@ AudioStreamer::AudioStreamer(QString sourceDevice, AudioFormat format, SocketAdd
 #endif
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
-    qDebug() << "Created gstreamer bin " << binStr;
+    LOG_I(LOG_TAG, "Created gstreamer bin <source> ! " + binStr);
 
     _pipeline->add(encoder);
+
+    LOG_I(LOG_TAG, "Elements linked on pipeline");
 
     // play
     _pipeline->setState(QGst::StatePlaying);
 
-    qDebug() << "Stream started";
+    LOG_I(LOG_TAG, "Stream started");
 
 }
 
@@ -52,6 +57,7 @@ QString AudioStreamer::makeEncodingBinString(AudioFormat format, SocketAddress b
         break;
     default:
         //unknown codec
+        LOG_E(LOG_TAG, "Unknown AudioFormat received");
         QCoreApplication::exit(STREAMPROCESS_ERR_UNKNOWN_CODEC);
         return "";
     }

@@ -18,7 +18,7 @@ namespace MissionControl {
 /* Abstract class implementing the base functionality
  * for receiving a UDP stream from a MediaServer.
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT MediaClient : public QObject {
+class LIBSOROMC_EXPORT MediaClient : public QObject {
     Q_OBJECT
 public:
     enum State {

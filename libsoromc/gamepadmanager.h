@@ -17,7 +17,7 @@ namespace MissionControl {
 
 /* Manages gamepad input for the application
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT GamepadManager : public QObject {
+class LIBSOROMC_EXPORT GamepadManager : public QObject {
     Q_OBJECT
 public:
     explicit GamepadManager(QObject *parent = 0);

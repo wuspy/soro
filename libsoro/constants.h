@@ -1,3 +1,19 @@
+/*
+ * Copyright 2016 The University of Oklahoma.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /*********************************************************
  * This code can be compiled on a Qt or mbed enviornment *
  *********************************************************/
@@ -48,13 +64,15 @@
 #define NETWORK_ROVER_GPS_PORT 5518
 
 #define MAX_CAMERAS 20
+
 //TODO possibly make this configurable
 #define GAMEPAD_POLL_INTERVAL 50
-
 #define GAMEPAD_DEADZONE 0.2
 
+// Mbed ID's
 #define MBED_ID_MASTER_ARM 1
 #define MBED_ID_ARM 2
 #define MBED_ID_DRIVE_CAMERA 3
+#define MBED_ID_RESEARCH 4
 
 #endif // SORO_CONSTANTS_H

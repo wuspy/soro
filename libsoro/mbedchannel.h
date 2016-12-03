@@ -31,7 +31,7 @@ namespace Soro {
  * The Qt side acts as the server and waits for the
  * Mbed to connect.
  */
-class SORO_COMMON_SHARED_EXPORT MbedChannel: public QObject {
+class LIBSORO_EXPORT MbedChannel: public QObject {
     Q_OBJECT
 
 public:
@@ -67,7 +67,7 @@ public:
     void sendMessage(const char *message, int length);
 
 signals:
-    void messageReceived(const char* message, int length);
+    void messageReceived(MbedChannel *channel, const char* message, int length);
     void stateChanged(MbedChannel *channel, MbedChannel::State state);
 
 protected:

@@ -36,11 +36,11 @@ SOURCES += \
     drivemessage.cpp \
 #    flycapenumerator.cpp \
     gimbalmessage.cpp \
+    gpsserver.cpp \
     logger.cpp \
     masterarmconfig.cpp \
     mbedchannel.cpp \
     mediaserver.cpp \
-    mediastreamer.cpp \
     nmeamessage.cpp \
     roverconfigloader.cpp \
     socketaddress.cpp \
@@ -58,11 +58,11 @@ HEADERS += \
     drivemessage.h \
 #    flycapenumerator.h \
     gimbalmessage.h \
+    gpsserver.h \
     logger.h \
     masterarmconfig.h \
     mbedchannel.h \
     mediaserver.h \
-    mediastreamer.h \
     nmeamessage.h \
     roverconfigloader.h \
     socketaddress.h \
@@ -75,7 +75,3 @@ HEADERS += \
     enums.h \
     gamepadutil.h \
     util.h
-
-#Flycapture sdk is currently not being used
-#LIBS += -lflycapture
-LIBS += -lQt5GStreamer-1.0

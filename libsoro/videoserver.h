@@ -12,15 +12,28 @@
 
 namespace Soro {
 
-/* Sends a video stream to a VideoClient by
+/**
+ * Sends a video stream to a VideoClient by
  * implementing MediaServer
  */
-class SORO_COMMON_SHARED_EXPORT VideoServer: public MediaServer {
+class LIBSORO_EXPORT VideoServer: public MediaServer {
     Q_OBJECT
 public:
-
+    /**
+     * @param mediaId Used to identify this particular media stream. Must match on both ends, and should be unique across
+     * all media streams to prevent any problems if ports are not properly configured.
+     * @param host Address for the socket that will be used to communicate with the media client.
+     * @param parent
+     */
     explicit VideoServer(int mediaId, SocketAddress host, QObject *parent = 0);
 
+    /**
+     * Starts a video stream. If the server is already streaming, it will be stopped and restarted to
+     * accomodate any configuration changes.
+     *
+     * @param deviceName The video device to connect to and start streaming (/dev/video*)
+     * @param format The video format to stream.
+     */
     void start(QString deviceName, VideoFormat format);
     //void start(FlyCapture2::PGRGuid camera, VideoFormat format);
 
@@ -32,7 +45,8 @@ private:
     bool _starting = false;
 
 protected:
-    /* Begins streaming video to the provided address.
+    /**
+     * Begins streaming video to the provided address.
      * This will fail if the stream is not in WaitingState
      */
     void constructChildArguments(QStringList& outArgs, SocketAddress host, SocketAddress address, quint16 ipcPort) Q_DECL_OVERRIDE;

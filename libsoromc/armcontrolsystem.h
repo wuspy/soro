@@ -15,7 +15,7 @@
 namespace Soro {
 namespace MissionControl {
 
-class SORO_MISSIONCONTROLSHARED_EXPORT ArmControlSystem : public ControlSystem {
+class LIBSOROMC_EXPORT ArmControlSystem : public ControlSystem {
     Q_OBJECT
 public:
     explicit ArmControlSystem(const QHostAddress& roverAddress, QObject *parent = 0);

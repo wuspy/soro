@@ -12,7 +12,7 @@
 namespace Soro {
 namespace MissionControl {
 
-class SORO_MISSIONCONTROLSHARED_EXPORT ControlSystem : public QObject {
+class LIBSOROMC_EXPORT ControlSystem : public QObject {
     Q_OBJECT
 
 private:

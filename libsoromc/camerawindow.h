@@ -15,7 +15,7 @@ namespace MissionControl {
 /* Wrapper for a CameraWidget that displays it in its
  * own window.
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT CameraWindow : public QMainWindow {
+class LIBSOROMC_EXPORT CameraWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit CameraWindow(QWidget *parent = 0);

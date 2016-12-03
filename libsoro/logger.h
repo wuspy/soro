@@ -20,7 +20,7 @@ namespace Soro {
  * This class is reentrant, because QTextStream is reentrant and mutexes are expensive.
  * Create separate logger instances for separate threads.
  */
-class SORO_COMMON_SHARED_EXPORT Logger: public QObject {
+class LIBSORO_EXPORT Logger: public QObject {
     Q_OBJECT
 public:
     enum Level {

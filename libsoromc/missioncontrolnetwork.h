@@ -16,7 +16,7 @@ namespace MissionControl {
 
 /* Manages a
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT MissionControlNetwork : public QObject {
+class LIBSOROMC_EXPORT MissionControlNetwork : public QObject {
     Q_OBJECT
 public:
     MissionControlNetwork(QObject *parent);

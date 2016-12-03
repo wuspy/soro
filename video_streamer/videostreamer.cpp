@@ -22,50 +22,52 @@ namespace Soro {
 namespace Rover {
 
 VideoStreamer::VideoStreamer(QGst::ElementPtr source, VideoFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent)
-        : MediaStreamer(parent) {
+        : Soro::Gst::MediaStreamer("VideoStreamer", parent) {
     if (!connectToParent(ipcPort)) return;
 
+    LOG_I(LOG_TAG, "Creating pipeline");
     _pipeline = createPipeline();
 
     // create gstreamer command
     QString binStr = makeEncodingBinString(format, bindAddress, address);
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
-    qDebug() << "Created gstreamer bin <source> ! " << binStr;
+    LOG_I(LOG_TAG, "Created gstreamer bin <source> ! " + binStr);
 
     // link elements
     _pipeline->add(source, encoder);
     source->link(encoder);
 
-    qDebug() << "Elements linked";
+    LOG_I(LOG_TAG, "Elements linked on pipeline");
 
-    // play
+    // play<source> ! " +
     _pipeline->setState(QGst::StatePlaying);
 
-    qDebug() << "Stream started";
+    LOG_I(LOG_TAG, "Stream started");
 }
 
 VideoStreamer::VideoStreamer(QString sourceDevice, VideoFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent)
-        : MediaStreamer(parent) {
+        : Soro::Gst::MediaStreamer("VideoStreamer", parent) {
     if (!connectToParent(ipcPort)) return;
 
+     LOG_I(LOG_TAG, "Creating pipeline");
     _pipeline = createPipeline();
 
     // create gstreamer command
-    QString binStr = makeEncodingBinString(format, bindAddress, address);
-#ifdef __linux__
-    binStr = "v4l2src device=" + sourceDevice + " ! " + binStr;
-#endif
+    QString binStr = "v4l2src device=" + sourceDevice + " ! " + makeEncodingBinString(format, bindAddress, address);
+
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
-    qDebug() << "Created gstreamer bin " << binStr;
+    LOG_I(LOG_TAG, "Created gstreamer bin " + binStr);
 
     _pipeline->add(encoder);
+
+    LOG_I(LOG_TAG, "Elements linked on pipeline");
 
     // play
     _pipeline->setState(QGst::StatePlaying);
 
-    qDebug() << "Stream started";
+    LOG_I(LOG_TAG, "Stream started");
 
 }
 
@@ -94,6 +96,7 @@ QString VideoStreamer::makeEncodingBinString(VideoFormat format, SocketAddress b
         break;
     default:
         //unknown codec
+        LOG_E(LOG_TAG, "Unknown VideoFormat received");
         QCoreApplication::exit(STREAMPROCESS_ERR_UNKNOWN_CODEC);
         return "";
     }

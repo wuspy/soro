@@ -14,7 +14,7 @@ namespace Soro {
  * - Call load(QTextStream) to read in a file
  * - Call value(QString&), valueAsInt(QString&), etc to get a tag's value
  */
-class SORO_COMMON_SHARED_EXPORT ConfLoader {
+class LIBSORO_EXPORT ConfLoader {
 
 private:
      QMap<QString, QString> _contents;

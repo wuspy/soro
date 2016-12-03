@@ -16,7 +16,7 @@ namespace Soro {
 /* Stores an array of VideoServer objects and populates
  * itself from available cameras
  */
-class SORO_COMMON_SHARED_EXPORT VideoServerArray : public QObject {
+class LIBSORO_EXPORT VideoServerArray : public QObject {
     Q_OBJECT
 public:
     explicit VideoServerArray(QObject *parent = 0);

@@ -16,7 +16,7 @@
 namespace Soro {
 namespace MissionControl {
 
-class SORO_MISSIONCONTROLSHARED_EXPORT CameraControlSystem : public ControlSystem {
+class LIBSOROMC_EXPORT CameraControlSystem : public ControlSystem {
     Q_OBJECT
 public:
     explicit CameraControlSystem(const QHostAddress& roverAddress, GamepadManager *input, QObject *parent = 0);

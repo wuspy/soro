@@ -15,30 +15,35 @@
  */
 
 #include "mediastreamer.h"
-#include "logger.h"
-#include "constants.h"
+#include "libsoro/logger.h"
+#include "libsoro/constants.h"
 
 namespace Soro {
+namespace Gst {
 
-MediaStreamer::MediaStreamer(QObject *parent) : QObject(parent) { }
+MediaStreamer::MediaStreamer(QString LOG_TAG, QObject *parent) : QObject(parent) {
+    this->LOG_TAG = LOG_TAG;
+}
 
 MediaStreamer::~MediaStreamer() {
     stop();
 }
 
 void MediaStreamer::stop() {
-    qDebug() << "Stopping";
     if (_pipeline) {
+        LOG_I(LOG_TAG, "stop(): setting pipeline to StateNull");
         _pipeline->setState(QGst::StateNull);
         _pipeline.clear();
     }
     if (_ipcSocket) {
+        LOG_I(LOG_TAG, "stop(): deleting IPC socket");
         delete _ipcSocket;
         _ipcSocket = NULL;
     }
 }
 
 bool MediaStreamer::connectToParent(quint16 port) {
+    LOG_I(LOG_TAG, "connectToParent(): Creating new TCP socket on port " + QString::number(port));
     _ipcSocket = new QTcpSocket(this);
 
     connect(_ipcSocket, SIGNAL(readyRead()),
@@ -50,7 +55,7 @@ bool MediaStreamer::connectToParent(quint16 port) {
 
     _ipcSocket->connectToHost(QHostAddress::LocalHost, port);
     if (!_ipcSocket->waitForConnected(1000)) {
-        qCritical() << "Unable to connect to parent on port " << port;
+        LOG_E(LOG_TAG, "connectToParent(): Unable to connect to parent");
         QCoreApplication::exit(0);
         return false;
     }
@@ -62,21 +67,22 @@ void MediaStreamer::ipcSocketReadyRead() {
     while (_ipcSocket->bytesAvailable() > 0) {
         _ipcSocket->readLine(buffer, 512);
         if (QString(buffer).compare("stop") == 0) {
-            qDebug() << "Got exit request from parent";
+            LOG_I(LOG_TAG, "ipcSocketReadyRead(): Got stop request from parent");
             stop();
             QCoreApplication::exit(0);
+        }
+        else {
+            LOG_W(LOG_TAG, "ipcSocketReadyRead(): Got unknown request from parent '" + QString(buffer) + "'");
         }
     }
 }
 
 QGst::PipelinePtr MediaStreamer::createPipeline() {
-    qDebug() << "Creating pipeline";
-
     QGst::PipelinePtr pipeline = QGst::Pipeline::create();
     pipeline->bus()->addSignalWatch();
     QGlib::connect(pipeline->bus(), "message", this, &MediaStreamer::onBusMessage);
 
-    qDebug() << "Pipeline created";
+    LOG_I(LOG_TAG, "createPipeline(): pipeline created successfully");
     return pipeline;
 }
 
@@ -85,12 +91,12 @@ void MediaStreamer::onBusMessage(const QGst::MessagePtr & message) {
     QByteArray errorMessage;
     switch (message->type()) {
     case QGst::MessageEos:
-        qWarning() << "End-of-Stream";
+        LOG_E(LOG_TAG, "onBusMessage(): Received EOS message from gstreamer");
         QCoreApplication::exit(STREAMPROCESS_ERR_GSTREAMER_EOS);
         break;
     case QGst::MessageError:
         errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
-        qCritical() << "Bus error: " << errorMessage.constData();
+        LOG_E(LOG_TAG, "onBusMessage(): Received error message from gstreamer '" + errorMessage + "'");
         QCoreApplication::exit(STREAMPROCESS_ERR_GSTREAMER_ERROR);
         break;
     default:
@@ -100,14 +106,17 @@ void MediaStreamer::onBusMessage(const QGst::MessagePtr & message) {
 
 void MediaStreamer::ipcSocketError(QAbstractSocket::SocketError error) {
     Q_UNUSED(error);
+    LOG_E(LOG_TAG, "ipcSocketError(): Socket error");
     stop();
     QCoreApplication::exit(STREAMPROCESS_ERR_SOCKET_ERROR);
 }
 
 void MediaStreamer::ipcSocketDisconnected() {
+    LOG_E(LOG_TAG, "ipcSocketDisconnected(): Socket disconnected");
     stop();
     QCoreApplication::exit(STREAMPROCESS_ERR_SOCKET_ERROR);
 }
 
+} // namespace Gst
 } // namespace Soro
 

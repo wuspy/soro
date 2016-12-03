@@ -17,7 +17,7 @@
 namespace Soro {
 namespace MissionControl {
 
-class SORO_MISSIONCONTROLSHARED_EXPORT DriveControlSystem : public ControlSystem {
+class LIBSOROMC_EXPORT DriveControlSystem : public ControlSystem {
     Q_OBJECT
 public:
     explicit DriveControlSystem(const QHostAddress& roverAddress, GamepadManager *input, QObject *parent = 0);

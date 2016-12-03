@@ -32,7 +32,7 @@ namespace MissionControl {
 /* UI control for playing a UDP video stream using the
  * gstreamer-1.0 backend
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT CameraWidget : public QWidget {
+class LIBSOROMC_EXPORT CameraWidget : public QWidget {
     Q_OBJECT
 public:
     explicit CameraWidget(QWidget *parent = 0);

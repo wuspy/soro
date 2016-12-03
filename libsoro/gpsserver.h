@@ -5,17 +5,17 @@
 #include <QObject>
 #include <QUdpSocket>
 
-#include "libsoro/constants.h"
-#include "libsoro/socketaddress.h"
-#include "libsoro/nmeamessage.h"
-#include "libsoro/constants.h"
+#include "soro_global.h"
+#include "constants.h"
+#include "socketaddress.h"
+#include "nmeamessage.h"
+#include "constants.h"
 
 namespace Soro {
-namespace Rover {
 
 /* Listens for NMEA formatted GPS messages on a UDP socket
  */
-class GpsServer : public QObject {
+class LIBSORO_EXPORT GpsServer : public QObject {
     Q_OBJECT
 public:
     explicit GpsServer(SocketAddress hostAddress, QObject *parent = NULL);
@@ -40,7 +40,6 @@ protected:
     void timerEvent(QTimerEvent *e);
 };
 
-} // namespace Rover
 } // namespace Soro
 
 #endif // SORO_ROVER_GPSSERVER_H

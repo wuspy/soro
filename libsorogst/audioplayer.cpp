@@ -17,7 +17,7 @@
 #include "audioplayer.h"
 
 namespace Soro {
-namespace MissionControl {
+namespace Gst {
 
 AudioPlayer::AudioPlayer(QObject *parent) : QObject(parent) { }
 
@@ -55,18 +55,14 @@ void AudioPlayer::play(SocketAddress address, AudioFormat encoding) {
         binStr += " ! application/x-rtp,media=audio,clock-rate=44100,encoding-name=AC3 ! "
                                "rtpac3depay ! "
                                "a52dec ! "
-                               "audioconvert ! ";
+                               "audioconvert ! "
+                               "alsasink";
         break;
     default:
         stop();
         emit error();
         return;
     }
-#ifdef __linux__
-    binStr += "alsasink";
-#else
-    binStr += "autoaudiosink";
-#endif
 
     // create a gstreamer bin from the description
     QGst::BinPtr bin = QGst::Bin::fromDescription(binStr);
@@ -96,5 +92,5 @@ void AudioPlayer::onBusMessage(const QGst::MessagePtr & message) {
     }
 }
 
-}
-}
+} // namespace Gst
+} // namespace Soro

@@ -12,7 +12,7 @@ namespace MissionControl {
 /* Receives an audio stream from an AudioServer by
  * implementing MediaClient
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT AudioClient : public MediaClient {
+class LIBSOROMC_EXPORT AudioClient : public MediaClient {
     Q_OBJECT
 
 public:

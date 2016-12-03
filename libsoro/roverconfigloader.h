@@ -7,7 +7,7 @@
 
 namespace Soro {
 
-class SORO_COMMON_SHARED_EXPORT RoverConfigLoader
+class LIBSORO_EXPORT RoverConfigLoader
 {
 private:
     QList<QString> _blacklistCameras;

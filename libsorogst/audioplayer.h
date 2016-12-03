@@ -18,14 +18,15 @@
 #include "libsoro/soro_global.h"
 #include "libsoro/enums.h"
 
-#include "soro_missioncontrol_global.h"
+#include "soro_gst_global.h"
 
 namespace Soro {
-namespace MissionControl {
+namespace Gst {
 
-/* Plays a UDP audio stream using the gstreamer-1.0 backend
+/** 
+ * Plays a UDP audio stream using the gstreamer-1.0 backend
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT AudioPlayer : public QObject {
+class LIBSOROGST_EXPORT AudioPlayer : public QObject {
     Q_OBJECT
 
 public:
@@ -57,7 +58,7 @@ signals:
 
 };
 
-}
-}
+} // namespace Gst
+} // namespace Soro
 
 #endif // SORO_MISSIONCONTROL_AUDIOPLAYER_H

@@ -20,7 +20,7 @@ namespace MissionControl {
 /* Receives a video stream from a VideoServer by
  * implementing MediaClient
  */
-class SORO_MISSIONCONTROLSHARED_EXPORT VideoClient : public MediaClient {
+class LIBSOROMC_EXPORT VideoClient : public MediaClient {
     Q_OBJECT
 
 public:

@@ -20,7 +20,7 @@
 namespace Soro {
 
 VideoServer::VideoServer(int mediaId, SocketAddress host, QObject *parent)
-    : MediaServer("VideoServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/VideoStreamProcess" , host, parent) {
+    : MediaServer("VideoServer " + QString::number(mediaId), mediaId, QCoreApplication::applicationDirPath() + "/video_streamer" , host, parent) {
 }
 
 void VideoServer::onStreamStoppedInternal() {
@@ -57,8 +57,6 @@ void VideoServer::constructChildArguments(QStringList& outArgs, SocketAddress ho
     outArgs << QHostAddress(host.host.toIPv4Address()).toString();
     outArgs << QString::number(host.port);
     outArgs << QString::number(ipcPort);
-
-    qDebug() << "Starting with args " << outArgs;
 }
 
 void VideoServer::constructStreamingMessage(QDataStream& stream) {
