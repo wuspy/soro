@@ -22,13 +22,16 @@ Logger* Logger::_root = new Logger();
 
 Logger::Logger(QObject *parent) : QObject(parent) {
     // create default text formatting
-    _qtLoggerFormat << "[E]\t%1\t%2:\t%3";
-    _qtLoggerFormat << "[W]\t%1\t%2:\t%3";
-    _qtLoggerFormat << "[I]\t%1\t%2:\t%3";
-    _qtLoggerFormat << "[D]\t%1\t%2:\t%3";
+    _qtLoggerFormat << "\033[31m[E]\033[0m %1 \033[35m%2\033[0m: %3";
+    _qtLoggerFormat << "\033[33m[W]\033[0m %1 \033[35m%2\033[0m: %3";
+    _qtLoggerFormat << "\033[34m[I]\033[0m %1 \033[35m%2\033[0m: %3";
+    _qtLoggerFormat << "[D] %1 \033[35m%2\033[0m: %3";
 
     // default unless later set otherwise
-    _textFormat << _qtLoggerFormat;
+    _textFormat << "[E]\t%1\t%2:\t%3";
+    _textFormat << "[W]\t%1\t%2:\t%3";
+    _textFormat << "[I]\t%1\t%2:\t%3";
+    _textFormat << "[D]\t%1\t%2:\t%3";
 }
 
 bool Logger::setLogfile(QString file) {
@@ -63,22 +66,9 @@ void Logger::publish(Level level, QString tag, QString message) { //PRIVATE
     }
     // check for Qt logger output
     if (level <= _maxQtLogLevel) {
-        const char *formatted = _qtLoggerFormat[reinterpret_cast<unsigned int&>(level) - 1]
-                .arg(QTime::currentTime().toString(), tag, message)
-                .toUtf8().constData();
-        switch (level) {
-        case LogLevelDebug:
-            qDebug() << formatted;
-        case LogLevelInformation: //no equivalent qInfo() exists
-        case LogLevelWarning:
-            qWarning() << formatted;
-            break;
-        case LogLevelError:
-            qCritical() << formatted;
-            break;
-        default:
-            break;
-        }
+        QString formatted = _qtLoggerFormat[reinterpret_cast<unsigned int&>(level) - 1]
+                .arg(QTime::currentTime().toString(), tag, message);
+        QTextStream(stdout) << formatted << endl;
     }
 }
 
