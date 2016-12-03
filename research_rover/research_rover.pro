@@ -15,14 +15,14 @@
 QT += core network
 QT -= gui
 
-TARGET = rover
+TARGET = research_rover
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += c++11
 
 TEMPLATE = app
 
-BUILD_DIR = ../build/rover2
+BUILD_DIR = ../build/research_rover
 DESTDIR = ../bin
 OBJECTS_DIR = $$BUILD_DIR
 MOC_DIR = $$BUILD_DIR
@@ -30,18 +30,10 @@ RCC_DIR = $$BUILD_DIR
 UI_DIR = $$BUILD_DIR
 PRECOMPILED_DIR = $$BUILD_DIR
 
-SOURCES += \
-    roverprocess.cpp \
-    gpsserver.cpp \
-    main.cpp
-
-HEADERS += \
-    roverprocess.h \
-    gpsserver.h
-
+SOURCES += main.cpp
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
 LIBS += -L../lib -lsoro
-LIBS += -lSDL2 -lQt5GStreamer-1.0
+LIBS += -lQt5GStreamer-1.0

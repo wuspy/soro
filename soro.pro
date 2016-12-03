@@ -21,12 +21,15 @@ SUBDIRS =\
     rover \
     rover2 \
     libsoromc \
-    mission_control
+    mission_control \
+    research_control \
+    research_rover
 
 libsoromc.depends = libsoro
 video_streamer.depends = libsoro
 audio_streamer.depends = libsoro
 rover.depends = libsoro
 rover2.depends = libsoro
+research_rover.depends = libsoro
 mission_control.depends = libsoro libsoromc
-
+research_control.depends = libsoro libsoromc

@@ -12,17 +12,13 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT += core network
-QT -= gui
+QT       += core gui network widgets #webenginewidgets
+CONFIG   += c++11
 
-TARGET = rover
-CONFIG += console
-CONFIG -= app_bundle
-CONFIG += c++11
-
+TARGET = research_control
 TEMPLATE = app
 
-BUILD_DIR = ../build/rover2
+BUILD_DIR = ../build/research_control
 DESTDIR = ../bin
 OBJECTS_DIR = $$BUILD_DIR
 MOC_DIR = $$BUILD_DIR
@@ -30,18 +26,17 @@ RCC_DIR = $$BUILD_DIR
 UI_DIR = $$BUILD_DIR
 PRECOMPILED_DIR = $$BUILD_DIR
 
-SOURCES += \
-    roverprocess.cpp \
-    gpsserver.cpp \
-    main.cpp
+SOURCES += main.cpp\
+        researchwindow.cpp
 
-HEADERS += \
-    roverprocess.h \
-    gpsserver.h
+HEADERS  += researchwindow.h
 
+FORMS    += researchwindow.ui
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
+LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
+#LIBS += -lflycapture
 LIBS += -L../lib -lsoro
-LIBS += -lSDL2 -lQt5GStreamer-1.0
+LIBS += -L../lib -lsoromc
