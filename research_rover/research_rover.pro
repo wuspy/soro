@@ -30,10 +30,13 @@ RCC_DIR = $$BUILD_DIR
 UI_DIR = $$BUILD_DIR
 PRECOMPILED_DIR = $$BUILD_DIR
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    researchroverprocess.cpp
+
+HEADERS += \
+    researchroverprocess.h
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
 LIBS += -L../lib -lsoro
-LIBS += -lQt5GStreamer-1.0

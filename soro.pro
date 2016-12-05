@@ -23,13 +23,15 @@ SUBDIRS =\
     libsoromc \
     mission_control \
     research_control \
-    research_rover
+    research_rover \
+    libsorogst
 
-libsoromc.depends = libsoro
-video_streamer.depends = libsoro
-audio_streamer.depends = libsoro
+libsorogst.depends = libsoro
+libsoromc.depends = libsoro libsorogst
+video_streamer.depends = libsoro libsorogst
+audio_streamer.depends = libsoro libsorogst
 rover.depends = libsoro
 rover2.depends = libsoro
-research_rover.depends = libsoro
-mission_control.depends = libsoro libsoromc
-research_control.depends = libsoro libsoromc
+research_rover.depends = libsoro libsorogst
+mission_control.depends = libsoro libsoromc libsorogst
+research_control.depends = libsoro libsoromc libsorogst

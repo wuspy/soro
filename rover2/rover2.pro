@@ -41,6 +41,4 @@ HEADERS += \
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
-#LIBS += -lflycapture
 LIBS += -L../lib -lsoro
-LIBS += -lQt5GStreamer-1.0
