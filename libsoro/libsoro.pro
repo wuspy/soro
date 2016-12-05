@@ -48,7 +48,10 @@ SOURCES += \
     videoserver.cpp \
     videoserverarray.cpp \
     confloader.cpp \
-    gamepadutil.cpp
+    gamepadutil.cpp \
+    mediaclient.cpp \
+    videoclient.cpp \
+    audioclient.cpp
 
 HEADERS += \
     latlng.h \
@@ -74,4 +77,7 @@ HEADERS += \
     constants.h \
     enums.h \
     gamepadutil.h \
-    util.h
+    util.h \
+    mediaclient.h \
+    videoclient.h \
+    audioclient.h

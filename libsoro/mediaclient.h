@@ -1,5 +1,5 @@
-#ifndef SORO_MISSIONCONTROL_MEDIACLIENT_H
-#define SORO_MISSIONCONTROL_MEDIACLIENT_H
+#ifndef SORO_MEDIACLIENT_H
+#define SORO_MEDIACLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -7,18 +7,17 @@
 #include <QByteArray>
 #include <QList>
 
-#include "libsoro/channel.h"
-#include "libsoro/socketaddress.h"
+#include "channel.h"
+#include "socketaddress.h"
 
-#include "soro_missioncontrol_global.h"
+#include "soro_global.h"
 
 namespace Soro {
-namespace MissionControl {
 
 /* Abstract class implementing the base functionality
  * for receiving a UDP stream from a MediaServer.
  */
-class LIBSOROMC_EXPORT MediaClient : public QObject {
+class LIBSORO_EXPORT MediaClient : public QObject {
     Q_OBJECT
 public:
     enum State {
@@ -80,7 +79,6 @@ protected:
     virtual void onServerDisconnectedInternal()=0;
 };
 
-} // namespace MissionControl
 } // namespace Soro
 
-#endif // SORO_MISSIONCONTROL_MEDIACLIENT_H
+#endif // SORO_MEDIACLIENT_H

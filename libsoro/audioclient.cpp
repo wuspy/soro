@@ -17,7 +17,6 @@
 #include "audioclient.h"
 
 namespace Soro {
-namespace MissionControl {
 
 void AudioClient::onServerStreamingMessageInternal(QDataStream& stream) {
     stream >> reinterpret_cast<quint32&>(_format);
@@ -49,5 +48,4 @@ void AudioClient::onServerDisconnectedInternal() {
     _format = AudioFormat_Null;
 }
 
-} // namespace MissionControl
 } // namespace Soro

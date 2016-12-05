@@ -1,5 +1,5 @@
-#ifndef SORO_MISSIONCONTROL_VIDEOCLIENT_H
-#define SORO_MISSIONCONTROL_VIDEOCLIENT_H
+#ifndef SORO_VIDEOCLIENT_H
+#define SORO_VIDEOCLIENT_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -7,20 +7,19 @@
 #include <QByteArray>
 #include <QList>
 
-#include "libsoro/channel.h"
-#include "libsoro/enums.h"
-#include "libsoro/socketaddress.h"
+#include "channel.h"
+#include "enums.h"
+#include "socketaddress.h"
 
-#include "soro_missioncontrol_global.h"
+#include "soro_global.h"
 #include "mediaclient.h"
 
 namespace Soro {
-namespace MissionControl {
 
 /* Receives a video stream from a VideoServer by
  * implementing MediaClient
  */
-class LIBSOROMC_EXPORT VideoClient : public MediaClient {
+class LIBSORO_EXPORT VideoClient : public MediaClient {
     Q_OBJECT
 
 public:
@@ -40,7 +39,6 @@ protected:
     void onServerDisconnectedInternal() Q_DECL_OVERRIDE;
 };
 
-} // namespace MissionControl
 } // namespace Soro
 
-#endif // VIDEOCLIENT_H
+#endif // SORO_VIDEOCLIENT_H

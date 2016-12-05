@@ -16,10 +16,9 @@
 
 #include "mediaclient.h"
 
-#include "libsoro/logger.h"
+#include "logger.h"
 
 namespace Soro {
-namespace MissionControl {
 
 MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHostAddress host, QObject *parent)
     : QObject(parent) {
@@ -214,5 +213,4 @@ void MediaClient::setState(State state) {
 }
 
 
-} // namespace MissionControl
 } // namespace Soro

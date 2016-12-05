@@ -1,18 +1,17 @@
-#ifndef SORO_MISSIONCONTROL_AUDIOCLIENT_H
-#define SORO_MISSIONCONTROL_AUDIOCLIENT_H
+#ifndef SORO_AUDIOCLIENT_H
+#define SORO_AUDIOCLIENT_H
 
-#include "libsoro/enums.h"
+#include "enums.h"
 
-#include "soro_missioncontrol_global.h"
+#include "soro_global.h"
 #include "mediaclient.h"
 
 namespace Soro {
-namespace MissionControl {
 
 /* Receives an audio stream from an AudioServer by
  * implementing MediaClient
  */
-class LIBSOROMC_EXPORT AudioClient : public MediaClient {
+class LIBSORO_EXPORT AudioClient : public MediaClient {
     Q_OBJECT
 
 public:
@@ -32,7 +31,6 @@ protected:
     void onServerDisconnectedInternal();
 };
 
-} // namespace MissionControl
 } // namespace Soro
 
-#endif // SORO_MISSIONCONTROL_AUDIOCLIENT_H
+#endif // SORO_AUDIOCLIENT_H

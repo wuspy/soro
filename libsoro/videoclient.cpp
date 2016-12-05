@@ -17,7 +17,6 @@
 #include "videoclient.h"
 
 namespace Soro {
-namespace MissionControl {
 
 void VideoClient::onServerStreamingMessageInternal(QDataStream& stream) {
     stream >> reinterpret_cast<quint32&>(_format);
@@ -51,5 +50,4 @@ void VideoClient::onServerDisconnectedInternal() {
     _format = VideoFormat_Null;
 }
 
-} // namespace MissionControl
 } // namespace Soro
