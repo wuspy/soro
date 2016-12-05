@@ -17,10 +17,7 @@
 #include "libsoro/videoserver.h"
 #include "libsoro/videoserverarray.h"
 #include "libsoro/audioserver.h"
-
-#include "gpsserver.h"
-
-using namespace Soro;
+#include "libsoro/gpsserver.h"
 
 namespace Soro {
 namespace Rover {

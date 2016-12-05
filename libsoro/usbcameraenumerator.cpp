@@ -17,33 +17,104 @@
 #include "usbcameraenumerator.h"
 #include "logger.h"
 
-#define LOG_TAG "UvdCameraEnumerator"
-#define _log log
+#define LOG_TAG "UsbCameraEnumerator"
 
 namespace Soro {
 
 int UsbCameraEnumerator::loadCameras() {
-    _cameras.clear();
-    int total = 0;
-#ifdef __linux__
+    clearList();
+
     QDir dev("/dev");
-    QStringList allFiles = dev.entryList(QDir::NoDotAndDotDot
-                                     | QDir::System
-                                     | QDir::Hidden
-                                     | QDir::AllDirs
-                                     | QDir::Files, QDir::DirsFirst);
+    QStringList allFiles = dev.entryList(QDir::NoDotAndDotDot | QDir::System | QDir::Files);
+
     foreach (QString file, allFiles) {
         if (file.contains("video")) {
-            _cameras.append("/dev/" + file);
-            total++;
+            UsbCamera *camera = new UsbCamera;
+            camera->device = "/dev/" + file;
+
+            // Use udevadm to get info about each /dev/video* device
+            QProcess udevadm;
+            udevadm.start("udevadm info -a -n " + camera->device);
+            udevadm.waitForFinished();
+            QByteArray udevadmOutput = udevadm.readAllStandardOutput();
+
+            // Grep for name
+            QProcess grepName;
+            grepName.start("grep -m1 {name}==\"");
+            grepName.write(udevadmOutput);
+            grepName.waitForFinished();
+            QString name(grepName.readAllStandardOutput());
+            if (!name.isEmpty()) {
+                camera->name = name.mid(name.indexOf("\"") + 1, name.lastIndexOf("\"") - name.indexOf("\"") - 1);
+            }
+
+            // Grep for vendor ID
+            QProcess grepVendor;
+            grepVendor.start("grep -m1 {idVendor}==\"");
+            grepVendor.write(udevadmOutput);
+            grepVendor.waitForFinished();
+            QString vendor(grepVendor.readAllStandardOutput());
+            if (!vendor.isEmpty()) {
+                camera->vendorId = vendor.mid(vendor.indexOf("\"") + 1, vendor.lastIndexOf("\"") - vendor.indexOf("\"") - 1);
+            }
+
+            // Grep for product ID
+            QProcess grepProduct;
+            grepProduct.start("grep -m1 {idProduct}==\"");
+            grepProduct.write(udevadmOutput);
+            grepProduct.waitForFinished();
+            QString product(grepProduct.readAllStandardOutput());
+            if (!product.isEmpty()) {
+                camera->productId = product.mid(product.indexOf("\"") + 1, product.lastIndexOf("\"") - product.indexOf("\"") - 1);
+            }
+
+            // Grep for serial
+            QProcess grepSerial;
+            grepSerial.start("grep -m1 {serial}==\"");
+            grepSerial.write(udevadmOutput);
+            grepSerial.waitForFinished();
+            QString serial(grepSerial.readAllStandardOutput());
+            if (!serial.isEmpty()) {
+                camera->serial = serial.mid(serial.indexOf("\"") + 1, serial.lastIndexOf("\"") - serial.indexOf("\"") - 1);
+            }
+
+            LOG_I(LOG_TAG, "Found camera " + camera->toString());
+            _cameras.append(camera);
         }
     }
-#endif
-    return total;
+
+    return _cameras.length();
 }
 
-const QList<QString>& UsbCameraEnumerator::listByDeviceName() {
+const QList<UsbCamera*>& UsbCameraEnumerator::listDevices() const {
     return _cameras;
+}
+
+const UsbCamera* UsbCameraEnumerator::find(QString name, QString device, QString vid, QString pid, QString serial) const {
+    if (!device.isEmpty() && !device.startsWith("/dev")) {
+        device = "/dev/" + device;
+    }
+    foreach (UsbCamera *camera, _cameras) {
+        bool match = device.isEmpty() || (camera->device == device);
+        match &= name.isEmpty() || (camera->name == name);
+        match &= vid.isEmpty() || (camera->vendorId == vid);
+        match &= pid.isEmpty() || (camera->productId == pid);
+        match &= serial.isEmpty() || (camera->serial == serial);
+
+        if (match) return camera;
+    }
+    return NULL;
+}
+
+void UsbCameraEnumerator::clearList() {
+    while (!_cameras.isEmpty()) {
+        delete _cameras[0];
+        _cameras.removeFirst();
+    }
+}
+
+UsbCameraEnumerator::~UsbCameraEnumerator() {
+    clearList();
 }
 
 } // namespace Soro

@@ -5,11 +5,6 @@
 #ifndef SORO_DRIVEMESSAGE_H
 #define SORO_DRIVEMESSAGE_H
 
-#ifdef TARGET_LPC1768
-#   include "mbed.h"
-#endif
-
-#include "soro_global.h"
 #include "gamepadutil.h"
 
 namespace Soro {

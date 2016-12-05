@@ -9,11 +9,7 @@
 #   include "confloader.h"
 #   include "masterarmconfig.h"
 #endif
-#ifdef TARGET_LPC1768
-#   include "mbed.h"
-#endif
 
-#include "soro_global.h"
 #include "gamepadutil.h"
 #include "util.h"
 #include "constants.h"

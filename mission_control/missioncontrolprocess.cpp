@@ -102,7 +102,7 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
     LOG_I(LOG_TAG, "***************Initializing Audio system******************");
 
     if (_mcNetwork->isBroker()) {
-        _audioClient = new AudioClient(69, SocketAddress(_roverAddress, NETWORK_ALL_AUDIO_PORT), QHostAddress::Any, this);
+        _audioClient = new AudioClient(MEDIAID_AUDIO, SocketAddress(_roverAddress, NETWORK_ALL_AUDIO_PORT), QHostAddress::Any, this);
         // forward audio stream through localhost
         _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT));
         connect(_audioClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),

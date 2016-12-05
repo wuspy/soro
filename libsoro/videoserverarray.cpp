@@ -15,7 +15,6 @@
  */
 
 #include "videoserverarray.h"
-#include "usbcameraenumerator.h"
 #include "logger.h"
 
 #define LOG_TAG "VideoServerArray"
@@ -52,25 +51,24 @@ int VideoServerArray::populate(const QStringList& usbCamBlacklist, quint16 first
     }*/
 
     LOG_I(LOG_TAG, "Searching for USB cameras (" + QString::number(usbCamBlacklist.size()) + " blacklist entries)");
-    UsbCameraEnumerator usbCamEnum;
-    int uvdCount = usbCamEnum.loadCameras();
+    int uvdCount = _enumerator.loadCameras();
     LOG_I(LOG_TAG, "Number of USB cameras detected: " + QString::number(uvdCount));
 
-    foreach (QString videoDevice, usbCamEnum.listByDeviceName()) {
+    foreach (UsbCamera *camera, _enumerator.listDevices()) {
         bool blacklisted = false;
         foreach (QString blacklistedDevice, usbCamBlacklist) {
-            if (videoDevice.mid(videoDevice.size() - 1).compare(blacklistedDevice.mid(blacklistedDevice.size() - 1)) == 0) {
-                LOG_I(LOG_TAG, "Found USB camera " + videoDevice + ", however it is blacklisted");
+            if (camera->device.mid(camera->device.size() - 1).compare(blacklistedDevice.mid(blacklistedDevice.size() - 1)) == 0) {
+                LOG_I(LOG_TAG, "Found USB camera " + camera->toString() + ", however it is blacklisted");
                 blacklisted = true;
                 break;
             }
         }
         if (blacklisted) continue;
-        LOG_I(LOG_TAG, "Found USB camera at " + videoDevice);
+        LOG_I(LOG_TAG, "Found USB camera " + camera->toString());
         // create associated video server
         VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), this);
         _servers.insert(firstId, server);
-        _usbCameras.insert(firstId, videoDevice);
+        _usbCameras.insert(firstId, camera);
         connect(server, SIGNAL(stateChanged(MediaServer*, MediaServer::State)), this, SLOT(serverStateChanged(MediaServer*, MediaServer::State)));
         connect(server, SIGNAL(error(MediaServer*,QString)), this, SLOT(serverError(MediaServer*,QString)));
 
@@ -90,7 +88,7 @@ void VideoServerArray::activate(int index, VideoFormat format) {
         else {
             _servers.value(index)->start(_usbCameras[index], format);
         }*/
-        _servers.value(index)->start(_usbCameras[index], format);
+        _servers.value(index)->start(_usbCameras[index]->device, format);
     }
 }
 

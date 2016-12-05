@@ -41,13 +41,13 @@ enum SharedMessageType {
     SharedMessage_RequestActivateAudioStream,
     SharedMessage_RequestDeactivateAudioStream,
     SharedMessage_AudioStreamChanged,
+    SharedMessage_Research_RoverStatusUpdate,
     SharedMessage_Research_SensorUpdate,
-    SharedMessage_Research_StartStereoVideoStream,
-    SharedMessage_Research_EndStereoVideoStream,
-    SharedMessage_Research_StartMonoVideoStream,
-    SharedMessage_Research_EndMonoVideoStream,
-    SharedMessage_Research_StartAuxCameraStream,
-    SharedMessage_Research_EndAuxCameraStream
+    SharedMessage_Research_StartStereoCameraStream,
+    SharedMessage_Research_StartMonoCameraStream,
+    SharedMessage_Research_EndStereoAndMonoCameraStream,
+    SharedMessage_Research_StartAux1CameraStream,
+    SharedMessage_Research_EndAux1CameraStream
 };
 
 enum VideoFormat {

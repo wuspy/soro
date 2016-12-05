@@ -50,4 +50,5 @@ INCLUDEPATH += $$PWD/../..
 LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
 #LIBS += -lflycapture
 LIBS += -L../lib -lsoro
+LIBS += -L../lib -lsorogst
 LIBS += -L../lib -lsoromc

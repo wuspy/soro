@@ -32,16 +32,12 @@ PRECOMPILED_DIR = $$BUILD_DIR
 
 SOURCES += \
     roverprocess.cpp \
-    gpsserver.cpp \
     main.cpp
 
 HEADERS += \
     roverprocess.h \
-    gpsserver.h
-
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
 LIBS += -L../lib -lsoro
-LIBS += -lSDL2 -lQt5GStreamer-1.0

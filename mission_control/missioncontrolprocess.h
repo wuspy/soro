@@ -18,16 +18,19 @@
 #include "libsoro/latlng.h"
 #include "libsoro/masterarmconfig.h"
 
+#include "libsorogst/audioplayer.h"
+
 #include "libsoromc/camerawidget.h"
 #include "libsoromc/videoclient.h"
 #include "libsoromc/audioclient.h"
-#include "libsoromc/audioplayer.h"
 #include "libsoromc/armcontrolsystem.h"
 #include "libsoromc/drivecontrolsystem.h"
 #include "libsoromc/cameracontrolsystem.h"
 #include "libsoromc/missioncontrolnetwork.h"
 
 #include "mainwindow.h"
+
+using namespace Soro::Gst;
 
 namespace Soro {
 namespace MissionControl {

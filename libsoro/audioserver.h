@@ -29,7 +29,7 @@ public:
      * Starts an audio stream. If the server is already streaming, it will be stopped and restarted to
      * accomodate any configuration changes.
      *
-     * @param deviceName The audio device to connect to and start streaming (/dev/audio*)
+     * @param deviceName The audio device to connect to and start streaming (hw:*)
      * @param format The audio format to stream.
      */
     void start(QString deviceName, AudioFormat format);

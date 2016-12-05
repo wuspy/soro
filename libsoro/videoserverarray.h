@@ -9,6 +9,7 @@
 
 #include "soro_global.h"
 #include "videoserver.h"
+#include "usbcameraenumerator.h"
 //#include "flycapenumerator.h"
 
 namespace Soro {
@@ -60,7 +61,8 @@ private:
     // These hold the gst elements for the cameras that flycapture
     //QMap<int, FlyCapture2::PGRGuid> _flycapCameras;
     // These hold the gst elements for the cameras that not flycapture
-    QMap<int, QString> _usbCameras;
+    QMap<int, UsbCamera*> _usbCameras;
+    UsbCameraEnumerator _enumerator;
 
 private slots:
     void serverStateChanged(MediaServer *server, MediaServer::State state);

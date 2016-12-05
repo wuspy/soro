@@ -2,6 +2,8 @@
  * This code can be compiled on a Qt or mbed enviornment *
  *********************************************************/
 
+#ifdef QT_CORE_LIB
+
 #include <QtMath>
 #include <climits>
 
@@ -11,8 +13,6 @@
 
 namespace Soro {
 namespace DriveMessage {
-
-#ifdef QT_CORE_LIB
 
 void clampMiddleSkidSteerFactor(float& factor) {
     if (factor > 1.0) factor = 1.0;
@@ -87,7 +87,7 @@ void setGamepadData_SingleStick(char *driveMessage, short XAxis, short YAxis,
     driveMessage[Index_RightMiddle] = GamepadUtil::axisFloatToAxisByte(GamepadUtil::filterGamepadDeadzone(right - (midScale * right), GAMEPAD_DEADZONE));
 }
 
-#endif
+}
+}
 
-}
-}
+#endif

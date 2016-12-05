@@ -139,7 +139,7 @@ void RoverProcess::init() {
 
     LOG_I(LOG_TAG, "*****************Initializing Audio system*******************");
 
-    _audioServer = new AudioServer(69, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
+    _audioServer = new AudioServer(MEDIAID_AUDIO, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
 
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
