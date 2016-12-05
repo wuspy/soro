@@ -21,12 +21,12 @@
 #include "mbedchannel.h"
 #include "util.h"
 
-#define IDLE_CONNECTION_TIMEOUT 2000
 #define BROADCAST_PACKET "MbedChannel"
-#define _MBED_MSG_TYPE_NORMAL 1
-#define _MBED_MSG_TYPE_LOG 2
-#define _MBED_MSG_TYPE_BROADCAST 3
-#define _MBED_MSG_TYPE_HEARTBEAT 4
+#define MSG_TYPE_NORMAL 1
+#define MSG_TYPE_LOG 2
+#define MSG_TYPE_BROADCAST 3
+#define MSG_TYPE_HEARTBEAT 4
+#define IDLE_CONNECTION_TIMEOUT 2000
 
 namespace Soro {
 
@@ -55,9 +55,9 @@ void MbedChannel::socketReadyRead() {
             continue;
         }
         if ((_buffer[0] != _mbedId) || (peer.port != _host.port)) {
-            LOG_W(LOG_TAG, "Received invalid message (got Mbed ID) "
+            LOG_W(LOG_TAG, "Received invalid message (got Mbed ID "
                   + QString::number(reinterpret_cast<unsigned char&>(_buffer[0]))
-                  + " on port " + QString::number(peer.port));
+                  + ") on port " + QString::number(peer.port));
             continue;
         }
         unsigned int sequence = Util::deserialize<unsigned int>(_buffer + 2);
@@ -69,18 +69,18 @@ void MbedChannel::socketReadyRead() {
         _lastReceiveId = sequence;
         _active = true;
         switch (reinterpret_cast<unsigned char&>(_buffer[1])) {
-        case _MBED_MSG_TYPE_NORMAL:
+        case MSG_TYPE_NORMAL:
             if (length > 6) {
                 emit messageReceived(this, _buffer + 6, length - 6);
             }
             break;
-        case _MBED_MSG_TYPE_LOG:
+        case MSG_TYPE_LOG:
             LOG_I(LOG_TAG, "Mbed:" + QString(_buffer + 6));
             break;
-        case _MBED_MSG_TYPE_BROADCAST:
+        case MSG_TYPE_BROADCAST:
             _socket->writeDatagram(BROADCAST_PACKET, strlen(BROADCAST_PACKET) + 1, QHostAddress::Broadcast, _host.port);
             break;
-        case _MBED_MSG_TYPE_HEARTBEAT:
+        case MSG_TYPE_HEARTBEAT:
             break;
         default:
             LOG_E(LOG_TAG, "Got message with unknown type");
@@ -206,7 +206,7 @@ void MbedChannel::reset() {
     panic();
 }*/
 
-bool MbedChannel::setServerAddress() {
+/*bool MbedChannel::setServerAddress() {
     LocalFileSystem local("local");
     FILE *configFile = fopen("/local/server.txt", "r");
     if (configFile != NULL) {
@@ -225,9 +225,11 @@ bool MbedChannel::setServerAddress() {
         _server.set_address(broadcast, port);
     }
     return true;
-}
+}*/
 
 void MbedChannel::initConnection() {
+    Serial pc(USBTX, USBRX);
+    pc.printf("Port: %u\r\n", _serverPort); // DEBUG
     //initialize ethernet interface
     DigitalOut led1(LED1);
     DigitalOut led2(LED2);
@@ -246,33 +248,55 @@ void MbedChannel::initConnection() {
     }
     led3 = 1;
 
-    if (!setServerAddress()) {
+    // Ensure the network allows broadcasting
+    if (strcmp(strrchr(_eth->getNetworkMask(), '.'), ".0") != 0) {
+        pc.printf("FATAL: Network mask doesn't allow broadcasting\r\n"); // DEBUG
         panic();
     }
+
+    // Get the broadcast address
+    char *ip = _eth->getIPAddress();
+    pc.printf("IP: %s\r\n", ip); // DEBUG
+    char *broadcast = new char[strlen(ip) + 3]; //make sure we have enough room to add 2 more digits
+    strcpy(broadcast, ip);
+    strcpy(strrchr(broadcast, '.'), ".255");
+    pc.printf("Broadcast: %s\r\n", broadcast); // DEBUG
+    _server.set_address(broadcast, _serverPort);
+
     setTimeout(IDLE_CONNECTION_TIMEOUT / 3);
     //initialize socket
-    while (_socket->bind(_server.get_port()) != 0) {
+    while (_socket->bind(_serverPort) != 0) {
+        pc.printf("Waiting for socket to bind to port %u...\r\n", _serverPort); // DEBUG
         wait(0.2);
         led3 = 0;
         wait(0.2);
         led3 = 1;
     }
     if (_socket->set_broadcasting(true) != 0) {
+        pc.printf("FATAL: Unable to set socket to broadcast\r\n"); // DEBUG
         panic();
     }
+
 
     Endpoint peer;
     int packet_len = strlen(BROADCAST_PACKET) + 1;
     char buffer[packet_len];
     while (1) {
         //send broadcast handshake
-        sendMessage(BROADCAST_PACKET, packet_len, _MBED_MSG_TYPE_BROADCAST);
+        sendMessage(BROADCAST_PACKET, packet_len, MSG_TYPE_BROADCAST);
+        pc.printf("Sending handshake message...\r\n"); // DEBUG
         while (1) {
             //recieve any responses
             int len = _socket->receiveFrom(peer, &buffer[0], packet_len);
             if (len <= 0) break;
             if ((len == packet_len) && (strcmp(&buffer[0], BROADCAST_PACKET) == 0))  {
                 //received a response from the server
+                pc.printf("Got response from peer at %s:%u\r\n", peer.get_address(), peer.get_port()); // DEBUG
+                _server.set_address(peer.get_address(), _serverPort);
+                if (_socket->set_broadcasting(false) != 0) {
+                    pc.printf("FATAL: Unable to set socket to stop broadcast\r\n"); // DEBUG
+                    panic();
+                }
                 led1 = 0;
                 led2 = 0;
                 led3 = 0;
@@ -285,13 +309,15 @@ void MbedChannel::initConnection() {
         wait(0.2);
         led4 = 1;
     }
+    pc.printf("Handshake complete\r\n"); // DEBUG
 }
 
-MbedChannel::MbedChannel(unsigned char mbedId) {
+MbedChannel::MbedChannel(unsigned char mbedId, unsigned int port) {
     _resetCallback = NULL;
     _mbedId = reinterpret_cast<char&>(mbedId);
     _eth = new EthernetInterface;
     _socket = new UDPSocket;
+    _serverPort = port;
     initConnection();
     _lastSendTime = time(NULL);
     _lastReceiveId = 0;
@@ -309,6 +335,16 @@ MbedChannel::~MbedChannel() {
 void MbedChannel::setTimeout(unsigned int millis) {
     if (millis < IDLE_CONNECTION_TIMEOUT / 2)
         _socket->set_blocking(false, millis);
+}
+
+void MbedChannel::sendMessage(char *message, int length) {
+    sendMessage(message, length, MSG_TYPE_NORMAL);
+}
+
+/* Sends a log message to the server.
+ */
+void MbedChannel::log(char *message) {
+    sendMessage(message, strlen(message) + 1, MSG_TYPE_LOG);
 }
 
 void MbedChannel::sendMessage(char *message, int length, unsigned char type) {
@@ -334,7 +370,7 @@ int MbedChannel::read(char *outMessage, int maxLength) {
     Endpoint peer;
     //Check if a heartbeat should be sent
     if (time(NULL) - _lastSendTime >= 1) {
-        sendMessage(NULL, 0, _MBED_MSG_TYPE_HEARTBEAT);
+        sendMessage(NULL, 0, MSG_TYPE_HEARTBEAT);
     }
     int len = _socket->receiveFrom(peer, _buffer, maxLength);
     unsigned int sequence = Util::deserialize<unsigned int>(_buffer + 2);

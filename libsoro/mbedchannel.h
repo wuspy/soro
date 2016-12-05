@@ -87,6 +87,7 @@ private:
     EthernetInterface *_eth;
     UDPSocket *_socket;
     Endpoint _server;
+    unsigned int _serverPort;
     time_t _lastSendTime;
     time_t _lastReceiveTime;
     unsigned int _nextSendId;
@@ -98,11 +99,6 @@ private:
     /* Called in the event of an invalid or missing config file
      */
     void panic();
-    /* Loads the config file containg the server port, and sets the server
-     * address as broadcast on that port. Ethernet must be initialized and
-     * connected before this is called
-     */
-    bool setServerAddress();
     /* Resets the mbed after calling the reset listener (if it is set)
      */
     void reset();
@@ -125,7 +121,7 @@ public:
      *
      * Blocks until completion, usually for several seconds.
      */
-    MbedChannel(unsigned char mbedId);
+    MbedChannel(unsigned char mbedId, unsigned int port);
 
     ~MbedChannel();
 
@@ -134,15 +130,11 @@ public:
      */
     void setTimeout(unsigned int millis);
 
-    inline void sendMessage(char *message, int length) {
-        sendMessage(message, length, _MBED_MSG_TYPE_NORMAL);
-    }
+    void sendMessage(char *message, int length);
 
     /* Sends a log message to the server.
      */
-    inline void log(char *message) {
-        sendMessage(message, strlen(message) + 1, _MBED_MSG_TYPE_LOG);
-    }
+    void log(char *message);
 
     /* Adds a listener to be notified if the ethernet
      * becomes disconnected, which will result in the mbed
