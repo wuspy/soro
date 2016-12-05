@@ -46,7 +46,7 @@ private:
     QUdpSocket *_socket;
     SocketAddress _host;
     State _state;
-    char _buffer[512];
+    char *_buffer;
     bool _active;
     char _mbedId;
     unsigned int _lastReceiveId;
@@ -93,7 +93,7 @@ private:
     unsigned int _nextSendId;
     unsigned int _lastReceiveId;
     char _mbedId;
-    char _buffer[512];
+    char *_buffer;
     void (*_resetCallback)(void);
 
     /* Called in the event of an invalid or missing config file

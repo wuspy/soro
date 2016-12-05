@@ -21,12 +21,12 @@
 #include "mbedchannel.h"
 #include "util.h"
 
-#define BROADCAST_PACKET "MbedChannel"
 #define MSG_TYPE_NORMAL 1
 #define MSG_TYPE_LOG 2
 #define MSG_TYPE_BROADCAST 3
 #define MSG_TYPE_HEARTBEAT 4
 #define IDLE_CONNECTION_TIMEOUT 2000
+#define MAX_PACKET_LEN 1024
 
 namespace Soro {
 
@@ -49,15 +49,23 @@ void MbedChannel::socketReadyRead() {
     qint64 length;
     SocketAddress peer;
     while (_socket->hasPendingDatagrams()) {
-        length = _socket->readDatagram(&_buffer[0], 512, &peer.host, &peer.port);
-        if ((length < 6) | (length == 512)) continue;
+        length = _socket->readDatagram(_buffer, MAX_PACKET_LEN, &peer.host, &peer.port);
+        if (peer.port != _host.port) continue; // Port must be the same on both sides
         if (_buffer[0] == '\0') {
+            // It's possible we broadcasted our own message back to us
             continue;
         }
-        if ((_buffer[0] != _mbedId) || (peer.port != _host.port)) {
-            LOG_W(LOG_TAG, "Received invalid message (got Mbed ID "
-                  + QString::number(reinterpret_cast<unsigned char&>(_buffer[0]))
-                  + ") on port " + QString::number(peer.port));
+        if (length < 6) {
+            LOG_W(LOG_TAG, "Received a message that was too short");
+            continue;
+        }
+        if (length == MAX_PACKET_LEN) {
+            LOG_E(LOG_TAG, "Received a packet that was too long, up MAX_PACKET_LEN");
+            continue;
+        }
+        if (_buffer[0] != _mbedId) {
+            LOG_W(LOG_TAG, "Received packet from wrong mbed (got Mbed ID "
+                  + QString::number(reinterpret_cast<unsigned char&>(_buffer[0])) + ")");
             continue;
         }
         unsigned int sequence = Util::deserialize<unsigned int>(_buffer + 2);
@@ -67,7 +75,7 @@ void MbedChannel::socketReadyRead() {
         }
         else if (sequence < _lastReceiveId) continue;
         _lastReceiveId = sequence;
-        _active = true;
+        _active = true; // Mark the mbed as active so it doesn't time out
         switch (reinterpret_cast<unsigned char&>(_buffer[1])) {
         case MSG_TYPE_NORMAL:
             if (length > 6) {
@@ -78,7 +86,8 @@ void MbedChannel::socketReadyRead() {
             LOG_I(LOG_TAG, "Mbed:" + QString(_buffer + 6));
             break;
         case MSG_TYPE_BROADCAST:
-            _socket->writeDatagram(BROADCAST_PACKET, strlen(BROADCAST_PACKET) + 1, QHostAddress::Broadcast, _host.port);
+            LOG_I(LOG_TAG, "Responding to handshake from mbed");
+            sendMessage(NULL, 0);
             break;
         case MSG_TYPE_HEARTBEAT:
             break;
@@ -106,6 +115,7 @@ void MbedChannel::resetConnection() {
 
 MbedChannel::MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent) : QObject(parent) {
     _host = host;
+    _buffer = new char[MAX_PACKET_LEN];
     _socket = new QUdpSocket(this);
     _mbedId = reinterpret_cast<char&>(mbedId);
     LOG_TAG = "Mbed(" + QString::number(mbedId) + ")";
@@ -121,6 +131,7 @@ MbedChannel::MbedChannel(SocketAddress host, unsigned char mbedId, QObject *pare
 MbedChannel::~MbedChannel() {
     _socket->abort();
     delete _socket;
+    delete _buffer;
 }
 
 void MbedChannel::sendMessage(const char *message, int length) {
@@ -277,19 +288,16 @@ void MbedChannel::initConnection() {
         panic();
     }
 
-
     Endpoint peer;
-    int packet_len = strlen(BROADCAST_PACKET) + 1;
-    char buffer[packet_len];
     while (1) {
         //send broadcast handshake
-        sendMessage(BROADCAST_PACKET, packet_len, MSG_TYPE_BROADCAST);
+        sendMessage(NULL, 0, MSG_TYPE_BROADCAST);
         pc.printf("Sending handshake message...\r\n"); // DEBUG
         while (1) {
             //recieve any responses
-            int len = _socket->receiveFrom(peer, &buffer[0], packet_len);
-            if (len <= 0) break;
-            if ((len == packet_len) && (strcmp(&buffer[0], BROADCAST_PACKET) == 0))  {
+            int len = _socket->receiveFrom(peer, _buffer, MAX_PACKET_LEN);
+            if ((len < 6) || (len == MAX_PACKET_LEN)) break;
+            if (_buffer[0] == '\0' && _buffer[1] == _mbedId) {
                 //received a response from the server
                 pc.printf("Got response from peer at %s:%u\r\n", peer.get_address(), peer.get_port()); // DEBUG
                 _server.set_address(peer.get_address(), _serverPort);
@@ -314,6 +322,7 @@ void MbedChannel::initConnection() {
 
 MbedChannel::MbedChannel(unsigned char mbedId, unsigned int port) {
     _resetCallback = NULL;
+    _buffer = new char[MAX_PACKET_LEN];
     _mbedId = reinterpret_cast<char&>(mbedId);
     _eth = new EthernetInterface;
     _socket = new UDPSocket;
@@ -327,7 +336,8 @@ MbedChannel::MbedChannel(unsigned char mbedId, unsigned int port) {
 MbedChannel::~MbedChannel() {
     _socket->close();
     delete _socket;
-    //this class is managing the ethernet
+    delete _buffer;
+    // This class is managing the ethernet
     _eth->disconnect();
     delete _eth;
 }
