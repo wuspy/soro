@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "libsoro/enums.h"
+#include "libsoro/audioformat.h"
 
 #include "soro_missioncontrol_global.h"
 
@@ -23,13 +23,15 @@ public:
     explicit AudioControlWidget(QWidget *parent = 0);
     ~AudioControlWidget();
 
-    void selectOption(AudioFormat option);
+    void selectPlay();
+    void selectStop();
     void setMute(bool mute);
     void setAvailable(bool available);
-    bool isMuted();
+    bool isMuted() const;
 
 signals:
-    void optionSelected(AudioFormat option);
+    void playSelected();
+    void stopSelected();
     void muteToggled(bool mute);
 
 private:

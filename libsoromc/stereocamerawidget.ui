@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>StereoCameraWidget</class>
+ <widget class="QWidget" name="StereoCameraWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>989</width>
+    <height>648</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="Soro::MissionControl::CameraWidget" name="monoCameraWidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>360</x>
+     <y>30</y>
+     <width>481</width>
+     <height>291</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="Soro::MissionControl::CameraWidget" name="stereoLCameraWidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>290</y>
+     <width>481</width>
+     <height>291</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="Soro::MissionControl::CameraWidget" name="stereoRCameraWidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>320</y>
+     <width>481</width>
+     <height>291</height>
+    </rect>
+   </property>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Soro::MissionControl::CameraWidget</class>
+   <extends>QWidget</extends>
+   <header>camerawidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

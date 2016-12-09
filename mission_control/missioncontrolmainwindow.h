@@ -13,15 +13,14 @@
 #include <QtCore/qmath.h>
 #include <QCloseEvent>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_gamecontroller.h>
-
 #include "libsoro/constants.h"
 #include "libsoro/enums.h"
+#include "libsoro/videoformat.h"
 #include "libsoro/armmessage.h"
 #include "libsoro/channel.h"
 #include "libsoro/mbedchannel.h"
 #include "libsoro/nmeamessage.h"
+#include "libsoro/audioformat.h"
 
 #include "libsoromc/camerawidget.h"
 #include "libsoromc/camerawindow.h"
@@ -34,27 +33,27 @@
 #include "libsoromc/cameracontrolsystem.h"
 
 namespace Ui {
-    class SoroMainWindow;
+    class MissionControlMainWindow;
 }
 
 namespace Soro {
 namespace MissionControl {
 
-class MainWindow : public QMainWindow {
+class MissionControlMainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit MainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent = 0);
-    ~MainWindow();
+    explicit MissionControlMainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent = 0);
+    ~MissionControlMainWindow();
 
     CameraWidget* getTopCameraWidget();
     CameraWidget* getBottomCameraWidget();
     CameraWidget* getFullscreenCameraWidget();
-
-    bool isMuteAudioSelected();
+    void setAvailableVideoFormats(QList<VideoFormat> formats);
+    bool isMuteAudioSelected() const;
 
 private:
-    Ui::SoroMainWindow *ui;
+    Ui::MissionControlMainWindow *ui;
     CameraWindow *_videoWindow;
 
     MissionControlNetwork *_mcNetwork;
@@ -79,8 +78,9 @@ signals:
     void closed();
     void cycleVideosClockwise();
     void cycleVideosCounterclockwise();
-    void cameraFormatChanged(int camera, VideoFormat format);
-    void audioStreamFormatChanged(AudioFormat format);
+    void cameraFormatChanged(int camera, int formatIndex);
+    void playAudioSelected();
+    void stopAudioSelected();
     void audioStreamMuteChanged(bool mute);
     void cameraNameEdited(int camera, QString name);
 
@@ -97,8 +97,9 @@ public slots:
     void onSecondaryComputerStateChanged(RoverSubsystemState state);
     void onMasterArmStateChanged(bool connected);
     void onMasterArmUpdate(const char *armMessage);
-    void onCameraFormatChanged(int camera, VideoFormat format);
-    void onAudioFormatChanged(AudioFormat format);
+    void onCameraFormatChanged(int camera, int formatIndex);
+    void onAudioPlaying();
+    void onAudioStopped();
     void setCameraName(int camera, QString name);
 
 private slots:
@@ -107,12 +108,12 @@ private slots:
     void updateConnectionStateInformation();
     void updateSubsystemStateInformation();
     void reloadMasterArmClicked();
-    void camera1ControlOptionChanged(VideoFormat option);
-    void camera2ControlOptionChanged(VideoFormat option);
-    void camera3ControlOptionChanged(VideoFormat option);
-    void camera4ControlOptionChanged(VideoFormat option);
-    void camera5ControlOptionChanged(VideoFormat option);
-    void cameraControlOptionChanged(int camera, VideoFormat option);
+    void camera1ControlOptionChanged(int formatIndex);
+    void camera2ControlOptionChanged(int formatIndex);
+    void camera3ControlOptionChanged(int formatIndex);
+    void camera4ControlOptionChanged(int formatIndex);
+    void camera5ControlOptionChanged(int formatIndex);
+    void cameraControlOptionChanged(int camera, int formatIndex);
     void camera1NameEdited(QString newName);
     void camera2NameEdited(QString newName);
     void camera3NameEdited(QString newName);

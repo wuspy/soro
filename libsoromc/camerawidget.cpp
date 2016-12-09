@@ -18,6 +18,10 @@
 #include "ui_camerawidget.h"
 #include "util.h"
 
+#include "libsoro/logger.h"
+
+#define LOG_TAG "CameraWidget"
+
 namespace Soro {
 namespace MissionControl {
 
@@ -36,7 +40,7 @@ CameraWidget::~CameraWidget() {
     resetPipeline();
 }
 
-void CameraWidget::play(SocketAddress address, VideoFormat encoding) {
+void CameraWidget::play(SocketAddress address, VideoFormat format) {
     resetPipeline();
     ui->messageLabel->setVisible(false);
 
@@ -45,26 +49,11 @@ void CameraWidget::play(SocketAddress address, VideoFormat encoding) {
     QGlib::connect(_pipeline->bus(), "message", this, &CameraWidget::onBusMessage);
 
     // create a udpsrc to receive the stream
-    QString binStr = "udpsrc address=" + address.host.toString() + " port=" + QString::number(address.port);
+    QString binStr = "udpsrc address=%1 port=%2 ! %3";
 
-    // append encoding-specific elements
-    switch (encoding) {
-    case Mpeg2_144p_300Kpbs:
-    case Mpeg2_360p_750Kpbs:
-    case Mpeg2_480p_1500Kpbs:
-    case Mpeg2_720p_3000Kpbs:
-    case Mpeg2_720p_5000Kpbs:
-    case Mpeg2_360p_500Kbps_BW:
-        binStr += " ! application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
-                                       "rtpmp4vdepay ! "
-                                       "avdec_mpeg4 ! "
-                                       "videoconvert";
-        break;
-    default:
-        stop("The video player doesn't recognize the encoding");
-        emit error();
-        return;
-    }
+    binStr = binStr.arg(address.host.toString(),
+                        QString::number(address.port),
+                        format.createGstDecodingArgs());
 
     // create a gstreamer bin from the description
     QGst::BinPtr source = QGst::Bin::fromDescription(binStr);
@@ -85,22 +74,33 @@ QGst::ElementPtr CameraWidget::createSink() {
     return sink;
 }
 
-void CameraWidget::stop(QString reason) {
+void CameraWidget::stop(QString reason, CameraWidget::Pattern pattern) {
     if (reason.isEmpty()) {
         ui->messageLabel->setText("<html><h2>No video :(</h2></html>");
     }
     else {
         ui->messageLabel->setText("<html><h2>No video :(</h2><br><br>" + reason + "</html>");
     }
-    ui->messageLabel->setVisible(true);
+    ui->messageLabel->setVisible(_showText);
 
     if (_isPlaying) {
+        int patternNo;
+        switch (pattern) {
+        case Pattern::SMPTE100:
+            patternNo = 19;
+            break;
+        case Pattern::Snow:
+        default:
+            patternNo = 1;
+            break;
+        }
+
         resetPipeline();
         //create videotestsrc pipeline for coolness
         _pipeline = QGst::Pipeline::create();
         QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
         QGst::ElementPtr source = QGst::ElementFactory::make("videotestsrc");
-        source->setProperty("pattern", 1); //snow pattern
+        source->setProperty("pattern", patternNo);
         sink->setProperty("force-aspect-ratio", false);
 
         _pipeline->add(source, sink);
@@ -113,7 +113,6 @@ void CameraWidget::stop(QString reason) {
 }
 
 void CameraWidget::resetPipeline() {
-    qDebug() << "ResetPipeline";
     if (_pipeline) {
         _pipeline->setState(QGst::StateNull);
         _pipeline.clear();
@@ -142,15 +141,30 @@ bool CameraWidget::isPlaying() {
     return _isPlaying;
 }
 
+void CameraWidget::showText(bool show) {
+    _showText = show;
+    if (!_isPlaying) {
+        ui->messageLabel->setVisible(_showText);
+    }
+}
+
+void CameraWidget::showLabel(bool show) {
+    ui->controlsWidget->setVisible(show);
+}
+
 void CameraWidget::onBusMessage(const QGst::MessagePtr & message) {
-    qDebug() << "Got bus message type " << message->typeName();
+    LOG_I(LOG_TAG, "onBusMessage(): Got bus message type " + message->typeName());
     switch (message->type()) {
     case QGst::MessageEos:
         stop("Received end-of-stream message.");
         emit eosMessage();
         break;
     case QGst::MessageError:
+    {
+        QString errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
+        LOG_E(LOG_TAG, "onBusMessage(): Received error message from gstreamer '" + errorMessage + "'");
         emit error();
+    }
     default:
         break;
     }

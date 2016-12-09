@@ -67,15 +67,11 @@ int main(int argc, char *argv[]) {
     LOG_I(LOG_TAG, "Device: " + device);
 
     /*
-     * Parse encoding
+     * Parse format
      */
-    quint32 encodingUInt = QString(argv[2]).toUInt(&ok);
-    if (!ok) {
-        LOG_E(LOG_TAG, "Invalid encoding option '" + QString(argv[2]) + "'");
-        return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-    }
-    LOG_I(LOG_TAG, "Format: " + QString::number(encodingUInt));
-    format = reinterpret_cast<VideoFormat&>(encodingUInt);
+    QString formatSerial = QString(argv[2]);
+    LOG_I(LOG_TAG, "Format: " + formatSerial);
+    format.deserialize(formatSerial);
 
     /*
      * Parse destination address
@@ -89,7 +85,7 @@ int main(int argc, char *argv[]) {
     }
     LOG_I(LOG_TAG, "Address: " + address.toString());
 
-    /*    qDebug() << "Starting up";
+    /*
      * Parse bind address
      */
     bindAddress.host = QHostAddress(argv[5]);
@@ -110,7 +106,7 @@ int main(int argc, char *argv[]) {
         LOG_E(LOG_TAG, "Invalid IPC port '" + QString(argv[7]) + "'");
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
-    LOG_I(LOG_TAG, "IPC Port: " + QString::number(encodingUInt));
+    LOG_I(LOG_TAG, "IPC Port: " + QString::number(ipcPort));
 
     a.setApplicationName("VideoStream for " + device + " to " + address.toString());
 
@@ -134,9 +130,9 @@ int main(int argc, char *argv[]) {
         FlycapCamera camera(guid, &a);
         source = camera.element();
 
-        qDebug() << "Parset parameters for FlyCapture successfully";
+        LOG_I(LOG_TAG, "Parset parameters for FlyCapture successfully");
         VideoStreamer stream(source, format, bindAddress, address, ipcPort, &a);
-        qDebug() << "Stream initialized for FlyCapture successfully";
+        LOG_I(LOG_TAG, "Stream initialized for FlyCapture successfully");
         return a.exec();
     }
     else {*/

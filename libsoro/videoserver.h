@@ -6,7 +6,7 @@
 #include "soro_global.h"
 #include "socketaddress.h"
 #include "mediaserver.h"
-#include "enums.h"
+#include "videoformat.h"
 
 //#include <flycapture/FlyCapture2.h>
 

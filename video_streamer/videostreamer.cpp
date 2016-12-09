@@ -29,7 +29,13 @@ VideoStreamer::VideoStreamer(QGst::ElementPtr source, VideoFormat format, Socket
     _pipeline = createPipeline();
 
     // create gstreamer command
-    QString binStr = makeEncodingBinString(format, bindAddress, address);
+    QString binStr = "%1 ! udpsink bind-address=%2 bind-port=%3 host=%4 port=%5";
+    binStr = binStr.arg(format.createGstEncodingArgs(),
+                        bindAddress.host.toString(),
+                        QString::number(bindAddress.port),
+                        address.host.toString(),
+                        QString::number(address.port));
+
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
     LOG_I(LOG_TAG, "Created gstreamer bin <source> ! " + binStr);
@@ -54,7 +60,13 @@ VideoStreamer::VideoStreamer(QString sourceDevice, VideoFormat format, SocketAdd
     _pipeline = createPipeline();
 
     // create gstreamer command
-    QString binStr = "v4l2src device=" + sourceDevice + " ! " + makeEncodingBinString(format, bindAddress, address);
+    QString binStr = "v4l2src device=%1 ! %2 ! udpsink bind-address=%3 bind-port=%4 host=%5 port=%6";
+    binStr = binStr.arg(sourceDevice,
+                        format.createGstEncodingArgs(),
+                        bindAddress.host.toString(),
+                        QString::number(bindAddress.port),
+                        address.host.toString(),
+                        QString::number(address.port));
 
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
@@ -69,44 +81,6 @@ VideoStreamer::VideoStreamer(QString sourceDevice, VideoFormat format, SocketAdd
 
     LOG_I(LOG_TAG, "Stream started");
 
-}
-
-QString VideoStreamer::makeEncodingBinString(VideoFormat format, SocketAddress bindAddress, SocketAddress address) {
-    QString binStr = "videoconvert ! "
-                     "videoscale method=nearest-neighbour ! "
-                     "video/x-raw,height=";
-    switch (format) {
-    case Mpeg2_144p_300Kpbs:
-        binStr += "144 ! avenc_mpeg4 bitrate=300000 bitrate-tolerance=1000000";
-        break;
-    case Mpeg2_360p_750Kpbs:
-        binStr += "360 ! avenc_mpeg4 bitrate=750000 bitrate-tolerance=1000000";
-        break;
-    case Mpeg2_480p_1500Kpbs:
-        binStr += "480 ! avenc_mpeg4 bitrate=1500000 bitrate-tolerance=1000000";
-        break;
-    case Mpeg2_720p_3000Kpbs:
-        binStr += "720 ! avenc_mpeg4 bitrate=3000000 bitrate-tolerance=1000000";
-        break;
-    case Mpeg2_720p_5000Kpbs:
-        binStr += "720 ! avenc_mpeg4 bitrate=5000000 bitrate-tolerance=2000000";
-        break;
-    case Mpeg2_360p_500Kbps_BW:
-        binStr += "144 ! avenc_mpeg4 bitrate=100000 bitrate-tolerance=100000";
-        break;
-    default:
-        //unknown codec
-        LOG_E(LOG_TAG, "Unknown VideoFormat received");
-        QCoreApplication::exit(STREAMPROCESS_ERR_UNKNOWN_CODEC);
-        return "";
-    }
-
-    binStr += " max-threads=3 ! "
-              "rtpmp4vpay config-interval=3 pt=96 ! "
-              "udpsink bind-address=" + bindAddress.host.toString() + " bind-port=" + QString::number(bindAddress.port)
-                    + " host=" + address.host.toString() + " port=" + QString::number(address.port);
-
-    return binStr;
 }
 
 } // namespace Rover

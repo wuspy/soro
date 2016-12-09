@@ -30,13 +30,20 @@ AudioStreamer::AudioStreamer(QString sourceDevice, AudioFormat format, SocketAdd
     _pipeline = createPipeline();
 
     // create gstreamer command
-    QString binStr = makeEncodingBinString(format, bindAddress, address);
-#ifdef __linux__
-    binStr = "alsasrc device=" + sourceDevice + " ! " + binStr;
-#endif
+    QString binStr = "alsasrc device=%1 ! "
+                     "%2 ! "
+                     "udpsink bind-address=%3 bind-port=%4 host=%5 port=%6";
+
+    binStr = binStr.arg(sourceDevice,
+                        format.createGstEncodingArgs(),
+                        bindAddress.host.toString(),
+                        QString::number(bindAddress.port),
+                        address.host.toString(),
+                        QString::number(address.port));
+
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
-    LOG_I(LOG_TAG, "Created gstreamer bin <source> ! " + binStr);
+    LOG_I(LOG_TAG, "Created gstreamer bin " + binStr);
 
     _pipeline->add(encoder);
 
@@ -47,25 +54,6 @@ AudioStreamer::AudioStreamer(QString sourceDevice, AudioFormat format, SocketAdd
 
     LOG_I(LOG_TAG, "Stream started");
 
-}
-
-QString AudioStreamer::makeEncodingBinString(AudioFormat format, SocketAddress bindAddress, SocketAddress address) {
-    QString binStr = "audioconvert ! audio/x-raw,rate=32000 ! ";
-    switch (format) {
-    case AC3:
-        binStr += "avenc_ac3 ! rtpac3pay ! ";
-        break;
-    default:
-        //unknown codec
-        LOG_E(LOG_TAG, "Unknown AudioFormat received");
-        QCoreApplication::exit(STREAMPROCESS_ERR_UNKNOWN_CODEC);
-        return "";
-    }
-
-    binStr += "udpsink bind-address=" + bindAddress.host.toString() + " bind-port=" + QString::number(bindAddress.port)
-                    + " host=" + address.host.toString() + " port=" + QString::number(address.port);
-
-    return binStr;
 }
 
 } // namespace Rover

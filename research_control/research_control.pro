@@ -12,7 +12,7 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT       += core gui network widgets #webenginewidgets
+QT       += core gui network widgets qml quick quickcontrols2 #webenginewidgets
 CONFIG   += c++11
 
 TARGET = research_control
@@ -27,16 +27,28 @@ UI_DIR = $$BUILD_DIR
 PRECOMPILED_DIR = $$BUILD_DIR
 
 SOURCES += main.cpp\
-        researchwindow.cpp
+    researchprocess.cpp \
+    researchmainwindow.cpp \
+    settingsform.cpp
 
-HEADERS  += researchwindow.h
+HEADERS  += \
+    researchprocess.h \
+    researchmainwindow.h \
+    settingsform.h
 
-FORMS    += researchwindow.ui
+FORMS    += \
+    researchmainwindow.ui
+
+RESOURCES += \
+    qml.qrc
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
-LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
+LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0 -lQt5GStreamerQuick-1.0
 #LIBS += -lflycapture
 LIBS += -L../lib -lsoro
 LIBS += -L../lib -lsoromc
+LIBS += -L../lib -lsorogst
+
+DISTFILES +=

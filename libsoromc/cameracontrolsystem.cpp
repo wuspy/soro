@@ -45,7 +45,6 @@ void CameraControlSystem::timerEvent(QTimerEvent *e) {
         //send the rover a camera control packet
         GimbalMessage::setGamepadData(_buffer, _input->axisLeftX, _input->axisRightY,
                                       _input->buttonX, _input->buttonY, _input->buttonB, _input->buttonA);
-        qDebug() << QString::number(_input->axisLeftX);
         _channel->sendMessage(_buffer, GimbalMessage::RequiredSize);
     }
 }

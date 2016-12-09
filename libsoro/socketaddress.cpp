@@ -24,10 +24,17 @@ SocketAddress::SocketAddress(const QHostAddress &address, quint16 port) {
     this->port = port;
 }
 
+SocketAddress::SocketAddress(const SocketAddress &other) {
+    this->host = other.host;
+    this->port = other.port;
+}
+
 SocketAddress::SocketAddress() {
     this->host = QHostAddress::Any;
     this->port = 0;
 }
+
+SocketAddress::~SocketAddress() { }
 
 QString SocketAddress::toString() const {
     return host.toString() + ":" + QString::number(port);

@@ -9,6 +9,7 @@
 
 #include "channel.h"
 #include "socketaddress.h"
+#include "mediaformat.h"
 
 #include "soro_global.h"
 

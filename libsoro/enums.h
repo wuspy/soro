@@ -18,6 +18,8 @@
  * This code can be compiled on a Qt or mbed enviornment *
  *********************************************************/
 
+#include <QtCore>
+
 #ifndef SORO_ENUMS_H
 #define SORO_ENUMS_H
 
@@ -50,21 +52,6 @@ enum SharedMessageType {
     SharedMessage_Research_EndAux1CameraStream
 };
 
-enum VideoFormat {
-    VideoFormat_Null = 0,
-    Mpeg2_144p_300Kpbs,
-    Mpeg2_360p_750Kpbs,
-    Mpeg2_480p_1500Kpbs,
-    Mpeg2_720p_3000Kpbs,
-    Mpeg2_720p_5000Kpbs,
-    Mpeg2_360p_500Kbps_BW
-};
-
-enum AudioFormat {
-    AudioFormat_Null = 0,
-    AC3
-};
-
 enum RoverSubsystemState {
     NormalSubsystemState, MalfunctionSubsystemState, UnknownSubsystemState
 };
@@ -82,10 +69,6 @@ enum DriveGamepadMode {
  */
 enum Role {
     ArmOperatorRole, DriverRole, CameraOperatorRole, SpectatorRole, ResearchRole
-};
-
-enum NotificationType {
-    RoverNotification, MCCNotification, ChatNotification
 };
 
 enum MbedMessageType {

@@ -87,7 +87,7 @@ QGst::PipelinePtr MediaStreamer::createPipeline() {
 }
 
 void MediaStreamer::onBusMessage(const QGst::MessagePtr & message) {
-    qDebug() << "Getting bus message";
+    LOG_I(LOG_TAG, "onBusMessage(): Got bus message type " + message->typeName());
     QByteArray errorMessage;
     switch (message->type()) {
     case QGst::MessageEos:

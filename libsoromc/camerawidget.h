@@ -19,6 +19,7 @@
 
 #include "libsoro/socketaddress.h"
 #include "libsoro/enums.h"
+#include "libsoro/videoformat.h"
 
 #include "soro_missioncontrol_global.h"
 
@@ -38,15 +39,28 @@ public:
     explicit CameraWidget(QWidget *parent = 0);
     ~CameraWidget();
 
+    enum Pattern {
+        Snow,
+        SMPTE100
+    };
+
     /* Configure the widget to receive a video stream from a UDP socket. If succesful,
      * the widget should start playing the stream immediately.
      */
-    void play(SocketAddress address, VideoFormat encoding);
+    void play(SocketAddress address, VideoFormat format);
 
     /* Stops video playback, and displays they reason why
      * if one is provided.
      */
-    void stop(QString reason = "");
+    void stop(QString reason = "", CameraWidget::Pattern pattern=CameraWidget::Pattern::Snow);
+
+    /* Set to false to disable the text overlay feature
+     */
+    void showText(bool show);
+
+    /* Set to false to hide the video label
+     */
+    void showLabel(bool show);
 
     QString getCameraName();
     void setCameraName(QString name);
@@ -57,6 +71,8 @@ private:
     Ui::CameraWidget *ui;
     QGst::PipelinePtr _pipeline;
     bool _isPlaying = false;
+    bool _showLabel = true;
+    bool _showText = true;
 
     QGst::ElementPtr createSink();
     void resetPipeline();

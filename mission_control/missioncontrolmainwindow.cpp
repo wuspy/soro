@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "mainwindow.h"
-#include "ui_soromainwindow.h"
+#include "missioncontrolmainwindow.h"
+#include "ui_missioncontrolmainwindow.h"
 #include "libsoromc/util.h"
 
 static QString formatDataRate(quint64 rate, QString units) {
@@ -34,16 +34,16 @@ static QString formatDataRate(quint64 rate, QString units) {
 namespace Soro {
 namespace MissionControl {
 
-const QString MainWindow::_logLevelFormattersHTML[4] = {
+const QString MissionControlMainWindow::_logLevelFormattersHTML[4] = {
     "<div style=\"color:#b71c1c\">%1&emsp;E/<i>%2</i>:&emsp;%3</div>",
     "<div style=\"color:#0d47a1\">%1&emsp;W/<i>%2</i>:&emsp;%3</div>",
     "<div>%1&emsp;I/<i>%2</i>:&emsp;%3</div>",
     "<div style=\"color:#dddddd\">%1&emsp;D/<i>%2</i>:&emsp;%3</div>"
 };
 
-MainWindow::MainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent) :
+MissionControlMainWindow::MissionControlMainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork, ControlSystem *controlSystem, QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::SoroMainWindow) {
+    ui(new Ui::MissionControlMainWindow) {
 
     ui->setupUi(this);
     _mcNetwork = mcNetwork;
@@ -62,20 +62,22 @@ MainWindow::MainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork
     ui->media_camera4ControlWidget->setName("Camera 4");
     ui->media_camera5ControlWidget->setName("Camera 5");
 
-    connect(ui->media_audioControlWidget, SIGNAL(optionSelected(AudioFormat)),
-            this, SIGNAL(audioStreamFormatChanged(AudioFormat)));
+    connect(ui->media_audioControlWidget, SIGNAL(playSelected()),
+            this, SLOT(playAudioSelected()));
+    connect(ui->media_audioControlWidget, SIGNAL(stopSelected()),
+            this, SLOT(stopAudioSelected()));
     connect(ui->media_audioControlWidget, SIGNAL(muteToggled(bool)),
             this, SIGNAL(audioStreamMuteChanged(bool)));
-    connect(ui->media_camera1ControlWidget, SIGNAL(optionSelected(VideoFormat)),
-            this, SLOT(camera1ControlOptionChanged(VideoFormat)));
-    connect(ui->media_camera2ControlWidget, SIGNAL(optionSelected(VideoFormat)),
-            this, SLOT(camera2ControlOptionChanged(VideoFormat)));
-    connect(ui->media_camera3ControlWidget, SIGNAL(optionSelected(VideoFormat)),
-            this, SLOT(camera3ControlOptionChanged(VideoFormat)));
-    connect(ui->media_camera4ControlWidget, SIGNAL(optionSelected(VideoFormat)),
-            this, SLOT(camera4ControlOptionChanged(VideoFormat)));
-    connect(ui->media_camera5ControlWidget, SIGNAL(optionSelected(VideoFormat)),
-            this, SLOT(camera5ControlOptionChanged(VideoFormat)));
+    connect(ui->media_camera1ControlWidget, SIGNAL(optionSelected(int)),
+            this, SLOT(camera1ControlOptionChanged(int)));
+    connect(ui->media_camera2ControlWidget, SIGNAL(optionSelected(int)),
+            this, SLOT(camera2ControlOptionChanged(int)));
+    connect(ui->media_camera3ControlWidget, SIGNAL(optionSelected(int)),
+            this, SLOT(camera3ControlOptionChanged(int)));
+    connect(ui->media_camera4ControlWidget, SIGNAL(optionSelected(int)),
+            this, SLOT(camera4ControlOptionChanged(int)));
+    connect(ui->media_camera5ControlWidget, SIGNAL(optionSelected(int)),
+            this, SLOT(camera5ControlOptionChanged(int)));
 
     connect(ui->media_camera1ControlWidget, SIGNAL(userEditedName(QString)),
             this, SLOT(camera1NameEdited(QString)));
@@ -142,7 +144,15 @@ MainWindow::MainWindow(GamepadManager *gamepad, MissionControlNetwork *mcNetwork
     onSecondaryComputerStateChanged(UnknownSubsystemState);
 }
 
-void MainWindow::updateConnectionStateInformation() {
+void MissionControlMainWindow::setAvailableVideoFormats(QList<VideoFormat> formats) {
+    ui->media_camera1ControlWidget->setFormats(formats);
+    ui->media_camera2ControlWidget->setFormats(formats);
+    ui->media_camera3ControlWidget->setFormats(formats);
+    ui->media_camera4ControlWidget->setFormats(formats);
+    ui->media_camera5ControlWidget->setFormats(formats);
+}
+
+void MissionControlMainWindow::updateConnectionStateInformation() {
     // update control channel state UI
     if (_mcNetwork->getRole() != SpectatorRole) {
         switch (_lastControlChannelState) {
@@ -228,13 +238,13 @@ void MainWindow::updateConnectionStateInformation() {
     }
 }
 
-void MainWindow::reloadMasterArmClicked() {
+void MissionControlMainWindow::reloadMasterArmClicked() {
     if (_mcNetwork->getRole() == ArmOperatorRole) {
         reinterpret_cast<ArmControlSystem*>(_controlSystem)->reloadMasterArmConfig();
     }
 }
 
-void MainWindow::onGamepadChanged(SDL_GameController *controller, QString name) {
+void MissionControlMainWindow::onGamepadChanged(SDL_GameController *controller, QString name) {
     if (controller) {
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
@@ -247,7 +257,7 @@ void MainWindow::onGamepadChanged(SDL_GameController *controller, QString name) 
     }
 }
 
-void MainWindow::onMasterArmStateChanged(bool connected) {
+void MissionControlMainWindow::onMasterArmStateChanged(bool connected) {
     if (connected) {
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->hid_inputDeviceLabel->setText("Master arm connected");
@@ -268,7 +278,7 @@ void MainWindow::onMasterArmStateChanged(bool connected) {
     }
 }
 
-void MainWindow::onMasterArmUpdate(const char *armMessage) {
+void MissionControlMainWindow::onMasterArmUpdate(const char *armMessage) {
     ui->masterarm_yawValueLabel->setText(QString::number(ArmMessage::getMasterYaw(armMessage)));
     ui->masterarm_shoulderValueLabel->setText(QString::number(ArmMessage::getMasterShoulder(armMessage)));
     ui->masterarm_elbowValueLabel->setText(QString::number(ArmMessage::getMasterElbow(armMessage)));
@@ -278,7 +288,7 @@ void MainWindow::onMasterArmUpdate(const char *armMessage) {
     ui->masterarm_stowMacroValueLabel->setText(ArmMessage::getStow(armMessage) ? "ON" : "OFF");
 }
 
-void MainWindow::updateSubsystemStateInformation() {
+void MissionControlMainWindow::updateSubsystemStateInformation() {
     switch (_lastArmSubsystemState) {
     case NormalSubsystemState:
         ui->sys_armSubsystemLabel->setStyleSheet("QLabel { color : #1B5E20; }");
@@ -334,55 +344,55 @@ void MainWindow::updateSubsystemStateInformation() {
     }
 }
 
-bool MainWindow::isMuteAudioSelected() {
+bool MissionControlMainWindow::isMuteAudioSelected() const {
     return ui->media_audioControlWidget->isMuted();
 }
 
-void MainWindow::camera1ControlOptionChanged(VideoFormat option) {
-    cameraControlOptionChanged(0, option);
+void MissionControlMainWindow::camera1ControlOptionChanged(int formatIndex) {
+    cameraControlOptionChanged(0, formatIndex);
 }
 
-void MainWindow::camera2ControlOptionChanged(VideoFormat option) {
-    cameraControlOptionChanged(1, option);
+void MissionControlMainWindow::camera2ControlOptionChanged(int formatIndex) {
+    cameraControlOptionChanged(1, formatIndex);
 }
 
-void MainWindow::camera3ControlOptionChanged(VideoFormat option) {
-    cameraControlOptionChanged(2, option);
+void MissionControlMainWindow::camera3ControlOptionChanged(int formatIndex) {
+    cameraControlOptionChanged(2, formatIndex);
 }
 
-void MainWindow::camera4ControlOptionChanged(VideoFormat option) {
-    cameraControlOptionChanged(3, option);
+void MissionControlMainWindow::camera4ControlOptionChanged(int formatIndex) {
+    cameraControlOptionChanged(3, formatIndex);
 }
 
-void MainWindow::camera5ControlOptionChanged(VideoFormat option) {
-    cameraControlOptionChanged(4, option);
+void MissionControlMainWindow::camera5ControlOptionChanged(int formatIndex) {
+    cameraControlOptionChanged(4, formatIndex);
 }
 
-void MainWindow::camera1NameEdited(QString newName) {
+void MissionControlMainWindow::camera1NameEdited(QString newName) {
     emit cameraNameEdited(0, newName);
 }
 
-void MainWindow::camera2NameEdited(QString newName) {
+void MissionControlMainWindow::camera2NameEdited(QString newName) {
     emit cameraNameEdited(1, newName);
 }
 
-void MainWindow::camera3NameEdited(QString newName) {
+void MissionControlMainWindow::camera3NameEdited(QString newName) {
     emit cameraNameEdited(2, newName);
 }
 
-void MainWindow::camera4NameEdited(QString newName) {
+void MissionControlMainWindow::camera4NameEdited(QString newName) {
     emit cameraNameEdited(3, newName);
 }
 
-void MainWindow::camera5NameEdited(QString newName) {
+void MissionControlMainWindow::camera5NameEdited(QString newName) {
     emit cameraNameEdited(4, newName);
 }
 
-void MainWindow::cameraControlOptionChanged(int camera, VideoFormat option) {
-    emit cameraFormatChanged(camera, option);
+void MissionControlMainWindow::cameraControlOptionChanged(int camera, int formatIndex) {
+    emit cameraFormatChanged(camera, formatIndex);
 }
 
-void MainWindow::setCameraName(int camera, QString name) {
+void MissionControlMainWindow::setCameraName(int camera, QString name) {
     VideoControlWidget *widget;
     switch (camera) {
     case 0:
@@ -407,22 +417,22 @@ void MainWindow::setCameraName(int camera, QString name) {
     widget->setName(name);
 }
 
-void MainWindow::onFatalError(QString description) {
+void MissionControlMainWindow::onFatalError(QString description) {
     QMessageBox(QMessageBox::Critical, "WOW VERY ERROR",description,
         QMessageBox::Ok, this).exec();
     exit(1);
 }
 
-void MainWindow::onWarning(QString description) {
+void MissionControlMainWindow::onWarning(QString description) {
     QMessageBox(QMessageBox::Warning, "Mission Control",description,
         QMessageBox::Ok, this).show(); //do not block
 }
 
-void MainWindow::onBitrateUpdate(quint64 bpsRoverDown, quint64 bpsRoverUp) {
+void MissionControlMainWindow::onBitrateUpdate(quint64 bpsRoverDown, quint64 bpsRoverUp) {
     ui->comm_bitrateLabel->setText("Rover ▲ " + formatDataRate(bpsRoverUp, "b/s") + " ▼ " + formatDataRate(bpsRoverDown, "b/s"));
 }
 
-void MainWindow::onLocationUpdate(const NmeaMessage &location) {
+void MissionControlMainWindow::onLocationUpdate(const NmeaMessage &location) {
     ui->googleMapView->updateLocation(location);
     ui->gpsStatusLabel->setText("<html><b>GPS:</b> "
                                 + QString::number(location.Satellites) + " Satellites, "
@@ -432,7 +442,7 @@ void MainWindow::onLocationUpdate(const NmeaMessage &location) {
     START_TIMER(_clearGpsStatusTimerId, 15000);
 }
 
-void MainWindow::timerEvent(QTimerEvent *e) {
+void MissionControlMainWindow::timerEvent(QTimerEvent *e) {
     QMainWindow::timerEvent(e);
     if (e->timerId() == _clearGpsStatusTimerId) {
         ui->gpsStatusLabel->setText("Waiting for GPS...");
@@ -440,43 +450,43 @@ void MainWindow::timerEvent(QTimerEvent *e) {
     }
 }
 
-void MainWindow::onControlChannelStateChanged(Channel *channel, Channel::State state) {
+void MissionControlMainWindow::onControlChannelStateChanged(Channel *channel, Channel::State state) {
     Q_UNUSED(channel);
     _lastControlChannelState = state;
     updateConnectionStateInformation();
 }
 
-void MainWindow::onRoverChannelStateChanged(Channel::State state) {
+void MissionControlMainWindow::onRoverChannelStateChanged(Channel::State state) {
     _lastRoverChannelState = state;
     updateConnectionStateInformation();
 }
 
-void MainWindow::onArmSubsystemStateChanged(RoverSubsystemState state) {
+void MissionControlMainWindow::onArmSubsystemStateChanged(RoverSubsystemState state) {
     _lastArmSubsystemState = state;
     updateSubsystemStateInformation();
 }
 
-void MainWindow::onDriveCameraSubsystemStateChanged(RoverSubsystemState state) {
+void MissionControlMainWindow::onDriveCameraSubsystemStateChanged(RoverSubsystemState state) {
     _lastDriveCameraSubsystemState = state;
     updateSubsystemStateInformation();
 }
 
-void MainWindow::onSecondaryComputerStateChanged(RoverSubsystemState state) {
+void MissionControlMainWindow::onSecondaryComputerStateChanged(RoverSubsystemState state) {
     _lastSecondaryComputerState = state;
     updateSubsystemStateInformation();
 }
 
-void MainWindow::onRttUpdate(int rtt) {
+void MissionControlMainWindow::onRttUpdate(int rtt) {
     _lastRtt = rtt;
     updateConnectionStateInformation();
 }
 
-void MainWindow::onDroppedPacketRateUpdate(int droppedRatePercent) {
+void MissionControlMainWindow::onDroppedPacketRateUpdate(int droppedRatePercent) {
     _lastDroppedPacketPercent = droppedRatePercent;
     updateConnectionStateInformation();
 }
 
-void MainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
+void MissionControlMainWindow::onCameraFormatChanged(int camera, int formatIndex) {
     VideoControlWidget *widget;
     switch (camera) {
     case 0:
@@ -498,27 +508,30 @@ void MainWindow::onCameraFormatChanged(int camera, VideoFormat format) {
         return;
     }
 
-    widget->selectOption(format);
+    widget->selectOption(formatIndex);
 }
 
-void MainWindow::onAudioFormatChanged(AudioFormat format) {
-    ui->media_audioControlWidget->selectOption(format);
+void MissionControlMainWindow::onAudioPlaying() {
+    ui->media_audioControlWidget->playSelected();
 }
 
+void MissionControlMainWindow::onAudioStopped() {
+    ui->media_audioControlWidget->stopSelected();
+}
 
-CameraWidget* MainWindow::getTopCameraWidget() {
+CameraWidget* MissionControlMainWindow::getTopCameraWidget() {
     return ui->topVideoWidget;
 }
 
-CameraWidget* MainWindow::getBottomCameraWidget() {
+CameraWidget* MissionControlMainWindow::getBottomCameraWidget() {
     return ui->bottomVideoWidget;
 }
 
-CameraWidget* MainWindow::getFullscreenCameraWidget() {
+CameraWidget* MissionControlMainWindow::getFullscreenCameraWidget() {
     return _videoWindow->getCameraWidget();
 }
 
-void MainWindow::resizeEvent(QResizeEvent* event) {
+void MissionControlMainWindow::resizeEvent(QResizeEvent* event) {
    QMainWindow::resizeEvent(event);
    /// Video on right
    /*ui->infoContainer->resize(width() / 2, ui->infoContainer->height());
@@ -543,7 +556,7 @@ void MainWindow::resizeEvent(QResizeEvent* event) {
    ui->videoContainer->resize(width() / 2, height());
 }
 
-void MainWindow::closeEvent(QCloseEvent *e) {
+void MissionControlMainWindow::closeEvent(QCloseEvent *e) {
     if (_videoWindow) {
         _videoWindow->close();
     }
@@ -551,7 +564,7 @@ void MainWindow::closeEvent(QCloseEvent *e) {
     emit closed();
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *e) {
+void MissionControlMainWindow::keyPressEvent(QKeyEvent *e) {
     QMainWindow::keyPressEvent(e);
     if (e->key() == Qt::Key_F11) {
         if (_fullscreen) showNormal(); else showFullScreen();
@@ -565,7 +578,7 @@ void MainWindow::keyPressEvent(QKeyEvent *e) {
     }
 }
 
-MainWindow::~MainWindow() {
+MissionControlMainWindow::~MissionControlMainWindow() {
     delete ui;
 }
 

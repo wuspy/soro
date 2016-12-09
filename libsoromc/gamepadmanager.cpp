@@ -109,6 +109,7 @@ void GamepadManager::timerEvent(QTimerEvent *e) {
             dpadLeft            = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
             dpadDown            = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
             dpadRight           = SDL_GameControllerGetButton(_gameController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+            emit poll();
         }
         else {
             // Controller is no longer attached

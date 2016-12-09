@@ -29,17 +29,15 @@ PRECOMPILED_DIR = $$BUILD_DIR
 SOURCES += \
     missioncontrolprocess.cpp \
     initwindow.cpp \
-    mainwindow.cpp \
-    main.cpp
-
+    main.cpp \
+    missioncontrolmainwindow.cpp
 HEADERS  += \
     missioncontrolprocess.h \
     initwindow.h \
-    mainwindow.h
-
+    missioncontrolmainwindow.h
 FORMS    += \
-    soromainwindow.ui \
-    initwindow.ui
+    initwindow.ui \
+    missioncontrolmainwindow.ui
 
 RESOURCES += \
     Resources/MissionControl.qrc

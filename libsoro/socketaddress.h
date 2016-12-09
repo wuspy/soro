@@ -13,8 +13,11 @@ struct SocketAddress {
     QHostAddress host;
     quint16 port;
 
-    SocketAddress(const QHostAddress &address, quint16 port);
     SocketAddress();
+    SocketAddress(const SocketAddress& other);
+    SocketAddress(const QHostAddress &address, quint16 port);
+
+    ~SocketAddress();
 
     QString toString() const;
 
@@ -30,5 +33,7 @@ struct SocketAddress {
 };
 
 }
+
+Q_DECLARE_METATYPE(Soro::SocketAddress)
 
 #endif // SORO_SOCKETADDRESS_H

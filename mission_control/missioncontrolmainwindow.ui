@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SoroMainWindow</class>
- <widget class="QMainWindow" name="SoroMainWindow">
+ <class>MissionControlMainWindow</class>
+ <widget class="QMainWindow" name="MissionControlMainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -1397,15 +1397,15 @@ background-color: #b71c1c;</string>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>Soro::MissionControl::GoogleMapView</class>
-   <extends>QWidget</extends>
-   <header>libsoromc/googlemapview.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>Soro::MissionControl::CameraWidget</class>
    <extends>QWidget</extends>
    <header>libsoromc/camerawidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Soro::MissionControl::GoogleMapView</class>
+   <extends>QWidget</extends>
+   <header>libsoromc/googlemapview.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

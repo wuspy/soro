@@ -1,7 +1,7 @@
 #ifndef SORO_AUDIOCLIENT_H
 #define SORO_AUDIOCLIENT_H
 
-#include "enums.h"
+#include "audioformat.h"
 
 #include "soro_global.h"
 #include "mediaclient.h"
@@ -20,7 +20,7 @@ public:
     AudioFormat getAudioFormat() const;
 
 private:
-    AudioFormat _format = AudioFormat_Null;
+    AudioFormat _format;
 
 protected:
     void onServerStreamingMessageInternal(QDataStream& stream) Q_DECL_OVERRIDE;

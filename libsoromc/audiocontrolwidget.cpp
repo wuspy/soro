@@ -34,22 +34,19 @@ AudioControlWidget::AudioControlWidget(QWidget *parent) :
             this, SIGNAL(muteToggled(bool)));
 
     setAvailable(true);
-    selectOption(AudioFormat_Null);
+    selectStop();
 }
 
 AudioControlWidget::~AudioControlWidget() {
     delete ui;
 }
 
-void AudioControlWidget::selectOption(AudioFormat option) {
-    switch (option) {
-    case AudioFormat_Null:
-        ui->disabledRadioButton->setChecked(true);
-        break;
-    case AC3:
-        ui->playRadioButton->setChecked(true);
-        break;
-    }
+void AudioControlWidget::selectPlay() {
+    ui->playRadioButton->setChecked(true);
+}
+
+void AudioControlWidget::selectStop() {
+    ui->disabledRadioButton->setChecked(true);
 }
 
 void AudioControlWidget::setMute(bool mute) {
@@ -64,14 +61,14 @@ void AudioControlWidget::setMute(bool mute) {
 
 void AudioControlWidget::optionButtonClicked() {
     if (ui->disabledRadioButton->isChecked()) {
-        emit optionSelected(AudioFormat_Null);
+        emit stopSelected();
     }
     else if (ui->playRadioButton->isChecked()) {
-        emit optionSelected(AC3);
+        emit playSelected();
     }
 }
 
-bool AudioControlWidget::isMuted() {
+bool AudioControlWidget::isMuted() const {
     return ui->muteCheckBox->isChecked();
 }
 

@@ -26,7 +26,7 @@ VideoServer::VideoServer(int mediaId, SocketAddress host, QObject *parent)
 void VideoServer::onStreamStoppedInternal() {
     if (!_starting) {
         _videoDevice = "";
-        _format = VideoFormat_Null;
+        _format.setEncoding(VideoFormat::Encoding_Null);
     }
 }
 
@@ -51,7 +51,7 @@ void VideoServer::start(QString deviceName, VideoFormat format) {
 
 void VideoServer::constructChildArguments(QStringList& outArgs, SocketAddress host, SocketAddress address, quint16 ipcPort) {
     outArgs << _videoDevice;
-    outArgs << QString::number(reinterpret_cast<unsigned int&>(_format));
+    outArgs << _format.serialize();
     outArgs << QHostAddress(address.host.toIPv4Address()).toString();
     outArgs << QString::number(address.port);
     outArgs << QHostAddress(host.host.toIPv4Address()).toString();
@@ -60,7 +60,7 @@ void VideoServer::constructChildArguments(QStringList& outArgs, SocketAddress ho
 }
 
 void VideoServer::constructStreamingMessage(QDataStream& stream) {
-    stream << reinterpret_cast<quint32&>(_format);
+    stream << _format.serialize();
 }
 
 VideoFormat VideoServer::getVideoFormat() const {

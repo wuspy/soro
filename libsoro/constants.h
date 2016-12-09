@@ -84,12 +84,14 @@
 #define NETWORK_ALL_RESEARCH_SR_CAMERA_PORT 5520
 #define NETWORK_ALL_RESEARCH_SL_CAMERA_PORT 5521
 #define NETWORK_ALL_RESEARCH_A1_CAMERA_PORT 5522
+#define NETWORK_ALL_RESEARCH_M_CAMERA_PORT  5522
 
 #define MEDIAID_AUDIO               50
 #define MEDIAID_RESEARCH_SR_CAMERA  0
 #define MEDIAID_RESEARCH_SL_CAMERA  1
 #define MEDIAID_RESEARCH_A1_CAMERA  2
-#define MEDIAID_RESEARCH_AUDIO      3
+#define MEDIAID_RESEARCH_M_CAMERA   3
+#define MEDIAID_RESEARCH_AUDIO      4
 
 /* The maximum cameras allowed on the rover. The camera discovery implementation was pretty bad
  * honestly, but it worked for us and since the original rover/mission control modules aren't

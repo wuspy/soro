@@ -38,6 +38,9 @@ public:
      */
     bool isGamepadConnected() const;
 
+    /* Users of this class can read the gamepad button & axis values directly
+     * from these member variables.
+     */
     qint16 axisLeftX = 0, axisLeftY = 0, axisRightX = 0, axisRightY = 0,
         axisLeftTrigger = 0, axisRightTrigger = 0;
     bool buttonA = false, buttonB = false, buttonX = false, buttonY = false,
@@ -48,7 +51,12 @@ public:
     bool dpadUp = false, dpadLeft = false, dpadRight = false, dpadDown = false;
 
 signals:
+    /* Emitted when the gamepad changes
+     */
     void gamepadChanged(SDL_GameController *controller, QString name);
+    /* Emitted when new values are read from the gamepad
+     */
+    void poll();
 
 protected:
     void timerEvent(QTimerEvent *event);

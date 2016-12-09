@@ -37,9 +37,20 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
     _roverAddress = roverAddress;
 
     // Create UI
-    _ui = new MainWindow(gamepad, mcNetwork, controlSystem);
+    _ui = new MissionControlMainWindow(gamepad, mcNetwork, controlSystem);
     connect(_ui, SIGNAL(closed()), this, SIGNAL(windowClosed()));
     _ui->show();
+
+    // Define video formats
+    _availableVideoFormts.append(VideoFormat()); // No video
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1080p, 12000000));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1080p, 8000000));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_720p, 5000000));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_720p, 3000000));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_480p, 1500000));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_360p, 750000));
+
+    _ui->setAvailableVideoFormats(_availableVideoFormts);
 
     _freeCameraWidgets.append(_ui->getTopCameraWidget());
     _freeCameraWidgets.append(_ui->getBottomCameraWidget());
@@ -53,8 +64,10 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
             this, SLOT(cameraFormatSelected(int,VideoFormat)));
     connect(_ui, SIGNAL(cameraNameEdited(int,QString)),
             this, SLOT(cameraNameEdited(int,QString)));
-    connect(_ui, SIGNAL(audioStreamFormatChanged(AudioFormat)),
-            this, SLOT(audioStreamFormatSelected(AudioFormat)));
+    connect(_ui, SIGNAL(playAudioSelected()),
+            this, SLOT(playAudioSelected()));
+    connect(_ui, SIGNAL(stopAudioSelected()),
+            this, SLOT(stopAudioSelected()));
     connect(_ui, SIGNAL(audioStreamMuteChanged(bool)),
             this, SLOT(audioStreamMuteSelected(bool)));
 
@@ -95,7 +108,7 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
         }
     }
     for (int i = 0; i < MAX_CAMERAS; i++) {
-        _videoFormats.append(VideoFormat_Null);
+        _videoFormats.append(0);
         _cameraNames.append("Camera " + QString::number(i + 1));
     }
 
@@ -110,7 +123,7 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
     }
 
     _audioPlayer = new AudioPlayer(this);
-    _audioFormat = AudioFormat_Null;
+    _audioFormat = AudioFormat();
 
     // Start statistic timers
     if (_mcNetwork->isBroker()) {
@@ -137,10 +150,10 @@ void MissionControlProcess::videoClientStateChanged(MediaClient *client, MediaCl
     SharedMessageType messageType = SharedMessage_CameraChanged;
     VideoFormat format = videoClient->getVideoFormat();
 
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << reinterpret_cast<const quint32&>(messageType);
     stream << (qint32)client->getMediaId();
-    stream << reinterpret_cast<quint32&>(state);
-    stream << reinterpret_cast<quint32&>(format);
+    stream << reinterpret_cast<const quint32&>(state);
+    stream << format.serialize();
     stream << client->getErrorString();
 
     _mcNetwork->sendSharedMessage(message.constData(), message.size());
@@ -160,16 +173,21 @@ void MissionControlProcess::audioClientStateChanged(MediaClient *client, MediaCl
     SharedMessageType messageType = SharedMessage_AudioStreamChanged;
     AudioFormat format = audioClient->getAudioFormat();
 
-    stream << reinterpret_cast<quint32&>(messageType);
-    stream << reinterpret_cast<quint32&>(state);
-    stream << reinterpret_cast<quint32&>(format);
+    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << reinterpret_cast<const quint32&>(state);
+    stream << format.serialize();
     stream << client->getErrorString();
 
     _mcNetwork->sendSharedMessage(message.constData(), message.size());
 }
 
 void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::State state, VideoFormat format, QString errorString) {
-    _videoFormats[cameraID] = format;
+    int formatIndex = format.isUseable() ? _availableVideoFormts.indexOf(format) : 0;
+    if (formatIndex < 0) {
+        LOG_E(LOG_TAG, "playStreamOnWidget(): Format is not preset");
+        return;
+    }
+    _videoFormats[cameraID] = formatIndex;
     switch (state) {
     case VideoClient::ConnectingState:
         if (_assignedCameraWidgets.contains(cameraID)) {
@@ -195,17 +213,17 @@ void MissionControlProcess::handleCameraStateChange(int cameraID, VideoClient::S
         break;
     case VideoClient::StreamingState:
         if (_assignedCameraWidgets.contains(cameraID)) {
-            playStreamOnWidget(cameraID, _assignedCameraWidgets.value(cameraID), format);
+            playStreamOnWidget(cameraID, _assignedCameraWidgets.value(cameraID), formatIndex);
         }
         else if (_freeCameraWidgets.size() > 0) {
-            playStreamOnWidget(cameraID, _freeCameraWidgets.at(0), format);
+            playStreamOnWidget(cameraID, _freeCameraWidgets.at(0), formatIndex);
         }
         break;
     }
 }
 
 void MissionControlProcess::playAudio() {
-    if (_audioFormat != AudioFormat_Null) {
+    if (_audioFormat.isUseable()) {
         if (_mcNetwork->isBroker()) {
             // Play direct rover audio stream
             _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT), _audioFormat);
@@ -219,15 +237,16 @@ void MissionControlProcess::playAudio() {
 
 void MissionControlProcess::handleAudioStateChanged(AudioClient::State state, AudioFormat encoding, QString errorString) {
     _audioFormat = encoding;
-    _ui->onAudioFormatChanged(encoding);
     switch (state) {
     case AudioClient::StreamingState:
         if (!_ui->isMuteAudioSelected()) {
             playAudio();
         }
+        _ui->onAudioPlaying();
         break;
     default:
         _audioPlayer->stop();
+        _ui->onAudioStopped();
         break;
     }
 }
@@ -252,8 +271,8 @@ void MissionControlProcess::endStreamOnWidget(CameraWidget *widget, QString reas
     int oldCamera = _assignedCameraWidgets.key(widget, -1);
     if (oldCamera != -1) {
         _assignedCameraWidgets.remove(oldCamera);
-        _videoFormats.replace(oldCamera, VideoFormat_Null);
-        _ui->onCameraFormatChanged(oldCamera, VideoFormat_Null);
+        _videoFormats.replace(oldCamera, 0);
+        _ui->onCameraFormatChanged(oldCamera, 0);
     }
     if (_freeCameraWidgets.indexOf(widget) < 0) {
         _freeCameraWidgets.insert(0, widget);
@@ -262,7 +281,7 @@ void MissionControlProcess::endStreamOnWidget(CameraWidget *widget, QString reas
     widget->setCameraName("No Video");
 }
 
-void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widget, VideoFormat format) {
+void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widget, int formatIndex) {
     if (_assignedCameraWidgets.contains(cameraID)) {
         CameraWidget *oldWidget = _assignedCameraWidgets.value(cameraID, NULL);
         if (oldWidget != widget) {
@@ -273,13 +292,15 @@ void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widge
     }
     _freeCameraWidgets.removeAll(widget);
     _assignedCameraWidgets.insert(cameraID, widget);
-    _videoFormats.replace(cameraID, format);
-    _ui->onCameraFormatChanged(cameraID, format);
+    _videoFormats.replace(cameraID, formatIndex);
+    _ui->onCameraFormatChanged(cameraID, formatIndex);
     if (_mcNetwork->isBroker()) {
-        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_CAMERA_PORT_1 + cameraID), format);
+        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_CAMERA_PORT_1 + cameraID),
+                                                     _availableVideoFormts[formatIndex]);
     }
     else {
-        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, NETWORK_ALL_CAMERA_PORT_1 + cameraID), format);
+        _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, NETWORK_ALL_CAMERA_PORT_1 + cameraID),
+                                                     _availableVideoFormts[formatIndex]);
     }
     _assignedCameraWidgets.value(cameraID)->setCameraName(_cameraNames.at(cameraID));
 }
@@ -289,7 +310,7 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
     QDataStream stream(byteArray);
     SharedMessageType messageType;
 
-    LOG_E(LOG_TAG, "Getting shared channel message");
+    LOG_I(LOG_TAG, "Getting shared channel message");
 
     stream >> reinterpret_cast<quint32&>(messageType);
     switch (messageType) {
@@ -320,12 +341,14 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         VideoFormat format;
         VideoClient::State state;
         QString errorString;
+        QString formatString;
 
         stream >> cameraID;
         stream >> reinterpret_cast<quint32&>(state);
-        stream >> reinterpret_cast<quint32&>(format);
+        stream >> formatString;
         stream >> errorString;
 
+        format.deserialize(formatString);
         handleCameraStateChange(cameraID, state, format, errorString);
     }
         break;
@@ -333,11 +356,13 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         AudioFormat format;
         AudioClient::State state;
         QString errorString;
+        QString formatString;
 
         stream >> reinterpret_cast<quint32&>(state);
-        stream >> reinterpret_cast<quint32&>(format);
+        stream >> formatString;
         stream >> errorString;
 
+        format.deserialize(formatString);
         handleAudioStateChanged(state, format, errorString);
     }
         break;
@@ -397,8 +422,8 @@ void MissionControlProcess::roverSharedChannelStateChanged(Channel *channel, Cha
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
 
-    stream << reinterpret_cast<quint32&>(messageType);
-    stream << reinterpret_cast<quint32&>(state);
+    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << reinterpret_cast<const quint32&>(state);
 
     _mcNetwork->sendSharedMessage(message.constData(), message.size());
 }
@@ -422,8 +447,8 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
     QByteArray roverConnectionMessage;
     QDataStream stream(&roverConnectionMessage, QIODevice::WriteOnly);
     Channel::State roverState = _roverChannel->getState();
-    stream << reinterpret_cast<quint32&>(messageType);
-    stream << reinterpret_cast<quint32&>(roverState);
+    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << reinterpret_cast<const quint32&>(roverState);
 
     channel->sendMessage(roverConnectionMessage);
 
@@ -433,7 +458,7 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
     QDataStream stream2(&roverSubsystemMessage, QIODevice::WriteOnly);
     messageType = SharedMessage_RoverStatusUpdate;
 
-    stream2 << reinterpret_cast<quint32&>(messageType);
+    stream2 << reinterpret_cast<const quint32&>(messageType);
     stream2 << (_lastArmSubsystemState == NormalSubsystemState);
     stream2 << (_lastDriveGimbalSubsystemState == NormalSubsystemState);
     stream2 << (_lastArmSubsystemState == NormalSubsystemState);
@@ -449,10 +474,10 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
         VideoClient::State state = client->getState();
         VideoFormat format = client->getVideoFormat();
 
-        stream3 << reinterpret_cast<quint32&>(messageType);
+        stream3 << reinterpret_cast<const quint32&>(messageType);
         stream3 << (qint32)client->getMediaId();
-        stream3 << reinterpret_cast<quint32&>(state);
-        stream3 << reinterpret_cast<quint32&>(format);
+        stream3 << reinterpret_cast<const quint32&>(state);
+        stream3 << format.serialize();
         stream3 << client->getErrorString();
 
         channel->sendMessage(videoClientMessage);
@@ -466,9 +491,9 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
     VideoClient::State state = _audioClient->getState();
     AudioFormat format = _audioClient->getAudioFormat();
 
-    stream4 << reinterpret_cast<quint32&>(messageType);
-    stream4 << reinterpret_cast<quint32&>(state);
-    stream4 << reinterpret_cast<quint32&>(format);
+    stream4 << reinterpret_cast<const quint32&>(messageType);
+    stream4 << reinterpret_cast<const quint32&>(state);
+    stream4 << format.serialize();
     stream4 << _audioClient->getErrorString();
 
     channel->sendMessage(audioClientState);
@@ -481,7 +506,7 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_CameraNameChanged;
 
-        stream << reinterpret_cast<quint32&>(messageType);
+        stream << reinterpret_cast<const quint32&>(messageType);
         stream << (qint32)i;
         stream << _cameraNames.at(i);
 
@@ -496,7 +521,7 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_RoverGpsUpdate;
 
-        stream << reinterpret_cast<quint32&>(messageType);
+        stream << reinterpret_cast<const quint32&>(messageType);
         stream << *nmeaMessage;
 
         channel->sendMessage(message.constData(), message.size());
@@ -510,18 +535,18 @@ void MissionControlProcess::cameraFormatSelected(int camera, VideoFormat format)
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType;
 
-    if (format == VideoFormat_Null) {
+    if (!format.isUseable()) {
         messageType = SharedMessage_RequestDeactivateCamera;
 
-        stream << reinterpret_cast<quint32&>(messageType);
+        stream << reinterpret_cast<const quint32&>(messageType);
         stream << (qint32)camera;
     }
     else {
         messageType = SharedMessage_RequestActivateCamera;
 
-        stream << reinterpret_cast<quint32&>(messageType);
+        stream << reinterpret_cast<const quint32&>(messageType);
         stream << (qint32)camera;
-        stream << reinterpret_cast<quint32&>(format);
+        stream << format.serialize();
     }
 
     if (_mcNetwork->isBroker() && _roverChannel) {
@@ -542,30 +567,39 @@ void MissionControlProcess::cameraNameEdited(int camera, QString newName) {
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_CameraNameChanged;
 
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << reinterpret_cast<const quint32&>(messageType);
     stream << (qint32)camera;
     stream << newName;
 
     _mcNetwork->sendSharedMessage(message.constData(), message.size());
 }
 
-/* Receives the signal from the UI when a new audio stream format is selected
+/* Receives the signal from the UI when the user requests to start the audio stream
  */
-void MissionControlProcess::audioStreamFormatSelected(AudioFormat format) {
+void MissionControlProcess::playAudioSelected() {
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
-    SharedMessageType messageType;
+    SharedMessageType messageType = SharedMessage_RequestActivateAudioStream;
 
-    if (format == AudioFormat_Null) {
-        messageType = SharedMessage_RequestDeactivateAudioStream;
+    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << _defaultAudioFormat.serialize();
 
-        stream << reinterpret_cast<quint32&>(messageType);
+    if (_mcNetwork->isBroker() && _roverChannel) {
+        _roverChannel->sendMessage(message);
     }
     else {
-        messageType = SharedMessage_RequestActivateAudioStream;
-        stream << reinterpret_cast<quint32&>(messageType);
-        stream << reinterpret_cast<quint32&>(format);
+        _mcNetwork->sendSharedMessage(message.constData(), message.size());
     }
+}
+
+/* Receives the signal from the UI when the user requests to stop the audio stream
+ */
+void MissionControlProcess::stopAudioSelected() {
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_RequestDeactivateAudioStream;
+
+    stream << reinterpret_cast<const quint32&>(messageType);
 
     if (_mcNetwork->isBroker() && _roverChannel) {
         _roverChannel->sendMessage(message);
@@ -581,7 +615,7 @@ void MissionControlProcess::audioStreamMuteSelected(bool mute) {
     if (mute) {
         _audioPlayer->stop();
     }
-    else if (_audioFormat) {
+    else if (_audioFormat.isUseable()) {
         playAudio();
     }
 }
@@ -634,7 +668,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_BitrateUpdate;
 
-        stream << reinterpret_cast<quint32&>(messageType);
+        stream << reinterpret_cast<const quint32&>(messageType);
         stream << bpsRoverDown;
         stream << bpsRoverUp;
 

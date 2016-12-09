@@ -30,7 +30,6 @@ PRECOMPILED_DIR = $$BUILD_DIR
 
 SOURCES +=\
         armcontrolsystem.cpp \
-        audioclient.cpp \
         audiocontrolwidget.cpp \
         cameracontrolsystem.cpp \
         camerawidget.cpp \
@@ -40,15 +39,13 @@ SOURCES +=\
         drivecontrolsystem.cpp \
         gamepadmanager.cpp \
         googlemapview.cpp \
-        mediaclient.cpp \
         missioncontrolnetwork.cpp \
-        videoclient.cpp \
-        videocontrolwidget.cpp
+        videocontrolwidget.cpp \
+    stereocamerawidget.cpp
 
 HEADERS +=\
         soro_missioncontrol_global.h \
         armcontrolsystem.h \
-        audioclient.h \
         audiocontrolwidget.h \
         cameracontrolsystem.h \
         camerawidget.h \
@@ -58,16 +55,16 @@ HEADERS +=\
         drivecontrolsystem.h \
         gamepadmanager.h \
         googlemapview.h \
-        mediaclient.h \
         missioncontrolnetwork.h \
-        videoclient.h \
         videocontrolwidget.h \
-    util.h
+        util.h \
+    stereocamerawidget.h
 
 FORMS   +=\
         audiocontrolwidget.ui \
         camerawidget.ui \
-        videocontrolwidget.ui
+        videocontrolwidget.ui \
+    stereocamerawidget.ui
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..

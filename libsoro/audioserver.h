@@ -6,7 +6,7 @@
 #include "socketaddress.h"
 #include "soro_global.h"
 #include "mediaserver.h"
-#include "enums.h"
+#include "audioformat.h"
 
 namespace Soro {
 

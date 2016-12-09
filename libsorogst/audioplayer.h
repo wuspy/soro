@@ -1,5 +1,5 @@
-#ifndef SORO_MISSIONCONTROL_AUDIOPLAYER_H
-#define SORO_MISSIONCONTROL_AUDIOPLAYER_H
+#ifndef SORO_GST_AUDIOPLAYER_H
+#define SORO_GST_AUDIOPLAYER_H
 
 #include <QObject>
 
@@ -16,7 +16,7 @@
 
 #include "libsoro/socketaddress.h"
 #include "libsoro/soro_global.h"
-#include "libsoro/enums.h"
+#include "libsoro/audioformat.h"
 
 #include "soro_gst_global.h"
 
@@ -61,4 +61,4 @@ signals:
 } // namespace Gst
 } // namespace Soro
 
-#endif // SORO_MISSIONCONTROL_AUDIOPLAYER_H
+#endif // SORO_GST_AUDIOPLAYER_H

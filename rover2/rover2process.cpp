@@ -140,9 +140,11 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
     switch (messageType) {
     case SharedMessage_RequestActivateCamera: {
         qint32 camera;
+        QString formatString;
         VideoFormat format;
         stream >> camera;
-        stream >> reinterpret_cast<quint32&>(format);
+        stream >> formatString;
+        format.deserialize(formatString);
         if ((camera >= _config->getComputer1CameraCount()) && (camera < _config->getComputer1CameraCount() + _config->getComputer2CameraCount())) {
             LOG_I(LOG_TAG, "Camera " + QString::number(camera) + " is about to be activated");
             _videoServers->activate(camera, format);

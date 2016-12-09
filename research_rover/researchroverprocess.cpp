@@ -21,8 +21,10 @@
 
 #define LOG_TAG "ResearchRover"
 
+#define DEFAULT_AUDIO_DEVICE "hw:1"
+
 namespace Soro {
-namespace Research {
+namespace Rover {
 
 ResearchRoverProcess::ResearchRoverProcess(QObject *parent) : QObject(parent)
 {
@@ -91,6 +93,7 @@ void ResearchRoverProcess::init() {
     _stereoRCameraServer = new VideoServer(MEDIAID_RESEARCH_SR_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT), this);
     _stereoLCameraServer = new VideoServer(MEDIAID_RESEARCH_SL_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT), this);
     _aux1CameraServer = new VideoServer(MEDIAID_RESEARCH_A1_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_A1_CAMERA_PORT), this);
+    _monoCameraServer = new VideoServer(MEDIAID_RESEARCH_M_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_M_CAMERA_PORT), this);
 
     UsbCameraEnumerator cameras;
     cameras.loadCameras();
@@ -123,6 +126,7 @@ void ResearchRoverProcess::init() {
 
         if (stereoRight) {
             _stereoRCameraDevice = stereoRight->device;
+            _monoCameraDevice = _stereoRCameraDevice;
             LOG_I(LOG_TAG, "Right stereo camera found: " + stereoRight->toString());
         }
         else {
@@ -130,6 +134,9 @@ void ResearchRoverProcess::init() {
         }
         if (stereoLeft) {
             _stereoLCameraDevice = stereoLeft->device;
+            if (!stereoRight) {
+                _monoCameraDevice = _stereoLCameraDevice;
+            }
             LOG_I(LOG_TAG, "Left stereo camera found: " + stereoLeft->toString());
         }
         else {
@@ -212,46 +219,54 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
     QDataStream stream(byteArray);
     SharedMessageType messageType;
 
-    VideoFormat vformat;
     stream >> reinterpret_cast<quint32&>(messageType);
     switch (messageType) {
-    case SharedMessage_RequestActivateAudioStream:
-        AudioFormat aformat;
-        stream >> reinterpret_cast<quint32&>(aformat);
-        _audioServer->start("hw:1", aformat);
+    case SharedMessage_RequestActivateAudioStream: {
+        QString formatString;
+        AudioFormat format;
+        stream >> formatString;
+        format.deserialize(formatString);
+        _audioServer->start(DEFAULT_AUDIO_DEVICE, format);
+    }
         break;
     case SharedMessage_RequestDeactivateAudioStream:
         _audioServer->stop();
         break;
-    case SharedMessage_Research_StartStereoCameraStream:
-        stream >> reinterpret_cast<quint32&>(vformat);
+    case SharedMessage_Research_StartStereoCameraStream: {
+        QString formatString;
+        VideoFormat format;
+        stream >> formatString;
+        format.deserialize(formatString);
         if (!_stereoRCameraDevice.isEmpty()) {
-            _stereoRCameraServer->start(_stereoRCameraDevice, vformat);
+            _stereoRCameraServer->start(_stereoRCameraDevice, format);
         }
         if (!_stereoLCameraDevice.isEmpty()) {
-            _stereoLCameraServer->start(_stereoLCameraDevice, vformat);
+            _stereoLCameraServer->start(_stereoLCameraDevice, format);
         }
+    }
         break;
     case SharedMessage_Research_EndStereoAndMonoCameraStream:
         _stereoRCameraServer->stop();
         _stereoLCameraServer->stop();
         break;
-    case SharedMessage_Research_StartMonoCameraStream:
-        stream >> reinterpret_cast<quint32&>(vformat);
-        if (!_stereoRCameraDevice.isEmpty()) {
-            _stereoLCameraServer->stop();
-            _stereoRCameraServer->start(_stereoRCameraDevice, vformat);
+    case SharedMessage_Research_StartMonoCameraStream: {
+        QString formatString;
+        VideoFormat format;
+        stream >> formatString;
+        format.deserialize(formatString);
+        if (!_monoCameraDevice.isEmpty()) {
+            _monoCameraServer->start(_monoCameraDevice, format);
         }
-        else if (!_stereoLCameraDevice.isEmpty()) {
-            _stereoRCameraServer->stop();
-            _stereoLCameraServer->start(_stereoLCameraDevice, vformat);
-        }
+    }
         break;
-    case SharedMessage_Research_StartAux1CameraStream:
-        stream >> reinterpret_cast<quint32&>(vformat);
+    case SharedMessage_Research_StartAux1CameraStream:{
+        QString formatString;
+        VideoFormat format;
+        stream >> formatString;
         if (!_aux1CameraDevice.isEmpty()) {
-            _aux1CameraServer->start(_aux1CameraDevice, vformat);
+            _aux1CameraServer->start(_aux1CameraDevice, format);
         }
+    }
         break;
     case SharedMessage_Research_EndAux1CameraStream:
         _aux1CameraServer->stop();
@@ -309,6 +324,6 @@ ResearchRoverProcess::~ResearchRoverProcess() {
     }
 }
 
-} // namespace Research
+} // namespace Rover
 } // namespace Soro
 

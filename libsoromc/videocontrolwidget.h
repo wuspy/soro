@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QRadioButton>
 
-#include "libsoro/enums.h"
+#include "libsoro/videoformat.h"
 
 #include "soro_missioncontrol_global.h"
 
@@ -26,18 +26,21 @@ public:
     explicit VideoControlWidget(QWidget *parent = 0);
     ~VideoControlWidget();
 
-    void selectOption(VideoFormat option);
+    void setFormats(QList<VideoFormat> formats);
+    QList<VideoFormat> getFormats() const;
+    void selectOption(int index);
     void setName(QString name);
     void setAvailable(bool available);
     QString getName();
 
 signals:
-    void optionSelected(VideoFormat option);
+    void optionSelected(int index);
     void userEditedName(QString newName);
 
 private:
     Ui::VideoControlWidget *ui;
     bool _available = true;
+    QList<VideoFormat> _formats;
 
 private slots:
     void uiOptionSelected(int index);

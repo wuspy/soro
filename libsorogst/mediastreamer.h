@@ -1,5 +1,5 @@
-#ifndef MEDIASTREAMER_H
-#define MEDIASTREAMER_H
+#ifndef SORO_GST_MEDIASTREAMER_H
+#define SORO_GST_MEDIASTREAMER_H
 
 #include <QObject>
 #include <QCoreApplication>
@@ -67,4 +67,4 @@ signals:
 } // namespace Gst
 } // namespace Soro
 
-#endif // MEDIASTREAMER_H
+#endif // SORO_GST_MEDIASTREAMER_H

@@ -19,6 +19,8 @@
 #include "libsoro/masterarmconfig.h"
 #include "libsoro/videoclient.h"
 #include "libsoro/audioclient.h"
+#include "libsoro/videoformat.h"
+#include "libsoro/audioformat.h"
 
 #include "libsorogst/audioplayer.h"
 
@@ -28,7 +30,7 @@
 #include "libsoromc/cameracontrolsystem.h"
 #include "libsoromc/missioncontrolnetwork.h"
 
-#include "mainwindow.h"
+#include "missioncontrolmainwindow.h"
 
 using namespace Soro::Gst;
 
@@ -50,7 +52,7 @@ signals:
 private:
     //the main UI components
 
-    MainWindow *_ui;
+    MissionControlMainWindow *_ui;
 
     bool _roverSharedChannelConnected = false;
     bool _ignoreGamepadVideoButtons = false;
@@ -75,10 +77,16 @@ private:
 
     // These hold the video clients when in master configuration
     QList<VideoClient*> _videoClients; // camera ID is by index
-    QList<VideoFormat> _videoFormats; // camera ID is by index
+    QList<int> _videoFormats; // camera ID is by index, format ID is by value
     QMap<int, CameraWidget*> _assignedCameraWidgets; // camera ID is by key
     QList<QString> _cameraNames; // camera ID is by index
     QList<CameraWidget*> _freeCameraWidgets;
+
+    // This holds the predefined video formats that will be shown to the user
+    QList<VideoFormat> _availableVideoFormts;
+
+    // This holds the predefined audio format that is used
+    AudioFormat _defaultAudioFormat;
 
     // GPS message cache stored by the broker mission control
     QList<NmeaMessage*> _gpsMessages;
@@ -86,7 +94,7 @@ private:
     // Audio stream subsystem
     AudioClient *_audioClient = NULL;
     AudioPlayer *_audioPlayer = NULL;
-    AudioFormat _audioFormat = AudioFormat_Null;
+    AudioFormat _audioFormat;
 
     // cache of last status information
     RoverSubsystemState _lastArmSubsystemState = UnknownSubsystemState;
@@ -98,7 +106,7 @@ private:
     void handleAudioStateChanged(AudioClient::State state, AudioFormat encoding, QString errorString);
     void handleRoverSharedChannelStateChanged(Channel::State state);
     void handleCameraNameChanged(int camera, QString newName);
-    void playStreamOnWidget(int cameraID, CameraWidget *widget, VideoFormat format);
+    void playStreamOnWidget(int cameraID, CameraWidget *widget, int formatIndex);
     void endStreamOnWidget(CameraWidget *widget, QString reason);
     void playAudio();
 
@@ -111,7 +119,8 @@ private slots:
     void cycleVideosClockwise();
     void cycleVideosCounterClockwise();
     void cameraFormatSelected(int camera, VideoFormat format);
-    void audioStreamFormatSelected(AudioFormat format);
+    void playAudioSelected();
+    void stopAudioSelected();
     void audioStreamMuteSelected(bool mute);
     void cameraNameEdited(int camera, QString newName);
 

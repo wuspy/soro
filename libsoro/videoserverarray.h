@@ -9,6 +9,7 @@
 
 #include "soro_global.h"
 #include "videoserver.h"
+#include "videoformat.h"
 #include "usbcameraenumerator.h"
 //#include "flycapenumerator.h"
 

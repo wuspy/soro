@@ -51,7 +51,9 @@ SOURCES += \
     gamepadutil.cpp \
     mediaclient.cpp \
     videoclient.cpp \
-    audioclient.cpp
+    audioclient.cpp \
+    videoformat.cpp \
+    audioformat.cpp
 
 HEADERS += \
     latlng.h \
@@ -80,4 +82,7 @@ HEADERS += \
     util.h \
     mediaclient.h \
     videoclient.h \
-    audioclient.h
+    audioclient.h \
+    videoformat.h \
+    mediaformat.h \
+    audioformat.h

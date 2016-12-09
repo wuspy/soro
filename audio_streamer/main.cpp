@@ -21,7 +21,7 @@
 #include <Qt5GStreamer/QGst/Init>
 
 #include "libsoro/socketaddress.h"
-#include "libsoro/enums.h"
+#include "libsoro/audioformat.h"
 #include "libsoro/constants.h"
 #include "libsoro/logger.h"
 
@@ -62,15 +62,11 @@ int main(int argc, char *argv[]) {
     LOG_I(LOG_TAG, "Device: " + device);
 
     /*
-     * Parse audio encoding
+     * Parse audio format
      */
-    quint32 encodingUInt = QString(argv[2]).toUInt(&ok);
-    if (!ok) {
-        LOG_E(LOG_TAG, "Invalid encoding option '" + QString(argv[2]) + "'");
-        return STREAMPROCESS_ERR_INVALID_ARGUMENT;
-    }
-    LOG_I(LOG_TAG, "Format: " + QString::number(encodingUInt));
-    format = reinterpret_cast<AudioFormat&>(encodingUInt);
+    QString formatSerial = QString(argv[2]);
+    LOG_I(LOG_TAG, "Format: " + formatSerial);
+    format.deserialize(formatSerial);
 
     /*
      * Parse address
@@ -105,7 +101,7 @@ int main(int argc, char *argv[]) {
         LOG_E(LOG_TAG, "Invalid IPC port '" + QString(argv[7]) + "'");
         return STREAMPROCESS_ERR_INVALID_ARGUMENT;
     }
-    LOG_I(LOG_TAG, "IPC Port: " + QString::number(encodingUInt));
+    LOG_I(LOG_TAG, "IPC Port: " + QString::number(ipcPort));
 
     a.setApplicationName("AudioStream for " + device + " to " + address.toString());
 

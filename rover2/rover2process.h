@@ -12,6 +12,8 @@
 #include "libsoro/videoserver.h"
 #include "libsoro/videoserverarray.h"
 #include "libsoro/roverconfigloader.h"
+#include "libsoro/videoformat.h"
+#include "libsoro/enums.h"
 
 using namespace Soro;
 

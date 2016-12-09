@@ -19,7 +19,7 @@
 //#include <flycapture/FlyCapture2.h>
 
 #include "libsoro/socketaddress.h"
-#include "libsoro/enums.h"
+#include "libsoro/videoformat.h"
 #include "libsorogst/mediastreamer.h"
 
 namespace Soro {
@@ -30,9 +30,6 @@ class VideoStreamer : public Soro::Gst::MediaStreamer {
 public:
     VideoStreamer(QGst::ElementPtr source, VideoFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);
     VideoStreamer(QString deviceName, VideoFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);
-
-private:
-    QString makeEncodingBinString(VideoFormat format, SocketAddress bindAddress, SocketAddress address);
 };
 
 } // namespace Rover

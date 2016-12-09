@@ -26,7 +26,7 @@ AudioServer::AudioServer(int mediaId, SocketAddress host, QObject *parent)
 void AudioServer::onStreamStoppedInternal() {
     if (!_starting) {
         _audioDevice = "";
-        _format = AudioFormat_Null;
+        _format.setEncoding(AudioFormat::Encoding_Null);
     }
 }
 
@@ -44,18 +44,16 @@ void AudioServer::start(QString deviceName, AudioFormat format) {
 
 void AudioServer::constructChildArguments(QStringList& outArgs, SocketAddress host, SocketAddress address, quint16 ipcPort) {
     outArgs << _audioDevice;
-    outArgs << QString::number(reinterpret_cast<unsigned int&>(_format));
+    outArgs << _format.serialize();
     outArgs << QHostAddress(address.host.toIPv4Address()).toString();
     outArgs << QString::number(address.port);
     outArgs << QHostAddress(host.host.toIPv4Address()).toString();
     outArgs << QString::number(host.port);
     outArgs << QString::number(ipcPort);
-
-    qDebug() << "Starting with args " << outArgs;
 }
 
 void AudioServer::constructStreamingMessage(QDataStream& stream) {
-    stream << reinterpret_cast<quint32&>(_format);
+    stream << _format.serialize();
 }
 
 AudioFormat AudioServer::getAudioFormat() const {

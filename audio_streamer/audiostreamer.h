@@ -17,8 +17,7 @@
 #include <Qt5GStreamer/QGst/Message>
 
 #include "libsoro/socketaddress.h"
-#include "libsoro/enums.h"
-#include "libsoro/logger.h"
+#include "libsoro/audioformat.h"
 #include "libsorogst/mediastreamer.h"
 
 namespace Soro {
@@ -29,8 +28,6 @@ class AudioStreamer : public Soro::Gst::MediaStreamer {
 public:
     AudioStreamer(QString deviceName, AudioFormat format, SocketAddress bindAddress, SocketAddress address, quint16 ipcPort, QObject *parent = 0);
 
-private:
-    QString makeEncodingBinString(AudioFormat format, SocketAddress bindAddress, SocketAddress address);
 };
 
 } // namespace Rover

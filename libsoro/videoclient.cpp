@@ -19,25 +19,27 @@
 namespace Soro {
 
 void VideoClient::onServerStreamingMessageInternal(QDataStream& stream) {
-    stream >> reinterpret_cast<quint32&>(_format);
+    QString formatSerial;
+    stream >> formatSerial;
+    _format.deserialize(formatSerial);
 }
 
 void VideoClient::onServerStartMessageInternal() {
-    _format = VideoFormat_Null;
+    _format.setEncoding(VideoFormat::Encoding_Null);
 }
 
 void VideoClient::onServerEosMessageInternal() {
-    _format = VideoFormat_Null;
+    _format.setEncoding(VideoFormat::Encoding_Null);
 }
 
 void VideoClient::onServerErrorMessageInternal() {
-    _format = VideoFormat_Null;
+    _format.setEncoding(VideoFormat::Encoding_Null);
 }
 
 VideoClient::VideoClient(int mediaId, SocketAddress server, QHostAddress host, QObject *parent)
     : MediaClient("VideoClient " + QString::number(mediaId), mediaId, server, host, parent) {
 
-    _format = VideoFormat_Null;
+    _format.setEncoding(VideoFormat::Encoding_Null);
 }
 
 VideoFormat VideoClient::getVideoFormat() const {
@@ -47,7 +49,7 @@ VideoFormat VideoClient::getVideoFormat() const {
 void VideoClient::onServerConnectedInternal() { }
 
 void VideoClient::onServerDisconnectedInternal() {
-    _format = VideoFormat_Null;
+    _format.setEncoding(VideoFormat::Encoding_Null);
 }
 
 } // namespace Soro

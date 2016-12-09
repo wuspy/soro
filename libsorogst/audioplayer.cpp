@@ -15,6 +15,9 @@
  */
 
 #include "audioplayer.h"
+#include "libsoro/logger.h"
+
+#define LOG_TAG "AudioPlayer"
 
 namespace Soro {
 namespace Gst {
@@ -47,22 +50,14 @@ void AudioPlayer::play(SocketAddress address, AudioFormat encoding) {
     QGlib::connect(_pipeline->bus(), "message", this, &AudioPlayer::onBusMessage);
 
     // create a udpsrc to receive the stream
-    QString binStr = "udpsrc address=" + address.host.toString() + " port=" + QString::number(address.port);
+    QString binStr = "udpsrc address=%1 port=%2 ! "
+                     "%3 ! "
+                     "audioconvert ! "
+                     "alsasink";
 
-    // append encoding-specific elements
-    switch (encoding) {
-    case AC3:
-        binStr += " ! application/x-rtp,media=audio,clock-rate=44100,encoding-name=AC3 ! "
-                               "rtpac3depay ! "
-                               "a52dec ! "
-                               "audioconvert ! "
-                               "alsasink";
-        break;
-    default:
-        stop();
-        emit error();
-        return;
-    }
+    binStr = binStr.arg(address.host.toString(),
+                        QString::number(address.port),
+                        encoding.createGstDecodingArgs());
 
     // create a gstreamer bin from the description
     QGst::BinPtr bin = QGst::Bin::fromDescription(binStr);
@@ -78,15 +73,18 @@ bool AudioPlayer::isPlaying() {
 }
 
 void AudioPlayer::onBusMessage(const QGst::MessagePtr & message) {
-    qDebug() << "Got bus message type " << message->typeName();
+    LOG_I(LOG_TAG, "onBusMessage(): Got bus message type " + message->typeName());
     switch (message->type()) {
     case QGst::MessageEos:
         stop();
         emit eosMessage();
         break;
-    case QGst::MessageError:
+    case QGst::MessageError: {
+        QString errorMessage = message.staticCast<QGst::ErrorMessage>()->error().message().toLatin1();
+        LOG_E(LOG_TAG, "onBusMessage(): Received error message from gstreamer '" + errorMessage + "'");
         emit error();
         break;
+    }
     default:
         break;
     }

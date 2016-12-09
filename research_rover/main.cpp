@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelInformation);
 
     // create main rover worker object
-    Soro::Research::ResearchRoverProcess worker(&a);
+    Soro::Rover::ResearchRoverProcess worker(&a);
 
     return a.exec();
 }

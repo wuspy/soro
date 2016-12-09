@@ -18,6 +18,8 @@
 #include "libsoro/videoserverarray.h"
 #include "libsoro/audioserver.h"
 #include "libsoro/gpsserver.h"
+#include "libsoro/videoformat.h"
+#include "libsoro/enums.h"
 
 namespace Soro {
 namespace Rover {

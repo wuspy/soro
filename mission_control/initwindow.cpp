@@ -100,7 +100,7 @@ void InitWindow::init_gamepadManager() {
     }
     QString err;
     if (!_gamepad->init(GAMEPAD_POLL_INTERVAL, &err)) {
-        LOG_E(LOG_TAG, "Failed to load gamepad map file from ./");
+        LOG_E(LOG_TAG, "Cannot init gamepad: " + err);
         setErrorText(err);
         delete _mcNetwork;
         disconnect(ui->retryButton, 0, this, 0);

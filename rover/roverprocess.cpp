@@ -18,6 +18,8 @@
 
 #define LOG_TAG "Rover"
 
+#define DEFAULT_AUDIO_DEVICE "hw:1"
+
 namespace Soro {
 namespace Rover {
 
@@ -256,16 +258,18 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     switch (messageType) {
     case SharedMessage_RequestActivateCamera: {
         qint32 camera;
+        QString formatString;
         VideoFormat format;
         stream >> camera;
-        stream >> reinterpret_cast<quint32&>(format);
+        stream >> formatString;
+        format.deserialize(formatString);
         if (camera >= _config->getComputer1CameraCount()) {
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
             stream2 << reinterpret_cast<quint32&>(messageType);
             stream2 << camera;
-            stream2 << format;
+            stream2 << format.serialize();
             _secondaryComputerChannel->sendMessage(byteArray2);
         }
         else {
@@ -288,10 +292,11 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
             _videoServers->deactivate(camera);
         }
         break;
-    case SharedMessage_RequestActivateAudioStream:
+    case SharedMessage_RequestActivateAudioStream: {
         AudioFormat format;
         stream >> reinterpret_cast<quint32&>(format);
-        _audioServer->start("hw:1", format);
+        _audioServer->start(DEFAULT_AUDIO_DEVICE, format);
+    }
         break;
     case SharedMessage_RequestDeactivateAudioStream:
         _audioServer->stop();

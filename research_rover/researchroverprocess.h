@@ -9,9 +9,11 @@
 #include "libsoro/audioserver.h"
 #include "libsoro/nmeamessage.h"
 #include "libsoro/videoserver.h"
+#include "libsoro/videoformat.h"
+#include "libsoro/enums.h"
 
 namespace Soro {
-namespace Research {
+namespace Rover {
 
 class ResearchRoverProcess : public QObject
 {
@@ -42,6 +44,8 @@ private:
     QString _stereoLCameraDevice;
     VideoServer *_aux1CameraServer = NULL;
     QString _aux1CameraDevice;
+    VideoServer *_monoCameraServer = NULL;
+    QString _monoCameraDevice;
 
 private slots:
     void init();
@@ -64,7 +68,7 @@ public slots:
 };
 
 
-} // namespace Research
+} // namespace Rover
 } // namespace Soro
 
 #endif // RESEARCHROVERPROCESS_H

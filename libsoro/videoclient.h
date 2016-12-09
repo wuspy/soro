@@ -8,7 +8,7 @@
 #include <QList>
 
 #include "channel.h"
-#include "enums.h"
+#include "videoformat.h"
 #include "socketaddress.h"
 
 #include "soro_global.h"
