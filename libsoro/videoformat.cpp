@@ -8,7 +8,7 @@ namespace Soro {
 VideoFormat::VideoFormat() {
     // Default
     _encoding = Encoding_Null;
-    _resolution = Resolution_480p;
+    _resolution = Resolution_640x360;
     _stereoMode = StereoMode_None;
     _bitrate = 1000000;
     _maxThreads = 3;
@@ -89,15 +89,33 @@ void VideoFormat::setMaxThreads(quint32 maxThreads) {
 }
 
 quint32 VideoFormat::getResolutionWidth() const {
-    return getResolutionWidth() * 16 / 9;
+    switch (_resolution) {
+    case Resolution_640x360:    return 640;
+    case Resolution_1024x576:   return 1024;
+    case Resolution_1152x648:   return 1152;
+    case Resolution_1280x720:   return 1280;
+    case Resolution_1600x900:   return 1600;
+    case Resolution_1920x1080:  return 1920;
+    case Resolution_2560x1440:  return 2560;
+    case Resolution_3840x2160:  return 3840;
+    }
 }
 
 quint32 VideoFormat::getResolutionHeight() const {
-    return reinterpret_cast<const quint32&>(_resolution);
+    switch (_resolution) {
+    case Resolution_640x360:    return 360;
+    case Resolution_1024x576:   return 576;
+    case Resolution_1152x648:   return 648;
+    case Resolution_1280x720:   return 720;
+    case Resolution_1600x900:   return 900;
+    case Resolution_1920x1080:  return 1080;
+    case Resolution_2560x1440:  return 1440;
+    case Resolution_3840x2160:  return 2160;
+    }
 }
 
 QString VideoFormat::toHumanReadableString() const {
-    QString str = "%1 %2p@%3 (%4Kb)";
+    QString str = "%1 %2x%3@%3 (%4Kb)";
     QString encoding;
     QString framerate;
     switch (_encoding) {
@@ -115,11 +133,12 @@ QString VideoFormat::toHumanReadableString() const {
         framerate = "Auto";
         break;
     default:
-        framerate = QString::number(_framerate) + "fps";
+        framerate = QString::number(_framerate) + "/1";
         break;
     }
 
     return str.arg(encoding,
+                   QString::number(getResolutionWidth()),
                    QString::number(getResolutionHeight()),
                    framerate,
                    QString::number(_bitrate / 1000));
@@ -129,16 +148,15 @@ QString VideoFormat::createGstEncodingArgs() const {
     QString encString = "";
     QString stereoEncString = "";
     QString framerateEncString = "";
-    quint32 height = reinterpret_cast<const quint32&>(_resolution);
 
     switch (_encoding) {
     case Encoding_MPEG2:
         encString = "videoscale method=0 ! "
-                    "video/x-raw,height=%1 ! "
-                    "%2" // For stereo
-                    "%3" // For framerate
+                    "video/x-raw,width=%1,height=%2 ! "
+                    "%3" // For stereo
+                    "%4" // For framerate
                     "videoconvert ! "
-                    "avenc_mpeg4 bitrate=%4 bitrate-tolerance=%5 max-threads=%6 ! "
+                    "avenc_mpeg4 bitrate=%5 bitrate-tolerance=%6 max-threads=%7 ! "
                     "rtpmp4vpay config-interval=3 pt=96";
         break;
     default:
@@ -150,9 +168,9 @@ QString VideoFormat::createGstEncodingArgs() const {
     switch (_stereoMode) {
     case StereoMode_SideBySide:
         stereoEncString = "videoscale method=0 add-borders=false ! "
-                          "video/x-raw,height=%1,width=%2 ! ";
-        stereoEncString = stereoEncString.arg(QString::number(height),
-                                              QString::number(height * 8 / 9));
+                          "video/x-raw,width=%1,height=%2 ! ";
+        stereoEncString = stereoEncString.arg(QString::number(getResolutionWidth() / 2),
+                                              QString::number(getResolutionHeight()));
         break;
     default:
         break;
@@ -164,7 +182,8 @@ QString VideoFormat::createGstEncodingArgs() const {
         framerateEncString = framerateEncString.arg(QString::number(_framerate));
     }
 
-    encString = encString.arg(QString::number(height),
+    encString = encString.arg(QString::number(getResolutionWidth()),
+                              QString::number(getResolutionHeight()),
                               stereoEncString,
                               framerateEncString,
                               QString::number(_bitrate),

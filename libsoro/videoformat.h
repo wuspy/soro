@@ -17,12 +17,14 @@ public:
     Q_ENUM(Encoding)
 
     enum Resolution {
-        Resolution_144p = 144,
-        Resolution_240p = 240,
-        Resolution_360p = 360,
-        Resolution_480p = 480,
-        Resolution_720p = 720,
-        Resolution_1080p = 1080
+        Resolution_640x360 = 0,
+        Resolution_1024x576,
+        Resolution_1152x648,
+        Resolution_1280x720,
+        Resolution_1600x900,
+        Resolution_1920x1080,
+        Resolution_2560x1440,
+        Resolution_3840x2160
     };
     Q_ENUM(Resolution)
 
@@ -78,15 +80,13 @@ public:
         return !(*this==other);
     }
 
-private:
+protected:
     VideoFormat::Encoding _encoding;
     VideoFormat::Resolution _resolution;
     VideoFormat::StereoMode _stereoMode;
     quint32 _bitrate;
     quint32 _maxThreads;
     quint32 _framerate;
-
-
 };
 
 } // namespace Soro

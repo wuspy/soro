@@ -43,12 +43,12 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
 
     // Define video formats
     _availableVideoFormts.append(VideoFormat()); // No video
-    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1080p, 12000000));
-    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1080p, 8000000));
-    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_720p, 5000000));
-    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_720p, 3000000));
-    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_480p, 1500000));
-    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_360p, 750000));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1920x1080, 12000000, 0, VideoFormat::StereoMode_None, 3));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1920x1080, 8000000, 0, VideoFormat::StereoMode_None, 3));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1280x720, 5000000, 0, VideoFormat::StereoMode_None, 3));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1152x648, 3000000, 0, VideoFormat::StereoMode_None, 3));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1024x576, 1500000, 0, VideoFormat::StereoMode_None, 3));
+    _availableVideoFormts.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_640x360, 750000, 0, VideoFormat::StereoMode_None, 3));
 
     _ui->setAvailableVideoFormats(_availableVideoFormts);
 
