@@ -8,9 +8,9 @@ This codebase is still under active development as it is being used for a teleop
 
 ## Dependencies
 
-### Qt 5.4+
+### Qt 5.7+
 
-Qt is the main development platform for our code, with the exception of mbed programs. Our minimum version is 5.4, because the embedded Google Maps requires the increased performance of the Blink web engine which was introduced in this version. However, Qt 5.7 is the target version and this should be used if possible.
+Qt is the main development platform for our code, with the exception of mbed programs. The minimum version is 5.7 because the research control project is based on QtQuick Controls 2.
 
 ### Gstreamer 1.X
 
