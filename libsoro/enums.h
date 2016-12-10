@@ -28,7 +28,8 @@
  * are always appended as a header to these messages to indicate what kind of data they store.
  */
 enum SharedMessageType {
-    SharedMessage_RoverSharedChannelStateChanged = 1,
+    // Start at a high bit number to vastly reduce the chance of mix-ups
+    SharedMessage_RoverSharedChannelStateChanged = 1000000000,
     SharedMessage_RoverStatusUpdate,
     SharedMessage_RoverGpsUpdate,
     SharedMessage_MissionControlConnected,
@@ -55,25 +56,26 @@ enum SharedMessageType {
 };
 
 enum RoverSubsystemState {
-    NormalSubsystemState, MalfunctionSubsystemState, UnknownSubsystemState
+    NormalSubsystemState = 1000000100, MalfunctionSubsystemState, UnknownSubsystemState
 };
 
 enum RoverCameraState {
-    StreamingCameraState, DisabledCameraState, UnavailableCameraState
+    StreamingCameraState = 1000000200, DisabledCameraState, UnavailableCameraState
 };
 
 enum DriveGamepadMode {
-    SingleStickDrive, DualStickDrive
+    SingleStickDrive = 1000000300, DualStickDrive
 };
 
 /**
  * Indicates a role a single mission control instance can fill
  */
 enum Role {
-    ArmOperatorRole, DriverRole, CameraOperatorRole, SpectatorRole, ResearchRole
+    ArmOperatorRole = 1000000400, DriverRole, CameraOperatorRole, SpectatorRole, ResearchRole
 };
 
 enum MbedMessageType {
+    // These MUST stay in 8-bit range
     MbedMessage_ArmMaster = 1,
     MbedMessage_ArmGamepad,
     MbedMessage_Drive,
