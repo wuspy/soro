@@ -271,6 +271,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
     case SharedMessage_Research_EndStereoAndMonoCameraStream:
         _stereoRCameraServer->stop();
         _stereoLCameraServer->stop();
+        _monoCameraServer->stop();
         break;
     case SharedMessage_Research_StartMonoCameraStream: {
         QString formatString;
