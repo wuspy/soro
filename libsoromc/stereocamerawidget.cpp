@@ -5,7 +5,7 @@
 
 #define LOG_TAG "StereoCameraWidget"
 
-#define NO_VIDEO_PATTERN CameraWidget::Pattern_Ball
+#define NO_VIDEO_PATTERN CameraWidget::Pattern_Snow
 
 namespace Soro {
 namespace MissionControl {

@@ -31,6 +31,7 @@ void VideoServer::onStreamStoppedInternal() {
 }
 
 void VideoServer::start(QString deviceName, VideoFormat format) {
+    LOG_I(LOG_TAG, "start(): Streaming " + deviceName + " with format " + format.toHumanReadableString());
     _videoDevice = deviceName;
     _format = format;
 

@@ -31,8 +31,8 @@ void AudioServer::onStreamStoppedInternal() {
 }
 
 void AudioServer::start(QString deviceName, AudioFormat format) {
+    LOG_I(LOG_TAG, "start(): Streaming " + deviceName + " with format " + format.toHumanReadableString());
     _audioDevice = deviceName;
-
     _format = format;
 
     // prevent onStreamStoppedInternal from resetting the stream parameters

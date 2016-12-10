@@ -44,12 +44,18 @@ void CameraWidget::play(SocketAddress address, VideoFormat format) {
     resetPipeline();
     ui->messageLabel->setVisible(false);
 
+    if (!format.isUseable()) {
+        LOG_E(LOG_TAG, "play(): Given unusable format, refusing to play");
+        stop();
+        return;
+    }
+
     _pipeline = QGst::Pipeline::create();
     _pipeline->bus()->addSignalWatch();
     QGlib::connect(_pipeline->bus(), "message", this, &CameraWidget::onBusMessage);
 
     // create a udpsrc to receive the stream
-    QString binStr = "udpsrc address=%1 port=%2 ! %3";
+    QString binStr = "udpsrc address=%1 port=%2 ! %3 ! videoconvert";
 
     binStr = binStr.arg(address.host.toString(),
                         QString::number(address.port),

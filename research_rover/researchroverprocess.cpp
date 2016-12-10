@@ -287,6 +287,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
         QString formatString;
         VideoFormat format;
         stream >> formatString;
+        format.deserialize(formatString);
         if (!_aux1CameraDevice.isEmpty()) {
             _aux1CameraServer->start(_aux1CameraDevice, format);
         }

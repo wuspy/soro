@@ -417,7 +417,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel,
         stream >> message;
 
         QMetaObject::invokeMethod(_controlUi,
-                                  "notify",
+                                  "updateGpsLocation",
                                   Q_ARG(QVariant, message.Latitude),
                                   Q_ARG(QVariant, message.Longitude),
                                   Q_ARG(QVariant, message.Heading));
