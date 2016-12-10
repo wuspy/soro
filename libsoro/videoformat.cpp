@@ -91,16 +91,17 @@ void VideoFormat::setMaxThreads(quint32 maxThreads) {
 }
 
 quint32 VideoFormat::getResolutionWidth() const {
-    return reinterpret_cast<const quint32&>(_resolution);
-}
-
-quint32 VideoFormat::getResolutionHeight() const {
     return getResolutionWidth() * 16 / 9;
 }
 
+quint32 VideoFormat::getResolutionHeight() const {
+    return reinterpret_cast<const quint32&>(_resolution);
+}
+
 QString VideoFormat::toHumanReadableString() const {
-    QString str = "%1 %2p@%3fps (%4Kb)";
+    QString str = "%1 %2p@%3 (%4Kb)";
     QString encoding;
+    QString framerate;
     switch (_encoding) {
     case Encoding_Null:
         return "No Video";
@@ -111,9 +112,18 @@ QString VideoFormat::toHumanReadableString() const {
         return "Unknown Encoding";
     }
 
+    switch (_framerate) {
+    case 0:
+        framerate = "Auto";
+        break;
+    default:
+        framerate = QString::number(_framerate) + "fps";
+        break;
+    }
+
     return str.arg(encoding,
                    QString::number(getResolutionHeight()),
-                   QString::number(_framerate),
+                   framerate,
                    QString::number(_bitrate / 1000));
 }
 

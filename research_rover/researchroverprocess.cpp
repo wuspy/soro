@@ -92,8 +92,17 @@ void ResearchRoverProcess::init() {
 
     _stereoRCameraServer = new VideoServer(MEDIAID_RESEARCH_SR_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT), this);
     _stereoLCameraServer = new VideoServer(MEDIAID_RESEARCH_SL_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT), this);
-    _aux1CameraServer = new VideoServer(MEDIAID_RESEARCH_A1_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_A1_CAMERA_PORT), this);
-    _monoCameraServer = new VideoServer(MEDIAID_RESEARCH_M_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_M_CAMERA_PORT), this);
+    _aux1CameraServer = new VideoServer(MEDIAID_RESEARCH_A1_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT), this);
+    _monoCameraServer = new VideoServer(MEDIAID_RESEARCH_M_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT), this);
+
+    connect(_stereoRCameraServer, SIGNAL(error(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_stereoLCameraServer, SIGNAL(error(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_aux1CameraServer, SIGNAL(error(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_monoCameraServer, SIGNAL(error(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
 
     UsbCameraEnumerator cameras;
     cameras.loadCameras();
@@ -157,6 +166,9 @@ void ResearchRoverProcess::init() {
 
     _audioServer = new AudioServer(MEDIAID_RESEARCH_AUDIO, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
 
+    connect(_audioServer, SIGNAL(error(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
+
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
@@ -211,6 +223,17 @@ void ResearchRoverProcess::driveChannelMessageReceived(Channel* channel, const c
         LOG_E(LOG_TAG, "Received invalid message from mission control on drive control channel");
         break;
     }
+}
+
+void ResearchRoverProcess::mediaServerError(MediaServer *server, QString message) {
+    QByteArray byeArray;
+    QDataStream stream(&byeArray, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    SharedMessageType messageType = SharedMessage_RoverMediaServerError;
+
+    stream <<(qint32)server->getMediaId();
+    stream << message;
+    _sharedChannel->sendMessage(byeArray);
 }
 
 void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const char* message, Channel::MessageSize size) {

@@ -40,8 +40,31 @@ public:
     ~CameraWidget();
 
     enum Pattern {
-        Snow,
-        SMPTE100
+        Pattern_SMPTE = 0,
+        Pattern_Snow,
+        Pattern_Black,
+        Pattern_White,
+        Pattern_Red,
+        Pattern_Green,
+        Pattern_Blue,
+        Pattern_Checkers1,
+        Pattern_Checkers2,
+        Pattern_Checkers4,
+        Pattern_Checkers8,
+        Pattern_Circular,
+        Pattern_Blink,
+        Pattern_SMPTE75,
+        Pattern_ZonePlate,
+        Pattern_Gamut,
+        Pattern_ChromaZonePlate,
+        Pattern_Solid,
+        Pattern_Ball,
+        Pattern_SMPTE100,
+        Pattern_Bar,
+        Pattern_Pinwheel,
+        Pattern_Spokes,
+        Pattern_Gradient,
+        Pattern_Colors
     };
 
     /* Configure the widget to receive a video stream from a UDP socket. If succesful,
@@ -52,7 +75,7 @@ public:
     /* Stops video playback, and displays they reason why
      * if one is provided.
      */
-    void stop(QString reason = "", CameraWidget::Pattern pattern=CameraWidget::Pattern::Snow);
+    void stop(QString reason = "", CameraWidget::Pattern pattern=CameraWidget::Pattern::Pattern_Snow);
 
     /* Set to false to disable the text overlay feature
      */

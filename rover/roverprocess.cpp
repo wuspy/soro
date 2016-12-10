@@ -129,6 +129,9 @@ void RoverProcess::init() {
     _videoServers = new VideoServerArray(this);
     _videoServers->populate(_config->getBlacklistedCameras(), NETWORK_ALL_CAMERA_PORT_1, 0);
 
+    connect(_videoServers, SIGNAL(videoServerError(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
+
     if (_videoServers->serverCount() > _config->getComputer1CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
         while (_videoServers->serverCount() > _config->getComputer1CameraCount()) {
@@ -142,6 +145,8 @@ void RoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Initializing Audio system*******************");
 
     _audioServer = new AudioServer(MEDIAID_AUDIO, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
+    connect(_audioServer, SIGNAL(error(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
 
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
@@ -320,14 +325,14 @@ void RoverProcess::secondaryComputerBroadcastSocketReadyRead() {
     }
 }
 
-void RoverProcess::videoServerError(int cameraId, QString message) {
+void RoverProcess::mediaServerError(MediaServer *server, QString message) {
     QByteArray byteArray;
     QDataStream stream(&byteArray, QIODevice::WriteOnly);
-    SharedMessageType messageType = SharedMessage_RoverVideoServerError;
+    SharedMessageType messageType = SharedMessage_RoverMediaServerError;
     stream.setByteOrder(QDataStream::BigEndian);
 
     stream << reinterpret_cast<quint32&>(messageType);
-    stream << (qint32)cameraId;
+    stream << (qint32)server->getMediaId();
     stream << message;
 
     _sharedChannel->sendMessage(byteArray);

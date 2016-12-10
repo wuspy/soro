@@ -5,6 +5,8 @@
 
 #define LOG_TAG "StereoCameraWidget"
 
+#define NO_VIDEO_PATTERN CameraWidget::Pattern_Ball
+
 namespace Soro {
 namespace MissionControl {
 
@@ -45,7 +47,6 @@ void StereoCameraWidget::resizeEvent(QResizeEvent* event) {
     default:
         break;
     }
-
 }
 
 void StereoCameraWidget::setStereoMode(VideoFormat::StereoMode mode) {
@@ -70,7 +71,7 @@ void StereoCameraWidget::playStereo(SocketAddress addressL, VideoFormat encoding
 
     if (ui->monoCameraWidget->isVisible()) {
         // Stop and hide mono
-        ui->monoCameraWidget->stop("", CameraWidget::SMPTE100);
+        ui->monoCameraWidget->stop("", NO_VIDEO_PATTERN);
         ui->monoCameraWidget->hide();
     }
     // Play stereo
@@ -85,9 +86,9 @@ void StereoCameraWidget::playStereo(SocketAddress addressL, VideoFormat encoding
 void StereoCameraWidget::playMono(SocketAddress address, VideoFormat encoding) {
     if (!ui->monoCameraWidget->isVisible()) {
         // Stop and hide stereo
-        ui->stereoLCameraWidget->stop("", CameraWidget::SMPTE100);
+        ui->stereoLCameraWidget->stop("", NO_VIDEO_PATTERN);
         ui->stereoLCameraWidget->hide();
-        ui->stereoRCameraWidget->stop("", CameraWidget::SMPTE100);
+        ui->stereoRCameraWidget->stop("", NO_VIDEO_PATTERN);
         ui->stereoRCameraWidget->hide();
     }
     // Play mono
@@ -100,9 +101,9 @@ void StereoCameraWidget::stop(bool stereo) {
         LOG_E(LOG_TAG, "stop(): Stereo mode is not set, cannot stop with stereo visualization. Please specify which stereo mode you want");
         stereo = false;
     }
-    ui->stereoLCameraWidget->stop("", CameraWidget::SMPTE100);
-    ui->stereoRCameraWidget->stop("", CameraWidget::SMPTE100);
-    ui->monoCameraWidget->stop("", CameraWidget::SMPTE100);
+    ui->stereoLCameraWidget->stop("", NO_VIDEO_PATTERN);
+    ui->stereoRCameraWidget->stop("", NO_VIDEO_PATTERN);
+    ui->monoCameraWidget->stop("", NO_VIDEO_PATTERN);
     if (stereo) {
         ui->monoCameraWidget->hide();
         ui->stereoLCameraWidget->show();

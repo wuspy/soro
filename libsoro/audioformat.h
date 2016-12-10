@@ -6,7 +6,9 @@
 
 namespace Soro {
 
-struct AudioFormat: public MediaFormat {
+class AudioFormat: public MediaFormat {
+    Q_GADGET
+public:
 
     enum Encoding {
         Encoding_Null = 0,

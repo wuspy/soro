@@ -57,6 +57,7 @@ private slots:
     void sharedChannelMessageReceived(Channel* channel, const char* message, Channel::MessageSize size);
     void mbedMessageReceived(MbedChannel* channel, const char* message, int size);
     void gpsUpdate(NmeaMessage message);
+    void mediaServerError(MediaServer* server, QString message);
 
 public:
     explicit ResearchRoverProcess(QObject *parent = 0);

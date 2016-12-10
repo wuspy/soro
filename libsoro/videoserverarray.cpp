@@ -122,7 +122,7 @@ void VideoServerArray::serverStateChanged(MediaServer *server, MediaServer::Stat
 }
 
 void VideoServerArray::serverError(MediaServer *server, QString error) {
-    emit videoServerError(server->getMediaId(), error);
+    emit videoServerError(server, error);
 }
 
 } // namespace Soro

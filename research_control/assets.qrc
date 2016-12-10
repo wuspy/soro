@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>ic_check_circle_black_48px.svg</file>
+        <file>ic_error_black_48px.svg</file>
+        <file>ic_fullscreen_black_48px.svg</file>
+        <file>ic_fullscreen_exit_black_48px.svg</file>
+        <file>ic_info_black_48px.svg</file>
+        <file>ic_warning_black_48px.svg</file>
+    </qresource>
+    <qresource prefix="/html">
+        <file>map.html</file>
+    </qresource>
+</RCC>

@@ -383,13 +383,18 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         handleCameraNameChanged(cameraId, newName);
     }
         break;
-    case SharedMessage_RoverVideoServerError: {
-        qint32 cameraId;
+    case SharedMessage_RoverMediaServerError: {
+        qint32 mediaId;
         QString error;
-        stream >> cameraId;
+        stream >> mediaId;
         stream >> error;
 
-        LOG_E(LOG_TAG, "Streaming error on camera " + QString::number(cameraId) + ": " + error);
+        if (mediaId == MEDIAID_AUDIO) {
+            LOG_E(LOG_TAG, "Streaming error audio: " + error);
+        }
+        else {
+            LOG_E(LOG_TAG, "Streaming error camera ID " + QString::number(mediaId) + ": " + error);
+        }
     }
         break;
     case SharedMessage_RoverGpsUpdate: {

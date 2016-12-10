@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html style="height: 100%; width: 100%; background: transparent;">
+<head>
+	<script src="http://maps.googleapis.com/maps/api/js"></script>
+	<script>
+		var located = false;
+		var lastLocation = null;
+		var map = null;
+		var markers = [];
+		var headingMarker = null;
+		var lastHeading = 0;
+		var markerCount = 0;
+
+		/* Initializes the map with its default view
+		 */
+		function initialize() {
+			//initialize the map with an overview of the US
+			//centered on Norman
+			var mapProp = {
+				center: new google.maps.LatLng(35.22,-97.44),
+				zoom: 4,
+				streetViewControl: false,
+				scaleControl: true,
+				overviewMapControl: false,
+				mapTypeId: google.maps.MapTypeId.HYBRID
+			};
+			map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+		}
+
+		/* Repositions and zooms the map to the last known location
+	     */
+		function recenter() {
+			//recenter the map to the location
+			var mapProp = {
+				center: lastLocation,
+				zoom: 20,
+				streetViewControl: false,
+				scaleControl: true,
+				overviewMapControl: false,
+				mapTypeId: google.maps.MapTypeId.HYBRID
+			};
+			map.setOptions(mapProp);
+		}
+
+		/* Called by the host application when the position has changed
+		 */
+		function updateLocation(lat, long, heading) {
+			var newLocation = new google.maps.LatLng(lat, long);
+			if (located) {
+				//add a polyline from the last location to the current one
+				new google.maps.Polyline({
+				    path: [lastLocation, newLocation],
+				    geodesic: true,
+				    strokeColor: 'red',
+				    strokeOpacity: 1.0,
+				    strokeWeight: 2,
+				    map: map
+				});
+				lastLocation = newLocation;
+			}
+			else {
+				located = true;
+				lastLocation = newLocation;
+				recenter();
+			}
+			// set heading marker
+
+			if (headingMarker != null) {
+				headingMarker.setMap(null);
+			}
+			headingMarker = new google.maps.Marker({
+			    position: newLocation,
+			    icon: {
+					path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+				    fillColor: 'red',
+				    fillOpacity: 1,
+				    scale: 4,
+				    rotation: heading,
+					strokeColor: 'white',
+					strokeWeight: 2
+				},
+			    map: map
+			});
+		}
+
+		/* Called by the host application to add a marker to the current position on
+		 * the map
+		 *
+		 * Returns a number with the ID of the marker in case it should be removed later
+		 */
+		function addMarker(type) {
+			if (!located) return;
+			var color, path;
+			switch(type) {
+				case "blue-circle":
+					color = 'blue';
+					path = google.maps.SymbolPath.CIRCLE;
+					break;
+				case "red-circle":
+					color = 'red';
+					path = google.maps.SymbolPath.CIRCLE;
+					break;
+				case "orange-circle":
+					color = 'orange';
+					path = google.maps.SymbolPath.CIRCLE;
+					break;
+				case "purple-circle":
+					color = 'purple';
+					path = google.maps.SymbolPath.CIRCLE;
+					break;
+				case "green-circle":
+					color = 'green';
+					path = google.maps.SymbolPath.CIRCLE;
+					break;
+				case "yellow-circle":
+					color = 'yellow';
+					path = google.maps.SymbolPath.CIRCLE;
+					break;
+			}
+			markers[markerCount] = new google.maps.Marker({
+			    position: lastLocation,
+			    icon: {
+					path: path,
+				    fillColor: color,
+				    fillOpacity: 1,
+				    scale: 6,
+					strokeColor: 'white',
+					strokeWeight: 2
+				},
+			    map: map
+			});
+			return markerCount++;
+		}
+
+		/* Called by the host application to remove a previously placed 
+		 * marker by its ID
+		 */
+		function removeMarker(markerID) {
+			if (markerID < markerCount) {
+				markers[markerID].setMap(null);
+			}
+		}
+
+		google.maps.event.addDomListener(window, 'load', initialize);
+	</script>
+</head>
+
+<body style="height: 100%; width: 100%; overflow: hidden;">
+	<div id="googleMap" style="height:100%; width: 100%; left: -10px; right: -10px; top: -10px; bottom: -10px;"></div>
+</body>
+</html>

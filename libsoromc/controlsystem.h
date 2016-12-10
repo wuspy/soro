@@ -26,7 +26,7 @@ public:
     ~ControlSystem();
 
 signals:
-    void connectionStateChanged(bool connected);
+    void connectionStateChanged(Channel::State state);
 
 protected:
     Channel *_channel = NULL;

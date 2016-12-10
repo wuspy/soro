@@ -172,7 +172,7 @@ public:
     /* Returns true if this channel is or was connected to a peer
      * at some point
      */
-    bool wasConnected();
+    bool wasConnected() const;
 
     void setSimulatedDelay(int ms);
 

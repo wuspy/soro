@@ -12,7 +12,7 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT       += core gui network widgets qml quick quickcontrols2 #webenginewidgets
+QT       += core gui network widgets qml quick quickcontrols2 webengine
 CONFIG   += c++11
 
 TARGET = research_control
@@ -29,18 +29,19 @@ PRECOMPILED_DIR = $$BUILD_DIR
 SOURCES += main.cpp\
     researchprocess.cpp \
     researchmainwindow.cpp \
-    settingsform.cpp
+    settingsmodel.cpp
 
 HEADERS  += \
     researchprocess.h \
     researchmainwindow.h \
-    settingsform.h
+    settingsmodel.h
 
 FORMS    += \
     researchmainwindow.ui
 
 RESOURCES += \
-    qml.qrc
+    qml.qrc \
+    assets.qrc
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..

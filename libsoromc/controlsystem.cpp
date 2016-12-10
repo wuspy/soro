@@ -54,7 +54,7 @@ bool ControlSystem::init(QString channelName, quint16 channelPort, QString *erro
 
 void ControlSystem::channelStateChanged(Channel *channel, Channel::State state) {
     Q_UNUSED(channel);
-    emit connectionStateChanged(state == Channel::ConnectedState);
+    emit connectionStateChanged(state);
 }
 
 }

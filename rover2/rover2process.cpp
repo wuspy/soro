@@ -46,6 +46,9 @@ void Rover2Process::init() {
                             NETWORK_ALL_CAMERA_PORT_1 + _config->getComputer1CameraCount(),
                             _config->getComputer1CameraCount());
 
+    connect(_videoServers, SIGNAL(videoServerError(MediaServer*,QString)),
+            this, SLOT(mediaServerError(MediaServer*,QString)));
+
     if (_videoServers->serverCount() > _config->getComputer2CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
         while (_videoServers->serverCount() > _config->getComputer2CameraCount()) {
@@ -168,6 +171,19 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
     default:
         break;
     }
+}
+
+void Rover2Process::mediaServerError(MediaServer *server, QString message) {
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_RoverMediaServerError;
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << (qint32)server->getMediaId();
+    stream << message;
+
+    _masterComputerChannel->sendMessage(byteArray);
 }
 
 Rover2Process::~Rover2Process() {\

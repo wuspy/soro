@@ -1,5 +1,5 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef SORO_MISSIONCONTROL_RESEARCHMAINWINDOW_H
+#define SORO_MISSIONCONTROL_RESEARCHMAINWINDOW_H
 
 #include <QMainWindow>
 
@@ -29,4 +29,4 @@ private:
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // MAINWINDOW_H
+#endif // SORO_MISSIONCONTROL_RESEARCHMAINWINDOW_H

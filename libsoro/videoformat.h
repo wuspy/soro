@@ -6,12 +6,15 @@
 
 namespace Soro {
 
-struct VideoFormat: public MediaFormat {
+class VideoFormat: public MediaFormat {
+    Q_GADGET
+public:
 
     enum Encoding {
         Encoding_Null = 0,
         Encoding_MPEG2
     };
+    Q_ENUM(Encoding)
 
     enum Resolution {
         Resolution_144p = 144,
@@ -21,11 +24,13 @@ struct VideoFormat: public MediaFormat {
         Resolution_720p = 720,
         Resolution_1080p = 1080
     };
+    Q_ENUM(Resolution)
 
     enum StereoMode {
         StereoMode_None = 0,
         StereoMode_SideBySide
     };
+    Q_ENUM(StereoMode)
 
     VideoFormat();
     VideoFormat(const VideoFormat& other);

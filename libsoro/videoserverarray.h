@@ -52,7 +52,7 @@ public:
     void remove(int index);
 
 signals:
-    void videoServerError(int index, QString error);
+    void videoServerError(MediaServer *server, QString error);
     void videoServerStateChanged(int index, VideoServer::State state);
 
 private:

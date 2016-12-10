@@ -1,11 +1,15 @@
-#ifndef SORO_MISSIONCONTROL_SOROWINDOWCONTROLLER_H
-#define SORO_MISSIONCONTROL_SOROWINDOWCONTROLLER_H
+#ifndef SORO_MISSIONCONTROL_RESEARCHCONTROLPROCESS_H
+#define SORO_MISSIONCONTROL_RESEARCHCONTROLPROCESS_H
 
 #include <QtCore>
 #include <QMainWindow>
 #include <QObject>
 #include <QQmlEngine>
 #include <QQmlEngine>
+#include <QQuickWindow>
+#include <QQmlComponent>
+
+#include <SDL2/SDL.h>
 
 #include "libsoro/constants.h"
 #include "libsoro/enums.h"
@@ -26,8 +30,7 @@
 #include "libsoromc/cameracontrolsystem.h"
 
 #include "researchmainwindow.h"
-#include "settingsform.h"
-
+#include "settingsmodel.h"
 
 namespace Soro {
 namespace MissionControl {
@@ -44,11 +47,11 @@ signals:
     void windowClosed();
 
 private:
-    QHostAddress _roverAddress;
+    SettingsModel _settings;
 
-    //the main UI components
-    ResearchMainWindow *_mainUI = NULL;
-    SettingsForm *_settingsUI = NULL;
+    // The main UI components
+    ResearchMainWindow *_mainUi = NULL;
+    QQuickWindow *_controlUi = NULL;
 
     // Communicates with the rover shared channel
     Channel *_roverChannel = NULL;
@@ -57,6 +60,10 @@ private:
     DriveControlSystem *_driveSystem = NULL;
 
     GamepadManager *_gamepad = NULL;
+
+    // Timer ID's
+    int _pingTimerId = TIMER_INACTIVE;
+    int _bitrateUpdateTimerId = TIMER_INACTIVE;
 
     VideoClient *_stereoLVideoClient = NULL;
     VideoClient *_stereoRVideoClient = NULL;
@@ -68,35 +75,37 @@ private:
     Soro::Gst::AudioPlayer *_audioPlayer = NULL;
 private:
     void stopAllRoverCameras();
+    void startMonoCameraStream(VideoFormat format);
+    void startStereoCameraStream(VideoFormat format);
+    void startAux1CameraStream(VideoFormat format);
+    void startAudioStream(AudioFormat format);
+    void stopAudio();
 
 private slots:
-    void roverSharedChannelStateChanged(Channel *channel, Channel::State state);
+    void updateUiConnectionState();
     void roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void videoClientStateChanged(MediaClient *client, MediaClient::State state);
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
+    void driveConnectionStateChanged(Channel::State state);
+    void gamepadChanged(SDL_GameController *controller, QString name);
 
     /**
-     * Receives the signal from the UI when a new mono camera format is selected
+     * Receives the signal from the UI when the settings have been applied and should be enacted
      */
-    void ui_monoCameraFormatSelected(VideoFormat format);
-    /**
-     * Receives the signal from the UI when a new stereo camera format is selected
-     */
-    void ui_stereoCameraFormatSelected(VideoFormat format);
-    /**
-     * Receives the signal from the UI when a new format is selected for aux camera 1
-     */
-    void ui_aux1CameraFormatSelected(VideoFormat format);
-    /**
-     * Receives the signal from the UI when a new audio stream format is selected
-     */
-    void ui_audioStreamFormatSelected(AudioFormat format);
+    void ui_settingsApplied();
 
-    void gamepadPoll();
+    /**
+     * Receives the signal from the UI when it requests that the settings and information in its view state
+     * be updated
+     */
+    void ui_requestUiSync();
+
+protected:
+    void timerEvent(QTimerEvent *e);
 
 };
 
 }
 }
 
-#endif // SORO_MISSIONCONTROL_SOROWINDOWCONTROLLER_H
+#endif // SORO_MISSIONCONTROL_RESEARCHCONTROLPROCESS_H

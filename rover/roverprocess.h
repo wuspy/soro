@@ -76,7 +76,7 @@ private slots:
 
     void sendSystemStatusMessage();
 
-    void videoServerError(int cameraId, QString message);
+    void mediaServerError(MediaServer *server, QString message);
 
     void gpsUpdate(NmeaMessage message);
 

@@ -17,6 +17,8 @@
 #include <QApplication>
 #include <QProcessEnvironment>
 #include <QQmlApplicationEngine>
+#include <QtWebEngine/qtwebengineglobal.h>
+#include <QQuickStyle>
 
 #include <Qt5GStreamer/QGst/Init>
 
@@ -32,7 +34,9 @@ using namespace Soro::MissionControl;
 int main(int argc, char *argv[]) {
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication a(argc, argv);
+
     QGst::init();
+    QtWebEngine::initialize();
 
     // set root log output file
     Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
@@ -69,6 +73,7 @@ int main(int argc, char *argv[]) {
     }
 
     QQmlEngine engine(&a);
+    QQuickStyle::setStyle("Material");
     ResearchControlProcess process(QHostAddress(roverIP), &gamepad, &engine, &a);
 
     return a.exec();

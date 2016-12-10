@@ -45,6 +45,7 @@ private slots:
     void masterChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
     void masterChannelStateChanged(Channel* channel, Channel::State state);
     void masterComputerBroadcastSocketReadyRead();
+    void mediaServerError(MediaServer *server, QString error);
 
 protected:
     void timerEvent(QTimerEvent *e);

@@ -83,24 +83,17 @@ void CameraWidget::stop(QString reason, CameraWidget::Pattern pattern) {
     }
     ui->messageLabel->setVisible(_showText);
 
-    if (_isPlaying) {
-        int patternNo;
-        switch (pattern) {
-        case Pattern::SMPTE100:
-            patternNo = 19;
-            break;
-        case Pattern::Snow:
-        default:
-            patternNo = 1;
-            break;
-        }
-
+    //if (_isPlaying) {
         resetPipeline();
         //create videotestsrc pipeline for coolness
+        QString binStr = "videotestsrc pattern=%1 ! video/x-raw,width=%2,height=%3 ! videoconvert";
+        binStr = binStr.arg(QString::number((int)reinterpret_cast<quint32&>(pattern)),
+                            QString::number(ui->videoWidget->width()),
+                            QString::number(ui->videoWidget->height()));
+
         _pipeline = QGst::Pipeline::create();
         QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
-        QGst::ElementPtr source = QGst::ElementFactory::make("videotestsrc");
-        source->setProperty("pattern", patternNo);
+        QGst::BinPtr source = QGst::Bin::fromDescription(binStr);
         sink->setProperty("force-aspect-ratio", false);
 
         _pipeline->add(source, sink);
@@ -109,7 +102,7 @@ void CameraWidget::stop(QString reason, CameraWidget::Pattern pattern) {
 
         _isPlaying = false;
         _pipeline->setState(QGst::StatePlaying);
-    }
+    //}
 }
 
 void CameraWidget::resetPipeline() {

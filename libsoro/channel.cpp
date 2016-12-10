@@ -786,7 +786,7 @@ void Channel::setUdpDropOldPackets(bool dropOldPackets) {
     _dropOldPackets = dropOldPackets;
 }
 
-bool Channel::wasConnected() {
+bool Channel::wasConnected() const {
     return _wasConnected;
 }
 

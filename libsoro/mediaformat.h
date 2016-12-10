@@ -5,7 +5,10 @@
 
 namespace Soro {
 
-struct MediaFormat {
+class MediaFormat {
+    Q_GADGET
+
+public:
 
     virtual ~MediaFormat() { }
 

@@ -35,7 +35,7 @@ enum SharedMessageType {
     SharedMessage_MissionControlDisconnected,
     SharedMessage_RequestActivateCamera,
     SharedMessage_RequestDeactivateCamera,
-    SharedMessage_RoverVideoServerError,
+    SharedMessage_RoverMediaServerError,
     SharedMessage_MissionControlChat,
     SharedMessage_CameraChanged,
     SharedMessage_BitrateUpdate,
@@ -49,7 +49,9 @@ enum SharedMessageType {
     SharedMessage_Research_StartMonoCameraStream,
     SharedMessage_Research_EndStereoAndMonoCameraStream,
     SharedMessage_Research_StartAux1CameraStream,
-    SharedMessage_Research_EndAux1CameraStream
+    SharedMessage_Research_EndAux1CameraStream,
+    SharedMessage_Research_RoverDriveOverrideStart,
+    SharedMessage_Research_RoverDriveOverrideEnd
 };
 
 enum RoverSubsystemState {
