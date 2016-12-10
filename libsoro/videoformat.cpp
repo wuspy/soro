@@ -114,8 +114,18 @@ quint32 VideoFormat::getResolutionHeight() const {
     }
 }
 
+quint32 VideoFormat::getWidth() const {
+    return _stereoMode == StereoMode_SideBySide ?
+                getResolutionWidth() / 2 :
+                getResolutionWidth();
+}
+
+quint32 VideoFormat::getHeight() const {
+    return getResolutionHeight();
+}
+
 QString VideoFormat::toHumanReadableString() const {
-    QString str = "%1 %2x%3@%3 (%4Kb)";
+    QString str = "%1 %2x%3@%4 (%5Kb)";
     QString encoding;
     QString framerate;
     switch (_encoding) {
@@ -169,8 +179,8 @@ QString VideoFormat::createGstEncodingArgs() const {
     case StereoMode_SideBySide:
         stereoEncString = "videoscale method=0 add-borders=false ! "
                           "video/x-raw,width=%1,height=%2 ! ";
-        stereoEncString = stereoEncString.arg(QString::number(getResolutionWidth() / 2),
-                                              QString::number(getResolutionHeight()));
+        stereoEncString = stereoEncString.arg(QString::number(getWidth()),
+                                              QString::number(getHeight()));
         break;
     default:
         break;

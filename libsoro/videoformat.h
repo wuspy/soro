@@ -59,8 +59,8 @@ public:
     void setStereoMode(VideoFormat::StereoMode stereo);
     void setMaxThreads(quint32 maxThreads);
 
-    quint32 getResolutionHeight() const;
-    quint32 getResolutionWidth() const;
+    quint32 getWidth() const;
+    quint32 getHeight() const;
 
     bool isUseable() const Q_DECL_OVERRIDE;
 
@@ -87,6 +87,9 @@ protected:
     quint32 _bitrate;
     quint32 _maxThreads;
     quint32 _framerate;
+
+    quint32 getResolutionHeight() const;
+    quint32 getResolutionWidth() const;
 };
 
 } // namespace Soro
