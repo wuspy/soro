@@ -626,7 +626,7 @@ bool Channel::sendMessage(const char *message, MessageSize size) {
         return sendMessage(message, size, MSGTYPE_NORMAL);
     }
     else {
-        LOG_W(LOG_TAG, "Channel not connected, a message was not sent");
+        //LOG_W(LOG_TAG, "Channel not connected, a message was not sent");
         return false;
     }
 }
