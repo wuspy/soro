@@ -42,6 +42,7 @@ int UsbCameraEnumerator::loadCameras() {
             QProcess grepName;
             grepName.start("grep -m1 {name}==\"");
             grepName.write(udevadmOutput);
+            grepName.closeWriteChannel();
             grepName.waitForFinished();
             QString name(grepName.readAllStandardOutput());
             if (!name.isEmpty()) {
@@ -52,6 +53,7 @@ int UsbCameraEnumerator::loadCameras() {
             QProcess grepVendor;
             grepVendor.start("grep -m1 {idVendor}==\"");
             grepVendor.write(udevadmOutput);
+            grepName.closeWriteChannel();
             grepVendor.waitForFinished();
             QString vendor(grepVendor.readAllStandardOutput());
             if (!vendor.isEmpty()) {
@@ -62,6 +64,7 @@ int UsbCameraEnumerator::loadCameras() {
             QProcess grepProduct;
             grepProduct.start("grep -m1 {idProduct}==\"");
             grepProduct.write(udevadmOutput);
+            grepProduct.closeWriteChannel();
             grepProduct.waitForFinished();
             QString product(grepProduct.readAllStandardOutput());
             if (!product.isEmpty()) {
@@ -72,6 +75,7 @@ int UsbCameraEnumerator::loadCameras() {
             QProcess grepSerial;
             grepSerial.start("grep -m1 {serial}==\"");
             grepSerial.write(udevadmOutput);
+            grepSerial.closeWriteChannel();
             grepSerial.waitForFinished();
             QString serial(grepSerial.readAllStandardOutput());
             if (!serial.isEmpty()) {
