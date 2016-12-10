@@ -61,7 +61,6 @@ private:
     QTcpServer *_ipcServer = NULL;
     QTcpSocket *_ipcSocket = NULL;
     int _startInternalTimerId = TIMER_INACTIVE;
-    QString LOG_TAG;
 
     void beginStream(SocketAddress address);
 
@@ -88,6 +87,8 @@ signals:
     void error(MediaServer *server, QString message);
 
 protected:
+    QString LOG_TAG;
+
     /**
      * @param logTag Tag that will be used for logging info.
      * @param mediaId Used to identify this particular media stream. Must match on both ends, and should be unique across
