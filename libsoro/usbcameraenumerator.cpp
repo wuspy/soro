@@ -19,6 +19,7 @@
 
 #define LOG_TAG "UsbCameraEnumerator"
 
+
 namespace Soro {
 
 int UsbCameraEnumerator::loadCameras() {
@@ -36,50 +37,34 @@ int UsbCameraEnumerator::loadCameras() {
             QProcess udevadm;
             udevadm.start("udevadm info -a -n " + camera->device);
             udevadm.waitForFinished();
-            QByteArray udevadmOutput = udevadm.readAllStandardOutput();
+            QString udevadmOutput = QString(udevadm.readAllStandardOutput());
 
-            // Grep for name
-            QProcess grepName;
-            grepName.start("grep -m1 {name}==\"");
-            grepName.write(udevadmOutput);
-            grepName.closeWriteChannel();
-            grepName.waitForFinished();
-            QString name(grepName.readAllStandardOutput());
-            if (!name.isEmpty()) {
-                camera->name = name.mid(name.indexOf("\"") + 1, name.lastIndexOf("\"") - name.indexOf("\"") - 1);
+            QLatin1String nameToken("{name}==\"");
+            int nameIndex = udevadmOutput.indexOf(nameToken);
+            if (nameIndex >= 0) {
+                nameIndex += nameToken.size();
+                camera->name = udevadmOutput.mid(nameIndex, udevadmOutput.indexOf("\"", nameIndex) - nameIndex);
             }
 
-            // Grep for vendor ID
-            QProcess grepVendor;
-            grepVendor.start("grep -m1 {idVendor}==\"");
-            grepVendor.write(udevadmOutput);
-            grepName.closeWriteChannel();
-            grepVendor.waitForFinished();
-            QString vendor(grepVendor.readAllStandardOutput());
-            if (!vendor.isEmpty()) {
-                camera->vendorId = vendor.mid(vendor.indexOf("\"") + 1, vendor.lastIndexOf("\"") - vendor.indexOf("\"") - 1);
+            QLatin1String vendorToken("{idVendor}==\"");
+            int vendorIndex = udevadmOutput.indexOf(vendorToken);
+            if (vendorIndex >= 0) {
+                vendorIndex += vendorToken.size();
+                camera->vendorId = udevadmOutput.mid(vendorIndex, udevadmOutput.indexOf("\"", vendorIndex) - vendorIndex);
             }
 
-            // Grep for product ID
-            QProcess grepProduct;
-            grepProduct.start("grep -m1 {idProduct}==\"");
-            grepProduct.write(udevadmOutput);
-            grepProduct.closeWriteChannel();
-            grepProduct.waitForFinished();
-            QString product(grepProduct.readAllStandardOutput());
-            if (!product.isEmpty()) {
-                camera->productId = product.mid(product.indexOf("\"") + 1, product.lastIndexOf("\"") - product.indexOf("\"") - 1);
+            QLatin1String productToken("{idProduct}==\"");
+            int productIndex = udevadmOutput.indexOf(productToken);
+            if (productIndex >= 0) {
+                productIndex += productToken.size();
+                camera->productId = udevadmOutput.mid(productIndex, udevadmOutput.indexOf("\"", productIndex) - productIndex);
             }
 
-            // Grep for serial
-            QProcess grepSerial;
-            grepSerial.start("grep -m1 {serial}==\"");
-            grepSerial.write(udevadmOutput);
-            grepSerial.closeWriteChannel();
-            grepSerial.waitForFinished();
-            QString serial(grepSerial.readAllStandardOutput());
-            if (!serial.isEmpty()) {
-                camera->serial = serial.mid(serial.indexOf("\"") + 1, serial.lastIndexOf("\"") - serial.indexOf("\"") - 1);
+            QLatin1String serialToken("{serial}==\"");
+            int serialIndex = udevadmOutput.indexOf(serialToken);
+            if (serialIndex >= 0) {
+                serialIndex += serialToken.size();
+                camera->serial = udevadmOutput.mid(serialIndex, udevadmOutput.indexOf("\"", serialIndex) - serialIndex);
             }
 
             LOG_I(LOG_TAG, "Found camera " + camera->toString());
