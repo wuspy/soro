@@ -89,7 +89,7 @@ void SettingsModel::setSelectedCamera(int mediaId) {
 }
 
 VideoFormat SettingsModel::getSelectedVideoFormat() {
-    if ((selectedVideoFormat > 0) && (selectedVideoFormat < defaultVideoFormats.length())) {
+    if ((selectedVideoFormat >= 0) && (selectedVideoFormat < defaultVideoFormats.length())) {
         return defaultVideoFormats[selectedVideoFormat];
     }
     return VideoFormat();

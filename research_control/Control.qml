@@ -125,7 +125,7 @@ ApplicationWindow {
                 downUnits = "Mb/s"
                 bpsDown = Math.round(bpsDown / 10000) / 100
             }
-            else if (down > 1000) {
+            else if (bpsDown > 1000) {
                 downUnits = "Kb/s"
                 bpsDown = Math.round(bpsDown / 10) / 100
             }
@@ -229,7 +229,7 @@ ApplicationWindow {
                     statusImage.visible: true
                     bitrateLabel.visible: true
                     statusLabel.text: "Connected"
-                    statusImage.source: "ic_check_circle_black_48px.svg"
+                    statusImage.source: "qrc:/icons/ic_check_circle_black_48px.svg"
                     avGroupBox.enabled: true
                     simulationGroupBox.enabled: true
                     gpsGroupBox.enabled: true
@@ -244,7 +244,7 @@ ApplicationWindow {
                     statusImage.visible: true
                     bitrateLabel.visible: false
                     statusLabel.text: "Error"
-                    statusImage.source: "ic_error_black_48px.svg"
+                    statusImage.source: "qrc:/icons/ic_error_black_48px.svg"
                     settingsPane.enabled: false
                 }
             }
@@ -310,7 +310,7 @@ ApplicationWindow {
             anchors.right: parent.right
             anchors.rightMargin: 0
             anchors.bottomMargin: 8
-            anchors.bottom: settingsFooterPane.visible ? settingsFooterPane.top : parent.bottom
+            anchors.bottom: settingsFooterPane.state == "visible" ? settingsFooterPane.top : parent.bottom
             anchors.left: parent.left
             anchors.leftMargin: 0
             anchors.top: parent.top
@@ -496,7 +496,7 @@ ApplicationWindow {
                     Switch {
                         id: stereoVideoSwitch
                         text: checked ? qsTr("Stereo On") : qsTr("Stereo Off")
-                        enabled: stereoUiSwitch.checked & enableVideoSwitch.enabled & enableVideoSwitch.checked & stereoCameraNames
+                        enabled: stereoUiSwitch.checked & enableVideoSwitch.enabled & enableVideoSwitch.checked
                         anchors.left: stereoVideoLabel.right
                         anchors.leftMargin: 12
                         anchors.top: videoFormatCombo.bottom

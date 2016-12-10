@@ -37,9 +37,7 @@ VideoFormat::VideoFormat(VideoFormat::Encoding encoding, VideoFormat::Resolution
 VideoFormat::~VideoFormat() { }
 
 bool VideoFormat::isUseable() const {
-    return (_encoding != Encoding_Null) &&
-            (_bitrate > 0) &&
-            (_framerate > 0);
+    return (_encoding != Encoding_Null) && (_bitrate > 0);
 }
 
 VideoFormat::Encoding VideoFormat::getEncoding() const {

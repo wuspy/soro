@@ -5,7 +5,6 @@
 #include <QCoreApplication>
 #include <QTcpSocket>
 
-#include <Qt5GStreamer/QGst/Ui/VideoWidget>
 #include <Qt5GStreamer/QGst/Pipeline>
 #include <Qt5GStreamer/QGst/Element>
 #include <Qt5GStreamer/QGst/ElementFactory>
