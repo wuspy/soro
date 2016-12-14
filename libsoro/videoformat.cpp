@@ -134,6 +134,12 @@ QString VideoFormat::toHumanReadableString() const {
     case Encoding_MPEG2:
         encoding = "MPEG2";
         break;
+    case Encoding_MJPEG:
+        encoding = "MJPEG";
+        break;
+    case Encoding_X264:
+        encoding = "x264";
+        break;
     default:
         return "Unknown Encoding";
     }
@@ -158,22 +164,7 @@ QString VideoFormat::createGstEncodingArgs() const {
     QString encString = "";
     QString stereoEncString = "";
     QString framerateEncString = "";
-
-    switch (_encoding) {
-    case Encoding_MPEG2:
-        encString = "videoscale method=0 ! "
-                    "video/x-raw,width=%1,height=%2 ! "
-                    "%3" // For stereo
-                    "%4" // For framerate
-                    "videoconvert ! "
-                    "avenc_mpeg4 bitrate=%5 bitrate-tolerance=%6 max-threads=%7 ! "
-                    "rtpmp4vpay config-interval=3 pt=96";
-        break;
-    default:
-        //unknown codec
-        LOG_E(LOG_TAG, "Unknown video encoding");
-        return "";
-    }
+    int bitrate = _bitrate;
 
     switch (_stereoMode) {
     case StereoMode_SideBySide:
@@ -181,24 +172,65 @@ QString VideoFormat::createGstEncodingArgs() const {
                           "video/x-raw,width=%1,height=%2 ! ";
         stereoEncString = stereoEncString.arg(QString::number(getWidth()),
                                               QString::number(getHeight()));
+        bitrate /= 2;
         break;
     default:
         break;
     }
 
     if (_framerate > 0) {
-        framerateEncString = "videorate ! "
-                             "video/x-raw,framerate=%1/1 ! ";
-        framerateEncString = framerateEncString.arg(QString::number(_framerate));
+        framerateEncString = QString(
+                        "videorate ! "
+                        "video/x-raw,framerate=%1/1 ! "
+                    ).arg(
+                        QString::number(_framerate)
+                    );
     }
 
-    encString = encString.arg(QString::number(getResolutionWidth()),
-                              QString::number(getResolutionHeight()),
-                              stereoEncString,
-                              framerateEncString,
-                              QString::number(_bitrate),
-                              QString::number(_bitrate / 4),
-                              QString::number(_maxThreads));
+    // Comming encoding params for all codecs
+    encString = QString(
+                    "videoscale method=0 ! "
+                    "video/x-raw,width=%1,height=%2 ! "
+                    "%3" // For stereo
+                    "%4" // For framerate
+                    "videoconvert ! "
+                ).arg(
+                    QString::number(getResolutionWidth()),
+                    QString::number(getResolutionHeight()),
+                    stereoEncString,
+                    framerateEncString
+                );
+
+    switch (_encoding) {
+    case Encoding_MPEG2:
+        encString += QString(
+                        "avenc_mpeg4 bitrate=%1 bitrate-tolerance=%2 max-threads=%3 ! "
+                        "rtpmp4vpay config-interval=3 pt=96"
+                    ).arg(
+                        QString::number(bitrate),
+                        QString::number(bitrate / 4),
+                        QString::number(_maxThreads)
+                    );
+        break;
+    case Encoding_MJPEG:
+        // TODO adjustable mjpeg quality
+        encString += "jpegenc quality=50 ! rtpjpegpay";
+        break;
+    case Encoding_X264:
+        encString += QString(
+                        "264enc tune=zerolatency bitrate=%1 threads=%2 ! "
+                        "rtph264pay config-interval=3 pt=96"
+                    ).arg(
+                        QString::number(bitrate),
+                        QString::number(_maxThreads)
+                    );
+        break;
+    default:
+        //unknown codec
+        LOG_E(LOG_TAG, "Unknown video encoding");
+        return "";
+    }
+
     return encString;
 }
 
@@ -206,9 +238,17 @@ QString VideoFormat::createGstDecodingArgs() const {
     switch (_encoding) {
     case Encoding_MPEG2:
         // Same decoding args for all MPEG2 formats
-        return "application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96,ssrc=2873740600,timestamp-offset=391825150,seqnum-offset=2980 ! "
+        return "application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96 ! "
                "rtpmp4vdepay ! "
                "avdec_mpeg4";
+    case Encoding_X264:
+        return "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
+               "rtph264depay ! "
+               "avdec_h264";
+    case Encoding_MJPEG:
+        return "application/x-rtp,media=video,encoding=JPEG,payload=26 ! "
+               "rtpjpegdepay ! "
+               "jpegdec";
     default:
         // unknown codec
         LOG_E(LOG_TAG, "Unknown video encoding");

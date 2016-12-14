@@ -235,6 +235,12 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
                                                _stereoLVideoClient->getVideoFormat(),
                                                SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT),
                                                _stereoRVideoClient->getVideoFormat());
+            if (!_settings.enableStereoUi || !_settings.enableStereoVideo) {
+                LOG_E(LOG_TAG, "Video clients are playing stereo, but UI is not in stereo mode");
+                _settings.enableStereoUi = true;
+                _settings.enableStereoVideo = true;
+                _settings.syncUi(_controlUi);
+            }
         }
     }
     else if ((client == _aux1VideoClient) && (_aux1VideoClient->getState() == MediaClient::StreamingState)) {
@@ -245,11 +251,9 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
                                              _aux1VideoClient->getVideoFormat());
         }
         else {
-            _mainUi->getCameraWidget()->playMono(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1R_CAMERA_PORT),
+            _mainUi->getCameraWidget()->playMono(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT),
                                              _aux1VideoClient->getVideoFormat());
         }
-        _mainUi->getCameraWidget()->playMono(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT),
-                                         _aux1VideoClient->getVideoFormat());
     }
     else if ((client == _monoVideoClient) && (_monoVideoClient->getState() == MediaClient::StreamingState)) {
         if (_settings.enableStereoUi) {
@@ -480,7 +484,7 @@ void ResearchControlProcess::driveConnectionStateChanged(Channel::State state) {
 void ResearchControlProcess::stopAllRoverCameras() {
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
-    SharedMessageType messageType = SharedMessage_Research_EndStereoAndMonoCameraStream;
+    SharedMessageType messageType = SharedMessage_Research_StopAllCameraStreams;
 
     _mainUi->getCameraWidget()->stop(_settings.enableStereoUi);
     stream << reinterpret_cast<const quint32&>(messageType);

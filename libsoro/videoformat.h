@@ -12,7 +12,9 @@ public:
 
     enum Encoding {
         Encoding_Null = 0,
-        Encoding_MPEG2
+        Encoding_MPEG2,
+        Encoding_MJPEG,
+        Encoding_X264
     };
     Q_ENUM(Encoding)
 

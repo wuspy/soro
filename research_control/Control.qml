@@ -5,6 +5,7 @@ import QtQuick.Controls.Universal 2.1
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 import QtWebEngine 1.4
+import QtQuick.Window 2.2
 
 ApplicationWindow {
     id: controlWindow

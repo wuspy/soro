@@ -96,6 +96,7 @@ private:
     bool _isPlaying = false;
     bool _showLabel = true;
     bool _showText = true;
+    VideoFormat _videoFormat;
 
     QGst::ElementPtr createSink();
     void resetPipeline();
@@ -107,6 +108,7 @@ private slots:
 
 protected:
     void resizeEvent(QResizeEvent *e);
+    void adjustVideoSize();
 
 signals:
     /* Emitted when the widget receives an end-of-stream message
