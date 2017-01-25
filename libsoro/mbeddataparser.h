@@ -1,8 +1,8 @@
 #ifndef MBEDDATAPARSER_H
 #define MBEDDATAPARSER_H
 
-#include <mbedchannel.h>
-#include <logger.h>
+#include "mbedchannel.h"
+#include "logger.h"
 
 namespace Soro {
 namespace Rover {
@@ -35,7 +35,6 @@ private:
 
     void parseBuffer();
     void parseNext(DataTag tag, int start);
-    bool isNumeric(char c);
 
 private slots:
     void messageReceived(MbedChannel *mbed, const char* data, int len);
