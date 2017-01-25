@@ -14,6 +14,8 @@ public:
     explicit MbedDataParser(MbedChannel *mbed, QObject *parent = 0);
     ~MbedDataParser();
 
+    bool setLogfile(QString file);
+
     enum DataTag {
         DATATAG_WHEELDATA_1 = 0,
         DATATAG_WHEELDATA_2,
@@ -32,9 +34,16 @@ public:
 private:
     MbedChannel *_mbed = NULL;
     QByteArray _buffer;
+    QFile *_file = NULL;
+    QDataStream *_fileStream;
+
+    // Keeps track of the time this logging began, which can be used to find the
+    // timestamp of every measurement in the log file
+    qint64 _logStartTime = 0;
 
     void parseBuffer();
     void parseNext(DataTag tag, int start);
+    void closeLogfile();
 
 private slots:
     void messageReceived(MbedChannel *mbed, const char* data, int len);

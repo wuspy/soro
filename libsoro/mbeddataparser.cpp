@@ -44,7 +44,44 @@ MbedDataParser::MbedDataParser(MbedChannel *mbed, QObject *parent) : QObject(par
 }
 
 MbedDataParser::~MbedDataParser() {
+    closeLogfile();
+}
 
+bool MbedDataParser::setLogfile(QString file) {
+    if (_fileStream != NULL) {
+        delete _fileStream;
+        _fileStream = NULL;
+    }
+    if (_file != NULL) {
+        if (_file->isOpen()) _file->close();
+        delete _file;
+    }
+    _file = new QFile(file, this);
+    if (_file->exists()) {
+        LOG_E(LOG_TAG, "File \'" + file + "\' already exists, I will not overwrite it");
+    }
+    else if (_file->open(QIODevice::WriteOnly)) {
+        _logStartTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
+        _fileStream = new QDataStream(_file);
+        return true;
+    }
+    // could not open the file
+    LOG_E(LOG_TAG, "Unable to open the specified logfile for write access (" + file + ")");
+    return false;
+}
+
+void MbedDataParser::closeLogfile() {
+    if (_file) {
+        if (_fileStream) {
+            delete _fileStream;
+            _fileStream = NULL;
+        }
+        if (_file->isOpen()) {
+            _file->close();
+        }
+        delete _file;
+        _file = NULL;
+    }
 }
 
 void MbedDataParser::messageReceived(MbedChannel *mbed, const char* data, int len) {
@@ -79,6 +116,15 @@ void MbedDataParser::parseNext(DataTag tag, int start) {
 
     float value = _buffer.mid(start, end - start).toFloat();
     _buffer.remove(0, end);
+
+    // Append this data to the logfile;
+    if (_fileStream) {
+        *_fileStream
+                << (quint32)(QDateTime::currentDateTime().toMSecsSinceEpoch() - _logStartTime)
+                << reinterpret_cast<quint32&>(tag)
+                << value;
+    }
+
     emit newData(tag, value);
 }
 
