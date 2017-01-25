@@ -31,12 +31,10 @@ UI_DIR = $$BUILD_DIR
 PRECOMPILED_DIR = $$BUILD_DIR
 
 SOURCES += main.cpp \
-    researchroverprocess.cpp \
-    mbeddataparser.cpp
+    researchroverprocess.cpp
 
 HEADERS += \
-    researchroverprocess.h \
-    mbeddataparser.h
+    researchroverprocess.h
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..

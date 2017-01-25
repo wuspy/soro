@@ -53,7 +53,8 @@ SOURCES += \
     videoclient.cpp \
     audioclient.cpp \
     videoformat.cpp \
-    audioformat.cpp
+    audioformat.cpp \
+    mbeddataparser.cpp
 
 HEADERS += \
     latlng.h \
@@ -85,4 +86,5 @@ HEADERS += \
     audioclient.h \
     videoformat.h \
     mediaformat.h \
-    audioformat.h
+    audioformat.h \
+    mbeddataparser.h

@@ -1,8 +1,8 @@
 #ifndef MBEDDATAPARSER_H
 #define MBEDDATAPARSER_H
 
-#include <libsoro/mbedchannel.h>
-#include <libsoro/logger.h>
+#include <mbedchannel.h>
+#include <logger.h>
 
 namespace Soro {
 namespace Rover {
@@ -15,7 +15,7 @@ public:
     ~MbedDataParser();
 
     enum DataTag {
-        DATATAG_WHEELDATA_1,
+        DATATAG_WHEELDATA_1 = 0,
         DATATAG_WHEELDATA_2,
         DATATAG_WHEELDATA_3,
         DATATAG_WHEELDATA_4,
@@ -34,7 +34,7 @@ private:
     QByteArray _buffer;
 
     void parseBuffer();
-    void parseNext(DataTag tag, int offset);
+    void parseNext(DataTag tag, int start);
     bool isNumeric(char c);
 
 private slots:

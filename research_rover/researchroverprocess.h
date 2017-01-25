@@ -47,6 +47,8 @@ private:
     VideoServer *_monoCameraServer = NULL;
     QString _monoCameraDevice;
 
+
+
 private slots:
     void init();
     void sendSystemStatusMessage();
