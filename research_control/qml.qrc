@@ -1,7 +1,5 @@
 <RCC>
     <qresource prefix="/">
         <file>Control.qml</file>
-        <file>ProctorScreen.qml</file>
-        <file>ReviewScreen.qml</file>
     </qresource>
 </RCC>

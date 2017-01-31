@@ -12,6 +12,7 @@
 #include "libsoro/videoformat.h"
 #include "libsoro/enums.h"
 #include "libsoro/mbeddataparser.h"
+#include "libsoro/gpslogger.h"
 
 namespace Soro {
 namespace Rover {
@@ -48,6 +49,8 @@ private:
     QString _aux1CameraDevice;
     VideoServer *_monoCameraServer = NULL;
     QString _monoCameraDevice;
+
+    GpsLogger *_gpsLogger = NULL;
 
 private slots:
     void init();

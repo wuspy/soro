@@ -7,6 +7,10 @@
 namespace Soro {
 namespace Rover {
 
+/* This class is responsible for logging the data sent back by the research mbed, including
+ * IMU and power consumption data. These values are stored in a binary logfile and timestamped;
+ * additionally they can be accessed immediately by attaching to the newData() signal.
+ */
 class MbedDataParser : public QObject
 {
     Q_OBJECT
@@ -14,7 +18,13 @@ public:
     explicit MbedDataParser(MbedChannel *mbed, QObject *parent = 0);
     ~MbedDataParser();
 
+    /* Starts logging data in the specified file, and calculates all timestamps offset from
+     * the provided start time.
+     */
     bool startLog(QString file, QDateTime loggedStartTime=QDateTime::currentDateTime());
+
+    /* Stops logging, if it is currently active.
+     */
     void stopLog();
 
     enum DataTag {

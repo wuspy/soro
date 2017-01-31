@@ -63,6 +63,8 @@ bool MbedDataParser::startLog(QString file, QDateTime loggedStartTime) {
     else if (_file->open(QIODevice::WriteOnly)) {
         _logStartTime = loggedStartTime.toMSecsSinceEpoch();
         _fileStream = new QDataStream(_file);
+        *_fileStream << _logStartTime;
+        LOG_I(LOG_TAG, "Beginning log with time " + QString::number(_logStartTime));
         return true;
     }
     // could not open the file
@@ -75,6 +77,7 @@ void MbedDataParser::stopLog() {
         if (_fileStream) {
             delete _fileStream;
             _fileStream = NULL;
+            LOG_I(LOG_TAG, "Ending log with start time " + QString::number(_logStartTime));
         }
         if (_file->isOpen()) {
             _file->close();
@@ -85,6 +88,7 @@ void MbedDataParser::stopLog() {
 }
 
 void MbedDataParser::messageReceived(MbedChannel *mbed, const char* data, int len) {
+    Q_UNUSED(mbed);
     _buffer.append(data, len);
 }
 

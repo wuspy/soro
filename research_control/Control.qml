@@ -6,6 +6,7 @@ import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 import QtWebEngine 1.3
 import QtQuick.Window 2.2
+import QtCharts 2.0
 
 ApplicationWindow {
     id: controlWindow
@@ -269,7 +270,7 @@ ApplicationWindow {
 
 
     Pane {
-        id: tabbedPane
+        id: mainPane
         anchors.top: headerPane.bottom
         anchors.topMargin: 0
         anchors.bottom: parent.bottom
@@ -280,22 +281,145 @@ ApplicationWindow {
         anchors.leftMargin: 0
         padding: 0
 
+        Pane {
+            id: commentsPane
+            Layout.rowSpan: 2
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            width: parent.width / 2
+
+            ListView {
+                id: commentsListView
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: parent.height * 0.8
+
+                model: ListModel {
+                    ListElement {
+                        name: "Grey"
+                        colorCode: "grey"
+                    }
+
+                    ListElement {
+                        name: "Red"
+                        colorCode: "red"
+                    }
+
+                    ListElement {
+                        name: "Blue"
+                        colorCode: "blue"
+                    }
+
+                    ListElement {
+                        name: "Green"
+                        colorCode: "green"
+                    }
+                }
+                delegate: Item {
+                    x: 5
+                    width: 80
+                    height: 40
+                    Row {
+                        id: row1
+                        spacing: 10
+                        Rectangle {
+                            width: 40
+                            height: 40
+                            color: colorCode
+                        }
+
+                        Text {
+                            text: name
+                            anchors.verticalCenter: parent.verticalCenter
+                            font.bold: true
+                        }
+                    }
+                }
+            }
+
+            TextArea {
+                id: commentsTextArea
+                anchors.top: commentsListView.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                text: qsTr("Text Area")
+            }
+        }
+
         WebEngineView {
             id: webEngineView
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.left: commentsPane.right
+            anchors.margins: 9
+            height: parent.height / 2
             url: "qrc:/html/map.html"
-            anchors.fill: parent
         }
 
-        ProctorScreen {
-            id: proctorScreen
-            anchors.fill: parent
-            visible: false
+        Pane {
+            id: webEngineCover
+            anchors.fill: webEngineView
+            anchors.margins: -1
+            enabled: false
         }
 
-        ReviewScreen {
-            id: reviewScreen;
-            visible: false;
-            anchors.fill: parent;
+        DropShadow {
+            id: webEngineShadow
+            source: webEngineOpacityMask
+            anchors.fill: webEngineOpacityMask
+            radius: 10
+            samples: 20
+            color: "#000000"
+            verticalOffset: 4
+        }
+
+        OpacityMask {
+            id: webEngineOpacityMask
+            source: webEngineView
+            anchors.fill: webEngineView
+            maskSource:
+                Rectangle {
+                    width: webEngineView.width
+                    height: webEngineView.height
+                    radius: 6
+                }
+        }
+
+
+        DropShadow {
+            id: powerChartViewShadow
+            source: powerChartView
+            anchors.fill: powerChartView
+            radius: 10
+            samples: 20
+            color: "#000000"
+            verticalOffset: 4
+        }
+
+        ChartView {
+            id: powerChartView
+            theme: ChartView.ChartThemeBlueCerulean
+            antialiasing: true
+            anchors.bottom: parent.bottom
+            anchors.left: commentsPane.right
+            anchors.right: parent.right
+            anchors.top: webEngineView.bottom
+
+            title: "Line"
+
+            LineSeries {
+                name: "LineSeries"
+                XYPoint { x: 0; y: 0 }
+                XYPoint { x: 1.1; y: 2.1 }
+                XYPoint { x: 1.9; y: 3.3 }
+                XYPoint { x: 2.1; y: 2.1 }
+                XYPoint { x: 2.9; y: 4.9 }
+                XYPoint { x: 3.4; y: 3.0 }
+                XYPoint { x: 4.1; y: 3.3 }
+            }
         }
     }
     
@@ -1095,7 +1219,7 @@ ApplicationWindow {
             ]
         }
         
-        TabBar {
+        /*TabBar {
             id: headerTabBar
             y: 12
             anchors.bottomMargin: -headerPane.bottomPadding
@@ -1138,7 +1262,7 @@ ApplicationWindow {
                     asidePane.state = checked ? "hidden" : "visible";
                 }
             }
-        }
+        }*/
         
     }
     

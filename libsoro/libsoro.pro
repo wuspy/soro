@@ -54,7 +54,8 @@ SOURCES += \
     audioclient.cpp \
     videoformat.cpp \
     audioformat.cpp \
-    mbeddataparser.cpp
+    mbeddataparser.cpp \
+    gpslogger.cpp
 
 HEADERS += \
     latlng.h \
@@ -87,4 +88,5 @@ HEADERS += \
     videoformat.h \
     mediaformat.h \
     audioformat.h \
-    mbeddataparser.h
+    mbeddataparser.h \
+    gpslogger.h
