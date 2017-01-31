@@ -70,6 +70,16 @@ void ResearchRoverProcess::init() {
     // create mbed channels
     _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_MBED_PORT), MBED_ID_RESEARCH, this);
 
+    // setup mbed data parser/logger
+    _mbedParser = new MbedDataParser(_mbed, this);
+    // This is the directory mbed parser will log to
+    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-sensors").exists()) {
+        LOG_I(LOG_TAG, "/../research-sensors directory does not exist, creating it");
+        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-sensors")) {
+            LOG_E(LOG_TAG, "Cannot create /../research-sensors directory, sensor data may not be logged");
+        }
+    }
+
     // observers for mbed events
     connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
             this, SLOT( mbedMessageReceived(MbedChannel*,const char*,int)));
@@ -303,7 +313,16 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
 }
 
 void ResearchRoverProcess::mbedMessageReceived(MbedChannel* channel, const char* message, int size) {
-    //TODO
+    // Forward the message to mission control (MbedDataParser instance will take care of logging it)
+
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_Research_SensorUpdate;
+
+    stream << reinterpret_cast<quint32&>(messageType);
+    stream << QByteArray(message, size);
+
+    _sharedChannel->sendMessage(byteArray);
 }
 
 void ResearchRoverProcess::gpsUpdate(NmeaMessage message) {
@@ -346,6 +365,14 @@ ResearchRoverProcess::~ResearchRoverProcess() {
     if (_aux1CameraServer) {
         disconnect(_aux1CameraServer, 0, 0, 0);
         delete _aux1CameraServer;
+    }
+    if (_mbedParser) {
+        disconnect(_mbedParser, 0, 0, 0);
+        delete _mbedParser;
+    }
+    if (_mbed) {
+        disconnect(_mbed, 0, 0, 0);
+        delete _mbed;
     }
 }
 

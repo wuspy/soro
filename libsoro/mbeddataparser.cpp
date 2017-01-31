@@ -44,10 +44,10 @@ MbedDataParser::MbedDataParser(MbedChannel *mbed, QObject *parent) : QObject(par
 }
 
 MbedDataParser::~MbedDataParser() {
-    closeLogfile();
+    stopLog();
 }
 
-bool MbedDataParser::setLogfile(QString file) {
+bool MbedDataParser::startLog(QString file, QDateTime loggedStartTime) {
     if (_fileStream != NULL) {
         delete _fileStream;
         _fileStream = NULL;
@@ -61,7 +61,7 @@ bool MbedDataParser::setLogfile(QString file) {
         LOG_E(LOG_TAG, "File \'" + file + "\' already exists, I will not overwrite it");
     }
     else if (_file->open(QIODevice::WriteOnly)) {
-        _logStartTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
+        _logStartTime = loggedStartTime.toMSecsSinceEpoch();
         _fileStream = new QDataStream(_file);
         return true;
     }
@@ -70,7 +70,7 @@ bool MbedDataParser::setLogfile(QString file) {
     return false;
 }
 
-void MbedDataParser::closeLogfile() {
+void MbedDataParser::stopLog() {
     if (_file) {
         if (_fileStream) {
             delete _fileStream;

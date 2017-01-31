@@ -14,7 +14,8 @@ public:
     explicit MbedDataParser(MbedChannel *mbed, QObject *parent = 0);
     ~MbedDataParser();
 
-    bool setLogfile(QString file);
+    bool startLog(QString file, QDateTime loggedStartTime=QDateTime::currentDateTime());
+    void stopLog();
 
     enum DataTag {
         DATATAG_WHEELDATA_1 = 0,
@@ -43,7 +44,6 @@ private:
 
     void parseBuffer();
     void parseNext(DataTag tag, int start);
-    void closeLogfile();
 
 private slots:
     void messageReceived(MbedChannel *mbed, const char* data, int len);

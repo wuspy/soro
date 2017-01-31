@@ -265,9 +265,10 @@ ApplicationWindow {
         repeat: false
         onTriggered: notificationPane.state = "hidden"
     }
-    
-    WebEngineView {
-        id: webEngineView
+
+
+    Pane {
+        id: tabbedPane
         anchors.top: headerPane.bottom
         anchors.topMargin: 0
         anchors.bottom: parent.bottom
@@ -276,7 +277,25 @@ ApplicationWindow {
         anchors.rightMargin: 0
         anchors.left: asidePane.right
         anchors.leftMargin: 0
-        url: "qrc:/html/map.html"
+        padding: 0
+
+        WebEngineView {
+            id: webEngineView
+            url: "qrc:/html/map.html"
+            anchors.fill: parent
+        }
+
+        ProctorScreen {
+            id: proctorScreen
+            anchors.fill: parent
+            visible: false
+        }
+
+        ReviewScreen {
+            id: reviewScreen;
+            visible: false;
+            anchors.fill: parent;
+        }
     }
     
     DropShadow {
@@ -302,7 +321,46 @@ ApplicationWindow {
         anchors.leftMargin: 0
         anchors.top: headerPane.bottom
         anchors.topMargin: 0
-        
+        state: "visible"
+
+        states: [
+            State {
+                name: "hidden"
+                PropertyChanges {
+                    target: asidePane
+                    anchors.leftMargin: -width
+                }
+            },
+            State {
+                name: "visible"
+                PropertyChanges {
+                    target: asidePane
+                    anchors.leftMargin: 0
+                }
+            }
+
+        ]
+
+        transitions: [
+            Transition {
+                from: "visible"
+                to: "hidden"
+                PropertyAnimation {
+                    properties: "anchors.leftMargin"
+                    duration: 300
+                    easing.type: Easing.OutInCubic
+                }
+            },
+            Transition {
+                from: "hidden"
+                to: "visible"
+                PropertyAnimation {
+                    properties: "anchors.leftMargin"
+                    duration: 300
+                    easing.type: Easing.InOutCubic
+                }
+            }
+        ]
         
         Flickable {
             id: settingsFlickable
@@ -1055,19 +1113,29 @@ ApplicationWindow {
                 id: gpsTabButton
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                text: qsTr("GPS Map")
+                text: qsTr("GPS")
+                onCheckedChanged: {
+                    webEngineView.visible = checked;
+                }
             }
             TabButton {
-                id: dataLogTabButton
+                id: proctorTabButton
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                text: qsTr("Data Log")
+                text: qsTr("Proctoring")
+                onCheckedChanged: {
+                    proctorScreen.visible = checked;
+                }
             }
             TabButton {
-                id: systemLogTabButton
+                id: reviewTabButton
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                text: qsTr("System Log")
+                text: qsTr("Review")
+                onCheckedChanged: {
+                    reviewScreen.visible = checked;
+                    asidePane.state = checked ? "hidden" : "visible";
+                }
             }
         }
         
@@ -1150,7 +1218,7 @@ ApplicationWindow {
         
 
         MouseArea {
-            id: mouseArea1
+            id: notificationMouseArea
             anchors.fill: parent
             onClicked: notificationPane.state = "hidden"
             cursorShape: Qt.PointingHandCursor
