@@ -283,6 +283,12 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
         _stereoLCameraServer->stop();
         _monoCameraServer->stop();
         break;
+    case SharedMessage_Research_StopAllCameraStreams:
+        _stereoRCameraServer->stop();
+        _stereoLCameraServer->stop();
+        _monoCameraServer->stop();
+        _aux1CameraServer->stop();
+        break;
     case SharedMessage_Research_StartMonoCameraStream: {
         QString formatString;
         VideoFormat format;

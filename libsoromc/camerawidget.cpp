@@ -49,20 +49,21 @@ void CameraWidget::play(SocketAddress address, VideoFormat format) {
         stop();
         return;
     }
+    _videoFormat = format;
 
     _pipeline = QGst::Pipeline::create();
     _pipeline->bus()->addSignalWatch();
     QGlib::connect(_pipeline->bus(), "message", this, &CameraWidget::onBusMessage);
 
     // create a udpsrc to receive the stream
-    QString binStr = "udpsrc address=%1 port=%2 ! %3 ! video/x-raw,width=%4,height=%5 ! videoconvert";
-
+    QString binStr = "udpsrc address=%1 port=%2 ! %3 ! videoscale ! video/x-raw,width=%4,height=%5 ! videoconvert";
     binStr = binStr.arg(address.host.toString(),
                         QString::number(address.port),
                         format.createGstDecodingArgs(),
                         QString::number(format.getWidth()),
                         QString::number(format.getHeight()));
 
+    qDebug() << binStr;
     // create a gstreamer bin from the description
     QGst::BinPtr source = QGst::Bin::fromDescription(binStr);
     // create a gstreamer sink
@@ -73,11 +74,12 @@ void CameraWidget::play(SocketAddress address, VideoFormat format) {
 
     _isPlaying = true;
     _pipeline->setState(QGst::StatePlaying);
+    adjustVideoSize();
 }
 
 QGst::ElementPtr CameraWidget::createSink() {
-    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
-    sink->setProperty("force-aspect-ratio", true);
+    QGst::ElementPtr sink = QGst::ElementFactory::make("qwidget5videosink");
+    sink->setProperty("force-aspect-ratio", false);
     ui->videoWidget->setVideoSink(sink);
     return sink;
 }
@@ -91,26 +93,24 @@ void CameraWidget::stop(QString reason, CameraWidget::Pattern pattern) {
     }
     ui->messageLabel->setVisible(_showText);
 
-    //if (_isPlaying) {
-        resetPipeline();
-        //create videotestsrc pipeline for coolness
-        QString binStr = "videotestsrc pattern=%1 ! video/x-raw,width=%2,height=%3 ! videoconvert";
-        binStr = binStr.arg(QString::number((int)reinterpret_cast<quint32&>(pattern)),
-                            QString::number(ui->videoWidget->width()),
-                            QString::number(ui->videoWidget->height()));
+    _videoFormat = VideoFormat();
+    resetPipeline();
+    //create videotestsrc pipeline for coolness
+    QString binStr = "videotestsrc pattern=%1 ! video/x-raw,width=%2,height=%3 ! videoconvert";
+    binStr = binStr.arg(QString::number((int)reinterpret_cast<quint32&>(pattern)),
+                        QString::number(ui->videoWidget->width()),
+                        QString::number(ui->videoWidget->height()));
 
-        _pipeline = QGst::Pipeline::create();
-        QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
-        QGst::BinPtr source = QGst::Bin::fromDescription(binStr);
-        sink->setProperty("force-aspect-ratio", false);
+    _pipeline = QGst::Pipeline::create();
+    QGst::BinPtr source = QGst::Bin::fromDescription(binStr);
+    QGst::ElementPtr sink = createSink();
 
-        _pipeline->add(source, sink);
-        source->link(sink);
-        ui->videoWidget->setVideoSink(sink);
+    _pipeline->add(source, sink);
+    source->link(sink);
 
-        _isPlaying = false;
-        _pipeline->setState(QGst::StatePlaying);
-    //}
+    _isPlaying = false;
+    _pipeline->setState(QGst::StatePlaying);
+    adjustVideoSize();
 }
 
 void CameraWidget::resetPipeline() {
@@ -120,14 +120,45 @@ void CameraWidget::resetPipeline() {
     }
 }
 
+void CameraWidget::adjustVideoSize() {
+    float videoW = _videoFormat.getWidth();
+    float videoH = _videoFormat.getHeight();
+    float widgetW = width();
+    float widgetH = height();
+
+    float width, height, x, y;
+    if (_isPlaying && (videoW > 0) && (videoH > 0)) {
+        if ((widgetW / widgetH) > (videoW / videoH)) {
+            // Scale to match height
+            width = widgetH * (videoW / videoH);
+            height = widgetH;
+            x = (widgetW - width) / 2;
+            y = 0;
+        }
+        else {
+            // Scale to match width
+            height = widgetW * (videoH / videoW);
+            width = widgetW;
+            y = (widgetH - height) / 2;
+            x = 0;
+        }
+    }
+    else {
+        width = widgetW;
+        height = widgetH;
+        x = 0;
+        y = 0;
+    }
+    ui->videoWidget->move(x, y);
+    ui->videoWidget->resize(width, height);
+}
+
 void CameraWidget::resizeEvent(QResizeEvent *e) {
     QWidget::resizeEvent(e);
     ui->messageLabel->move(0, 0);
     ui->messageLabel->resize(width(), height());
-    ui->videoWidget->move(0, 0);
-    ui->videoWidget->resize(width(), height());
-
     ui->controlsWidget->move(width() - ui->controlsWidget->width() - 20, height() - ui->controlsWidget->height() - 20);
+    adjustVideoSize();
 }
 
 QString CameraWidget::getCameraName() {
@@ -154,7 +185,6 @@ void CameraWidget::showLabel(bool show) {
 }
 
 void CameraWidget::onBusMessage(const QGst::MessagePtr & message) {
-    LOG_I(LOG_TAG, "onBusMessage(): Got bus message type " + message->typeName());
     switch (message->type()) {
     case QGst::MessageEos:
         stop("Received end-of-stream message.");
