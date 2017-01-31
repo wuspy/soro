@@ -218,10 +218,10 @@ QString VideoFormat::createGstEncodingArgs() const {
         break;
     case Encoding_X264:
         encString += QString(
-                        "264enc tune=zerolatency bitrate=%1 threads=%2 ! "
+                        "x264enc tune=zerolatency bitrate=%1 threads=%2 ! "
                         "rtph264pay config-interval=3 pt=96"
                     ).arg(
-                        QString::number(bitrate),
+                        QString::number(bitrate / 1000),
                         QString::number(_maxThreads)
                     );
         break;
