@@ -61,6 +61,21 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     connect(_controlUi, SIGNAL(settingsApplied()),
             this, SLOT(ui_settingsApplied()));
 
+    // This is the directory mbed parser will log to
+    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
+        LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
+        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
+            LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
+        }
+    }
+    // This is the directory gps logger will log to
+    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
+        LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
+        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
+            LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
+        }
+    }
+
     LOG_I(LOG_TAG, "****************Initializing connections*******************");
 
     LOG_I(LOG_TAG, "Setting up rover shared connection");
@@ -83,6 +98,10 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
         QCoreApplication::exit(1);
     }
     _driveSystem->enable();
+
+    // create mbed data parser
+    connect(&_mbedParser, SIGNAL(dataParsed(MbedDataParser::DataTag,float)),
+            this, SLOT(newSensorData(MbedDataParser::DataTag,float)));
 
     LOG_I(LOG_TAG, "***************Initializing Video system******************");
 
@@ -127,6 +146,17 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
 
     START_TIMER(_bitrateUpdateTimerId, 1000);
     START_TIMER(_pingTimerId, 1000);
+}
+
+void ResearchControlProcess::startTestLog() {
+    qint64 startTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    _mbedParser.startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime));
+    _gpsLogger.startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime));
+}
+
+void ResearchControlProcess::stopTestLog() {
+    _mbedParser.stopLog();
+    _gpsLogger.stopLog();
 }
 
 void ResearchControlProcess::gamepadChanged(SDL_GameController *controller, QString name) {
@@ -322,6 +352,10 @@ void ResearchControlProcess::updateUiConnectionState() {
     }
 }
 
+void ResearchControlProcess::newSensorData(MbedDataParser::DataTag tag, float value) {
+    //TODO
+}
+
 void ResearchControlProcess::timerEvent(QTimerEvent *e) {
     if (e->timerId() == _pingTimerId) {
         /****************************************
@@ -366,7 +400,6 @@ void ResearchControlProcess::timerEvent(QTimerEvent *e) {
         QObject::timerEvent(e);
     }
 }
-
 
 void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
     Q_UNUSED(channel);
@@ -417,14 +450,17 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel,
     }
         break;
     case SharedMessage_RoverGpsUpdate: {
-        NmeaMessage message;
-        stream >> message;
-
+        NmeaMessage location;
+        stream >> location;
+        // Forward to UI
         QMetaObject::invokeMethod(_controlUi,
                                   "updateGpsLocation",
-                                  Q_ARG(QVariant, message.Latitude),
-                                  Q_ARG(QVariant, message.Longitude),
-                                  Q_ARG(QVariant, message.Heading));
+                                  Q_ARG(QVariant, location.Latitude),
+                                  Q_ARG(QVariant, location.Longitude),
+                                  Q_ARG(QVariant, location.Heading));
+
+        // Forward to logger
+        _gpsLogger.addLocation(location);
     }
         break;
     case SharedMessage_Research_RoverDriveOverrideStart:
@@ -443,6 +479,13 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel,
                                   Q_ARG(QVariant, "The rover has resumed accepting network drive commands."));
         _controlUi->setProperty("driveStatus", "Operational");
         break;
+    case SharedMessage_Research_SensorUpdate: {
+        QByteArray data;
+        stream >> data;
+        // This raw data should be sent to an MbedParser to be decoded
+        _mbedParser.newData(data.data(), data.length());
+        break;
+    }
     default:
         LOG_E(LOG_TAG, "Got unknown message header on shared channel");
         break;

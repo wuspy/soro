@@ -78,11 +78,15 @@ ApplicationWindow {
     property color theme_blue: "#1976D2"
     property color accentColor: "#616161"
     property int gpsDataPoints: 0
+    property bool testLogging: false
     
     // Signals
     
     signal requestUiSync()
     signal settingsApplied()
+    signal logCommentEntered(string comment)
+    signal beginTestLoggin()
+    signal endTestLogging()
     
     // Public functions
 
@@ -142,6 +146,7 @@ ApplicationWindow {
     }
     
     function notify(type, title, message) {
+
         notificationPane.state = "hidden"
         switch (type) {
         case "error":
@@ -181,6 +186,15 @@ ApplicationWindow {
         if (visible) {
             prepareForUiSync()
             requestUiSync()
+        }
+    }
+
+    onTestLoggingChanged: {
+        if (testLogging) {
+            beginTestLoggin()
+        }
+        else {
+            endTestLogging()
         }
     }
 
@@ -281,13 +295,17 @@ ApplicationWindow {
         anchors.leftMargin: 0
         padding: 0
 
-        Pane {
+        GroupBox {
             id: commentsPane
             Layout.rowSpan: 2
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             anchors.left: parent.left
+            anchors.topMargin: 8
+            anchors.bottomMargin: 8
+            anchors.leftMargin: 8
             width: parent.width / 2
+            title: "Comments"
 
             ListView {
                 id: commentsListView
@@ -295,57 +313,40 @@ ApplicationWindow {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: parent.height * 0.8
+                clip: true
 
                 model: ListModel {
-                    ListElement {
-                        name: "Grey"
-                        colorCode: "grey"
-                    }
-
-                    ListElement {
-                        name: "Red"
-                        colorCode: "red"
-                    }
-
-                    ListElement {
-                        name: "Blue"
-                        colorCode: "blue"
-                    }
-
-                    ListElement {
-                        name: "Green"
-                        colorCode: "green"
-                    }
+                    id: commentsListModel
                 }
-                delegate: Item {
-                    x: 5
-                    width: 80
-                    height: 40
-                    Row {
-                        id: row1
-                        spacing: 10
-                        Rectangle {
-                            width: 40
-                            height: 40
-                            color: colorCode
-                        }
 
-                        Text {
-                            text: name
-                            anchors.verticalCenter: parent.verticalCenter
-                            font.bold: true
-                        }
-                    }
+                delegate:Label {
+                    width: parent.width
+                    text: commentText
+                    padding: 10
+                    wrapMode: Text.WordWrap
+                    color: systemMessage ? accentColor : Material.foreground
+                    font.bold: systemMessage
                 }
             }
 
-            TextArea {
-                id: commentsTextArea
+            GroupBox {
                 anchors.top: commentsListView.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                text: qsTr("Text Area")
+                TextArea {
+                    id: commentsTextArea
+                    anchors.fill: parent
+                    placeholderText: "Enter your comments here"
+                    wrapMode: Text.WordWrap
+                    enabled: testLogging
+
+                    Keys.onReturnPressed: {
+                        commentsListModel.append({"commentText": text.trim(), "systemMessage": false});
+                        logCommentEntered(text.trim());
+                        text = "";
+                    }
+                }
             }
         }
 
@@ -384,6 +385,8 @@ ApplicationWindow {
                 Rectangle {
                     width: webEngineView.width
                     height: webEngineView.height
+                    enabled: false
+                    visible: false
                     radius: 6
                 }
         }
@@ -411,14 +414,62 @@ ApplicationWindow {
             title: "Line"
 
             LineSeries {
+                id: powerLineSeries
                 name: "LineSeries"
-                XYPoint { x: 0; y: 0 }
-                XYPoint { x: 1.1; y: 2.1 }
-                XYPoint { x: 1.9; y: 3.3 }
-                XYPoint { x: 2.1; y: 2.1 }
-                XYPoint { x: 2.9; y: 4.9 }
-                XYPoint { x: 3.4; y: 3.0 }
-                XYPoint { x: 4.1; y: 3.3 }
+                XYPoint { id: powerLineSeriesP0; x: -0.0; y: 0 }
+                XYPoint { id: powerLineSeriesP1; x: -0.1; y: 0 }
+                XYPoint { id: powerLineSeriesP2; x: -0.2; y: 0 }
+                XYPoint { id: powerLineSeriesP3; x: -0.3; y: 0 }
+                XYPoint { id: powerLineSeriesP4; x: -0.4; y: 0 }
+                XYPoint { id: powerLineSeriesP5; x: -0.5; y: 0 }
+                XYPoint { id: powerLineSeriesP6; x: -0.6; y: 0 }
+                XYPoint { id: powerLineSeriesP7; x: -0.7; y: 0 }
+                XYPoint { id: powerLineSeriesP8; x: -0.8; y: 0 }
+                XYPoint { id: powerLineSeriesP9; x: -0.9; y: 0 }
+
+                XYPoint { id: powerLineSeriesP10; x: -1.0; y: 0 }
+                XYPoint { id: powerLineSeriesP11; x: -1.1; y: 0 }
+                XYPoint { id: powerLineSeriesP12; x: -1.2; y: 0 }
+                XYPoint { id: powerLineSeriesP13; x: -1.3; y: 0 }
+                XYPoint { id: powerLineSeriesP14; x: -1.4; y: 0 }
+                XYPoint { id: powerLineSeriesP15; x: -1.5; y: 0 }
+                XYPoint { id: powerLineSeriesP16; x: -1.6; y: 0 }
+                XYPoint { id: powerLineSeriesP17; x: -1.7; y: 0 }
+                XYPoint { id: powerLineSeriesP18; x: -1.8; y: 0 }
+                XYPoint { id: powerLineSeriesP19; x: -1.9; y: 0 }
+
+                XYPoint { id: powerLineSeriesP20; x: -1.0; y: 0 }
+                XYPoint { id: powerLineSeriesP21; x: -1.1; y: 0 }
+                XYPoint { id: powerLineSeriesP22; x: -1.2; y: 0 }
+                XYPoint { id: powerLineSeriesP23; x: -1.3; y: 0 }
+                XYPoint { id: powerLineSeriesP24; x: -1.4; y: 0 }
+                XYPoint { id: powerLineSeriesP25; x: -1.5; y: 0 }
+                XYPoint { id: powerLineSeriesP26; x: -1.6; y: 0 }
+                XYPoint { id: powerLineSeriesP27; x: -1.7; y: 0 }
+                XYPoint { id: powerLineSeriesP28; x: -1.8; y: 0 }
+                XYPoint { id: powerLineSeriesP29; x: -1.9; y: 0 }
+
+                XYPoint { id: powerLineSeriesP30; x: -1.0; y: 0 }
+                XYPoint { id: powerLineSeriesP31; x: -1.1; y: 0 }
+                XYPoint { id: powerLineSeriesP32; x: -1.2; y: 0 }
+                XYPoint { id: powerLineSeriesP33; x: -1.3; y: 0 }
+                XYPoint { id: powerLineSeriesP34; x: -1.4; y: 0 }
+                XYPoint { id: powerLineSeriesP35; x: -1.5; y: 0 }
+                XYPoint { id: powerLineSeriesP36; x: -1.6; y: 0 }
+                XYPoint { id: powerLineSeriesP37; x: -1.7; y: 0 }
+                XYPoint { id: powerLineSeriesP38; x: -1.8; y: 0 }
+                XYPoint { id: powerLineSeriesP39; x: -1.9; y: 0 }
+
+                XYPoint { id: powerLineSeriesP40; x: -1.0; y: 0 }
+                XYPoint { id: powerLineSeriesP41; x: -1.1; y: 0 }
+                XYPoint { id: powerLineSeriesP42; x: -1.2; y: 0 }
+                XYPoint { id: powerLineSeriesP43; x: -1.3; y: 0 }
+                XYPoint { id: powerLineSeriesP44; x: -1.4; y: 0 }
+                XYPoint { id: powerLineSeriesP45; x: -1.5; y: 0 }
+                XYPoint { id: powerLineSeriesP46; x: -1.6; y: 0 }
+                XYPoint { id: powerLineSeriesP47; x: -1.7; y: 0 }
+                XYPoint { id: powerLineSeriesP48; x: -1.8; y: 0 }
+                XYPoint { id: powerLineSeriesP49; x: -1.9; y: 0 }
             }
         }
     }
@@ -453,7 +504,7 @@ ApplicationWindow {
                 name: "hidden"
                 PropertyChanges {
                     target: asidePane
-                    anchors.leftMargin: -width
+                    anchors.leftMargin: -asidePane.width
                 }
             },
             State {
@@ -472,8 +523,7 @@ ApplicationWindow {
                 to: "hidden"
                 PropertyAnimation {
                     properties: "anchors.leftMargin"
-                    duration: 300
-                    easing.type: Easing.OutInCubic
+                    duration: 100
                 }
             },
             Transition {
@@ -481,8 +531,7 @@ ApplicationWindow {
                 to: "visible"
                 PropertyAnimation {
                     properties: "anchors.leftMargin"
-                    duration: 300
-                    easing.type: Easing.InOutCubic
+                    duration: 100
                 }
             }
         ]
@@ -1145,6 +1194,207 @@ ApplicationWindow {
             anchors.bottomMargin: 0
             anchors.top: parent.top
             anchors.topMargin: 0
+        }
+
+        MouseArea {
+            id: sidebarButtonMouseArea
+            width: height
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 0
+            anchors.left: headerSeparator.right
+            anchors.rightMargin: 0
+            anchors.top: parent.top
+            anchors.topMargin: 0
+            cursorShape: Qt.PointingHandCursor
+            state: "unchecked"
+            hoverEnabled: true
+
+            onClicked: {
+                if (state == "checked") {
+                    asidePane.state = "visible"
+                    state = "unchecked"
+                }
+                else {
+                    asidePane.state = "hidden"
+                    state = "checked"
+                }
+            }
+
+            ToolTip {
+                id: sidebarButtonTooltip
+                visible: sidebarButtonMouseArea.containsMouse
+                delay: 500
+                timeout: 5000
+            }
+
+            Image {
+                id: sidebarButtonImage
+                sourceSize.height: height
+                sourceSize.width: width
+                fillMode: Image.PreserveAspectFit
+                anchors.fill: parent
+            }
+
+            ColorOverlay {
+                id: sidebarButtonColorOverlay
+                anchors.fill: sidebarButtonImage
+                source: sidebarButtonImage
+                color: "#ffffff"
+            }
+
+            states: [
+                State {
+                    name: "checked"
+                    PropertyChanges {
+                        target: sidebarButtonImage
+                        source: "qrc:/icons/ic_keyboard_arrow_right_black_48px.svg"
+                    }
+                    PropertyChanges {
+                        target: sidebarButtonTooltip
+                        text: qsTr("Show Sidebar")
+                    }
+                },
+                State {
+                    name: "unchecked"
+                    PropertyChanges {
+                        target: sidebarButtonImage
+                        source: "qrc:/icons/ic_keyboard_arrow_left_black_48px.svg"
+                    }
+                    PropertyChanges {
+                        target: sidebarButtonTooltip
+                        text: qsTr("Hide Sidebar")
+                    }
+                }
+            ]
+        }
+
+        MouseArea {
+            id: testButtonMouseArea
+            height: 40
+            width: testButtonImage.width + testButtonLabel.width
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: fullscreenButtonMouseArea.left
+            anchors.rightMargin: 0
+            cursorShape: Qt.PointingHandCursor
+            state: "unchecked"
+            hoverEnabled: true
+
+            onClicked: {
+                if (testLogging) {
+                    testLogging = false
+                    state = "unchecked"
+                }
+                else {
+                    testLogging = true
+                    state = "checked"
+                }
+            }
+
+            ToolTip {
+                id: testButtonTooltip
+                visible: testButtonMouseArea.containsMouse
+                delay: 500
+                timeout: 5000
+            }
+
+            Image {
+                id: testButtonImage
+                sourceSize.height: height
+                sourceSize.width: width
+                fillMode: Image.PreserveAspectFit
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 40
+                height: 40
+            }
+
+            Label {
+                id: testButtonLabel
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.left: testButtonImage.right
+                text: ""
+                font.pointSize: 22
+
+                Timer {
+                    id: testButtonCountTimer
+                    interval: 1000
+                    repeat: true
+
+                    property int elapsed;
+
+                    onTriggered: {
+                        elapsed++
+                        var elapsedHours = Math.floor(elapsed / 3600)
+                        var elapsedMinutes = Math.floor((elapsed - (elapsedHours * 3600)) / 60)
+                        var elapsedSeconds = Math.floor((elapsed - (elapsedHours * 3600)) - (elapsedMinutes * 60));
+
+                        if (elapsedMinutes.toString().length == 1) {
+                            elapsedMinutes = "0" + elapsedMinutes
+                        }
+                        if (elapsedSeconds.toString().length == 1) {
+                            elapsedSeconds = "0" + elapsedSeconds
+                        }
+
+                        var timeString = elapsedHours + ":" + elapsedMinutes + ":" + elapsedSeconds
+
+                        testButtonLabel.text = timeString
+                    }
+                }
+            }
+
+            ColorOverlay {
+                id: testButtonColorOverlay
+                anchors.fill: testButtonImage
+                source: testButtonImage
+                color: "#ffffff"
+            }
+
+            states: [
+                State {
+                    name: "checked"
+                    PropertyChanges {
+                        target: testButtonImage
+                        source: "qrc:/icons/ic_stop_black_48px.svg"
+                    }
+                    PropertyChanges {
+                        target: testButtonTooltip
+                        text: qsTr("Stop Logging")
+                    }
+                    PropertyChanges {
+                        target: testButtonLabel
+                        leftPadding: 5
+                        rightPadding: 5
+                        text: "0:00:00"
+                    }
+                    PropertyChanges {
+                        target: testButtonCountTimer
+                        elapsed: 0
+                        running: true
+                    }
+                },
+                State {
+                    name: "unchecked"
+                    PropertyChanges {
+                        target: testButtonImage
+                        source: "qrc:/icons/ic_fiber_manual_record_black_48px.svg"
+                    }
+                    PropertyChanges {
+                        target: testButtonTooltip
+                        text: qsTr("Begin Logging")
+                    }
+                    PropertyChanges {
+                        target: testButtonLabel
+                        leftPadding: 0
+                        rightPadding: 0
+                        text: ""
+                    }
+                    PropertyChanges {
+                        target: testButtonCountTimer
+                        running: false
+                    }
+                }
+            ]
         }
         
         MouseArea {

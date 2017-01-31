@@ -36,6 +36,21 @@ ResearchRoverProcess::ResearchRoverProcess(QObject *parent) : QObject(parent)
 void ResearchRoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Loading Configuration*******************");
 
+    // This is the directory mbed parser will log to
+    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
+        LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
+        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
+            LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
+        }
+    }
+    // This is the directory gps logger will log to
+    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
+        LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
+        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
+            LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
+        }
+    }
+
 
     LOG_I(LOG_TAG, "*************Initializing core networking*****************");
 
@@ -71,21 +86,8 @@ void ResearchRoverProcess::init() {
     _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_MBED_PORT), MBED_ID_RESEARCH, this);
 
     // setup mbed data parser/logger
-    _mbedParser = new MbedDataParser(_mbed, this);
-    // This is the directory mbed parser will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
-        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
-        }
-    }
-    // This is the directory gps logger will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
-        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
-        }
-    }
+    connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
+            &_mbedParser, SLOT(newData(MbedChannel*, const char*,int)));
 
     // observers for mbed events
     connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
@@ -105,9 +107,8 @@ void ResearchRoverProcess::init() {
     connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
             this, SLOT(gpsUpdate(NmeaMessage)));
 
-    _gpsLogger = new GpsLogger(this);
     connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
-            _gpsLogger, SLOT(addLocation(NmeaMessage)));
+            &_gpsLogger, SLOT(addLocation(NmeaMessage)));
 
     LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
 
@@ -328,11 +329,11 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
         stream >> startTime;
         LOG_I(LOG_TAG, "Starting test log with start time of " + QString::number(startTime.toMSecsSinceEpoch()));
 
-        _mbedParser->startLog(
+        _mbedParser.startLog(
                     QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime.toMSecsSinceEpoch()),
                     startTime);
 
-        _gpsLogger->startLog(
+        _gpsLogger.startLog(
                     QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime.toMSecsSinceEpoch()),
                     startTime);
     }
@@ -340,8 +341,8 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
     case SharedMessage_Research_TestEnd:
         LOG_I(LOG_TAG, "Ending test log");
 
-        _mbedParser->stopLog();
-        _gpsLogger->stopLog();
+        _mbedParser.stopLog();
+        _gpsLogger.stopLog();
         break;
     default:
         LOG_W(LOG_TAG, "Got unknown shared channel message");
@@ -363,6 +364,7 @@ void ResearchRoverProcess::mbedMessageReceived(MbedChannel* channel, const char*
 }
 
 void ResearchRoverProcess::gpsUpdate(NmeaMessage message) {
+    // Forward this update to mission control
     QByteArray byteArray;
     QDataStream stream(&byteArray, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_RoverGpsUpdate;
@@ -383,10 +385,6 @@ ResearchRoverProcess::~ResearchRoverProcess() {
         disconnect(_sharedChannel, 0, 0, 0);
         delete _sharedChannel;
     }
-    if (_gpsLogger) {
-        disconnect(_gpsLogger, 0, 0, 0);
-        delete _gpsLogger;
-    }
     if (_gpsServer) {
         disconnect(_gpsServer, 0, 0, 0);
         delete _gpsServer;
@@ -406,10 +404,6 @@ ResearchRoverProcess::~ResearchRoverProcess() {
     if (_aux1CameraServer) {
         disconnect(_aux1CameraServer, 0, 0, 0);
         delete _aux1CameraServer;
-    }
-    if (_mbedParser) {
-        disconnect(_mbedParser, 0, 0, 0);
-        delete _mbedParser;
     }
     if (_mbed) {
         disconnect(_mbed, 0, 0, 0);

@@ -29,7 +29,7 @@ private:
     /* Interfaces with the mbed controlling the drive system
      */
     MbedChannel *_mbed = NULL;
-    MbedDataParser *_mbedParser = NULL;
+    MbedDataParser _mbedParser;
 
     /* Provides GPS coordinates back to mission control
      */
@@ -50,7 +50,7 @@ private:
     VideoServer *_monoCameraServer = NULL;
     QString _monoCameraDevice;
 
-    GpsLogger *_gpsLogger = NULL;
+    GpsLogger _gpsLogger;
 
 private slots:
     void init();

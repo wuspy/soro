@@ -35,12 +35,9 @@ const char *TAGS[] =
 };
 
 namespace Soro {
-namespace Rover {
 
-MbedDataParser::MbedDataParser(MbedChannel *mbed, QObject *parent) : QObject(parent) {
-    _mbed = mbed;
-    connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
-            this, SLOT(messageReceived(MbedChannel*,const char*,int)));
+MbedDataParser::MbedDataParser(QObject *parent) : QObject(parent) {
+
 }
 
 MbedDataParser::~MbedDataParser() {
@@ -87,8 +84,7 @@ void MbedDataParser::stopLog() {
     }
 }
 
-void MbedDataParser::messageReceived(MbedChannel *mbed, const char* data, int len) {
-    Q_UNUSED(mbed);
+void MbedDataParser::newData(const char* data, int len) {
     _buffer.append(data, len);
 }
 
@@ -129,8 +125,7 @@ void MbedDataParser::parseNext(DataTag tag, int start) {
                 << value;
     }
 
-    emit newData(tag, value);
+    emit dataParsed(tag, value);
 }
 
-}
-}
+} // namespace Soro

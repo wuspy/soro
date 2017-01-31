@@ -6,6 +6,10 @@
         <file>ic_fullscreen_exit_black_48px.svg</file>
         <file>ic_info_black_48px.svg</file>
         <file>ic_warning_black_48px.svg</file>
+        <file>ic_stop_black_48px.svg</file>
+        <file>ic_fiber_manual_record_black_48px.svg</file>
+        <file>ic_keyboard_arrow_right_black_48px.svg</file>
+        <file>ic_keyboard_arrow_left_black_48px.svg</file>
     </qresource>
     <qresource prefix="/html">
         <file>map.html</file>
