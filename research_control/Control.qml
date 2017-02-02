@@ -150,16 +150,16 @@ ApplicationWindow {
         notificationPane.state = "hidden"
         switch (type) {
         case "error":
-            notificationImage.source = "qrc:/icons/ic_error_black_48px.svg"
+            notificationImage.source = "qrc:/icons/ic_error_white_48px.svg"
             notificationImageColorOverlay.color = theme_red
             break
         case "warning":
-            notificationImage.source = "qrc:/icons/ic_warning_black_48px.svg"
+            notificationImage.source = "qrc:/icons/ic_warning_white_48px.svg"
             notificationImageColorOverlay.color = theme_yellow
             break;
         case "information":
         default:
-            notificationImage.source = "qrc:/icons/ic_info_black_48px.svg"
+            notificationImage.source = "qrc:/icons/ic_info_white_48px.svg"
             notificationImageColorOverlay.color = theme_blue
             break;
         }
@@ -245,7 +245,7 @@ ApplicationWindow {
                     statusImage.visible: true
                     bitrateLabel.visible: true
                     statusLabel.text: "Connected"
-                    statusImage.source: "qrc:/icons/ic_check_circle_black_48px.svg"
+                    statusImage.source: "qrc:/icons/ic_check_circle_white_48px.svg"
                     avGroupBox.enabled: true
                     simulationGroupBox.enabled: true
                     gpsGroupBox.enabled: true
@@ -260,7 +260,7 @@ ApplicationWindow {
                     statusImage.visible: true
                     bitrateLabel.visible: false
                     statusLabel.text: "Error"
-                    statusImage.source: "qrc:/icons/ic_error_black_48px.svg"
+                    statusImage.source: "qrc:/icons/ic_error_white_48px.svg"
                     settingsPane.enabled: false
                 }
             }
@@ -609,11 +609,6 @@ ApplicationWindow {
                         anchors.top: roverAddressField.bottom
                         anchors.topMargin: 8
                     }
-
-
-
-
-
 
                     Label {
                         id: driveStatusLabel
@@ -1247,7 +1242,7 @@ ApplicationWindow {
                     name: "checked"
                     PropertyChanges {
                         target: sidebarButtonImage
-                        source: "qrc:/icons/ic_keyboard_arrow_right_black_48px.svg"
+                        source: "qrc:/icons/ic_keyboard_arrow_right_white_48px.svg"
                     }
                     PropertyChanges {
                         target: sidebarButtonTooltip
@@ -1258,7 +1253,7 @@ ApplicationWindow {
                     name: "unchecked"
                     PropertyChanges {
                         target: sidebarButtonImage
-                        source: "qrc:/icons/ic_keyboard_arrow_left_black_48px.svg"
+                        source: "qrc:/icons/ic_keyboard_arrow_left_white_48px.svg"
                     }
                     PropertyChanges {
                         target: sidebarButtonTooltip
@@ -1274,7 +1269,7 @@ ApplicationWindow {
             width: testButtonImage.width + testButtonLabel.width
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: fullscreenButtonMouseArea.left
-            anchors.rightMargin: 0
+            anchors.rightMargin: 12
             cursorShape: Qt.PointingHandCursor
             state: "unchecked"
             hoverEnabled: true
@@ -1355,7 +1350,7 @@ ApplicationWindow {
                     name: "checked"
                     PropertyChanges {
                         target: testButtonImage
-                        source: "qrc:/icons/ic_stop_black_48px.svg"
+                        source: "qrc:/icons/ic_stop_white_48px.svg"
                     }
                     PropertyChanges {
                         target: testButtonTooltip
@@ -1377,7 +1372,7 @@ ApplicationWindow {
                     name: "unchecked"
                     PropertyChanges {
                         target: testButtonImage
-                        source: "qrc:/icons/ic_fiber_manual_record_black_48px.svg"
+                        source: "qrc:/icons/ic_play_arrow_white_48px.svg"
                     }
                     PropertyChanges {
                         target: testButtonTooltip
@@ -1401,11 +1396,8 @@ ApplicationWindow {
             id: fullscreenButtonMouseArea
             width: height
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 0
             anchors.right: parent.right
-            anchors.rightMargin: 0
             anchors.top: parent.top
-            anchors.topMargin: 0
             cursorShape: Qt.PointingHandCursor
             state: "unchecked"
             hoverEnabled: true
@@ -1448,7 +1440,7 @@ ApplicationWindow {
                     name: "checked"
                     PropertyChanges {
                         target: fullscreenButtonImage
-                        source: "qrc:/icons/ic_fullscreen_exit_black_48px.svg"
+                        source: "qrc:/icons/ic_fullscreen_exit_white_48px.svg"
                     }
                     PropertyChanges {
                         target: fullscreenButtonTooltip
@@ -1459,7 +1451,7 @@ ApplicationWindow {
                     name: "unchecked"
                     PropertyChanges {
                         target: fullscreenButtonImage
-                        source: "qrc:/icons/ic_fullscreen_black_48px.svg"
+                        source: "qrc:/icons/ic_fullscreen_white_48px.svg"
                     }
                     PropertyChanges {
                         target: fullscreenButtonTooltip
@@ -1580,7 +1572,7 @@ ApplicationWindow {
             anchors.bottomMargin: 0
             anchors.top: parent.top
             anchors.topMargin: 0
-            source: "qrc:/icons/ic_info_black_48px.svg"
+            source: "qrc:/icons/ic_info_white_48px.svg"
         }
         
 
