@@ -33,6 +33,7 @@ StereoCameraWidget::~StereoCameraWidget()
 }
 
 void StereoCameraWidget::resizeEvent(QResizeEvent* event) {
+    Q_UNUSED(event);
     ui->monoCameraWidget->move(0, 0);
     ui->monoCameraWidget->resize(width(), height());
 

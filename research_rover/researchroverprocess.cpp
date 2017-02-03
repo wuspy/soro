@@ -253,6 +253,7 @@ void ResearchRoverProcess::mediaServerError(MediaServer *server, QString message
     stream.setByteOrder(QDataStream::BigEndian);
     SharedMessageType messageType = SharedMessage_RoverMediaServerError;
 
+    stream << messageType;
     stream <<(qint32)server->getMediaId();
     stream << message;
     _sharedChannel->sendMessage(byeArray);
@@ -351,6 +352,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
 }
 
 void ResearchRoverProcess::mbedMessageReceived(MbedChannel* channel, const char* message, int size) {
+    Q_UNUSED(channel);
     // Forward the message to mission control (MbedDataParser instance will take care of logging it)
 
     QByteArray byteArray;

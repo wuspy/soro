@@ -22,5 +22,6 @@ ClickableLabel::ClickableLabel(QWidget* parent)
 ClickableLabel::~ClickableLabel() { }
 
 void ClickableLabel::mouseReleaseEvent(QMouseEvent* event) {
+    Q_UNUSED(event);
     emit clicked();
 }

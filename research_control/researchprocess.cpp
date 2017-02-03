@@ -166,7 +166,7 @@ void ResearchControlProcess::stopTestLog() {
 }
 
 void ResearchControlProcess::logCommentEntered(QString comment) {
-
+    //TODO
 }
 
 void ResearchControlProcess::gamepadChanged(SDL_GameController *controller, QString name) {

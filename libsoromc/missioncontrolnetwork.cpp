@@ -127,6 +127,7 @@ void MissionControlNetwork::endNegotiation() {
 }
 
 void MissionControlNetwork::socketError(QAbstractSocket::SocketError err) {
+    Q_UNUSED(err);
     LOG_E(LOG_TAG, "Socket error: " + _broadcastSocket->errorString());
     startNegotiation();
 }

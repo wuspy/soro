@@ -633,7 +633,6 @@ bool Channel::sendMessage(const char *message, MessageSize size) {
 
 bool Channel::sendMessage(const char *message, MessageSize size, MessageType type) {   //PRIVATE
     qint64 status;
-    char *buffer;
     //LOG_D(LOG_TAG, "Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
     if (_protocol == UdpProtocol) {
         if (_simulatedDelay == 0) {

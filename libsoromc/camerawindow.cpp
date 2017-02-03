@@ -45,6 +45,7 @@ void CameraWindow::close() {
 }
 
 void CameraWindow::showEvent(QShowEvent *e) {
+    Q_UNUSED(e);
     _shouldClose = false;
 }
 

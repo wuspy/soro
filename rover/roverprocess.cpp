@@ -166,6 +166,7 @@ void RoverProcess::beginSecondaryComputerListening() {
 }
 
 void RoverProcess::secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError err) {
+    Q_UNUSED(err);
     LOG_E(LOG_TAG, "Error on secondary computer broadcast socket: " + _secondaryComputerBroadcastSocket->errorString());
     QTimer::singleShot(500, this, SLOT(beginSecondaryComputerListening()));
 }

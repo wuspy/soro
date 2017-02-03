@@ -236,6 +236,7 @@ void MissionControlProcess::playAudio() {
 }
 
 void MissionControlProcess::handleAudioStateChanged(AudioClient::State state, AudioFormat encoding, QString errorString) {
+    Q_UNUSED(errorString);
     _audioFormat = encoding;
     switch (state) {
     case AudioClient::StreamingState:

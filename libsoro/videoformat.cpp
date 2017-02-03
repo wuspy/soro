@@ -98,6 +98,9 @@ quint32 VideoFormat::getResolutionWidth() const {
     case Resolution_1920x1080:  return 1920;
     case Resolution_2560x1440:  return 2560;
     case Resolution_3840x2160:  return 3840;
+    default:
+        LOG_E(LOG_TAG, "Unknown _resolution value, returning 1280x720 default");
+        return 1280;
     }
 }
 
@@ -111,6 +114,9 @@ quint32 VideoFormat::getResolutionHeight() const {
     case Resolution_1920x1080:  return 1080;
     case Resolution_2560x1440:  return 1440;
     case Resolution_3840x2160:  return 2160;
+    default:
+        LOG_E(LOG_TAG, "Unknown _resolution value, returning 1280x720 default");
+        return 720;
     }
 }
 
