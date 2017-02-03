@@ -60,6 +60,12 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
             this, SLOT(ui_requestUiSync()));
     connect(_controlUi, SIGNAL(settingsApplied()),
             this, SLOT(ui_settingsApplied()));
+    connect(_controlUi, SIGNAL(startTestLog()),
+            this, SLOT(startTestLog()));
+    connect(_controlUi, SIGNAL(stopTestLog()),
+            this, SLOT(stopTestLog()));
+    connect(_controlUi, SIGNAL(logCommentEntered(QString)),
+            this, SLOT(startTestLog(QString)));
 
     // This is the directory mbed parser will log to
     if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
@@ -100,8 +106,8 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     _driveSystem->enable();
 
     // create mbed data parser
-    connect(&_mbedParser, SIGNAL(dataParsed(MbedDataParser::DataTag,float)),
-            this, SLOT(newSensorData(MbedDataParser::DataTag,float)));
+    connect(&_sensorRecorder, SIGNAL(dataParsed(SensorDataRecorder::DataTag,float)),
+            this, SLOT(newSensorData(SensorDataRecorder::DataTag,float)));
 
     LOG_I(LOG_TAG, "***************Initializing Video system******************");
 
@@ -150,13 +156,17 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
 
 void ResearchControlProcess::startTestLog() {
     qint64 startTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
-    _mbedParser.startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime));
-    _gpsLogger.startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime));
+    _sensorRecorder.startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime));
+    _gpsRecorder.startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime));
 }
 
 void ResearchControlProcess::stopTestLog() {
-    _mbedParser.stopLog();
-    _gpsLogger.stopLog();
+    _sensorRecorder.stopLog();
+    _gpsRecorder.stopLog();
+}
+
+void ResearchControlProcess::logCommentEntered(QString comment) {
+
 }
 
 void ResearchControlProcess::gamepadChanged(SDL_GameController *controller, QString name) {
@@ -352,7 +362,7 @@ void ResearchControlProcess::updateUiConnectionState() {
     }
 }
 
-void ResearchControlProcess::newSensorData(MbedDataParser::DataTag tag, float value) {
+void ResearchControlProcess::newSensorData(SensorDataRecorder::DataTag tag, float value) {
     //TODO
 }
 
@@ -460,7 +470,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel,
                                   Q_ARG(QVariant, location.Heading));
 
         // Forward to logger
-        _gpsLogger.addLocation(location);
+        _gpsRecorder.addLocation(location);
     }
         break;
     case SharedMessage_Research_RoverDriveOverrideStart:
@@ -483,7 +493,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel,
         QByteArray data;
         stream >> data;
         // This raw data should be sent to an MbedParser to be decoded
-        _mbedParser.newData(data.data(), data.length());
+        _sensorRecorder.newData(data.data(), data.length());
         break;
     }
     default:

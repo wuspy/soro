@@ -11,8 +11,8 @@
 #include "libsoro/videoserver.h"
 #include "libsoro/videoformat.h"
 #include "libsoro/enums.h"
-#include "libsoro/mbeddataparser.h"
-#include "libsoro/gpslogger.h"
+#include "libsoro/sensordatarecorder.h"
+#include "libsoro/gpsdatarecorder.h"
 
 namespace Soro {
 namespace Rover {
@@ -29,7 +29,7 @@ private:
     /* Interfaces with the mbed controlling the drive system
      */
     MbedChannel *_mbed = NULL;
-    MbedDataParser _mbedParser;
+    SensorDataRecorder _sensorRecorder;
 
     /* Provides GPS coordinates back to mission control
      */
@@ -50,7 +50,7 @@ private:
     VideoServer *_monoCameraServer = NULL;
     QString _monoCameraDevice;
 
-    GpsLogger _gpsLogger;
+    GpsDataRecorder _gpsRecorder;
 
 private slots:
     void init();

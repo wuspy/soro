@@ -22,8 +22,8 @@
 #include "libsoro/videoclient.h"
 #include "libsoro/audioclient.h"
 #include "libsoro/videoformat.h"
-#include "libsoro/mbeddataparser.h"
-#include "libsoro/gpslogger.h"
+#include "libsoro/sensordatarecorder.h"
+#include "libsoro/gpsdatarecorder.h"
 
 #include "libsorogst/audioplayer.h"
 
@@ -76,8 +76,8 @@ private:
     AudioClient *_audioClient = NULL;
     Soro::Gst::AudioPlayer *_audioPlayer = NULL;
 
-    MbedDataParser _mbedParser;
-    GpsLogger _gpsLogger;
+    SensorDataRecorder _sensorRecorder;
+    GpsDataRecorder _gpsRecorder;
 
 private:
     void stopAllRoverCameras();
@@ -94,9 +94,10 @@ private slots:
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void driveConnectionStateChanged(Channel::State state);
     void gamepadChanged(SDL_GameController *controller, QString name);
-    void newSensorData(MbedDataParser::DataTag tag, float value);
+    void newSensorData(SensorDataRecorder::DataTag tag, float value);
     void startTestLog();
     void stopTestLog();
+    void logCommentEntered(QString comment);
 
     /**
      * Receives the signal from the UI when the settings have been applied and should be enacted

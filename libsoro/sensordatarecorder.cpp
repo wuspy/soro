@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "mbeddataparser.h"
+#include "sensordatarecorder.h"
 
-#define LOG_TAG "MbedDataParser"
+#define LOG_TAG "SensorDataRecorder"
 
 const char *TAGS[] =
 {
@@ -36,59 +36,15 @@ const char *TAGS[] =
 
 namespace Soro {
 
-MbedDataParser::MbedDataParser(QObject *parent) : QObject(parent) {
+SensorDataRecorder::SensorDataRecorder(QObject *parent) : AbstractDataRecorder(LOG_TAG, parent) {
 
 }
 
-MbedDataParser::~MbedDataParser() {
-    stopLog();
-}
-
-bool MbedDataParser::startLog(QString file, QDateTime loggedStartTime) {
-    if (_fileStream != NULL) {
-        delete _fileStream;
-        _fileStream = NULL;
-    }
-    if (_file != NULL) {
-        if (_file->isOpen()) _file->close();
-        delete _file;
-    }
-    _file = new QFile(file, this);
-    if (_file->exists()) {
-        LOG_E(LOG_TAG, "File \'" + file + "\' already exists, I will not overwrite it");
-    }
-    else if (_file->open(QIODevice::WriteOnly)) {
-        _logStartTime = loggedStartTime.toMSecsSinceEpoch();
-        _fileStream = new QDataStream(_file);
-        *_fileStream << _logStartTime;
-        LOG_I(LOG_TAG, "Beginning log with time " + QString::number(_logStartTime));
-        return true;
-    }
-    // could not open the file
-    LOG_E(LOG_TAG, "Unable to open the specified logfile for write access (" + file + ")");
-    return false;
-}
-
-void MbedDataParser::stopLog() {
-    if (_file) {
-        if (_fileStream) {
-            delete _fileStream;
-            _fileStream = NULL;
-            LOG_I(LOG_TAG, "Ending log with start time " + QString::number(_logStartTime));
-        }
-        if (_file->isOpen()) {
-            _file->close();
-        }
-        delete _file;
-        _file = NULL;
-    }
-}
-
-void MbedDataParser::newData(const char* data, int len) {
+void SensorDataRecorder::newData(const char* data, int len) {
     _buffer.append(data, len);
 }
 
-void MbedDataParser::parseBuffer() {
+void SensorDataRecorder::parseBuffer() {
     if (_buffer.length() == 0) return;
 
     for (int i = 0; i < 12; i++) {
@@ -106,7 +62,7 @@ void MbedDataParser::parseBuffer() {
     parseBuffer();
 }
 
-void MbedDataParser::parseNext(DataTag tag, int start) {
+void SensorDataRecorder::parseNext(DataTag tag, int start) {
     if (start >= _buffer.length()) return;
     int end = start;
     while (QChar(_buffer.at(end)).isNumber()) {
@@ -118,12 +74,9 @@ void MbedDataParser::parseNext(DataTag tag, int start) {
     _buffer.remove(0, end);
 
     // Append this data to the logfile;
-    if (_fileStream) {
-        *_fileStream
-                << (quint32)(QDateTime::currentDateTime().toMSecsSinceEpoch() - _logStartTime)
-                << reinterpret_cast<quint32&>(tag)
-                << value;
-    }
+    QByteArray data; QDataStream stream(data);
+    stream << reinterpret_cast<quint32&>(tag) << value;
+    recordData(data);
 
     emit dataParsed(tag, value);
 }

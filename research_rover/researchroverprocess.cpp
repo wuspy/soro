@@ -87,7 +87,7 @@ void ResearchRoverProcess::init() {
 
     // setup mbed data parser/logger
     connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
-            &_mbedParser, SLOT(newData(MbedChannel*, const char*,int)));
+            &_sensorRecorder, SLOT(newData(MbedChannel*, const char*,int)));
 
     // observers for mbed events
     connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
@@ -108,7 +108,7 @@ void ResearchRoverProcess::init() {
             this, SLOT(gpsUpdate(NmeaMessage)));
 
     connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
-            &_gpsLogger, SLOT(addLocation(NmeaMessage)));
+            &_gpsRecorder, SLOT(addLocation(NmeaMessage)));
 
     LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
 
@@ -329,11 +329,11 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
         stream >> startTime;
         LOG_I(LOG_TAG, "Starting test log with start time of " + QString::number(startTime.toMSecsSinceEpoch()));
 
-        _mbedParser.startLog(
+        _sensorRecorder.startLog(
                     QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime.toMSecsSinceEpoch()),
                     startTime);
 
-        _gpsLogger.startLog(
+        _gpsRecorder.startLog(
                     QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime.toMSecsSinceEpoch()),
                     startTime);
     }
@@ -341,8 +341,8 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
     case SharedMessage_Research_TestEnd:
         LOG_I(LOG_TAG, "Ending test log");
 
-        _mbedParser.stopLog();
-        _gpsLogger.stopLog();
+        _sensorRecorder.stopLog();
+        _gpsRecorder.stopLog();
         break;
     default:
         LOG_W(LOG_TAG, "Got unknown shared channel message");

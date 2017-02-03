@@ -85,8 +85,8 @@ ApplicationWindow {
     signal requestUiSync()
     signal settingsApplied()
     signal logCommentEntered(string comment)
-    signal beginTestLoggin()
-    signal endTestLogging()
+    signal startTestLog()
+    signal stopTestLog()
     
     // Public functions
 
@@ -190,11 +190,12 @@ ApplicationWindow {
     }
 
     onTestLoggingChanged: {
+        // These are signals that notify the backend
         if (testLogging) {
-            beginTestLoggin()
+            startTestLog()
         }
         else {
-            endTestLogging()
+            stopTestLog()
         }
     }
 
@@ -1263,6 +1264,10 @@ ApplicationWindow {
             ]
         }
 
+        /* This is the test start/stop button. It also shows the elapsed time during a test,
+          which it calculates itself using a timer. This doesn't need to be completely accurate
+          as it only serves as a reference, the actual testing timestamps are saved elsewhere.
+          */
         MouseArea {
             id: testButtonMouseArea
             height: 40

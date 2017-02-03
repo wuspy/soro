@@ -1,19 +1,22 @@
-#ifndef GPSLOGGER_H
-#define GPSLOGGER_H
+#ifndef ABSTRACTDATARECORDER_H
+#define ABSTRACTDATARECORDER_H
 
 #include <QObject>
 #include <QFile>
 #include <QDateTime>
-
-#include "nmeamessage.h"
+#include <QDataStream>
 
 namespace Soro {
 
-class GpsLogger : public QObject
+/* Abstract class implemented by any class responsible for logging test data for the research
+ * project
+ */
+class AbstractDataRecorder : public QObject
 {
     Q_OBJECT
+
 public:
-    explicit GpsLogger(QObject *parent = 0);
+    ~AbstractDataRecorder();
 
     /* Starts logging data in the specified file, and calculates all timestamps offset from
      * the provided start time.
@@ -24,15 +27,19 @@ public:
      */
     void stopLog();
 
-public slots:
-    void addLocation(NmeaMessage location);
+protected:
+    AbstractDataRecorder(QString logTag, QObject *parent=0);
+    inline bool canRecordData() { return _isRecording; }
+    void recordData(QByteArray data);
 
 private:
+    QString _logTag;
     QFile *_file = NULL;
     QDataStream *_fileStream = NULL;
     qint64 _logStartTime;
+    bool _isRecording=false;
 };
 
 } // namespace Soro
 
-#endif // GPSLOGGER_H
+#endif // ABSTRACTDATARECORDER_H
