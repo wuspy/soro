@@ -22,10 +22,10 @@ Logger* Logger::_root = new Logger();
 
 Logger::Logger(QObject *parent) : QObject(parent) {
     // create default text formatting
-    _qtLoggerFormat << "\033[31m[E]\033[0m %1 \033[35m%2\033[0m: %3";
-    _qtLoggerFormat << "\033[33m[W]\033[0m %1 \033[35m%2\033[0m: %3";
-    _qtLoggerFormat << "\033[34m[I]\033[0m %1 \033[35m%2\033[0m: %3";
-    _qtLoggerFormat << "[D] %1 \033[35m%2\033[0m: %3";
+    _stdoutFormat << "\033[31m[E]\033[0m %1 \033[35m%2\033[0m: %3";
+    _stdoutFormat << "\033[33m[W]\033[0m %1 \033[35m%2\033[0m: %3";
+    _stdoutFormat << "\033[34m[I]\033[0m %1 \033[35m%2\033[0m: %3";
+    _stdoutFormat << "[D] %1 \033[35m%2\033[0m: %3";
 
     // default unless later set otherwise
     _textFormat << "[E]\t%1\t%2:\t%3";
@@ -35,6 +35,7 @@ Logger::Logger(QObject *parent) : QObject(parent) {
 }
 
 bool Logger::setLogfile(QString file) {
+    _fileMutex.lock();
     if (_fileStream != NULL) {
         _fileStream->flush();
         delete _fileStream;
@@ -47,8 +48,10 @@ bool Logger::setLogfile(QString file) {
     _file = new QFile(file, this);
     if (_file->open(QIODevice::Append)) {
         _fileStream = new QTextStream(_file);
+        _fileMutex.unlock();
         return true;
     }
+    _fileMutex.unlock();
     // could not open the file
     e("LOGGER", "Unable to open the specified logfile for write access (" + file + ")");
     return false;
@@ -59,20 +62,23 @@ void Logger::publish(Level level, QString tag, QString message) { //PRIVATE
     if (level <= _maxFileLevel) {
         QString formatted = _textFormat[reinterpret_cast<unsigned int&>(level) - 1]
                 .arg(QTime::currentTime().toString(), tag, message);
+        _fileMutex.lock();
         if (_fileStream != NULL) {
             *_fileStream << formatted << endl;
             _fileStream->flush();
         }
+        _fileMutex.unlock();
     }
     // check for Qt logger output
     if (level <= _maxQtLogLevel) {
-        QString formatted = _qtLoggerFormat[reinterpret_cast<unsigned int&>(level) - 1]
+        QString formatted = _stdoutFormat[reinterpret_cast<unsigned int&>(level) - 1]
                 .arg(QTime::currentTime().toString(), tag, message);
         QTextStream(stdout) << formatted << endl;
     }
 }
 
 void Logger::closeLogfile() {
+    _fileMutex.lock();
     if (_file) {
         if (_fileStream) {
             delete _fileStream;
@@ -84,13 +90,14 @@ void Logger::closeLogfile() {
         delete _file;
         _file = NULL;
     }
+    _fileMutex.unlock();
 }
 
 void Logger::setMaxFileLevel(Logger::Level maxLevel) {
     _maxFileLevel = maxLevel;
 }
 
-void Logger::setMaxQtLoggerLevel(Logger::Level maxLevel) {
+void Logger::setMaxStdoutLevel(Logger::Level maxLevel) {
     _maxQtLogLevel = maxLevel;
 }
 

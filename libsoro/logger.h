@@ -2,6 +2,7 @@
 #define SORO_LOGGER_H
 
 #include <QtCore>
+#include <QMutex>
 
 #include "soro_global.h"
 
@@ -17,8 +18,10 @@ namespace Soro {
 /* A very simple logging implementation. Provides functionality to output
  * log data to a file as well signaling when messages are published.
  *
- * This class is reentrant, because QTextStream is reentrant and mutexes are expensive.
- * Create separate logger instances for separate threads.
+ * This class also provides a singleton root logger, which can be accessed
+ * with the rootLogger() method.
+ *
+ * This class uses a mutex around the file stream, which *should* make it thread safe.
  */
 class LIBSORO_EXPORT Logger: public QObject {
     Q_OBJECT
@@ -36,6 +39,7 @@ private:
     static const QString _levelFormattersHTML[];
     QFile* _file = NULL;
     QTextStream* _fileStream = NULL;
+    QMutex _fileMutex;
     void publish(Level level, QString tag, QString message);
 
     Level _maxFileLevel = LogLevelDebug;
@@ -43,7 +47,7 @@ private:
 
     // These format the log messages to the desiered text appearance
     QStringList _textFormat;
-    QStringList _qtLoggerFormat;
+    QStringList _stdoutFormat;
 
     // Singleton root logger
     static Logger *_root;
@@ -70,18 +74,26 @@ public:
         return _root;
     }
 
+    /* Log as debug level
+     */
     inline void d(QString tag, QString message) {
         publish(LogLevelDebug, tag, message);
     }
 
+    /* Log as informational level
+     */
     inline void i(QString tag, QString message) {
         publish(LogLevelInformation, tag, message);
     }
 
+    /* Log as warning level
+     */
     inline void w(QString tag, QString message) {
         publish(LogLevelWarning, tag, message);
     }
 
+    /* Log as error level
+     */
     inline void e(QString tag, QString message) {
         publish(LogLevelError, tag, message);
     }
@@ -91,10 +103,10 @@ public:
      */
     void setMaxFileLevel(Logger::Level maxLevel);
 
-    /* Specify the maximum level that will be forwarded to the
-     * Qt logging system.
+    /* Specify the maximum level that will be printed through
+     * stdout. Set to LogLevelDisabled to disable stdout printing.
      */
-    void setMaxQtLoggerLevel(Logger::Level maxLevel);
+    void setMaxStdoutLevel(Logger::Level maxLevel);
 
     /* Specify the formatting to be applied to log messages published to the
      * output file. The list should have 4 elements, with the first corresponding
