@@ -39,16 +39,17 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     _settings = SettingsModel::Default(roverAddress);
 
     // Create UI for rover control
-    _mainUi = new ResearchMainWindow();
+    _mainUi = new ResearchMainWindow;
     _mainUi->getCameraWidget()->setStereoMode(VideoFormat::StereoMode_SideBySide);
     connect(_mainUi, SIGNAL(closed()), this, SIGNAL(windowClosed()));
 
     // Create UI for settings and control
-    QQmlComponent qmlComponent(qml, QUrl("qrc:/Control.qml"));
+    QQmlComponent qmlComponent(qml, QUrl("qrc:/Main.qml"));
     QObject *componentObject = qmlComponent.create();
     if (!qmlComponent.errorString().isEmpty()) {
         LOG_E(LOG_TAG, "Cannot create QML: " + qmlComponent.errorString());
         QCoreApplication::exit(1);
+        return;
     }
     else {
         _controlUi = qobject_cast<QQuickWindow*>(componentObject);
@@ -60,27 +61,8 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
             this, SLOT(ui_requestUiSync()));
     connect(_controlUi, SIGNAL(settingsApplied()),
             this, SLOT(ui_settingsApplied()));
-    connect(_controlUi, SIGNAL(startTestLog()),
-            this, SLOT(startTestLog()));
-    connect(_controlUi, SIGNAL(stopTestLog()),
-            this, SLOT(stopTestLog()));
-    connect(_controlUi, SIGNAL(logCommentEntered(QString)),
-            this, SLOT(startTestLog(QString)));
-
-    // This is the directory mbed parser will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
-        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
-        }
-    }
-    // This is the directory gps logger will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
-        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
-        }
-    }
+    connect (_controlUi, SIGNAL(recordButtonClicked()),
+             this, SLOT(ui_toggleDataRecordButtonClicked()));
 
     LOG_I(LOG_TAG, "****************Initializing connections*******************");
 
@@ -89,9 +71,9 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     _roverChannel = Channel::createClient(this, SocketAddress(_settings.roverAddress, NETWORK_ALL_SHARED_CHANNEL_PORT), CHANNEL_NAME_SHARED,
             Channel::TcpProtocol, QHostAddress::Any);
     _roverChannel->open();
-    connect(_roverChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
-            this, SLOT(roverSharedChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
-    connect(_roverChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
+    connect(_roverChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
+            this, SLOT(roverSharedChannelMessageReceived(const char*,Channel::MessageSize)));
+    connect(_roverChannel, SIGNAL(stateChanged(Channel::State)),
             this, SLOT(updateUiConnectionState()));
 
     LOG_I(LOG_TAG, "Creating drive control system");
@@ -104,10 +86,6 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
         QCoreApplication::exit(1);
     }
     _driveSystem->enable();
-
-    // create mbed data parser
-    connect(&_sensorRecorder, SIGNAL(dataParsed(SensorDataRecorder::DataTag,float)),
-            this, SLOT(newSensorData(SensorDataRecorder::DataTag,float)));
 
     LOG_I(LOG_TAG, "***************Initializing Video system******************");
 
@@ -143,6 +121,34 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
 
     _audioPlayer = new Soro::Gst::AudioPlayer(this);
 
+    LOG_I(LOG_TAG, "***************Initializing Data Recording system******************");
+
+    // Master logger logs to ../research-data
+
+    // This is the directory mbed parser will log to
+    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
+        LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
+        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
+            LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
+        }
+    }
+    // This is the directory gps logger will log to
+    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
+        LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
+        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
+            LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
+        }
+    }
+
+    _sensorRecorder = new SensorDataRecorder(this);
+    _gpsRecorder = new GpsDataRecorder(this);
+    _masterRecorder = new MasterDataRecorder(_driveSystem->getChannel(), _roverChannel, this);
+
+    connect(_sensorRecorder, SIGNAL(dataParsed(SensorDataRecorder::DataTag,float)),
+            this, SLOT(newSensorData(SensorDataRecorder::DataTag,float)));
+    connect(_controlUi, SIGNAL(logCommentEntered(QString)),
+            _masterRecorder, SLOT(addComment(QString)));
+
     // Show UI's
 
     _mainUi->show();
@@ -154,19 +160,36 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     START_TIMER(_pingTimerId, 1000);
 }
 
-void ResearchControlProcess::startTestLog() {
-    qint64 startTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
-    _sensorRecorder.startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime));
-    _gpsRecorder.startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime));
+void ResearchControlProcess::roverDataRecordResponseWatchdog() {
+    if (!_masterRecorder->isRecording()) {
+        // Rover did not respond to our record request in time
+        stopDataRecording();
+        QMetaObject::invokeMethod(_controlUi,
+                                  "notify",
+                                  Q_ARG(QVariant,"error"),
+                                  Q_ARG(QVariant, "Cannot Record Data"),
+                                  Q_ARG(QVariant, "The rover has not responded to the request to start data recording"));
+    }
 }
 
-void ResearchControlProcess::stopTestLog() {
-    _sensorRecorder.stopLog();
-    _gpsRecorder.stopLog();
+void ResearchControlProcess::startDataRecording() {
+    sendStartRecordCommandToRover();
+    QTimer::singleShot(5000, this, SLOT(roverDataRecordResponseWatchdog()));
 }
 
-void ResearchControlProcess::logCommentEntered(QString comment) {
-    //TODO
+void ResearchControlProcess::stopDataRecording() {
+    _sensorRecorder->stopLog();
+    _gpsRecorder->stopLog();
+    _masterRecorder->stopLog();
+    _controlUi->setProperty("recordingState", "idle");
+
+    // Send stop command to rover as well
+    QByteArray byteArray;
+    QDataStream stream(&byteArray, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_Research_StopDataRecording;
+    stream << reinterpret_cast<quint32&>(messageType);
+
+    _roverChannel->sendMessage(byteArray);
 }
 
 void ResearchControlProcess::gamepadChanged(SDL_GameController *controller, QString name) {
@@ -193,6 +216,15 @@ void ResearchControlProcess::ui_requestUiSync() {
     updateUiConnectionState();
     // Sync settings
     _settings.syncUi(_controlUi);
+}
+
+void ResearchControlProcess::ui_toggleDataRecordButtonClicked() {
+    if (_masterRecorder->isRecording()) {
+        stopDataRecording();
+    }
+    else {
+        startDataRecording();
+    }
 }
 
 void ResearchControlProcess::ui_settingsApplied() {
@@ -346,7 +378,7 @@ void ResearchControlProcess::audioClientStateChanged(MediaClient *client, MediaC
 void ResearchControlProcess::updateUiConnectionState() {
     switch (_roverChannel->getState()) {
     case Channel::ErrorState:
-        _controlUi->setProperty("state", "error");
+        _controlUi->setProperty("connectionState", "error");
         QMetaObject::invokeMethod(_controlUi,
                                   "notify",
                                   Q_ARG(QVariant,"error"),
@@ -354,10 +386,10 @@ void ResearchControlProcess::updateUiConnectionState() {
                                   Q_ARG(QVariant, "An unrecoverable netowork error occurred. Please exit and check the log."));
         break;
     case Channel::ConnectedState:
-        _controlUi->setProperty("state", "connected");
+        _controlUi->setProperty("connectionState", "connected");
         break;
     default:
-        _controlUi->setProperty("state", "connecting");
+        _controlUi->setProperty("connectionState", "connecting");
         break;
     }
 }
@@ -411,8 +443,23 @@ void ResearchControlProcess::timerEvent(QTimerEvent *e) {
     }
 }
 
-void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void ResearchControlProcess::sendStartRecordCommandToRover() {
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_Research_StartDataRecording;
+    stream << reinterpret_cast<const quint32&>(messageType);
+    _roverChannel->sendMessage(message);
+}
+
+void ResearchControlProcess::sendStopRecordCommandToRover() {
+    QByteArray message;
+    QDataStream stream(&message, QIODevice::WriteOnly);
+    SharedMessageType messageType = SharedMessage_Research_StopDataRecording;
+    stream << reinterpret_cast<const quint32&>(messageType);
+    _roverChannel->sendMessage(message);
+}
+
+void ResearchControlProcess::roverSharedChannelMessageReceived(const char *message, Channel::MessageSize size) {
 
     QByteArray byteArray = QByteArray::fromRawData(message, size);
     QDataStream stream(byteArray);
@@ -470,7 +517,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel,
                                   Q_ARG(QVariant, location.Heading));
 
         // Forward to logger
-        _gpsRecorder.addLocation(location);
+        _gpsRecorder->addLocation(location);
     }
         break;
     case SharedMessage_Research_RoverDriveOverrideStart:
@@ -493,7 +540,28 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(Channel *channel,
         QByteArray data;
         stream >> data;
         // This raw data should be sent to an MbedParser to be decoded
-        _sensorRecorder.newData(data.data(), data.length());
+        _sensorRecorder->newData(data.data(), data.length());
+        break;
+    }
+    case SharedMessage_Research_StartDataRecording: {
+        // Rover has responed that they are starting data recording, start ours
+        qint64 startTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
+        bool success = true;
+        success &= _sensorRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime));
+        success &= _gpsRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime));
+        success &= _masterRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/" + QString::number(startTime));
+        if (!success) {
+            stopDataRecording();
+            QMetaObject::invokeMethod(_controlUi,
+                                      "notify",
+                                      Q_ARG(QVariant,"error"),
+                                      Q_ARG(QVariant, "Cannot Record Data"),
+                                      Q_ARG(QVariant, "An error occurred attempting to start data logging."));
+
+            // Try to tell the rover to stop their recording too
+            sendStopRecordCommandToRover();
+        }
+        _controlUi->setProperty("recordingState", "recording");
         break;
     }
     default:
@@ -527,7 +595,7 @@ void ResearchControlProcess::driveConnectionStateChanged(Channel::State state) {
                                       "notify",
                                       Q_ARG(QVariant,"error"),
                                       Q_ARG(QVariant, "Drive Channel Disconnected"),
-                                      Q_ARG(QVariant, "Although you are connected to the rover, the network connection to it's drive subsystem has been lost."));
+                                      Q_ARG(QVariant, "The network connection to it's drive subsystem has been lost."));
             _controlUi->setProperty("driveStatus", "Network Disconnected");
         }
         break;
@@ -626,15 +694,6 @@ void ResearchControlProcess::startAudioStream(AudioFormat format) {
 ResearchControlProcess::~ResearchControlProcess() {
     if (_mainUi) {
         delete _mainUi;
-    }
-    if (_roverChannel) {
-        disconnect(_roverChannel, 0, 0, 0);
-        delete _roverChannel;
-    }
-    if (_driveSystem) {
-        disconnect(_driveSystem, 0, 0, 0);
-        _driveSystem->disable();
-        delete _driveSystem;
     }
 }
 

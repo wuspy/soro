@@ -10,7 +10,7 @@
 
 namespace Soro {
 
-class GpsDataRecorder : public AbstractDataRecorder
+class LIBSORO_EXPORT GpsDataRecorder : public AbstractDataRecorder
 {
     Q_OBJECT
 public:

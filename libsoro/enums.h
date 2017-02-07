@@ -54,8 +54,8 @@ enum SharedMessageType {
     SharedMessage_Research_RoverDriveOverrideStart,
     SharedMessage_Research_RoverDriveOverrideEnd,
 	SharedMessage_Research_StopAllCameraStreams,
-    SharedMessage_Research_TestStart,
-    SharedMessage_Research_TestEnd
+    SharedMessage_Research_StartDataRecording,
+    SharedMessage_Research_StopDataRecording
 };
 
 enum RoverSubsystemState {

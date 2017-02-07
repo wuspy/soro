@@ -29,8 +29,8 @@ MediaServer::MediaServer(QString logTag, int mediaId, QString childProcessPath, 
     _controlChannel = Channel::createServer(this, host.port, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host.host);
     _controlChannel->open();
 
-    connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
-            this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
+    connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(controlChannelStateChanged(Channel::State)));
 
     _mediaSocket = new QUdpSocket(this);
 
@@ -256,8 +256,7 @@ void MediaServer::childStateChanged(QProcess::ProcessState state) {
     }
 }
 
-void MediaServer::controlChannelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
+void MediaServer::controlChannelStateChanged(Channel::State state) {
     if (state != Channel::ConnectedState) {
         stop();
     }

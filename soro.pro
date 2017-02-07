@@ -24,7 +24,8 @@ SUBDIRS =\
     mission_control \
     research_control \
     research_rover \
-    libsorogst
+    libsorogst \
+    SoroTests
 
 libsorogst.depends = libsoro
 libsoromc.depends = libsoro libsorogst
@@ -35,3 +36,4 @@ rover2.depends = libsoro
 research_rover.depends = libsoro libsorogst
 mission_control.depends = libsoro libsoromc libsorogst
 research_control.depends = libsoro libsoromc libsorogst
+SoroTests.depends = libsoro libsoromc libsorogst

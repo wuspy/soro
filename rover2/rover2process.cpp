@@ -29,10 +29,9 @@ Rover2Process::Rover2Process(QObject *parent) : QObject(parent) {
 
 void Rover2Process::init() {
     LOG_I(LOG_TAG, "*****************Loading Configuration*******************");
-    _config = new RoverConfigLoader;
 
     QString error;
-    if (!_config->load(&error)) {
+    if (!_config.load(&error)) {
         LOG_E(LOG_TAG, error);
         QCoreApplication::exit(1);
         return;
@@ -42,20 +41,20 @@ void Rover2Process::init() {
 
 
     _videoServers = new VideoServerArray(this);
-    _videoServers->populate(_config->getBlacklistedCameras(),
-                            NETWORK_ALL_CAMERA_PORT_1 + _config->getComputer1CameraCount(),
-                            _config->getComputer1CameraCount());
+    _videoServers->populate(_config.getBlacklistedCameras(),
+                            NETWORK_ALL_CAMERA_PORT_1 + _config.getComputer1CameraCount(),
+                            _config.getComputer1CameraCount());
 
     connect(_videoServers, SIGNAL(videoServerError(MediaServer*,QString)),
             this, SLOT(mediaServerError(MediaServer*,QString)));
 
-    if (_videoServers->serverCount() > _config->getComputer2CameraCount()) {
+    if (_videoServers->serverCount() > _config.getComputer2CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
-        while (_videoServers->serverCount() > _config->getComputer2CameraCount()) {
+        while (_videoServers->serverCount() > _config.getComputer2CameraCount()) {
             _videoServers->remove(_videoServers->serverCount() - 1);
         }
     }
-    else if (_videoServers->serverCount() < _config->getComputer2CameraCount()) {
+    else if (_videoServers->serverCount() < _config.getComputer2CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies more cameras than this, check cable connections");
     }
 
@@ -107,10 +106,10 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
                     exit(1); return;
                 }
 
-                connect(_masterComputerChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
-                        this, SLOT(masterChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
-                connect(_masterComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                        this, SLOT(masterChannelStateChanged(Channel*,Channel::State)));
+                connect(_masterComputerChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
+                        this, SLOT(masterChannelMessageReceived(const char*,Channel::MessageSize)));
+                connect(_masterComputerChannel, SIGNAL(stateChanged(Channel::State)),
+                        this, SLOT(masterChannelStateChanged(Channel::State)));
 
                 _masterComputerChannel->open();
             }
@@ -121,8 +120,8 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
     }
 }
 
-void Rover2Process::masterChannelStateChanged(Channel *channel, Channel::State state) {
-    if ((state != Channel::ConnectedState) && channel->wasConnected()) {
+void Rover2Process::masterChannelStateChanged(Channel::State state) {
+    if ((state != Channel::ConnectedState) && _masterComputerChannel->wasConnected()) {
         // lost connection to master computer, start broadcasting again
         LOG_E(LOG_TAG, "Lost connection to master computer");
         _masterComputerChannel->close();
@@ -133,8 +132,7 @@ void Rover2Process::masterChannelStateChanged(Channel *channel, Channel::State s
     }
 }
 
-void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void Rover2Process::masterChannelMessageReceived(const char *message, Channel::MessageSize size) {
     QByteArray byteArray = QByteArray::fromRawData(message, size);
     QDataStream stream(byteArray);
     SharedMessageType messageType;
@@ -148,7 +146,7 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
         stream >> camera;
         stream >> formatString;
         format.deserialize(formatString);
-        if ((camera >= _config->getComputer1CameraCount()) && (camera < _config->getComputer1CameraCount() + _config->getComputer2CameraCount())) {
+        if ((camera >= _config.getComputer1CameraCount()) && (camera < _config.getComputer1CameraCount() + _config.getComputer2CameraCount())) {
             LOG_I(LOG_TAG, "Camera " + QString::number(camera) + " is about to be activated");
             _videoServers->activate(camera, format);
         }
@@ -160,7 +158,7 @@ void Rover2Process::masterChannelMessageReceived(Channel * channel, const char *
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
-        if ((camera >= _config->getComputer1CameraCount()) && (camera < _config->getComputer1CameraCount() + _config->getComputer2CameraCount())) {
+        if ((camera >= _config.getComputer1CameraCount()) && (camera < _config.getComputer1CameraCount() + _config.getComputer2CameraCount())) {
             LOG_I(LOG_TAG, "Camera " + QString::number(camera) + " is about to be deactivated");
             _videoServers->deactivate(camera);
         }
@@ -187,9 +185,7 @@ void Rover2Process::mediaServerError(MediaServer *server, QString message) {
 }
 
 Rover2Process::~Rover2Process() {\
-    if (_config) delete _config;
-    if (_masterComputerBroadcastSocket) delete _masterComputerBroadcastSocket;
-    if (_masterComputerChannel) delete _masterComputerChannel;
+
 }
 
 } // namespace Rover

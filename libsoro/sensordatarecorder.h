@@ -10,7 +10,7 @@ namespace Soro {
  * IMU and power consumption data. These values are stored in a binary logfile and timestamped;
  * additionally they can be accessed immediately by attaching to the newData() signal.
  */
-class SensorDataRecorder : public AbstractDataRecorder
+class LIBSORO_EXPORT SensorDataRecorder : public AbstractDataRecorder
 {
     Q_OBJECT
 public:
@@ -46,7 +46,7 @@ public slots:
     }
 
 signals:
-    void dataParsed(DataTag tag, float value);
+    void dataParsed(SensorDataRecorder::DataTag tag, float value);
 };
 
 } // namespace Soro

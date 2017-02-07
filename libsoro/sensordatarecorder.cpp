@@ -34,6 +34,8 @@ const char *TAGS[] =
     "~#" // IMUdata 2 Z
 };
 
+#define DATA_FOOTER '&'
+
 namespace Soro {
 
 SensorDataRecorder::SensorDataRecorder(QObject *parent) : AbstractDataRecorder(LOG_TAG, parent) {
@@ -42,6 +44,7 @@ SensorDataRecorder::SensorDataRecorder(QObject *parent) : AbstractDataRecorder(L
 
 void SensorDataRecorder::newData(const char* data, int len) {
     _buffer.append(data, len);
+    parseBuffer();
 }
 
 void SensorDataRecorder::parseBuffer() {
@@ -49,7 +52,7 @@ void SensorDataRecorder::parseBuffer() {
 
     for (int i = 0; i < 12; i++) {
         if (_buffer.startsWith(TAGS[i])) {
-            parseNext(reinterpret_cast<DataTag&>(i), strlen(TAGS[i]));
+            parseNext(reinterpret_cast<const DataTag&>(i), strlen(TAGS[i]));
             parseBuffer();
             return;
         }
@@ -65,18 +68,19 @@ void SensorDataRecorder::parseBuffer() {
 void SensorDataRecorder::parseNext(DataTag tag, int start) {
     if (start >= _buffer.length()) return;
     int end = start;
-    while (QChar(_buffer.at(end)).isNumber()) {
+    while (QChar(_buffer.at(end)) != DATA_FOOTER) {
         end++;
         if (end == _buffer.length()) return;
     }
 
     float value = _buffer.mid(start, end - start).toFloat();
-    _buffer.remove(0, end);
+    _buffer.remove(0, end + 1);
 
     // Append this data to the logfile;
-    QByteArray data; QDataStream stream(data);
-    stream << reinterpret_cast<quint32&>(tag) << value;
-    recordData(data);
+    if (_fileStream) {
+        addTimestamp();
+        *_fileStream << reinterpret_cast<quint32&>(tag) << value;
+    }
 
     emit dataParsed(tag, value);
 }

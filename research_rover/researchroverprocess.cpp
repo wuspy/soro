@@ -39,18 +39,17 @@ void ResearchRoverProcess::init() {
     // This is the directory mbed parser will log to
     if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
         LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
-        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
+        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
             LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
         }
     }
     // This is the directory gps logger will log to
     if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
         LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
-        if (!QDir().mkdir(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
+        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
             LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
         }
     }
-
 
     LOG_I(LOG_TAG, "*************Initializing core networking*****************");
 
@@ -183,7 +182,6 @@ void ResearchRoverProcess::init() {
 
     }
 
-
     LOG_I(LOG_TAG, "*****************Initializing Audio system*******************");
 
     _audioServer = new AudioServer(MEDIAID_AUDIO, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
@@ -200,9 +198,7 @@ void ResearchRoverProcess::init() {
     LOG_I(LOG_TAG, "-------------------------------------------------------");
 }
 
-
-void ResearchRoverProcess::sharedChannelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
+void ResearchRoverProcess::sharedChannelStateChanged(Channel::State state) {
     if (state == Channel::ConnectedState) {
         // send all status information since we just connected
         // TODO there is an implementation bug where a Channel will not send messages immediately after it connects
@@ -223,17 +219,40 @@ void ResearchRoverProcess::sendSystemStatusMessage() {
     _sharedChannel->sendMessage(message);
 }
 
-void ResearchRoverProcess::driveChannelStateChanged(Channel* channel, Channel::State state) {
-    //TODO
+void ResearchRoverProcess::startDataRecording(QDateTime startTime) {
+    LOG_I(LOG_TAG, "Starting test log with start time of " + QString::number(startTime.toMSecsSinceEpoch()));
+
+    _sensorRecorder.startLog(
+                QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime.toMSecsSinceEpoch()),
+                startTime);
+
+    _gpsRecorder.startLog(
+                QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime.toMSecsSinceEpoch()),
+                startTime);
 }
 
-void ResearchRoverProcess::mbedChannelStateChanged(MbedChannel* channel, MbedChannel::State state) {
-    Q_UNUSED(channel); Q_UNUSED(state);
+void ResearchRoverProcess::stopDataRecording() {
+    LOG_I(LOG_TAG, "Ending test log");
+
+    _sensorRecorder.stopLog();
+    _gpsRecorder.stopLog();
+}
+
+void ResearchRoverProcess::driveChannelStateChanged(Channel::State state) {
+    if (state != Channel::ConnectedState) {
+        //Send a stop command to the rover
+        char stopMessage[DriveMessage::RequiredSize];
+        DriveMessage::setGamepadData_SingleStick(stopMessage, 0, 0, 0);
+        _mbed->sendMessage(stopMessage, DriveMessage::RequiredSize);
+    }
+}
+
+void ResearchRoverProcess::mbedChannelStateChanged(MbedChannel::State state) {
+    Q_UNUSED(state);
     sendSystemStatusMessage();
 }
 
-void ResearchRoverProcess::driveChannelMessageReceived(Channel* channel, const char* message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void ResearchRoverProcess::driveChannelMessageReceived(const char* message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
     reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
@@ -259,8 +278,7 @@ void ResearchRoverProcess::mediaServerError(MediaServer *server, QString message
     _sharedChannel->sendMessage(byeArray);
 }
 
-void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const char* message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void ResearchRoverProcess::sharedChannelMessageReceived(const char* message, Channel::MessageSize size) {
     QByteArray byteArray = QByteArray::fromRawData(message, size);
     QDataStream stream(byteArray);
     SharedMessageType messageType;
@@ -325,25 +343,21 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
     case SharedMessage_Research_EndAux1CameraStream:
         _aux1CameraServer->stop();
         break;
-    case SharedMessage_Research_TestStart: {
+    case SharedMessage_Research_StartDataRecording: {
         QDateTime startTime;
         stream >> startTime;
-        LOG_I(LOG_TAG, "Starting test log with start time of " + QString::number(startTime.toMSecsSinceEpoch()));
+        startDataRecording(startTime);
 
-        _sensorRecorder.startLog(
-                    QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime.toMSecsSinceEpoch()),
-                    startTime);
-
-        _gpsRecorder.startLog(
-                    QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime.toMSecsSinceEpoch()),
-                    startTime);
+        // Echo the message back to mission control
+        QByteArray byteArray;
+        QDataStream stream(&byteArray, QIODevice::WriteOnly);
+        SharedMessageType messageType = SharedMessage_Research_StartDataRecording;
+        stream << reinterpret_cast<quint32&>(messageType);
+        _sharedChannel->sendMessage(byteArray);
     }
         break;
-    case SharedMessage_Research_TestEnd:
-        LOG_I(LOG_TAG, "Ending test log");
-
-        _sensorRecorder.stopLog();
-        _gpsRecorder.stopLog();
+    case SharedMessage_Research_StopDataRecording:
+        stopDataRecording();
         break;
     default:
         LOG_W(LOG_TAG, "Got unknown shared channel message");
@@ -351,8 +365,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(Channel* channel, const 
     }
 }
 
-void ResearchRoverProcess::mbedMessageReceived(MbedChannel* channel, const char* message, int size) {
-    Q_UNUSED(channel);
+void ResearchRoverProcess::mbedMessageReceived(const char* message, int size) {
     // Forward the message to mission control (MbedDataParser instance will take care of logging it)
 
     QByteArray byteArray;
@@ -379,38 +392,7 @@ void ResearchRoverProcess::gpsUpdate(NmeaMessage message) {
 }
 
 ResearchRoverProcess::~ResearchRoverProcess() {
-    if (_driveChannel) {
-        disconnect(_driveChannel, 0, 0, 0);
-        delete _driveChannel;
-    }
-    if (_sharedChannel) {
-        disconnect(_sharedChannel, 0, 0, 0);
-        delete _sharedChannel;
-    }
-    if (_gpsServer) {
-        disconnect(_gpsServer, 0, 0, 0);
-        delete _gpsServer;
-    }
-    if (_audioServer) {
-        disconnect(_audioServer, 0, 0, 0);
-        delete _audioServer;
-    }
-    if (_stereoRCameraServer) {
-        disconnect(_stereoRCameraServer, 0, 0, 0);
-        delete _stereoRCameraServer;
-    }
-    if (_stereoLCameraServer) {
-        disconnect(_stereoLCameraServer, 0, 0, 0);
-        delete _stereoLCameraServer;
-    }
-    if (_aux1CameraServer) {
-        disconnect(_aux1CameraServer, 0, 0, 0);
-        delete _aux1CameraServer;
-    }
-    if (_mbed) {
-        disconnect(_mbed, 0, 0, 0);
-        delete _mbed;
-    }
+
 }
 
 } // namespace Rover

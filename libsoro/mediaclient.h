@@ -63,9 +63,9 @@ private:
     void setCameraName(QString name);
 
 private slots:
-    void controlMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void controlMessageReceived(const char *message, Channel::MessageSize size);
     void mediaSocketReadyRead();
-    void controlChannelStateChanged(Channel *channel, Channel::State state);
+    void controlChannelStateChanged(Channel::State state);
 
 protected:
     void timerEvent(QTimerEvent *e);

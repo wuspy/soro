@@ -32,6 +32,7 @@
 #include "libsoromc/cameracontrolsystem.h"
 
 #include "researchmainwindow.h"
+#include "masterdatarecorder.h"
 #include "settingsmodel.h"
 
 namespace Soro {
@@ -76,8 +77,9 @@ private:
     AudioClient *_audioClient = NULL;
     Soro::Gst::AudioPlayer *_audioPlayer = NULL;
 
-    SensorDataRecorder _sensorRecorder;
-    GpsDataRecorder _gpsRecorder;
+    SensorDataRecorder *_sensorRecorder;
+    GpsDataRecorder *_gpsRecorder;
+    MasterDataRecorder *_masterRecorder;
 
 private:
     void stopAllRoverCameras();
@@ -86,18 +88,20 @@ private:
     void startAux1CameraStream(VideoFormat format);
     void startAudioStream(AudioFormat format);
     void stopAudio();
+    void startDataRecording();
+    void stopDataRecording();
+    void sendStartRecordCommandToRover();
+    void sendStopRecordCommandToRover();
 
 private slots:
     void updateUiConnectionState();
-    void roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void roverSharedChannelMessageReceived(const char *message, Channel::MessageSize size);
     void videoClientStateChanged(MediaClient *client, MediaClient::State state);
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void driveConnectionStateChanged(Channel::State state);
     void gamepadChanged(SDL_GameController *controller, QString name);
     void newSensorData(SensorDataRecorder::DataTag tag, float value);
-    void startTestLog();
-    void stopTestLog();
-    void logCommentEntered(QString comment);
+    void roverDataRecordResponseWatchdog();
 
     /**
      * Receives the signal from the UI when the settings have been applied and should be enacted
@@ -109,6 +113,11 @@ private slots:
      * be updated
      */
     void ui_requestUiSync();
+
+    /**
+     * Receives the signal from the UI when the test start/stop button is clicked
+     */
+    void ui_toggleDataRecordButtonClicked();
 
 protected:
     void timerEvent(QTimerEvent *e);

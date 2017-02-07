@@ -23,13 +23,17 @@
 #include <cstring>
 #include "constants.h"
 
+/* This class is used to facilitate communication over ethernet between an actual computer
+ * and and mbed. It is designed to compile both on a Qt environment or an mbed.
+ */
+
 namespace Soro {
 
 #ifdef QT_CORE_LIB
 
 /* Qt implementation.
- * The Qt side acts as the server and waits for the
- * Mbed to connect.
+ *
+ * The Qt side acts as the server and waits for messages from the mbed.
  */
 class LIBSORO_EXPORT MbedChannel: public QObject {
     Q_OBJECT
@@ -39,6 +43,8 @@ public:
         ConnectedState, ConnectingState
     };
 
+    /* Gets the connection state
+     */
     MbedChannel::State getState() const;
 
 private:
@@ -61,14 +67,23 @@ private slots:
     void resetConnection();
 
 public:
+    /* Create a new mbed channel, bound to a specified socket. Note the mbedId must
+     * be the same on both this side and the mbed for the connection to work.
+     */
     MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent = NULL);
     ~MbedChannel();
 
+    /* Sends a message to the mbed
+     */
     void sendMessage(const char *message, int length);
 
 signals:
-    void messageReceived(MbedChannel *channel, const char* message, int length);
-    void stateChanged(MbedChannel *channel, MbedChannel::State state);
+    /* Emitted when we get a message from the mbed
+     */
+    void messageReceived(const char* message, int length);
+    /* Emitted when the mbed connects or times out
+     */
+    void stateChanged( MbedChannel::State state);
 
 protected:
     void timerEvent(QTimerEvent *e);
@@ -79,8 +94,10 @@ protected:
 #ifdef TARGET_LPC1768
 
 /* Mbed implementation.
- * The Mbed acts as a client, and attempts to locate the server through
- * UDP broadcasting.
+ *
+ * The Mbed acts as a client, and communicates with the server through UDP broadcasting on
+ * a port devined in the configuration file server.txt, which should be on the mbed's
+ * local file system and contain only the port number.
  */
 class MbedChannel {
 private:

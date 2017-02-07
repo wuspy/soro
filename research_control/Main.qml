@@ -9,7 +9,7 @@ import QtQuick.Window 2.2
 import QtCharts 2.0
 
 ApplicationWindow {
-    id: controlWindow
+    id: mainWindow
     width: 1000
     height: 1200
     property alias driveStatusField: driveStatusField
@@ -17,9 +17,9 @@ ApplicationWindow {
     property alias roverAddressField: roverAddressField
     property alias notificationTitleLabel: notificationTitleLabel
     title: "Research Control"
-    
+
     // Alias properties
-    
+
     property alias simulationGroupBox: simulationGroupBox
     property alias avGroupBox: avGroupBox
     property alias settingsPane: settingsPane
@@ -48,10 +48,11 @@ ApplicationWindow {
     property alias enableGpsSwitch: enableGpsSwitch
     property alias webEngineView: webEngineView
     property alias settingsFooterPane: settingsFooterPane
-    property alias state: windowStateGroup.state
-    
+    property alias connectionState: connectionStateGroup.state
+    property alias recordingState: recordingStateGroup.state
+
     // Settings properties
-    
+
     property alias enableStereoUi: stereoUiSwitch.checked
     property alias enableVideo: enableVideoSwitch.checked
     property alias enableStereoVideo: stereoVideoSwitch.checked
@@ -61,60 +62,75 @@ ApplicationWindow {
     property alias enableAudio: enableAudioSwitch.checked
     property alias selectedLatency: simLatencySpinBox.value
     property alias enableGps: enableGpsSwitch.checked
-    
+
     // Configuration properties
-    
+
     property alias videoFormatNames: videoFormatCombo.model
     property alias cameraNames: activeCameraCombo.model
     property string roverAddress: "0.0.0.0"
     property string gamepad: "None"
     property string driveStatus: "Unknown"
-    
+
     // Internal properties
-    
+
     property color theme_yellow: "#FBC02D"
     property color theme_red: "#d32f2f"
     property color theme_green: "#388E3C"
     property color theme_blue: "#1976D2"
     property color accentColor: "#616161"
     property int gpsDataPoints: 0
-    property bool testLogging: false
-    
+
     // Signals
-    
+
     signal requestUiSync()
     signal settingsApplied()
     signal logCommentEntered(string comment)
-    signal startTestLog()
-    signal stopTestLog()
-    
+    signal recordButtonClicked()
+
     // Public functions
 
+    /*
+      Should be called before the backend has started syncing
+      the state of the UI to reflect the current settings
+      */
     function prepareForUiSync() {
         settingsPane.enabled = false
         settingsFooterPane.visible = false
     }
-    
+
+    /*
+      Should be called when the backend has finished syncing the
+      state of the UI to reflect the current settings
+      */
     function uiSyncComplete() {
         settingsFooterPane.state = "hidden"
         settingsPane.enabled = true
         settingsFooterPane.visible = true
     }
-    
+
+    /*
+      Updates the ping (latency) information displayed
+      */
     function updatePing(ping) {
-        if (state == "connected") {
+        if (connectionState == "connected") {
             statusLabel.text = "Connected, " + ping + "ms"
         }
     }
-    
+
+    /*
+      Updates the GPS location displayed on the map
+      */
     function updateGpsLocation(lat, lng, heading) {
         webEngineView.runJavaScript("updateLocation(" + lat + ", " + lng + ", " + heading + ");")
         gpsLocationField.text = degToDms(lat, false) + ", " + degToDms(lng, true)
         gpsDataPoints++
     }
-    
+
+    /*
+      Updates the bitrate status label
+      */
     function updateBitrate(bpsUp, bpsDown) {
-        if (state == "connected") {
+        if (connectionState == "connected") {
             var upUnits, downUnits;
             if (bpsUp > 1000000) {
                 upUnits = "Mb/s"
@@ -144,7 +160,11 @@ ApplicationWindow {
                     "▼ <b>" + bpsDown + "</b> " + downUnits
         }
     }
-    
+
+    /*
+      Displays a popup notification for a few seconds.
+      Valid types are: 'error', 'warning', or 'information'
+      */
     function notify(type, title, message) {
 
         notificationPane.state = "hidden"
@@ -168,46 +188,64 @@ ApplicationWindow {
         notificationPane.state = "visible"
         notificationTimer.restart()
     }
-    
+
+    /*
+      Internal function to convert degress to degree/minute/seconds
+      */
     function degToDms(D, lng){
         return "" + 0|(D<0?D=-D:D) + "° "
                 + 0|D%1*60 + "' "
                 + (0|D*60%1*6000)/100 + "\" "
                 + D<0?lng?'W':'S':lng?'E':'N'
     }
-    ///////////////////////////////////////////////////////////////////////////
-    
+
+    /*
+      Reloads the GPS map to clear all location points currently displayed
+      */
+    function clearGps() {
+        gpsDataPoints = 0
+        webEngineView.reload()
+    }
+
+    function recordComment(text, type) {
+        commentsListModel.append({"commentText": "At " + testingTimer.elapsed + " seconds:", "messageType": "time"});
+        commentsListModel.append({"commentText": text, "messageType": type});
+        if (type === "user") {
+        // Send signal to backend
+            logCommentEntered(text);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    /*
+      Theme settings
+      */
     Material.theme: Material.Dark
     Material.accent: accentColor
     Universal.theme: Universal.Dark
     Universal.accent: accentColor
-    
+
     onVisibleChanged: {
         if (visible) {
+            // Request for the UI to be synced since it just became visible
             prepareForUiSync()
             requestUiSync()
         }
     }
 
-    onTestLoggingChanged: {
-        // These are signals that notify the backend
-        if (testLogging) {
-            startTestLog()
-        }
-        else {
-            stopTestLog()
-        }
-    }
-
     onGpsDataPointsChanged: {
+        // Update the gps history field to reflect the current # of samples
         gpsHistoryField.text = "" + gpsDataPoints + " Samples"
     }
 
     onRoverAddressChanged: {
+        // Update the rover address field
         roverAddressField.text = roverAddress
     }
 
     onGamepadChanged: {
+        // Update the gamepad field
         if (gamepad == "") {
             gamepadField.text = "None"
         }
@@ -216,17 +254,36 @@ ApplicationWindow {
         }
     }
 
+    onRecordingStateChanged: {
+        commentsTextArea.enabled = recordingState === "recording"
+        testingTimer.restart()
+        testingTimer.running = recordingState === "recording"
+        recordButtonMouseArea.state = recordingState === "recording" ? "checked" : "unchecked"
+        if (recordingState === "recording") {
+            // Clear comments and map since a new test is starting
+            commentsListModel.clear()
+            webEngineView.reload()
+            gpsDataPoints = 0
+        }
+    }
+
     onDriveStatusChanged: {
+        // Update the drive status field
         driveStatusField.text = driveStatus
     }
-    
+
+    /*
+      State group to update the UI to reflect a change in the rover's connection status
+      Can be accessed from the backend with the connectionState property
+      */
     StateGroup {
-        id: windowStateGroup
+        id: connectionStateGroup
+        state: "connecting"
         states: [
             State {
                 name: "connecting"
                 PropertyChanges {
-                    target: controlWindow
+                    target: mainWindow
                     accentColor: theme_yellow
                     busyIndicator.visible: true
                     statusImage.visible: false
@@ -240,7 +297,7 @@ ApplicationWindow {
             State {
                 name: "connected"
                 PropertyChanges {
-                    target: controlWindow
+                    target: mainWindow
                     accentColor: theme_green
                     busyIndicator.visible: false
                     statusImage.visible: true
@@ -255,7 +312,7 @@ ApplicationWindow {
             State {
                 name: "error"
                 PropertyChanges {
-                    target: controlWindow
+                    target: mainWindow
                     accentColor: theme_red
                     busyIndicator.visible: false
                     statusImage.visible: true
@@ -274,7 +331,112 @@ ApplicationWindow {
             }
         ]
     }
-    
+
+    /*
+      State group to update the UI to reflect a change in the rover's connection status
+      Can be accessed from the backend with the connectionState property
+      */
+    StateGroup {
+        id: recordingStateGroup
+        state: "idle"
+        states: [
+            State {
+                name: "recording"
+                PropertyChanges {
+                    target: recordButtonImage
+                    source: "qrc:/icons/ic_stop_white_48px.svg"
+                    visible: true
+                    width: 40
+                }
+                PropertyChanges {
+                    target: recordButtonTooltip
+                    text: qsTr("Stop Logging")
+                    visible: true
+                }
+                PropertyChanges {
+                    target: recordButtonLabel
+                    leftPadding: 5
+                    rightPadding: 5
+                    text: "0:00:00"
+                    visible: true
+                }
+                PropertyChanges {
+                    target: recordButtonBusyIndicator
+                    visible: false
+                    width: 0
+                }
+            },
+            State {
+                name: "idle"
+                PropertyChanges {
+                    target: recordButtonImage
+                    source: "qrc:/icons/ic_play_arrow_white_48px.svg"
+                    visible: true
+                    width: 40
+                }
+                PropertyChanges {
+                    target: recordButtonTooltip
+                    text: qsTr("Begin Logging")
+                }
+                PropertyChanges {
+                    target: recordButtonLabel
+                    leftPadding: 0
+                    rightPadding: 0
+                    text: ""
+                }
+                PropertyChanges {
+                    target: recordButtonBusyIndicator
+                    visible: false
+                    width: 0
+                }
+            },
+            State {
+                name: "waiting"
+                PropertyChanges {
+                    target: recordButtonBusyIndicator
+                    visible: true
+                    width: 40
+                }
+                PropertyChanges {
+                    target: recordButtonImage
+                    visible: false
+                    width: 0
+                }
+                PropertyChanges {
+                    target: recordButtonLabel
+                    leftPadding: 0
+                    rightPadding: 0
+                    text: ""
+                }
+                PropertyChanges {
+                    target: recordButtonTooltip
+                    text: qsTr("Waiting...")
+                }
+            }
+        ]
+    }
+
+    onConnectionStateChanged: {
+        if (recordingState === "recording") {
+            // Append the status to the test comment log
+            switch (connectionState) {
+            case "connected":
+                recordComment("[System Message] The rover is now connected", "system");
+                break;
+            case "error":
+                recordComment("[System Message] The communication channel with the rover has experienced a fatal error", "system");
+                break;
+            case "connecting":
+            default:
+                recordComment("[System Message] Connection to the rover has been lost", "system");
+                break;
+            }
+        }
+    }
+
+    /*
+      Timer to dismiss notifications after a set amout of time
+      */
     Timer {
         id: notificationTimer
         interval: 7000
@@ -283,6 +445,37 @@ ApplicationWindow {
         onTriggered: notificationPane.state = "hidden"
     }
 
+    /*
+      Timer to keep track of how long a test has been running. Also updates
+      the testing time label.
+      */
+    Timer {
+        id: testingTimer
+        interval: 1000
+        repeat: true
+
+        property int elapsed;
+
+        onTriggered: {
+            elapsed++
+            var elapsedHours = Math.floor(elapsed / 3600)
+            var elapsedMinutes = Math.floor((elapsed - (elapsedHours * 3600)) / 60)
+            var elapsedSeconds = Math.floor((elapsed - (elapsedHours * 3600)) - (elapsedMinutes * 60));
+
+            if (elapsedMinutes.toString().length == 1) {
+                elapsedMinutes = "0" + elapsedMinutes
+            }
+            if (elapsedSeconds.toString().length == 1) {
+                elapsedSeconds = "0" + elapsedSeconds
+            }
+
+            var timeString = elapsedHours + ":" + elapsedMinutes + ":" + elapsedSeconds
+
+            recordButtonLabel.text = timeString
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////
 
     Pane {
         id: mainPane
@@ -316,6 +509,11 @@ ApplicationWindow {
                 height: parent.height * 0.8
                 clip: true
 
+                /* This list model accepts two parameters:
+                  - text: the comment text
+                  - type: can be either time, system, or user. Use user for user-entered comments,
+                   and system for system status messages.
+                   */
                 model: ListModel {
                     id: commentsListModel
                 }
@@ -323,10 +521,14 @@ ApplicationWindow {
                 delegate:Label {
                     width: parent.width
                     text: commentText
-                    padding: 10
+                    topPadding: 10
+                    leftPadding: 10
+                    rightPadding: 10
+                    bottomPadding: timeMessage ? 5 : 10
                     wrapMode: Text.WordWrap
-                    color: systemMessage ? accentColor : Material.foreground
-                    font.bold: systemMessage
+                    color: messageType == "time" ? Material.accent : Material.foreground
+                    font.italic: messageType == "time"
+                    font.bold: messageType == "system"
                 }
             }
 
@@ -340,11 +542,10 @@ ApplicationWindow {
                     anchors.fill: parent
                     placeholderText: "Enter your comments here"
                     wrapMode: Text.WordWrap
-                    enabled: testLogging
+                    enabled: false
 
                     Keys.onReturnPressed: {
-                        commentsListModel.append({"commentText": text.trim(), "systemMessage": false});
-                        logCommentEntered(text.trim());
+                        recordComment(text.trim(), "user")
                         text = "";
                     }
                 }
@@ -474,7 +675,7 @@ ApplicationWindow {
             }
         }
     }
-    
+
     DropShadow {
         id: asideShadow
         anchors.fill: asidePane
@@ -483,7 +684,7 @@ ApplicationWindow {
         samples: 20
         color: "#000000"
     }
-    
+
     Pane {
         id: asidePane
         width: 450
@@ -536,7 +737,7 @@ ApplicationWindow {
                 }
             }
         ]
-        
+
         Flickable {
             id: settingsFlickable
             clip: false
@@ -647,7 +848,7 @@ ApplicationWindow {
                     anchors.top: infoGroupBox.bottom
                     anchors.topMargin: 8
                     title: qsTr("User Interface")
-                    
+
                     Label {
                         id: stereoUiLabel
                         width: 100
@@ -657,7 +858,7 @@ ApplicationWindow {
                         anchors.left: parent.left
                         anchors.leftMargin: 0
                     }
-                    
+
                     Switch {
                         id: stereoUiSwitch
                         text: checked ? qsTr("Stereo On") : qsTr("Stereo Off")
@@ -667,7 +868,7 @@ ApplicationWindow {
                         anchors.topMargin: 0
                         onCheckedChanged: settingsFooterPane.state = "visible"
                     }
-                    
+
                     Label {
                         id: interfaceNotesLabel
                         text: qsTr("<b>Stereo UI</b> renders the interface in side-by-side stereo.  Video will not be streamed in stereo unless the 'Stereo Video' option is also selected.")
@@ -681,7 +882,7 @@ ApplicationWindow {
                         wrapMode: Text.WordWrap
                         verticalAlignment: Text.AlignBottom
                     }
-                    
+
                     Label {
                         id: enableHudLabel
                         y: 17
@@ -691,7 +892,7 @@ ApplicationWindow {
                         anchors.left: parent.left
                         anchors.leftMargin: 0
                     }
-                    
+
                     Switch {
                         id: enableHudSwitch
                         text: checked ? qsTr("HUD On") : qsTr("HUD Off")
@@ -701,18 +902,15 @@ ApplicationWindow {
                         anchors.topMargin: 8
                         onCheckedChanged: settingsFooterPane.state = "visible"
                     }
-                    
+
                 }
-                
-
-
 
                 GroupBox {
                     id: avGroupBox
                     x: -12
                     y: 200
                     height: videoNotesLabel.y + videoNotesLabel.height + topPadding + bottomPadding
-                    title: "Audio/Video"
+                    title: qsTr("Audio/Video")
                     clip: false
                     anchors.right: parent.right
                     anchors.rightMargin: 0
@@ -720,7 +918,7 @@ ApplicationWindow {
                     anchors.leftMargin: 0
                     anchors.top: interfaceGroupBox.bottom
                     anchors.topMargin: 8
-                    
+
                     Switch {
                         id: stereoVideoSwitch
                         text: checked ? qsTr("Stereo On") : qsTr("Stereo Off")
@@ -731,7 +929,7 @@ ApplicationWindow {
                         anchors.topMargin: 8
                         onCheckedChanged: settingsFooterPane.state = "visible"
                     }
-                    
+
                     Label {
                         id: stereoVideoLabel
                         width: 100
@@ -741,7 +939,7 @@ ApplicationWindow {
                         anchors.left: parent.left
                         anchors.leftMargin: 0
                     }
-                    
+
                     ComboBox {
                         id: videoFormatCombo
                         textRole: qsTr("")
@@ -754,7 +952,7 @@ ApplicationWindow {
                         anchors.rightMargin: 0
                         onCurrentIndexChanged: settingsFooterPane.state = "visible"
                     }
-                    
+
                     Label {
                         id: videoEncodingLabel
                         width: 100
@@ -763,8 +961,8 @@ ApplicationWindow {
                         anchors.leftMargin: 0
                         anchors.left: parent.left
                     }
-                    
-                    
+
+
                     Label {
                         id: activeCameraLabel
                         y: 125
@@ -774,8 +972,8 @@ ApplicationWindow {
                         anchors.left: parent.left
                         anchors.leftMargin: 0
                     }
-                    
-                    
+
+
                     ComboBox {
                         id: activeCameraCombo
                         enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
@@ -787,7 +985,7 @@ ApplicationWindow {
                         anchors.leftMargin: 12
                         onCurrentIndexChanged: settingsFooterPane.state = "visible"
                     }
-                    
+
                     Label {
                         id: videoNotesLabel
                         text: qsTr("<b>Stereo Video</b> has the same target bitrate as mono video, with half the horizontal resolution per eye.")
@@ -801,7 +999,7 @@ ApplicationWindow {
                         anchors.leftMargin: 0
                         wrapMode: Text.WordWrap
                     }
-                    
+
                     Switch {
                         id: enableVideoSwitch
                         y: 96
@@ -812,7 +1010,7 @@ ApplicationWindow {
                         anchors.topMargin: 0
                         onCheckedChanged: settingsFooterPane.state = "visible"
                     }
-                    
+
                     Label {
                         id: enableVideoLabel
                         y: 77
@@ -846,9 +1044,6 @@ ApplicationWindow {
                         anchors.leftMargin: 0
                     }
                 }
-                
-
-
 
                 GroupBox {
                     id: simulationGroupBox
@@ -860,7 +1055,7 @@ ApplicationWindow {
                     anchors.top: avGroupBox.bottom
                     anchors.topMargin: 8
                     title: qsTr("Simulation")
-                    
+
                     Label {
                         id: simLatencyLabel
                         y: 27
@@ -870,7 +1065,7 @@ ApplicationWindow {
                         anchors.left: parent.left
                         anchors.leftMargin: 0
                     }
-                    
+
                     SpinBox {
                         id: simLatencySpinBox
                         anchors.left: simLatencyLabel.right
@@ -881,7 +1076,7 @@ ApplicationWindow {
                         editable: true
                         to: 10000
                     }
-                    
+
                     Label {
                         id: simNotesLabel
                         text: qsTr("<b>Latency</b> only delays driving commands. Any operations performed on this screen will be unaffected.")
@@ -895,8 +1090,6 @@ ApplicationWindow {
                         wrapMode: Text.WordWrap
                     }
                 }
-                
-
 
                 GroupBox {
                     id: gpsGroupBox
@@ -983,10 +1176,7 @@ ApplicationWindow {
                         anchors.verticalCenter: gpsHistoryField.verticalCenter
                         anchors.right: parent.right
                         anchors.rightMargin: 0
-                        onClicked: {
-                            gpsDataPoints = 0
-                            webEngineView.reload()
-                        }
+                        onClicked: clearGps()
                     }
                 }
 
@@ -994,7 +1184,7 @@ ApplicationWindow {
 
             ScrollIndicator.vertical:  ScrollIndicator { }
         }
-        
+
         DropShadow {
             id: footerShadow
             anchors.fill: settingsFooterPane
@@ -1005,7 +1195,7 @@ ApplicationWindow {
             samples: 20
             color: "#000000"
         }
-        
+
         Pane {
             id: settingsFooterPane
             //Material.theme: Material.Light
@@ -1018,7 +1208,7 @@ ApplicationWindow {
             anchors.rightMargin: 0
             anchors.bottom: parent.bottom
             state: "hidden"
-            
+
             Button {
                 id: applySettingsButton
                 text: qsTr("Apply")
@@ -1035,7 +1225,7 @@ ApplicationWindow {
                     settingsApplied()
                 }
             }
-            
+
             Label {
                 id: settingsFooterLabel
                 text: qsTr("Settings have been changed.")
@@ -1045,7 +1235,7 @@ ApplicationWindow {
                 anchors.left: parent.left
                 anchors.leftMargin: 0
             }
-            
+
             Button {
                 id: revertSettingsButton
                 text: qsTr("Revert")
@@ -1060,7 +1250,7 @@ ApplicationWindow {
                     requestUiSync()
                 }
             }
-            
+
             states: [
                 State{
                     name: "hidden"
@@ -1077,7 +1267,7 @@ ApplicationWindow {
                     }
                 }
             ]
-            
+
             transitions: [
                 Transition {
                     PropertyAnimation {
@@ -1088,9 +1278,9 @@ ApplicationWindow {
                 }
             ]
         }
-        
+
     }
-    
+
     DropShadow {
         id: headerShadow
         anchors.fill: headerPane
@@ -1100,7 +1290,7 @@ ApplicationWindow {
         samples: 20
         color: "#000000"
     }
-    
+
     Pane {
         id: headerPane
         Material.background: Material.accent
@@ -1119,7 +1309,7 @@ ApplicationWindow {
         anchors.leftMargin: 0
         anchors.top: parent.top
         anchors.topMargin: 0
-        
+
         BusyIndicator {
             id: busyIndicator
             width: 40
@@ -1127,12 +1317,11 @@ ApplicationWindow {
             visible: true
             anchors.left: parent.left
             anchors.leftMargin: 0
-            anchors.top: parent.top
-            anchors.topMargin: 0
+            anchors.verticalCenter: parent.verticalCenter
             Material.accent: Material.foreground
             Universal.accent: Universal.foreground
         }
-        
+
         Image {
             id: statusImage
             width: 40
@@ -1142,10 +1331,9 @@ ApplicationWindow {
             sourceSize.width: width
             anchors.left: parent.left
             anchors.leftMargin: 0
-            anchors.top: parent.top
-            anchors.topMargin: 0
+            anchors.verticalCenter: parent.verticalCenter
         }
-        
+
         ColorOverlay {
             id: statusImageColorOverlay
             anchors.fill: statusImage
@@ -1153,7 +1341,7 @@ ApplicationWindow {
             color: "#ffffff"
             visible: statusImage.visible
         }
-        
+
         Label {
             id: statusLabel
             y: 16
@@ -1163,7 +1351,7 @@ ApplicationWindow {
             anchors.left: busyIndicator.right
             anchors.leftMargin: 12
         }
-        
+
         Label {
             id: bitrateLabel
             x: 308
@@ -1177,7 +1365,7 @@ ApplicationWindow {
             anchors.right: headerSeparator.left
             anchors.rightMargin: 12
         }
-        
+
         Pane {
             id: headerSeparator
             x: 437
@@ -1269,36 +1457,41 @@ ApplicationWindow {
           as it only serves as a reference, the actual testing timestamps are saved elsewhere.
           */
         MouseArea {
-            id: testButtonMouseArea
+            id: recordButtonMouseArea
             height: 40
-            width: testButtonImage.width + testButtonLabel.width
+            width: recordButtonImage.width + recordButtonLabel.width + recordButtonBusyIndicator.width
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: fullscreenButtonMouseArea.left
             anchors.rightMargin: 12
             cursorShape: Qt.PointingHandCursor
-            state: "unchecked"
             hoverEnabled: true
-
             onClicked: {
-                if (testLogging) {
-                    testLogging = false
-                    state = "unchecked"
-                }
-                else {
-                    testLogging = true
-                    state = "checked"
+                if (recordingState !== "waiting") {
+                    recordingState = "waiting"
+                    recordButtonClicked()
                 }
             }
 
+            BusyIndicator {
+                id: recordButtonBusyIndicator
+                width: 0
+                height: 40
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                visible: false
+                Material.accent: Material.foreground
+                Universal.accent: Universal.foreground
+            }
+
             ToolTip {
-                id: testButtonTooltip
-                visible: testButtonMouseArea.containsMouse
+                id: recordButtonTooltip
+                visible: recordButtonMouseArea.containsMouse
                 delay: 500
                 timeout: 5000
             }
 
             Image {
-                id: testButtonImage
+                id: recordButtonImage
                 sourceSize.height: height
                 sourceSize.width: width
                 fillMode: Image.PreserveAspectFit
@@ -1309,94 +1502,22 @@ ApplicationWindow {
             }
 
             Label {
-                id: testButtonLabel
+                id: recordButtonLabel
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                anchors.left: testButtonImage.right
+                anchors.left: recordButtonImage.right
                 text: ""
                 font.pointSize: 22
-
-                Timer {
-                    id: testButtonCountTimer
-                    interval: 1000
-                    repeat: true
-
-                    property int elapsed;
-
-                    onTriggered: {
-                        elapsed++
-                        var elapsedHours = Math.floor(elapsed / 3600)
-                        var elapsedMinutes = Math.floor((elapsed - (elapsedHours * 3600)) / 60)
-                        var elapsedSeconds = Math.floor((elapsed - (elapsedHours * 3600)) - (elapsedMinutes * 60));
-
-                        if (elapsedMinutes.toString().length == 1) {
-                            elapsedMinutes = "0" + elapsedMinutes
-                        }
-                        if (elapsedSeconds.toString().length == 1) {
-                            elapsedSeconds = "0" + elapsedSeconds
-                        }
-
-                        var timeString = elapsedHours + ":" + elapsedMinutes + ":" + elapsedSeconds
-
-                        testButtonLabel.text = timeString
-                    }
-                }
             }
 
             ColorOverlay {
-                id: testButtonColorOverlay
-                anchors.fill: testButtonImage
-                source: testButtonImage
+                id: recordButtonColorOverlay
+                anchors.fill: recordButtonImage
+                source: recordButtonImage
                 color: "#ffffff"
             }
-
-            states: [
-                State {
-                    name: "checked"
-                    PropertyChanges {
-                        target: testButtonImage
-                        source: "qrc:/icons/ic_stop_white_48px.svg"
-                    }
-                    PropertyChanges {
-                        target: testButtonTooltip
-                        text: qsTr("Stop Logging")
-                    }
-                    PropertyChanges {
-                        target: testButtonLabel
-                        leftPadding: 5
-                        rightPadding: 5
-                        text: "0:00:00"
-                    }
-                    PropertyChanges {
-                        target: testButtonCountTimer
-                        elapsed: 0
-                        running: true
-                    }
-                },
-                State {
-                    name: "unchecked"
-                    PropertyChanges {
-                        target: testButtonImage
-                        source: "qrc:/icons/ic_play_arrow_white_48px.svg"
-                    }
-                    PropertyChanges {
-                        target: testButtonTooltip
-                        text: qsTr("Begin Logging")
-                    }
-                    PropertyChanges {
-                        target: testButtonLabel
-                        leftPadding: 0
-                        rightPadding: 0
-                        text: ""
-                    }
-                    PropertyChanges {
-                        target: testButtonCountTimer
-                        running: false
-                    }
-                }
-            ]
         }
-        
+
         MouseArea {
             id: fullscreenButtonMouseArea
             width: height
@@ -1406,25 +1527,25 @@ ApplicationWindow {
             cursorShape: Qt.PointingHandCursor
             state: "unchecked"
             hoverEnabled: true
-            
+
             onClicked: {
                 if (state == "checked") {
-                    controlWindow.showNormal()
+                    mainWindow.showNormal()
                     state = "unchecked"
                 }
                 else {
-                    controlWindow.showFullScreen()
+                    mainWindow.showFullScreen()
                     state = "checked"
                 }
             }
-            
+
             ToolTip {
                 id: fullscreenButtonTooltip
                 visible: fullscreenButtonMouseArea.containsMouse
                 delay: 500
                 timeout: 5000
             }
-            
+
             Image {
                 id: fullscreenButtonImage
                 sourceSize.height: height
@@ -1432,14 +1553,14 @@ ApplicationWindow {
                 fillMode: Image.PreserveAspectFit
                 anchors.fill: parent
             }
-            
+
             ColorOverlay {
                 id: fullscreenButtonColorOverlay
                 anchors.fill: fullscreenButtonImage
                 source: fullscreenButtonImage
                 color: "#ffffff"
             }
-            
+
             states: [
                 State {
                     name: "checked"
@@ -1465,7 +1586,7 @@ ApplicationWindow {
                 }
             ]
         }
-        
+
         /*TabBar {
             id: headerTabBar
             y: 12
@@ -1476,11 +1597,11 @@ ApplicationWindow {
             anchors.rightMargin: 12
             anchors.left: headerSeparator.right
             anchors.leftMargin: 12
-            
+
             Material.accent: Material.foreground
             anchors.bottom: parent.bottom
             anchors.top: parent.top
-            
+
             TabButton {
                 id: gpsTabButton
                 anchors.top: parent.top
@@ -1510,9 +1631,9 @@ ApplicationWindow {
                 }
             }
         }*/
-        
+
     }
-    
+
     DropShadow {
         id: notificationShadow
         anchors.fill: notificationPane
@@ -1523,7 +1644,7 @@ ApplicationWindow {
         samples: 20
         color: "#000000"
     }
-    
+
     Pane {
         id: notificationPane
         //Material.theme: Material.Light
@@ -1534,7 +1655,7 @@ ApplicationWindow {
         height: 100
         state: "hidden"
         anchors.right: parent.right
-        
+
 
         Label {
             id: notificationTitleLabel
@@ -1563,7 +1684,7 @@ ApplicationWindow {
             wrapMode: Text.WordWrap
             font.pointSize: 10
         }
-        
+
 
         Image {
             id: notificationImage
@@ -1579,7 +1700,7 @@ ApplicationWindow {
             anchors.topMargin: 0
             source: "qrc:/icons/ic_info_white_48px.svg"
         }
-        
+
 
         ColorOverlay {
             id: notificationImageColorOverlay
@@ -1587,7 +1708,7 @@ ApplicationWindow {
             source: notificationImage
             color: "#ff0000"
         }
-        
+
 
         MouseArea {
             id: notificationMouseArea
@@ -1600,7 +1721,7 @@ ApplicationWindow {
             anchors.rightMargin: -notificationPane.rightPadding
         }
 
-        
+
         states: [
             State {
                 name: "hidden"
@@ -1618,9 +1739,9 @@ ApplicationWindow {
                     opacity: 0.7
                 }
             }
-            
+
         ]
-        
+
         transitions: [
             Transition {
                 from: "hidden"

@@ -71,7 +71,7 @@ private:
 
 private slots:
     void mediaSocketReadyRead();
-    void controlChannelStateChanged(Channel *channel, Channel::State state);
+    void controlChannelStateChanged(Channel::State state);
     void beginClientHandshake();
     void childStateChanged(QProcess::ProcessState state);
     void ipcServerClientAvailable();

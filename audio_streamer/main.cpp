@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
                                      + "/../log/Audio_" + QDateTime::currentDateTime().toString("M-dd_h.mm.ss_AP") + ".log");
     Logger::rootLogger()->setMaxFileLevel(Logger::LogLevelDebug);
-    Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelDisabled);
+    Logger::rootLogger()->setMaxStdoutLevel(Logger::LogLevelDisabled);
 
     LOG_I(LOG_TAG, "Starting...");
     QGst::init();

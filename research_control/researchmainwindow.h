@@ -2,6 +2,7 @@
 #define SORO_MISSIONCONTROL_RESEARCHMAINWINDOW_H
 
 #include <QMainWindow>
+#include <QCloseEvent>
 
 #include "libsoromc/stereocamerawidget.h"
 
@@ -21,6 +22,12 @@ public:
     ~ResearchMainWindow();
 
     StereoCameraWidget *getCameraWidget();
+
+signals:
+    void closed();
+
+protected:
+    void closeEvent(QCloseEvent *event);
 
 private:
     Ui::ResearchMainWindow *ui;

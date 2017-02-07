@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
                                      + "/../log/RoverControl_" + QDateTime::currentDateTime().toString("M-dd_h.mm_AP") + ".log");
     Logger::rootLogger()->setMaxFileLevel(Logger::LogLevelDebug);
-    Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelInformation);
+    Logger::rootLogger()->setMaxStdoutLevel(Logger::LogLevelInformation);
 
     /*
      * Get rover IP from envvar

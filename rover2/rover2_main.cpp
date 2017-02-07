@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
                                      + "/../log/Rover2_" + QDateTime::currentDateTime().toString("M-dd_h.mm_AP") + ".log");
     Logger::rootLogger()->setMaxFileLevel(Logger::LogLevelDebug);
-    Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelInformation);
+    Logger::rootLogger()->setMaxStdoutLevel(Logger::LogLevelInformation);
 
     // create secondary rover worker object
     Soro::Rover::Rover2Process worker(&a);

@@ -294,11 +294,11 @@ signals: //Always public
 
     /* Signal to notify an observer that a message has been received
      */
-    void messageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void messageReceived(const char *message, Channel::MessageSize size);
 
     /* Signal to notify an observer that the state of the channel has changed
      */
-    void stateChanged(Channel *channel, Channel::State state);
+    void stateChanged(Channel::State state);
 
     /* Signal to notify an observer that the connected peer has changed
      * If the channel is no longer connected, peerAddress.address will be QHostAddress::Null
@@ -307,9 +307,9 @@ signals: //Always public
      * server address regardless of the state of the connection since that is the only allowed address
      * for communication.
      */
-    void peerAddressChanged(Channel *channel, const SocketAddress &peerAddress);
+    void peerAddressChanged(const SocketAddress &peerAddress);
 
-    void connectionError(Channel *channel, QAbstractSocket::SocketError err);
+    void connectionError(QAbstractSocket::SocketError err);
 
 protected:
     void timerEvent(QTimerEvent *);

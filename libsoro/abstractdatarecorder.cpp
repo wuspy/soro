@@ -15,9 +15,9 @@ bool AbstractDataRecorder::startLog(QString file, QDateTime loggedStartTime) {
     stopLog();
     _file = new QFile(file, this);
     if (_file->exists()) {
-        LOG_E(_logTag, "File \'" + file + "\' already exists, I will not overwrite it");
+        LOG_W(_logTag, "File \'" + file + "\' already exists, overwriting it");
     }
-    else if (_file->open(QIODevice::WriteOnly)) {
+    if (_file->open(QIODevice::WriteOnly)) {
         _logStartTime = loggedStartTime.toMSecsSinceEpoch();
         _fileStream = new QDataStream(_file);
         *_fileStream << _logStartTime;
@@ -43,14 +43,18 @@ void AbstractDataRecorder::stopLog() {
         }
         delete _file;
         _file = NULL;
+        _isRecording = false;
     }
 }
 
-void AbstractDataRecorder::recordData(QByteArray data) {
-    if (_isRecording) {
-        *_fileStream << (quint32)(QDateTime::currentDateTime().toMSecsSinceEpoch() - _logStartTime)
-                     << data;
+void AbstractDataRecorder::addTimestamp() {
+    if (_fileStream) {
+        *_fileStream << (quint32)(QDateTime::currentDateTime().toMSecsSinceEpoch() - _logStartTime);
     }
+}
+
+bool AbstractDataRecorder::isRecording() {
+    return _isRecording;
 }
 
 } // namespace Soro

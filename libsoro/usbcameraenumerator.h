@@ -6,11 +6,23 @@
 
 namespace Soro {
 
+/* Struct containing the details of a discovered USB camera
+ */
 struct UsbCamera {
+    /* Human-readable name of the camera
+     */
     QString name;
+    /* USB vendor ID
+     */
     QString vendorId;
+    /* USB product ID
+     */
     QString productId;
+    /* Camera serial number. Not all cameras return one.
+     */
     QString serial;
+    /* Camera device file (/dev/video*)
+     */
     QString device;
 
     QString toString() const {
@@ -32,18 +44,21 @@ struct UsbCamera {
     }
 };
 
+/* Class used for discovering the USB cameras connected to a Linux computer.
+ */
 class LIBSORO_EXPORT UsbCameraEnumerator {
 
 public:
-    /* Enumerates all USB cameras connected. If successful, this will
-     * return the number of cameras detected, otherwise -1 will be returned.
+    /* Enumerates all USB cameras connected, and returns the number of cameras detected.
      */
     int loadCameras();
 
+    /* Gets a list of all the cameras that were found the last time loadCameras() was called
+     */
     const QList<UsbCamera*>& listDevices() const;
 
     /* Returns the first camera matching all of the specified properties. If no cameras matched, this will
-     * return null.
+     * return null. To omit a property from the search, simply leave it as an empty string.
      */
     const UsbCamera* find(QString name="", QString device="", QString vid="", QString pid="", QString serial="") const;
 

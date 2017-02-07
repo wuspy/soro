@@ -33,7 +33,7 @@ private:
 
     VideoServerArray *_videoServers = NULL;
 
-    RoverConfigLoader *_config;
+    RoverConfigLoader _config;
 
     int _initTimerId = TIMER_INACTIVE;
     int _broadcastTimerId = TIMER_INACTIVE;
@@ -42,8 +42,8 @@ private:
 
 private slots:
     void init();
-    void masterChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
-    void masterChannelStateChanged(Channel* channel, Channel::State state);
+    void masterChannelMessageReceived(const char *message, Channel::MessageSize size);
+    void masterChannelStateChanged(Channel::State state);
     void masterComputerBroadcastSocketReadyRead();
     void mediaServerError(MediaServer *server, QString error);
 

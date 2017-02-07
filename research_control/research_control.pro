@@ -29,12 +29,14 @@ PRECOMPILED_DIR = $$BUILD_DIR
 SOURCES += main.cpp\
     researchprocess.cpp \
     researchmainwindow.cpp \
-    settingsmodel.cpp
+    settingsmodel.cpp \
+    masterdatarecorder.cpp
 
 HEADERS  += \
     researchprocess.h \
     researchmainwindow.h \
-    settingsmodel.h
+    settingsmodel.h \
+    masterdatarecorder.h
 
 FORMS    += \
     researchmainwindow.ui
@@ -51,5 +53,3 @@ LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStrea
 LIBS += -L../lib -lsoro
 LIBS += -L../lib -lsoromc
 LIBS += -L../lib -lsorogst
-
-DISTFILES +=

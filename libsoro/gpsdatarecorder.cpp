@@ -8,9 +8,10 @@ namespace Soro {
 GpsDataRecorder::GpsDataRecorder(QObject *parent) : AbstractDataRecorder(LOG_TAG, parent) { }
 
 void GpsDataRecorder::addLocation(NmeaMessage location) {
-    QByteArray data; QDataStream stream(data);
-    stream << location;
-    recordData(data);
+    if (_fileStream) {
+        addTimestamp();
+        *_fileStream << location;
+    }
 }
 
 } // namespace Soro

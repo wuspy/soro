@@ -13,6 +13,7 @@
 #include "libsoro/enums.h"
 #include "libsoro/sensordatarecorder.h"
 #include "libsoro/gpsdatarecorder.h"
+#include "libsoro/drivemessage.h"
 
 namespace Soro {
 namespace Rover {
@@ -55,14 +56,16 @@ private:
 private slots:
     void init();
     void sendSystemStatusMessage();
-    void sharedChannelStateChanged(Channel* channel, Channel::State state);
-    void driveChannelStateChanged(Channel* channel, Channel::State state);
-    void mbedChannelStateChanged(MbedChannel* channel, MbedChannel::State state);
-    void driveChannelMessageReceived(Channel* channel, const char* message, Channel::MessageSize size);
-    void sharedChannelMessageReceived(Channel* channel, const char* message, Channel::MessageSize size);
-    void mbedMessageReceived(MbedChannel* channel, const char* message, int size);
+    void sharedChannelStateChanged(Channel::State state);
+    void driveChannelStateChanged(Channel::State state);
+    void mbedChannelStateChanged(MbedChannel::State state);
+    void driveChannelMessageReceived(const char* message, Channel::MessageSize size);
+    void sharedChannelMessageReceived(const char* message, Channel::MessageSize size);
+    void mbedMessageReceived(const char* message, int size);
     void gpsUpdate(NmeaMessage message);
     void mediaServerError(MediaServer* server, QString message);
+    void startDataRecording(QDateTime startTime);
+    void stopDataRecording();
 
 public:
     explicit ResearchRoverProcess(QObject *parent = 0);

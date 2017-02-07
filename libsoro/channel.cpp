@@ -85,22 +85,9 @@ Channel::~Channel() {
     if (_sentTimeLog != NULL) {
         delete [] _sentTimeLog;
     }
-    if (_tcpSocket) {
-        delete _tcpSocket;
-        _tcpSocket = NULL;
-    }
-    if (_udpSocket) {
-        delete _udpSocket;
-        _udpSocket = NULL;
-    }
-    if (_tcpServer) {
-        delete _tcpServer;
-        _tcpServer = NULL;
-    }
     if (_nameUtf8) {
         delete [] _nameUtf8;
     }
-    _socket = NULL;
 }
 
 /*  Initialization, creates timers, sockets, apply configuration
@@ -353,7 +340,7 @@ inline void Channel::setChannelState(Channel::State state, bool forceUpdate) {  
      if ((_state != state) | forceUpdate) {
          LOG_D(LOG_TAG, "Setting state to " + QString::number(state));
          _state = state;
-         emit stateChanged(this, _state);
+         emit stateChanged(_state);
      }
 }
 
@@ -362,7 +349,7 @@ inline void Channel::setPeerAddress(Soro::SocketAddress address) {    //PRIVATE
     if (_peerAddress != address) {
         LOG_D(LOG_TAG, "Setting peer address to " + address.toString());
         _peerAddress = address;
-        emit peerAddressChanged(this, _peerAddress);
+        emit peerAddressChanged(_peerAddress);
     }
 }
 
@@ -395,7 +382,7 @@ void Channel::close(Channel::State closeState) {   //PRIVATE
  ***************************************************************************/
 
 void Channel::connectionErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
-    emit connectionError(this, err);
+    emit connectionError(err);
     LOG_E(LOG_TAG, "Connection Error: " + _socket->errorString());
     //Attempt to reconnect after RECOVERY_DELAY
     //we should NOT directly call resetConnectio() here as that could
@@ -404,7 +391,7 @@ void Channel::connectionErrorInternal(QAbstractSocket::SocketError err) { //PRIV
 }
 
 void Channel::serverErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE SLOT
-    emit connectionError(this, err);
+    emit connectionError(err);
     LOG_E(LOG_TAG, "Server Error: " + _tcpServer->errorString());
     //don't automatically kill the connection if it's still active, only the listening server
     //experienced the error
@@ -503,7 +490,7 @@ void Channel::processBufferedMessage(MessageType type, MessageID ID, const char 
             _receivedPackets++;
             _droppedPackets += ID - _lastReceiveID + 1;
             _lastReceiveID = ID;
-            emit messageReceived(this, message, size);
+            emit messageReceived(message, size);
         }
         break;
     case MSGTYPE_SERVER_HANDSHAKE:

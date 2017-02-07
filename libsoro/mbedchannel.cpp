@@ -30,12 +30,12 @@
 
 namespace Soro {
 
-#ifdef QT_CORE_LIB
+#ifdef QT_CORE_LIB ///////////////////////////////////////////////////////////////////////
 
 void MbedChannel::setChannelState(MbedChannel::State state) {
     if (_state != state) {
         _state = state;
-        emit stateChanged(this, state);
+        emit stateChanged(state);
     }
 }
 
@@ -52,6 +52,7 @@ void MbedChannel::socketReadyRead() {
         length = _socket->readDatagram(_buffer, MAX_PACKET_LEN, &peer.host, &peer.port);
         if (peer.port != _host.port) continue; // Port must be the same on both sides
         if (_buffer[0] == '\0') {
+            //'\0' is the message header for the server
             // It's possible we broadcasted our own message back to us
             continue;
         }
@@ -60,36 +61,40 @@ void MbedChannel::socketReadyRead() {
             continue;
         }
         if (length == MAX_PACKET_LEN) {
-            LOG_E(LOG_TAG, "Received a packet that was too long, up MAX_PACKET_LEN");
+            LOG_E(LOG_TAG, "Received a packet that was too long, tell Jacob to up MAX_PACKET_LEN");
             continue;
         }
         if (_buffer[0] != _mbedId) {
-            LOG_W(LOG_TAG, "Received packet from wrong mbed (got Mbed ID "
-                  + QString::number(reinterpret_cast<unsigned char&>(_buffer[0])) + ")");
+            // Received a message from the wrong mbed. This may happen if more than one MbedChannel
+            // are configured on the same port. Just ignore it.
             continue;
         }
+        // By this point, we have verified the packet is from the mbed we want
+
         unsigned int sequence = Util::deserialize<unsigned int>(_buffer + 2);
         if (_state == ConnectingState) {
             LOG_I(LOG_TAG, "Connected to mbed client");
             setChannelState(ConnectedState);
         }
-        else if (sequence < _lastReceiveId) continue;
+        else if (sequence < _lastReceiveId) continue; // Ignore packets that are older than the last one we got
         _lastReceiveId = sequence;
         _active = true; // Mark the mbed as active so it doesn't time out
+
+        // See what type of message we got
         switch (reinterpret_cast<unsigned char&>(_buffer[1])) {
-        case MSG_TYPE_NORMAL:
+        case MSG_TYPE_NORMAL: // Normal message, emit messageReceived
             if (length > 6) {
-                emit messageReceived(this, _buffer + 6, length - 6);
+                emit messageReceived(_buffer + 6, length - 6);
             }
             break;
-        case MSG_TYPE_LOG:
+        case MSG_TYPE_LOG: // Mbed wants to log something
             LOG_I(LOG_TAG, "Mbed:" + QString(_buffer + 6));
             break;
-        case MSG_TYPE_BROADCAST:
+        case MSG_TYPE_BROADCAST: // Handshake message
             LOG_I(LOG_TAG, "Responding to handshake from mbed");
             sendMessage(NULL, 0);
             break;
-        case MSG_TYPE_HEARTBEAT:
+        case MSG_TYPE_HEARTBEAT: // Heartbeat message
             break;
         default:
             LOG_E(LOG_TAG, "Got message with unknown type");
@@ -164,7 +169,7 @@ MbedChannel::State MbedChannel::getState() const {
 }
 
 #endif
-#ifdef TARGET_LPC1768
+#ifdef TARGET_LPC1768 ////////////////////////////////////////////////////////////////
 
 extern "C" void mbed_reset();
 
@@ -194,6 +199,7 @@ void MbedChannel::reset() {
     mbed_reset();
 }
 
+// We no longer send messages to a specific IP, we just broadcast. So this method is not used
 /*void MbedChannel::loadConfig() {
     LocalFileSystem local("local");
     FILE *configFile = fopen("/local/server.txt", "r");

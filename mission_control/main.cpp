@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     Logger::rootLogger()->setLogfile(QCoreApplication::applicationDirPath()
                                      + "/../log/MissionControl_" + QDateTime::currentDateTime().toString("M-dd_h.mm_AP") + ".log");
     Logger::rootLogger()->setMaxFileLevel(Logger::LogLevelDebug);
-    Logger::rootLogger()->setMaxQtLoggerLevel(Logger::LogLevelInformation);
+    Logger::rootLogger()->setMaxStdoutLevel(Logger::LogLevelInformation);
 
     InitWindow window;
     window.show();

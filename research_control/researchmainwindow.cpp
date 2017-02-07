@@ -20,5 +20,10 @@ StereoCameraWidget* ResearchMainWindow::getCameraWidget() {
     return ui->cameraWidget;
 }
 
+void ResearchMainWindow::closeEvent(QCloseEvent *event) {
+    QMainWindow::closeEvent(event);
+    emit closed();
+}
+
 } // namespace MissionControl
 } // namespace Soro

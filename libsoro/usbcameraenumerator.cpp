@@ -25,11 +25,15 @@ namespace Soro {
 int UsbCameraEnumerator::loadCameras() {
     clearList();
 
+    // Search for all /dev/video* devices
+
     QDir dev("/dev");
     QStringList allFiles = dev.entryList(QDir::NoDotAndDotDot | QDir::System | QDir::Files);
 
     foreach (QString file, allFiles) {
         if (file.contains("video")) {
+
+            // Found a new dev device
             UsbCamera *camera = new UsbCamera;
             camera->device = "/dev/" + file;
 

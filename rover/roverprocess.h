@@ -53,7 +53,7 @@ private:
     // encoding value of UnknownEncoding.
     GpsServer *_gpsServer = NULL;
 
-    RoverConfigLoader *_config;
+    RoverConfigLoader _config;
 
     int _initTimerId = TIMER_INACTIVE;
 
@@ -61,17 +61,17 @@ private slots:
     void init();
 
     // slots for received network messages
-    void armChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
-    void driveChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
-    void gimbalChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
-    void sharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
-    void sharedChannelStateChanged(Channel *channel, Channel::State state);
+    void armChannelMessageReceived(const char *message, Channel::MessageSize size);
+    void driveChannelMessageReceived(const char *message, Channel::MessageSize size);
+    void gimbalChannelMessageReceived( const char *message, Channel::MessageSize size);
+    void sharedChannelMessageReceived(const char *message, Channel::MessageSize size);
+    void sharedChannelStateChanged(Channel::State state);
 
-    void mbedChannelStateChanged(MbedChannel *channel, MbedChannel::State state);
+    void mbedChannelStateChanged(MbedChannel::State state);
 
     void secondaryComputerBroadcastSocketReadyRead();
     void secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError err);
-    void secondaryComputerStateChanged(Channel *channel, Channel::State state);
+    void secondaryComputerStateChanged(Channel::State state);
     void beginSecondaryComputerListening();
 
     void sendSystemStatusMessage();

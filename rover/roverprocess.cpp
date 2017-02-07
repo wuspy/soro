@@ -32,10 +32,9 @@ RoverProcess::RoverProcess(QObject *parent) : QObject(parent) {
 
 void RoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Loading Configuration*******************");
-    _config = new RoverConfigLoader;
 
     QString error;
-    if (!_config->load(&error)) {
+    if (!_config.load(&error)) {
         LOG_E(LOG_TAG, error);
         QCoreApplication::exit(1);
         return;
@@ -81,10 +80,10 @@ void RoverProcess::init() {
     _secondaryComputerBroadcastSocket = new QUdpSocket(this);
 
     // observers for network channel connectivity changes
-    connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-            this, SLOT(sharedChannelStateChanged(Channel*,Channel::State)));
-    connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-            this, SLOT(secondaryComputerStateChanged(Channel*,Channel::State)));
+    connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(sharedChannelStateChanged(Channel::State)));
+    connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(secondaryComputerStateChanged(Channel::State)));
 
     connect(_secondaryComputerBroadcastSocket, SIGNAL(readyRead()),
             this, SLOT(secondaryComputerBroadcastSocketReadyRead()));
@@ -103,20 +102,20 @@ void RoverProcess::init() {
     _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_DRIVE_MBED_PORT), MBED_ID_DRIVE_CAMERA, this);
 
     // observers for mbed connectivity changes
-    connect(_armControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
-            this, SLOT(mbedChannelStateChanged(MbedChannel*,MbedChannel::State)));
-    connect(_driveGimbalControllerMbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
-            this, SLOT(mbedChannelStateChanged(MbedChannel*,MbedChannel::State)));
+    connect(_armControllerMbed, SIGNAL(stateChanged(MbedChannel::State)),
+            this, SLOT(mbedChannelStateChanged(MbedChannel::State)));
+    connect(_driveGimbalControllerMbed, SIGNAL(stateChanged(MbedChannel::State)),
+            this, SLOT(mbedChannelStateChanged(MbedChannel::State)));
 
     // observers for network channels message received
-    connect(_armChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-             this, SLOT(armChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
-    connect(_driveChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-             this, SLOT(driveChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
-    connect(_gimbalChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
-            this, SLOT(gimbalChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
-    connect(_sharedChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-             this, SLOT(sharedChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
+    connect(_armChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+             this, SLOT(armChannelMessageReceived(const char*, Channel::MessageSize)));
+    connect(_driveChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+             this, SLOT(driveChannelMessageReceived(const char*, Channel::MessageSize)));
+    connect(_gimbalChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
+            this, SLOT(gimbalChannelMessageReceived(const char*,Channel::MessageSize)));
+    connect(_sharedChannel, SIGNAL(messageReceived( const char*, Channel::MessageSize)),
+             this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
 
     LOG_I(LOG_TAG, "*****************Initializing GPS system*******************");
 
@@ -127,18 +126,18 @@ void RoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
 
     _videoServers = new VideoServerArray(this);
-    _videoServers->populate(_config->getBlacklistedCameras(), NETWORK_ALL_CAMERA_PORT_1, 0);
+    _videoServers->populate(_config.getBlacklistedCameras(), NETWORK_ALL_CAMERA_PORT_1, 0);
 
     connect(_videoServers, SIGNAL(videoServerError(MediaServer*,QString)),
             this, SLOT(mediaServerError(MediaServer*,QString)));
 
-    if (_videoServers->serverCount() > _config->getComputer1CameraCount()) {
+    if (_videoServers->serverCount() > _config.getComputer1CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
-        while (_videoServers->serverCount() > _config->getComputer1CameraCount()) {
+        while (_videoServers->serverCount() > _config.getComputer1CameraCount()) {
             _videoServers->remove(_videoServers->serverCount() - 1);
         }
     }
-    else if (_videoServers->serverCount() < _config->getComputer1CameraCount()) {
+    else if (_videoServers->serverCount() < _config.getComputer1CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies more cameras than this, check cable connections");
     }
 
@@ -171,21 +170,20 @@ void RoverProcess::secondaryComputerBroadcastSocketError(QAbstractSocket::Socket
     QTimer::singleShot(500, this, SLOT(beginSecondaryComputerListening()));
 }
 
-void RoverProcess::secondaryComputerStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel); Q_UNUSED(state);
+void RoverProcess::secondaryComputerStateChanged(Channel::State state) {
+    Q_UNUSED(state);
     sendSystemStatusMessage();
 }
 
-void RoverProcess::sharedChannelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
+void RoverProcess::sharedChannelStateChanged(Channel::State state) {
     if (state == Channel::ConnectedState) {
         // send all status information since we just connected
         QTimer::singleShot(1000, this, SLOT(sendSystemStatusMessage()));
     }
 }
 
-void RoverProcess::mbedChannelStateChanged(MbedChannel *channel, MbedChannel::State state) {
-    Q_UNUSED(channel); Q_UNUSED(state);
+void RoverProcess::mbedChannelStateChanged(MbedChannel::State state) {
+    Q_UNUSED(state);
     sendSystemStatusMessage();
 }
 
@@ -208,8 +206,7 @@ void RoverProcess::sendSystemStatusMessage() {
 
 // observers for network channels message received
 
-void RoverProcess::armChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void RoverProcess::armChannelMessageReceived(const char *message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
     reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
@@ -224,8 +221,7 @@ void RoverProcess::armChannelMessageReceived(Channel * channel, const char *mess
     }
 }
 
-void RoverProcess::driveChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void RoverProcess::driveChannelMessageReceived(const char *message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
     reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
@@ -239,8 +235,7 @@ void RoverProcess::driveChannelMessageReceived(Channel * channel, const char *me
     }
 }
 
-void RoverProcess::gimbalChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void RoverProcess::gimbalChannelMessageReceived(const char *message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
     reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
@@ -254,8 +249,7 @@ void RoverProcess::gimbalChannelMessageReceived(Channel * channel, const char *m
     }
 }
 
-void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void RoverProcess::sharedChannelMessageReceived(const char *message, Channel::MessageSize size) {
     QByteArray byteArray = QByteArray::fromRawData(message, size);
     QDataStream stream(byteArray);
     SharedMessageType messageType;
@@ -269,7 +263,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
         stream >> camera;
         stream >> formatString;
         format.deserialize(formatString);
-        if (camera >= _config->getComputer1CameraCount()) {
+        if (camera >= _config.getComputer1CameraCount()) {
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
@@ -286,7 +280,7 @@ void RoverProcess::sharedChannelMessageReceived(Channel * channel, const char *m
     case SharedMessage_RequestDeactivateCamera:
         qint32 camera;
         stream >> camera;
-        if (camera >= _config->getComputer1CameraCount()) {
+        if (camera >= _config.getComputer1CameraCount()) {
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
@@ -352,38 +346,7 @@ void RoverProcess::gpsUpdate(NmeaMessage message) {
 }
 
 RoverProcess::~RoverProcess() {
-    if (_armChannel) {
-        disconnect(_armChannel, 0, 0, 0);
-        delete _armChannel;
-    }
-    if (_driveChannel) {
-        disconnect(_driveChannel, 0, 0, 0);
-        delete _driveChannel;
-    }
-    if (_sharedChannel) {
-        disconnect(_sharedChannel, 0, 0, 0);
-        delete _sharedChannel;
-    }
-    if (_secondaryComputerChannel) {
-        disconnect(_secondaryComputerChannel, 0, 0, 0);
-        delete _secondaryComputerChannel;
-    }
-    if (_armControllerMbed) {
-        disconnect(_armControllerMbed, 0, 0, 0);
-        delete _armControllerMbed;
-    }
-    if (_driveGimbalControllerMbed) {
-        disconnect(_driveGimbalControllerMbed, 0, 0, 0);
-        delete _driveGimbalControllerMbed;
-    }
-    if (_videoServers) {
-        disconnect(_videoServers, 0, 0, 0);
-        delete _videoServers;
-    }
-    if (_gpsServer) {
-        disconnect(_gpsServer, 0, 0, 0);
-        delete _gpsServer;
-    }
+
 }
 
 } // namespace Rover

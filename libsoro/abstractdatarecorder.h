@@ -6,12 +6,14 @@
 #include <QDateTime>
 #include <QDataStream>
 
+#include "soro_global.h"
+
 namespace Soro {
 
 /* Abstract class implemented by any class responsible for logging test data for the research
  * project
  */
-class AbstractDataRecorder : public QObject
+class LIBSORO_EXPORT AbstractDataRecorder : public QObject
 {
     Q_OBJECT
 
@@ -27,15 +29,16 @@ public:
      */
     void stopLog();
 
+    bool isRecording();
+
 protected:
     AbstractDataRecorder(QString logTag, QObject *parent=0);
-    inline bool canRecordData() { return _isRecording; }
-    void recordData(QByteArray data);
+    void addTimestamp();
+    QDataStream *_fileStream = NULL;
 
 private:
     QString _logTag;
     QFile *_file = NULL;
-    QDataStream *_fileStream = NULL;
     qint64 _logStartTime;
     bool _isRecording=false;
 };

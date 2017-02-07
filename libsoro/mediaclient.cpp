@@ -34,8 +34,8 @@ MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHos
 
     _buffer = new char[65536];
 
-    connect(_controlChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-            this, SLOT(controlMessageReceived(Channel*, const char*, Channel::MessageSize)));
+    connect(_controlChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+            this, SLOT(controlMessageReceived(const char*, Channel::MessageSize)));
 
     _controlChannel->open();
 
@@ -43,8 +43,8 @@ MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHos
     // signal will be emitted and trigger an invoking of a virtual method in
     // this class before its superclass implementation has been added to the vtable
     // in the superclass's own constructor
-    connect(_controlChannel, SIGNAL(stateChanged(Channel*, Channel::State)),
-            this, SLOT(controlChannelStateChanged(Channel*, Channel::State)));
+    connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(controlChannelStateChanged(Channel::State)));
 
     if (_controlChannel->getState() == Channel::ErrorState) {
         LOG_E(LOG_TAG, "The TCP channel could not be initialized");
@@ -86,8 +86,8 @@ void MediaClient::removeForwardingAddress(SocketAddress address) {
     }
 }
 
-void MediaClient::controlMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(size); Q_UNUSED(channel);
+void MediaClient::controlMessageReceived(const char *message, Channel::MessageSize size) {
+    Q_UNUSED(size);
     QByteArray byteArray = QByteArray::fromRawData(message, size);
     QDataStream stream(byteArray);
     stream.setByteOrder(QDataStream::BigEndian);
@@ -165,8 +165,7 @@ void MediaClient::timerEvent(QTimerEvent *e) {
     }
 }
 
-void MediaClient::controlChannelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
+void MediaClient::controlChannelStateChanged(Channel::State state) {
     switch (state) {
     case Channel::ConnectedState:
         setState(ConnectedState);
