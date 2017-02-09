@@ -92,7 +92,7 @@ void MbedChannel::socketReadyRead() {
             break;
         case MSG_TYPE_BROADCAST: // Handshake message
             LOG_I(LOG_TAG, "Responding to handshake from mbed");
-            sendMessage(NULL, 0);
+            sendMessage(nullptr, 0);
             break;
         case MSG_TYPE_HEARTBEAT: // Heartbeat message
             break;
@@ -125,10 +125,8 @@ MbedChannel::MbedChannel(SocketAddress host, unsigned char mbedId, QObject *pare
     _mbedId = reinterpret_cast<char&>(mbedId);
     LOG_TAG = "Mbed(" + QString::number(mbedId) + ")";
     LOG_I(LOG_TAG, "Creating new mbed channel");
-    connect(_socket, SIGNAL(readyRead()),
-            this, SLOT(socketReadyRead()));
-    connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(socketError(QAbstractSocket::SocketError)));
+    connect(_socket, &QUdpSocket::readyRead, this, &MbedChannel::socketReadyRead);
+    connect(_socket, static_cast<void (QUdpSocket::*)(QUdpSocket::SocketError)>(&QUdpSocket::error), this, &MbedChannel::socketError);
     resetConnection();
     START_TIMER(_watchdogTimerId, IDLE_CONNECTION_TIMEOUT);
 }

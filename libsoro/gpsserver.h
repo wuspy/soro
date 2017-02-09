@@ -18,7 +18,7 @@ namespace Soro {
 class LIBSORO_EXPORT GpsServer : public QObject {
     Q_OBJECT
 public:
-    explicit GpsServer(SocketAddress hostAddress, QObject *parent = NULL);
+    explicit GpsServer(SocketAddress hostAddress, QObject *parent = nullptr);
     ~GpsServer();
 
 private:
@@ -34,7 +34,7 @@ signals:
 
 private slots:
     void socketReadyRead();
-    void sockeError(QAbstractSocket::SocketError err);
+    void socketError(QAbstractSocket::SocketError err);
 
 protected:
     void timerEvent(QTimerEvent *e);

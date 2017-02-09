@@ -45,8 +45,7 @@ void Rover2Process::init() {
                             NETWORK_ALL_CAMERA_PORT_1 + _config.getComputer1CameraCount(),
                             _config.getComputer1CameraCount());
 
-    connect(_videoServers, SIGNAL(videoServerError(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_videoServers, &VideoServerArray::videoServerError, this, &Rover2Process::mediaServerError);
 
     if (_videoServers->serverCount() > _config.getComputer2CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
@@ -61,8 +60,7 @@ void Rover2Process::init() {
     LOG_I(LOG_TAG, "*************Initializing core networking*****************");
 
     _masterComputerBroadcastSocket = new QUdpSocket(this);
-    connect(_masterComputerBroadcastSocket, SIGNAL(readyRead()),
-            this, SLOT(masterComputerBroadcastSocketReadyRead()));
+    connect(_masterComputerBroadcastSocket, &QUdpSocket::readyRead, this, &Rover2Process::masterComputerBroadcastSocketReadyRead);
 
     beginBroadcast();
 }
@@ -106,10 +104,8 @@ void Rover2Process::masterComputerBroadcastSocketReadyRead() {
                     exit(1); return;
                 }
 
-                connect(_masterComputerChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-                        this, SLOT(masterChannelMessageReceived(const char*,Channel::MessageSize)));
-                connect(_masterComputerChannel, SIGNAL(stateChanged(Channel::State)),
-                        this, SLOT(masterChannelStateChanged(Channel::State)));
+                connect(_masterComputerChannel, &Channel::messageReceived, this, &Rover2Process::masterChannelMessageReceived);
+                connect(_masterComputerChannel, &Channel::stateChanged, this, &Rover2Process::masterChannelStateChanged);
 
                 _masterComputerChannel->open();
             }
@@ -126,7 +122,7 @@ void Rover2Process::masterChannelStateChanged(Channel::State state) {
         LOG_E(LOG_TAG, "Lost connection to master computer");
         _masterComputerChannel->close();
         delete _masterComputerChannel;
-        _masterComputerChannel = NULL;
+        _masterComputerChannel = nullptr;
 
         START_TIMER(_broadcastTimerId, 1000);
     }

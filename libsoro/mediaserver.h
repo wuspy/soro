@@ -54,12 +54,12 @@ public:
 private:
     int _mediaId;
     SocketAddress _host;
-    Channel *_controlChannel = NULL;
-    QUdpSocket *_mediaSocket = NULL;
+    Channel *_controlChannel = nullptr;
+    QUdpSocket *_mediaSocket = nullptr;
     State _state = IdleState;
     QProcess _child;
-    QTcpServer *_ipcServer = NULL;
-    QTcpSocket *_ipcSocket = NULL;
+    QTcpServer *_ipcServer = nullptr;
+    QTcpSocket *_ipcSocket = nullptr;
     int _startInternalTimerId = TIMER_INACTIVE;
 
     void beginStream(SocketAddress address);

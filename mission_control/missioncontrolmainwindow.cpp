@@ -62,36 +62,22 @@ MissionControlMainWindow::MissionControlMainWindow(GamepadManager *gamepad, Miss
     ui->media_camera4ControlWidget->setName("Camera 4");
     ui->media_camera5ControlWidget->setName("Camera 5");
 
-    connect(ui->media_audioControlWidget, SIGNAL(playSelected()),
-            this, SLOT(playAudioSelected()));
-    connect(ui->media_audioControlWidget, SIGNAL(stopSelected()),
-            this, SLOT(stopAudioSelected()));
-    connect(ui->media_audioControlWidget, SIGNAL(muteToggled(bool)),
-            this, SIGNAL(audioStreamMuteChanged(bool)));
-    connect(ui->media_camera1ControlWidget, SIGNAL(optionSelected(int)),
-            this, SLOT(camera1ControlOptionChanged(int)));
-    connect(ui->media_camera2ControlWidget, SIGNAL(optionSelected(int)),
-            this, SLOT(camera2ControlOptionChanged(int)));
-    connect(ui->media_camera3ControlWidget, SIGNAL(optionSelected(int)),
-            this, SLOT(camera3ControlOptionChanged(int)));
-    connect(ui->media_camera4ControlWidget, SIGNAL(optionSelected(int)),
-            this, SLOT(camera4ControlOptionChanged(int)));
-    connect(ui->media_camera5ControlWidget, SIGNAL(optionSelected(int)),
-            this, SLOT(camera5ControlOptionChanged(int)));
+    connect(ui->media_audioControlWidget, &AudioControlWidget::playSelected, this, &MissionControlMainWindow::playAudioSelected);
+    connect(ui->media_audioControlWidget, &AudioControlWidget::stopSelected, this, &MissionControlMainWindow::stopAudioSelected);
+    connect(ui->media_audioControlWidget, &AudioControlWidget::muteToggled, this, &MissionControlMainWindow::audioStreamMuteChanged);
+    connect(ui->media_camera1ControlWidget, &VideoControlWidget::optionSelected, this, &MissionControlMainWindow::camera1ControlOptionChanged);
+    connect(ui->media_camera2ControlWidget, &VideoControlWidget::optionSelected, this, &MissionControlMainWindow::camera2ControlOptionChanged);
+    connect(ui->media_camera3ControlWidget, &VideoControlWidget::optionSelected, this, &MissionControlMainWindow::camera3ControlOptionChanged);
+    connect(ui->media_camera4ControlWidget, &VideoControlWidget::optionSelected, this, &MissionControlMainWindow::camera4ControlOptionChanged);
+    connect(ui->media_camera5ControlWidget, &VideoControlWidget::optionSelected, this, &MissionControlMainWindow::camera5ControlOptionChanged);
 
-    connect(ui->media_camera1ControlWidget, SIGNAL(userEditedName(QString)),
-            this, SLOT(camera1NameEdited(QString)));
-    connect(ui->media_camera2ControlWidget, SIGNAL(userEditedName(QString)),
-            this, SLOT(camera2NameEdited(QString)));
-    connect(ui->media_camera3ControlWidget, SIGNAL(userEditedName(QString)),
-            this, SLOT(camera3NameEdited(QString)));
-    connect(ui->media_camera4ControlWidget, SIGNAL(userEditedName(QString)),
-            this, SLOT(camera4NameEdited(QString)));
-    connect(ui->media_camera5ControlWidget, SIGNAL(userEditedName(QString)),
-            this, SLOT(camera5NameEdited(QString)));
+    connect(ui->media_camera1ControlWidget, &VideoControlWidget::userEditedName, this, &MissionControlMainWindow::camera1NameEdited);
+    connect(ui->media_camera2ControlWidget, &VideoControlWidget::userEditedName, this, &MissionControlMainWindow::camera2NameEdited);
+    connect(ui->media_camera3ControlWidget, &VideoControlWidget::userEditedName, this, &MissionControlMainWindow::camera3NameEdited);
+    connect(ui->media_camera4ControlWidget, &VideoControlWidget::userEditedName, this, &MissionControlMainWindow::camera4NameEdited);
+    connect(ui->media_camera5ControlWidget, &VideoControlWidget::userEditedName, this, &MissionControlMainWindow::camera5NameEdited);
 
-    connect(ui->masterarm_reloadFileButton, SIGNAL(clicked(bool)),
-            this, SIGNAL(reloadMasterArmClicked()));
+    connect(ui->masterarm_reloadFileButton, &QPushButton::clicked, this, &MissionControlMainWindow::reloadMasterArmClicked);
 
     addWidgetShadow(ui->statusBarWidget, 10, 0);
     addWidgetShadow(ui->infoContainer, 10, 0);
@@ -101,20 +87,18 @@ MissionControlMainWindow::MissionControlMainWindow(GamepadManager *gamepad, Miss
     case ArmOperatorRole: {
         ArmControlSystem *armControlSystem = reinterpret_cast<ArmControlSystem*>(_controlSystem);
         ui->statusLabel->setText("<html>Arm Operator" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[BROKER]</b></span>" : "") + "</html>");
-        connect(armControlSystem, SIGNAL(masterArmStateChanged(bool)),
-                this, SLOT(onMasterArmStateChanged(bool)));
-        connect(armControlSystem, SIGNAL(masterArmUpdate(const char*)),
-                this, SLOT(onMasterArmUpdate(const char*)));
+        connect(armControlSystem, &ArmControlSystem::masterArmStateChanged, this, &MissionControlMainWindow::onMasterArmStateChanged);
+        connect(armControlSystem, &ArmControlSystem::masterArmUpdate, this, &MissionControlMainWindow::onMasterArmUpdate);
         onMasterArmStateChanged(armControlSystem->isMasterArmConnected());
     }
         break;
     case DriverRole:
         ui->statusLabel->setText("<html>Driver" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[BROKER]</b></span>" : "") + "</html>");
-        onGamepadChanged(_gamepad->getGamepad(), _gamepad->getGamepadName());
+        onGamepadChanged(_gamepad->getGamepad() != nullptr, _gamepad->getGamepadName());
         break;
     case CameraOperatorRole:
         ui->statusLabel->setText("<html>Camera Operator" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[BROKER]</b></span>" : "") + "</html>");
-        onGamepadChanged(_gamepad->getGamepad(), _gamepad->getGamepadName());
+        onGamepadChanged(_gamepad->getGamepad() != nullptr, _gamepad->getGamepadName());
         break;
     default:
         ui->statusLabel->setText("<html>Spectator" + QString(_mcNetwork->isBroker() ? " <span style=\"color:#b71c1c\"><b>[BROKER]</b></span>" : "") + "</html>");
@@ -132,11 +116,9 @@ MissionControlMainWindow::MissionControlMainWindow(GamepadManager *gamepad, Miss
     ui->comm_mccStateLabel->setText("Connected to MCC network");
     ui->comm_mccStateGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/check_circle_green_18px.png);");
 
-    connect(_gamepad, SIGNAL(gamepadChanged(SDL_GameController*,QString)),
-            this, SLOT(onGamepadChanged(SDL_GameController*,QString)));
+    connect(_gamepad, &GamepadManager::gamepadChanged, this, &MissionControlMainWindow::onGamepadChanged);
     if (_controlSystem) {
-        connect(_controlSystem->getChannel(), SIGNAL(stateChanged(Channel::State)),
-                this, SLOT(onControlChannelStateChanged(Channel::State)));
+        connect(_controlSystem->getChannel(), &Channel::stateChanged, this, &MissionControlMainWindow::onControlChannelStateChanged);
     }
 
     onArmSubsystemStateChanged(UnknownSubsystemState);
@@ -215,7 +197,7 @@ void MissionControlMainWindow::updateConnectionStateInformation() {
         ui->comm_statusContainer->setStyleSheet("background-color: #1B5E20;\
                                                 color: white;\
                                                 border-radius: 10px;");
-        ui->comm_mainStatusGraphicLabel->setMovie(NULL);
+        ui->comm_mainStatusGraphicLabel->setMovie(nullptr);
         ui->comm_mainStatusGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/check_white_36px.png);");
         _preloaderMovie->stop();
         ui->comm_mainStatusLabel->setText("Connected");
@@ -244,8 +226,8 @@ void MissionControlMainWindow::reloadMasterArmClicked() {
     }
 }
 
-void MissionControlMainWindow::onGamepadChanged(SDL_GameController *controller, QString name) {
-    if (controller) {
+void MissionControlMainWindow::onGamepadChanged(bool connected, QString name) {
+    if (connected) {
         ui->hid_inputDeviceGraphicLabel->setStyleSheet("qproperty-pixmap: url(:/icons/gamepad_green_18px.png);");
         ui->hid_inputDeviceLabel->setStyleSheet("QLabel { color : #1B5E20; }");
         ui->hid_inputDeviceLabel->setText(name);

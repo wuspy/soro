@@ -40,10 +40,8 @@ bool ArmControlSystem::init(QString *errorString) {
 
     _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_MC_MASTER_ARM_PORT), MBED_ID_MASTER_ARM);
 
-    connect(_mbed, SIGNAL(stateChanged(MbedChannel::State)),
-            this, SLOT(mbedStateChanged(MbedChannel::State)));
-    connect(_mbed, SIGNAL(messageReceived(const char*,int)),
-            this, SLOT(mbedMessageReceived(const char*,int)));
+    connect(_mbed, &MbedChannel::stateChanged, this, &ArmControlSystem::mbedStateChanged);
+    connect(_mbed, &MbedChannel::messageReceived, this, &ArmControlSystem::mbedMessageReceived);
 
     if (!reloadMasterArmConfig()) {
         *errorString = "Failed to load master arm configuration from '../config/master_arm.conf'";
@@ -77,7 +75,7 @@ void ArmControlSystem::mbedMessageReceived(const char *message, int size) {
         //translate message from master pot values to slave servo values
         memcpy(_buffer, message, size);
         ArmMessage::translateMasterArmValues(_buffer, _armConfig);
-        if (_channel != NULL) {
+        if (_channel != nullptr) {
             _channel->sendMessage(_buffer, size);
         }
         else {

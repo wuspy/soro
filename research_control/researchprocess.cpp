@@ -33,15 +33,14 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     LOG_I(LOG_TAG, "-------------------------------------------------------");
 
     _gamepad = gamepad;
-    connect(_gamepad, SIGNAL(gamepadChanged(SDL_GameController*,QString)),
-            this, SLOT(gamepadChanged(SDL_GameController*,QString)));
+    connect(_gamepad, &GamepadManager::gamepadChanged, this, &ResearchControlProcess::gamepadChanged);
 
     _settings = SettingsModel::Default(roverAddress);
 
     // Create UI for rover control
     _mainUi = new ResearchMainWindow;
     _mainUi->getCameraWidget()->setStereoMode(VideoFormat::StereoMode_SideBySide);
-    connect(_mainUi, SIGNAL(closed()), this, SIGNAL(windowClosed()));
+    connect(_mainUi, &ResearchMainWindow::closed, this, &ResearchControlProcess::windowClosed);
 
     // Create UI for settings and control
     QQmlComponent qmlComponent(qml, QUrl("qrc:/Main.qml"));
@@ -57,12 +56,9 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
 
     // Perform initial setup of control UI
 
-    connect(_controlUi, SIGNAL(requestUiSync()),
-            this, SLOT(ui_requestUiSync()));
-    connect(_controlUi, SIGNAL(settingsApplied()),
-            this, SLOT(ui_settingsApplied()));
-    connect (_controlUi, SIGNAL(recordButtonClicked()),
-             this, SLOT(ui_toggleDataRecordButtonClicked()));
+    connect(_controlUi, SIGNAL(requestUiSync()), this, SLOT(ui_requestUiSync()));
+    connect(_controlUi, SIGNAL(settingsApplied()), this, SLOT(ui_settingsApplied()));
+    connect (_controlUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
 
     LOG_I(LOG_TAG, "****************Initializing connections*******************");
 
@@ -71,15 +67,12 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     _roverChannel = Channel::createClient(this, SocketAddress(_settings.roverAddress, NETWORK_ALL_SHARED_CHANNEL_PORT), CHANNEL_NAME_SHARED,
             Channel::TcpProtocol, QHostAddress::Any);
     _roverChannel->open();
-    connect(_roverChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-            this, SLOT(roverSharedChannelMessageReceived(const char*,Channel::MessageSize)));
-    connect(_roverChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(updateUiConnectionState()));
+    connect(_roverChannel, &Channel::messageReceived, this, &ResearchControlProcess::roverSharedChannelMessageReceived);
+    connect(_roverChannel, &Channel::stateChanged, this, &ResearchControlProcess::updateUiConnectionState);
 
     LOG_I(LOG_TAG, "Creating drive control system");
     _driveSystem = new DriveControlSystem(_settings.roverAddress, _gamepad, this);
-    connect(_driveSystem, SIGNAL(connectionStateChanged(Channel::State)),
-            this, SLOT(driveConnectionStateChanged(Channel::State)));
+    connect(_driveSystem, &DriveControlSystem::connectionStateChanged, this, &ResearchControlProcess::driveConnectionStateChanged);
     QString err;
     if (!_driveSystem->init(&err)) {
         LOG_E(LOG_TAG, "Drive system failed to init: " + err);
@@ -94,14 +87,10 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     _aux1VideoClient = new VideoClient(MEDIAID_RESEARCH_A1_CAMERA, SocketAddress(_settings.roverAddress, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT), QHostAddress::Any, this);
     _monoVideoClient = new VideoClient(MEDIAID_RESEARCH_M_CAMERA, SocketAddress(_settings.roverAddress, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT), QHostAddress::Any, this);
 
-    connect(_stereoLVideoClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
-            this, SLOT(videoClientStateChanged(MediaClient*,MediaClient::State)));
-    connect(_stereoRVideoClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
-            this, SLOT(videoClientStateChanged(MediaClient*,MediaClient::State)));
-    connect(_aux1VideoClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
-            this, SLOT(videoClientStateChanged(MediaClient*,MediaClient::State)));
-    connect(_monoVideoClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
-            this, SLOT(videoClientStateChanged(MediaClient*,MediaClient::State)));
+    connect(_stereoLVideoClient, &VideoClient::stateChanged, this, &ResearchControlProcess::videoClientStateChanged);
+    connect(_stereoRVideoClient, &VideoClient::stateChanged, this, &ResearchControlProcess::videoClientStateChanged);
+    connect(_aux1VideoClient, &VideoClient::stateChanged, this, &ResearchControlProcess::videoClientStateChanged);
+    connect(_monoVideoClient, &VideoClient::stateChanged, this, &ResearchControlProcess::videoClientStateChanged);
 
     // add localhost bounce to the video stream so the in-app player can display it from a udpsrc
     _stereoLVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT));
@@ -116,8 +105,7 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     _audioClient = new AudioClient(MEDIAID_AUDIO, SocketAddress(_settings.roverAddress, NETWORK_ALL_AUDIO_PORT), QHostAddress::Any, this);
     // forward audio stream through localhost
     _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT));
-    connect(_audioClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
-            this, SLOT(audioClientStateChanged(MediaClient*,MediaClient::State)));
+    connect(_audioClient, &AudioClient::stateChanged, this, &ResearchControlProcess::audioClientStateChanged);
 
     _audioPlayer = new Soro::Gst::AudioPlayer(this);
 
@@ -144,10 +132,8 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     _gpsRecorder = new GpsDataRecorder(this);
     _masterRecorder = new MasterDataRecorder(_driveSystem->getChannel(), _roverChannel, this);
 
-    connect(_sensorRecorder, SIGNAL(dataParsed(SensorDataRecorder::DataTag,float)),
-            this, SLOT(newSensorData(SensorDataRecorder::DataTag,float)));
-    connect(_controlUi, SIGNAL(logCommentEntered(QString)),
-            _masterRecorder, SLOT(addComment(QString)));
+    connect(_sensorRecorder, &SensorDataRecorder::dataParsed, this, &ResearchControlProcess::newSensorData);
+    connect(_controlUi, SIGNAL(logCommentEntered(QString)), _masterRecorder, SLOT(addComment(QString)));
 
     // Show UI's
 
@@ -193,10 +179,9 @@ void ResearchControlProcess::stopDataRecording() {
     _roverChannel->sendMessage(byteArray);
 }
 
-void ResearchControlProcess::gamepadChanged(SDL_GameController *controller, QString name) {
-    Q_UNUSED(controller);
+void ResearchControlProcess::gamepadChanged(bool connected, QString name) {
     _controlUi->setProperty("gamepad", name);
-    if (controller) {
+    if (connected) {
         QMetaObject::invokeMethod(_controlUi,
                                   "notify",
                                   Q_ARG(QVariant,"information"),

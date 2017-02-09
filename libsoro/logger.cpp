@@ -36,12 +36,12 @@ Logger::Logger(QObject *parent) : QObject(parent) {
 
 bool Logger::setLogfile(QString file) {
     _fileMutex.lock();
-    if (_fileStream != NULL) {
+    if (_fileStream != nullptr) {
         _fileStream->flush();
         delete _fileStream;
-        _fileStream = NULL;
+        _fileStream = nullptr;
     }
-    if (_file != NULL) {
+    if (_file != nullptr) {
         if (_file->isOpen()) _file->close();
         delete _file;
     }
@@ -63,7 +63,7 @@ void Logger::publish(Level level, QString tag, QString message) { //PRIVATE
         QString formatted = _textFormat[reinterpret_cast<unsigned int&>(level) - 1]
                 .arg(QTime::currentTime().toString(), tag, message);
         _fileMutex.lock();
-        if (_fileStream != NULL) {
+        if (_fileStream != nullptr) {
             *_fileStream << formatted << endl;
             _fileStream->flush();
         }
@@ -82,13 +82,13 @@ void Logger::closeLogfile() {
     if (_file) {
         if (_fileStream) {
             delete _fileStream;
-            _fileStream = NULL;
+            _fileStream = nullptr;
         }
         if (_file->isOpen()) {
             _file->close();
         }
         delete _file;
-        _file = NULL;
+        _file = nullptr;
     }
     _fileMutex.unlock();
 }

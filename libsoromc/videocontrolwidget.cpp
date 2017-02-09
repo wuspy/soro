@@ -25,12 +25,9 @@ VideoControlWidget::VideoControlWidget(QWidget *parent) :
     ui(new Ui::VideoControlWidget) {
     ui->setupUi(this);
 
-    connect(ui->comboBox, SIGNAL(currentIndexChanged(int)),
-            this, SLOT(uiOptionSelected(int)));
-    connect(ui->editNameButton, SIGNAL(clicked(bool)),
-            this, SLOT(editButtonClicked()));
-    connect(ui->nameLineEdit, SIGNAL(returnPressed()),
-            this, SLOT(nameEditReturnClicked()));
+    connect(ui->comboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &VideoControlWidget::uiOptionSelected);
+    connect(ui->editNameButton, &QPushButton::clicked, this, &VideoControlWidget::editButtonClicked);
+    connect(ui->nameLineEdit, &QLineEdit::returnPressed, this, &VideoControlWidget::nameEditReturnClicked);
 
     ui->nameLineEdit->setVisible(false);
     ui->nameLabel->setVisible(true);

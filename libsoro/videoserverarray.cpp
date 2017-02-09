@@ -43,8 +43,8 @@ int VideoServerArray::populate(const QStringList& usbCamBlacklist, quint16 first
         VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), this);
         _servers.insert(firstId, server);
         _flycapCameras.insert(firstId, guid);
-        connect(server, SIGNAL(stateChanged(VideoServer*, VideoServer::State)), this, SLOT(serverStateChanged(VideoServer*, VideoServer::State)));
-        connect(server, SIGNAL(error(VideoServer*,QString)), this, SLOT(serverError(VideoServer*,QString)));
+        connect(server, &VideoServer::stateChanged, this, &VideoServerArray::serverStateChanged);
+        connect(server, &VideoServer::error, this, &VideoServerArray::serverError);
 
         firstId++;
         firstNetworkPort++;
@@ -69,8 +69,8 @@ int VideoServerArray::populate(const QStringList& usbCamBlacklist, quint16 first
         VideoServer *server = new VideoServer(firstId, SocketAddress(QHostAddress::Any, firstNetworkPort), this);
         _servers.insert(firstId, server);
         _usbCameras.insert(firstId, camera);
-        connect(server, SIGNAL(stateChanged(MediaServer*, MediaServer::State)), this, SLOT(serverStateChanged(MediaServer*, MediaServer::State)));
-        connect(server, SIGNAL(error(MediaServer*,QString)), this, SLOT(serverError(MediaServer*,QString)));
+        connect(server, &VideoServer::stateChanged, this, &VideoServerArray::serverStateChanged);
+        connect(server, &VideoServer::error, this, &VideoServerArray::serverError);
 
         firstId++;
         firstNetworkPort++;

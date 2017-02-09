@@ -37,7 +37,7 @@ protected:
 
 private:
     MasterArmConfig _armConfig;
-    MbedChannel *_mbed = NULL;
+    MbedChannel *_mbed = nullptr;
     bool _enabled = false;
     char _buffer[256];
 

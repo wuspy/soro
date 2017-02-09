@@ -71,10 +71,8 @@ void ResearchRoverProcess::init() {
     _sharedChannel->open();
 
     // observers for network channel connectivity changes
-    connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(sharedChannelStateChanged(Channel::State)));
-    connect(_driveChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(driveChannelStateChanged(Channel::State)));
+    connect(_sharedChannel, &Channel::stateChanged, this, &ResearchRoverProcess::sharedChannelStateChanged);
+    connect(_driveChannel, &Channel::stateChanged, this, &ResearchRoverProcess::driveChannelStateChanged);
 
 
     LOG_I(LOG_TAG, "All network channels initialized successfully");
@@ -85,29 +83,22 @@ void ResearchRoverProcess::init() {
     _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_MBED_PORT), MBED_ID_RESEARCH, this);
 
     // setup mbed data parser/logger
-    connect(_mbed, SIGNAL(messageReceived(const char*,int)),
-            &_sensorRecorder, SLOT(newData(const char*,int)));
+    connect(_mbed, &MbedChannel::messageReceived, &_sensorRecorder, &SensorDataRecorder::newData);
 
     // observers for mbed events
-    connect(_mbed, SIGNAL(messageReceived(const char*,int)),
-            this, SLOT( mbedMessageReceived(const char*,int)));
-    connect(_mbed, SIGNAL(stateChanged(MbedChannel::State)),
-            this, SLOT(mbedChannelStateChanged(MbedChannel::State)));
+    connect(_mbed, &MbedChannel::messageReceived, this, &ResearchRoverProcess::mbedMessageReceived);
+    connect(_mbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::mbedChannelStateChanged);
 
     // observers for network channels message received
-    connect(_driveChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-             this, SLOT(driveChannelMessageReceived(const char*, Channel::MessageSize)));
-    connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-             this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
+    connect(_driveChannel, &Channel::messageReceived, this, &ResearchRoverProcess::driveChannelMessageReceived);
+    connect(_sharedChannel, &Channel::messageReceived, this, &ResearchRoverProcess::sharedChannelMessageReceived);
 
     LOG_I(LOG_TAG, "*****************Initializing GPS system*******************");
 
     _gpsServer = new GpsServer(SocketAddress(QHostAddress::Any, NETWORK_ROVER_GPS_PORT), this);
-    connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
-            this, SLOT(gpsUpdate(NmeaMessage)));
+    connect(_gpsServer, &GpsServer::gpsUpdate, this, &ResearchRoverProcess::gpsUpdate);
 
-    connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
-            &_gpsRecorder, SLOT(addLocation(NmeaMessage)));
+    connect(_gpsServer, &GpsServer::gpsUpdate, &_gpsRecorder, &GpsDataRecorder::addLocation);
 
     LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
 
@@ -116,14 +107,10 @@ void ResearchRoverProcess::init() {
     _aux1CameraServer = new VideoServer(MEDIAID_RESEARCH_A1_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT), this);
     _monoCameraServer = new VideoServer(MEDIAID_RESEARCH_M_CAMERA, SocketAddress(QHostAddress::Any, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT), this);
 
-    connect(_stereoRCameraServer, SIGNAL(error(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
-    connect(_stereoLCameraServer, SIGNAL(error(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
-    connect(_aux1CameraServer, SIGNAL(error(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
-    connect(_monoCameraServer, SIGNAL(error(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_stereoRCameraServer, &VideoServer::error, this, &ResearchRoverProcess::mediaServerError);
+    connect(_stereoLCameraServer, &VideoServer::error, this, &ResearchRoverProcess::mediaServerError);
+    connect(_aux1CameraServer, &VideoServer::error, this, &ResearchRoverProcess::mediaServerError);
+    connect(_monoCameraServer, &VideoServer::error, this, &ResearchRoverProcess::mediaServerError);
 
     UsbCameraEnumerator cameras;
     cameras.loadCameras();
@@ -186,8 +173,7 @@ void ResearchRoverProcess::init() {
 
     _audioServer = new AudioServer(MEDIAID_AUDIO, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
 
-    connect(_audioServer, SIGNAL(error(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_audioServer, &AudioServer::error, this, &ResearchRoverProcess::mediaServerError);
 
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");

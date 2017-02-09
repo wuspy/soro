@@ -219,10 +219,10 @@ private:
     bool _configured = false;
     bool _wasConnected = false;
 
-    QTcpSocket *_tcpSocket = NULL; //Currently active TCP socket
-    QTcpServer *_tcpServer = NULL; //Currently active TCP server (for registering TCP clients)
-    QUdpSocket *_udpSocket = NULL; //Currently active UDP socket
-    QAbstractSocket *_socket = NULL;   //Pointer to either the TCP or UDP socket, depending on the configuration
+    QTcpSocket *_tcpSocket = nullptr; //Currently active TCP socket
+    QTcpServer *_tcpServer = nullptr; //Currently active TCP server (for registering TCP clients)
+    QUdpSocket *_udpSocket = nullptr; //Currently active UDP socket
+    QAbstractSocket *_socket = nullptr;   //Pointer to either the TCP or UDP socket, depending on the configuration
 
     MessageID _nextSendID; //ID to mark the next message with
     MessageID _lastReceiveID;  //ID the most recent inbound message was marked with

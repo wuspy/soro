@@ -38,7 +38,7 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
 
     // Create UI
     _ui = new MissionControlMainWindow(gamepad, mcNetwork, controlSystem);
-    connect(_ui, SIGNAL(closed()), this, SIGNAL(windowClosed()));
+    connect(_ui, &MissionControlMainWindow::closed, this, &MissionControlProcess::windowClosed);
     _ui->show();
 
     // Define video formats
@@ -56,23 +56,15 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
     _freeCameraWidgets.append(_ui->getBottomCameraWidget());
     _freeCameraWidgets.append(_ui->getFullscreenCameraWidget());
 
-    connect(_ui, SIGNAL(cycleVideosClockwise()),
-            this, SLOT(cycleVideosClockwise()));
-    connect(_ui, SIGNAL(cycleVideosCounterclockwise()),
-            this, SLOT(cycleVideosCounterClockwise()));
-    connect(_ui, SIGNAL(cameraFormatChanged(int,VideoFormat)),
-            this, SLOT(cameraFormatSelected(int,VideoFormat)));
-    connect(_ui, SIGNAL(cameraNameEdited(int,QString)),
-            this, SLOT(cameraNameEdited(int,QString)));
-    connect(_ui, SIGNAL(playAudioSelected()),
-            this, SLOT(playAudioSelected()));
-    connect(_ui, SIGNAL(stopAudioSelected()),
-            this, SLOT(stopAudioSelected()));
-    connect(_ui, SIGNAL(audioStreamMuteChanged(bool)),
-            this, SLOT(audioStreamMuteSelected(bool)));
+    connect(_ui, &MissionControlMainWindow::cycleVideosClockwise, this, &MissionControlProcess::cycleVideosClockwise);
+    connect(_ui, &MissionControlMainWindow::cycleVideosCounterclockwise, this, &MissionControlProcess::cycleVideosCounterClockwise);
+    connect(_ui, &MissionControlMainWindow::cameraFormatChanged, this, &MissionControlProcess::cameraFormatSelected);
+    connect(_ui, &MissionControlMainWindow::cameraNameEdited, this, &MissionControlProcess::cameraNameEdited);
+    connect(_ui, &MissionControlMainWindow::playAudioSelected, this, &MissionControlProcess::playAudioSelected);
+    connect(_ui, &MissionControlMainWindow::stopAudioSelected, this, &MissionControlProcess::stopAudioSelected);
+    connect(_ui, &MissionControlMainWindow::audioStreamMuteChanged, this, &MissionControlProcess::audioStreamMuteSelected);
 
-    connect(_mcNetwork, SIGNAL(newClientConnected(Channel*)),
-            this, SLOT(onNewMissionControlClient(Channel*)));
+    connect(_mcNetwork, &MissionControlNetwork::newClientConnected, this, &MissionControlProcess::onNewMissionControlClient);
 
     LOG_I(LOG_TAG, "****************Initializing connections*******************");
 
@@ -82,10 +74,8 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
         _roverChannel = Channel::createClient(this, SocketAddress(_roverAddress, NETWORK_ALL_SHARED_CHANNEL_PORT), CHANNEL_NAME_SHARED,
                 Channel::TcpProtocol, QHostAddress::Any);
         _roverChannel->open();
-        connect(_roverChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-                this, SLOT(roverSharedChannelMessageReceived(const char*,Channel::MessageSize)));
-        connect(_roverChannel, SIGNAL(stateChanged(Channel::State)),
-                this, SLOT(roverSharedChannelStateChanged(Channel::State)));
+        connect(_roverChannel, &Channel::messageReceived, this, &MissionControlProcess::roverSharedChannelMessageReceived);
+        connect(_roverChannel, &Channel::stateChanged, this, &MissionControlProcess::roverSharedChannelStateChanged);
     }
 
     if (_controlSystem) {
@@ -99,8 +89,7 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
         for (int i = 0; i < MAX_CAMERAS; i++) {
             VideoClient *client = new VideoClient(i, SocketAddress(_roverAddress, NETWORK_ALL_CAMERA_PORT_1 + i), QHostAddress::Any, this);
 
-            connect(client, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
-                    this, SLOT(videoClientStateChanged(MediaClient*,MediaClient::State)));
+            connect(client, &VideoClient::stateChanged, this, &MissionControlProcess::videoClientStateChanged);
 
             // add localhost bounce to the video stream so the in-app player can display it from a udpsrc
             client->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, client->getServerAddress().port));
@@ -118,8 +107,7 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
         _audioClient = new AudioClient(MEDIAID_AUDIO, SocketAddress(_roverAddress, NETWORK_ALL_AUDIO_PORT), QHostAddress::Any, this);
         // forward audio stream through localhost
         _audioClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT));
-        connect(_audioClient, SIGNAL(stateChanged(MediaClient*,MediaClient::State)),
-                this, SLOT(audioClientStateChanged(MediaClient*,MediaClient::State)));
+        connect(_audioClient, &AudioClient::stateChanged, this, &MissionControlProcess::audioClientStateChanged);
     }
 
     _audioPlayer = new AudioPlayer(this);
@@ -284,7 +272,7 @@ void MissionControlProcess::endStreamOnWidget(CameraWidget *widget, QString reas
 
 void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widget, int formatIndex) {
     if (_assignedCameraWidgets.contains(cameraID)) {
-        CameraWidget *oldWidget = _assignedCameraWidgets.value(cameraID, NULL);
+        CameraWidget *oldWidget = _assignedCameraWidgets.value(cameraID, nullptr);
         if (oldWidget != widget) {
             oldWidget->stop();
             _assignedCameraWidgets.remove(cameraID);
@@ -297,11 +285,11 @@ void MissionControlProcess::playStreamOnWidget(int cameraID, CameraWidget *widge
     _ui->onCameraFormatChanged(cameraID, formatIndex);
     if (_mcNetwork->isBroker()) {
         _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_CAMERA_PORT_1 + cameraID),
-                                                     _availableVideoFormts[formatIndex]);
+                                                     _availableVideoFormts.at(formatIndex));
     }
     else {
         _assignedCameraWidgets.value(cameraID)->play(SocketAddress(QHostAddress::Any, NETWORK_ALL_CAMERA_PORT_1 + cameraID),
-                                                     _availableVideoFormts[formatIndex]);
+                                                     _availableVideoFormts.at(formatIndex));
     }
     _assignedCameraWidgets.value(cameraID)->setCameraName(_cameraNames.at(cameraID));
 }
@@ -532,10 +520,12 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
 
 /* Receives the signal from the UI when a new camera format is selected
  */
-void MissionControlProcess::cameraFormatSelected(int camera, VideoFormat format) {
+void MissionControlProcess::cameraFormatSelected(int camera, int formatIndex) {
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType;
+
+    VideoFormat format = _availableVideoFormts.at(formatIndex);
 
     if (!format.isUseable()) {
         messageType = SharedMessage_RequestDeactivateCamera;
@@ -659,7 +649,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
         bpsRoverUp += _audioClient->getBitrate();
         bpsRoverUp += _roverChannel->getBitsPerSecondDown();
         bpsRoverDown += _roverChannel->getBitsPerSecondUp();
-        if (_controlSystem != NULL) {
+        if (_controlSystem != nullptr) {
             bpsRoverUp += _controlSystem->getChannel()->getBitsPerSecondDown();
             bpsRoverDown += _controlSystem->getChannel()->getBitsPerSecondUp();
         }

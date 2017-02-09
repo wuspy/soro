@@ -44,9 +44,7 @@ bool MissionControlNetwork::init(QString *error) {
         return true;
     }
     _broadcastSocket = new QUdpSocket(this);
-    connect(_broadcastSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(socketError(QAbstractSocket::SocketError)));
-
+    connect(_broadcastSocket, static_cast<void (QUdpSocket::*)(QUdpSocket::SocketError)>(&QUdpSocket::error), this, &MissionControlNetwork::socketError);
     if (!startNegotiation()) {
         if (error) *error = "Could not start mission control network negotiation. This is most likely because you are already running a mission control process on this computer.\n\nIf you are sure no other mission control is running, this could indicate a network issue or port conflict.";
         return false;
@@ -59,7 +57,7 @@ void MissionControlNetwork::clearConnections() {
     if (_clientChannel) {
         disconnect(_clientChannel, 0, this, 0);
         delete _clientChannel;
-        _clientChannel = NULL;
+        _clientChannel = nullptr;
     }
     foreach (Connection *connection, _brokerConnections) {
         disconnect(connection->channel, 0, this, 0);
@@ -84,9 +82,8 @@ bool MissionControlNetwork::startNegotiation() {
     _role = SpectatorRole;
     // Re-bind the broadcast socket
     _broadcastSocket->abort();
-    disconnect(_broadcastSocket, SIGNAL(readyRead()), this, 0);
-    connect(_broadcastSocket, SIGNAL(readyRead()),
-            this, SLOT(negotiation_broadcastSocketReadyRead()));
+    disconnect(_broadcastSocket, &QUdpSocket::readyRead, this, 0);
+    connect(_broadcastSocket, &QUdpSocket::readyRead, this, &MissionControlNetwork::negotiation_broadcastSocketReadyRead);
     if (!_broadcastSocket->bind(NETWORK_MC_BROADCAST_PORT)) {
         return false;
     }
@@ -100,12 +97,11 @@ bool MissionControlNetwork::startNegotiation() {
 void MissionControlNetwork::endNegotiation() {
     LOG_I(LOG_TAG, "Ending negoation, we " + QString(_isBroker ? " are the broker" : " are not the broker"));
     KILL_TIMER(_broadcastIntentTimerId);
-    disconnect(_broadcastSocket, SIGNAL(readyRead()), this, 0);
+    disconnect(_broadcastSocket, &QUdpSocket::readyRead, this, 0);
     if (_isBroker) {
         START_TIMER(_broadcastStateTimerId, 500);
         _connected = true;
-        connect(_broadcastSocket, SIGNAL(readyRead()),
-                this, SLOT(broker_broadcastSocketReadyRead()));
+        connect(_broadcastSocket, &QUdpSocket::readyRead, this, &MissionControlNetwork::broker_broadcastSocketReadyRead);
         emit connected(true);
     }
     else {
@@ -114,12 +110,9 @@ void MissionControlNetwork::endNegotiation() {
             clearConnections();
         }
         _clientChannel = Channel::createServer(this, NETWORK_MC_BROADCAST_PORT, _name, Channel::TcpProtocol);
-        connect(_clientChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-                this, SLOT(client_channelMessageReceived(const char*,Channel::MessageSize)));
-        connect(_clientChannel, SIGNAL(stateChanged(Channel::State)),
-                this, SLOT(client_channelStateChanged(Channel::State)));
-        connect(_broadcastSocket, SIGNAL(readyRead()),
-                this, SLOT(client_broadcastSocketReadyRead()));
+        connect(_clientChannel, &Channel::messageReceived, this, &MissionControlNetwork::client_channelMessageReceived);
+        connect(_clientChannel, &Channel::stateChanged, this, &MissionControlNetwork::client_channelStateChanged);
+        connect(_broadcastSocket, &QUdpSocket::readyRead, this, &MissionControlNetwork::client_broadcastSocketReadyRead);
         _clientChannel->open();
         START_TIMER(_requestConnectionTimerId, 100);
         QTimer::singleShot(3000, this, SLOT(ensureConnection()));

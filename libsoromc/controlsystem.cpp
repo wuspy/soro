@@ -43,12 +43,11 @@ bool ControlSystem::init(QString channelName, quint16 channelPort, QString *erro
     if (_channel->getState() == Channel::ErrorState) {
         if (errorString) *errorString = QString("Could not initialize the networking for control subsystems.");
         delete _channel;
-        _channel = NULL;
+        _channel = nullptr;
         return false;
     }
 
-    connect(_channel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(channelStateChanged(Channel::State)));
+    connect(_channel, &Channel::stateChanged, this, &ControlSystem::channelStateChanged);
     return true;
 }
 

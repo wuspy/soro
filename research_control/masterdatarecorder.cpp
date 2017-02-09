@@ -7,10 +7,8 @@ namespace Soro {
 namespace MissionControl {
 
 MasterDataRecorder::MasterDataRecorder(const Channel* driveChannel, const Channel* sharedChannel, QObject *parent) : AbstractDataRecorder(LOG_TAG, parent) {
-    connect(driveChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(driveChannelStateChanged(Channel::State)));
-    connect(sharedChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(sharedChannelStateChanged(Channel::State)));
+    connect(driveChannel, &Channel::stateChanged, this, &MasterDataRecorder::driveChannelStateChanged);
+    connect(sharedChannel, &Channel::stateChanged, this, &MasterDataRecorder::sharedChannelStateChanged);
 }
 
 void MasterDataRecorder::driveChannelStateChanged(Channel::State state) {

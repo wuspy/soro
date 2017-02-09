@@ -37,8 +37,8 @@ public:
 private:
     static const QString _levelFormatters[];
     static const QString _levelFormattersHTML[];
-    QFile* _file = NULL;
-    QTextStream* _fileStream = NULL;
+    QFile* _file = nullptr;
+    QTextStream* _fileStream = nullptr;
     QMutex _fileMutex;
     void publish(Level level, QString tag, QString message);
 
@@ -53,7 +53,7 @@ private:
     static Logger *_root;
 
 public:
-    Logger(QObject *parent = NULL);
+    Logger(QObject *parent = nullptr);
     ~Logger();
 
     /* Set a file to direct log output to

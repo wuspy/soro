@@ -80,15 +80,10 @@ void RoverProcess::init() {
     _secondaryComputerBroadcastSocket = new QUdpSocket(this);
 
     // observers for network channel connectivity changes
-    connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(sharedChannelStateChanged(Channel::State)));
-    connect(_secondaryComputerChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(secondaryComputerStateChanged(Channel::State)));
-
-    connect(_secondaryComputerBroadcastSocket, SIGNAL(readyRead()),
-            this, SLOT(secondaryComputerBroadcastSocketReadyRead()));
-    connect(_secondaryComputerBroadcastSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(secondaryComputerBroadcastSocketError(QAbstractSocket::SocketError)));
+    connect(_sharedChannel, &Channel::stateChanged, this, &RoverProcess::sharedChannelStateChanged);
+    connect(_secondaryComputerChannel, &Channel::stateChanged, this, &RoverProcess::secondaryComputerStateChanged);
+    connect(_secondaryComputerBroadcastSocket, &QUdpSocket::readyRead, this, &RoverProcess::secondaryComputerBroadcastSocketReadyRead);
+    connect(_secondaryComputerBroadcastSocket, static_cast<void (QUdpSocket::*)(QUdpSocket::SocketError)>(&QUdpSocket::error), this, &RoverProcess::secondaryComputerBroadcastSocketError);
 
 
     beginSecondaryComputerListening();
@@ -102,34 +97,26 @@ void RoverProcess::init() {
     _driveGimbalControllerMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_DRIVE_MBED_PORT), MBED_ID_DRIVE_CAMERA, this);
 
     // observers for mbed connectivity changes
-    connect(_armControllerMbed, SIGNAL(stateChanged(MbedChannel::State)),
-            this, SLOT(mbedChannelStateChanged(MbedChannel::State)));
-    connect(_driveGimbalControllerMbed, SIGNAL(stateChanged(MbedChannel::State)),
-            this, SLOT(mbedChannelStateChanged(MbedChannel::State)));
+    connect(_armControllerMbed, &MbedChannel::stateChanged, this, &RoverProcess::mbedChannelStateChanged);
+    connect(_driveGimbalControllerMbed, &MbedChannel::stateChanged, this, &RoverProcess::mbedChannelStateChanged);
 
     // observers for network channels message received
-    connect(_armChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-             this, SLOT(armChannelMessageReceived(const char*, Channel::MessageSize)));
-    connect(_driveChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-             this, SLOT(driveChannelMessageReceived(const char*, Channel::MessageSize)));
-    connect(_gimbalChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
-            this, SLOT(gimbalChannelMessageReceived(const char*,Channel::MessageSize)));
-    connect(_sharedChannel, SIGNAL(messageReceived( const char*, Channel::MessageSize)),
-             this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
+    connect(_armChannel, &Channel::messageReceived, this, &RoverProcess::armChannelMessageReceived);
+    connect(_driveChannel, &Channel::messageReceived, this, &RoverProcess::driveChannelMessageReceived);
+    connect(_gimbalChannel, &Channel::messageReceived, this, &RoverProcess::gimbalChannelMessageReceived);
+    connect(_sharedChannel, &Channel::messageReceived, this, &RoverProcess::sharedChannelMessageReceived);
 
     LOG_I(LOG_TAG, "*****************Initializing GPS system*******************");
 
     _gpsServer = new GpsServer(SocketAddress(QHostAddress::Any, NETWORK_ROVER_GPS_PORT), this);
-    connect(_gpsServer, SIGNAL(gpsUpdate(NmeaMessage)),
-            this, SLOT(gpsUpdate(NmeaMessage)));
+    connect(_gpsServer, &GpsServer::gpsUpdate, this, &RoverProcess::gpsUpdate);
 
     LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
 
     _videoServers = new VideoServerArray(this);
     _videoServers->populate(_config.getBlacklistedCameras(), NETWORK_ALL_CAMERA_PORT_1, 0);
 
-    connect(_videoServers, SIGNAL(videoServerError(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_videoServers, &VideoServerArray::videoServerError, this, &RoverProcess::mediaServerError);
 
     if (_videoServers->serverCount() > _config.getComputer1CameraCount()) {
         LOG_E(LOG_TAG, "The configuration specifies less cameras than this, the last ones will be removed");
@@ -144,8 +131,7 @@ void RoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Initializing Audio system*******************");
 
     _audioServer = new AudioServer(MEDIAID_AUDIO, SocketAddress(QHostAddress::Any, NETWORK_ALL_AUDIO_PORT), this);
-    connect(_audioServer, SIGNAL(error(MediaServer*,QString)),
-            this, SLOT(mediaServerError(MediaServer*,QString)));
+    connect(_audioServer, &AudioServer::error, this, &RoverProcess::mediaServerError);
 
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");

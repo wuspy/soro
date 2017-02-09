@@ -60,7 +60,7 @@ QString GamepadManager::getGamepadName() const {
 }
 
 bool GamepadManager::isGamepadConnected() const {
-    return _gameController != NULL;
+    return _gameController != nullptr;
 }
 
 void GamepadManager::timerEvent(QTimerEvent *e) {
@@ -113,7 +113,7 @@ void GamepadManager::timerEvent(QTimerEvent *e) {
         }
         else {
             // Controller is no longer attached
-            setGamepad(NULL);
+            setGamepad(nullptr);
             KILL_TIMER(_updateTimerId);
             START_TIMER(_inputSelectorTimerId, 1000);
             LOG_I(LOG_TAG, "The gamepad has been disconnected");
@@ -126,7 +126,7 @@ void GamepadManager::setGamepad(SDL_GameController *controller) {
         _gameController = controller;
         _gamepadName = _gameController ? QString(SDL_GameControllerName(_gameController)) : "";
         LOG_I(LOG_TAG, "Active controller is \'" + _gamepadName + "\'");
-        emit gamepadChanged(_gameController, _gamepadName);
+        emit gamepadChanged(isGamepadConnected(), _gamepadName);
     }
 }
 

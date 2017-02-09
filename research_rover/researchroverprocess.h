@@ -24,31 +24,31 @@ class ResearchRoverProcess : public QObject
 private:
     /* Connects to mission control for command and status communication
      */
-    Channel *_driveChannel = NULL;
-    Channel *_sharedChannel = NULL;
+    Channel *_driveChannel = nullptr;
+    Channel *_sharedChannel = nullptr;
 
     /* Interfaces with the mbed controlling the drive system
      */
-    MbedChannel *_mbed = NULL;
+    MbedChannel *_mbed = nullptr;
     SensorDataRecorder _sensorRecorder;
 
     /* Provides GPS coordinates back to mission control
      */
-    GpsServer *_gpsServer = NULL;
+    GpsServer *_gpsServer = nullptr;
 
     /* Provides audio back to mission control
      */
-    AudioServer *_audioServer = NULL;
+    AudioServer *_audioServer = nullptr;
 
     /* Handles video streaming from each individual camera
      */
-    VideoServer *_stereoRCameraServer = NULL;
+    VideoServer *_stereoRCameraServer = nullptr;
     QString _stereoRCameraDevice;
-    VideoServer *_stereoLCameraServer = NULL;
+    VideoServer *_stereoLCameraServer = nullptr;
     QString _stereoLCameraDevice;
-    VideoServer *_aux1CameraServer = NULL;
+    VideoServer *_aux1CameraServer = nullptr;
     QString _aux1CameraDevice;
-    VideoServer *_monoCameraServer = NULL;
+    VideoServer *_monoCameraServer = nullptr;
     QString _monoCameraDevice;
 
     GpsDataRecorder _gpsRecorder;

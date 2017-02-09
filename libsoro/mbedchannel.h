@@ -70,7 +70,7 @@ public:
     /* Create a new mbed channel, bound to a specified socket. Note the mbedId must
      * be the same on both this side and the mbed for the connection to work.
      */
-    MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent = NULL);
+    MbedChannel(SocketAddress host, unsigned char mbedId, QObject *parent = nullptr);
     ~MbedChannel();
 
     /* Sends a message to the mbed

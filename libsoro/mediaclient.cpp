@@ -34,8 +34,7 @@ MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHos
 
     _buffer = new char[65536];
 
-    connect(_controlChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
-            this, SLOT(controlMessageReceived(const char*, Channel::MessageSize)));
+    connect(_controlChannel, &Channel::messageReceived, this, &MediaClient::controlMessageReceived);
 
     _controlChannel->open();
 
@@ -43,8 +42,7 @@ MediaClient::MediaClient(QString logTag, int mediaId, SocketAddress server, QHos
     // signal will be emitted and trigger an invoking of a virtual method in
     // this class before its superclass implementation has been added to the vtable
     // in the superclass's own constructor
-    connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(controlChannelStateChanged(Channel::State)));
+    connect(_controlChannel, &Channel::stateChanged, this, &MediaClient::controlChannelStateChanged);
 
     if (_controlChannel->getState() == Channel::ErrorState) {
         LOG_E(LOG_TAG, "The TCP channel could not be initialized");
@@ -96,7 +94,7 @@ void MediaClient::controlMessageReceived(const char *message, Channel::MessageSi
     LOG_E(LOG_TAG, "Got message: " + messageType);
     if (messageType.compare("start", Qt::CaseInsensitive) == 0) {
         LOG_I(LOG_TAG, "Server has notified us of a new media stream");
-        disconnect(_mediaSocket, SIGNAL(readyRead()), 0, 0);
+        disconnect(_mediaSocket, &QUdpSocket::readyRead, 0, 0);
         START_TIMER(_punchTimerId, 100);
         onServerStartMessageInternal();
         setState(ConnectedState);
@@ -106,8 +104,7 @@ void MediaClient::controlMessageReceived(const char *message, Channel::MessageSi
         LOG_I(LOG_TAG, "Server has confirmed our address and should begin streaming");
         _errorString = ""; // clear error string since we have an active connection;
         mediaSocketReadyRead();
-        connect(_mediaSocket, SIGNAL(readyRead()),
-                this, SLOT(mediaSocketReadyRead()));
+        connect(_mediaSocket, &QUdpSocket::readyRead, this, &MediaClient::mediaSocketReadyRead);
         KILL_TIMER(_punchTimerId);
         onServerStreamingMessageInternal(stream);
         setState(StreamingState);
@@ -115,7 +112,7 @@ void MediaClient::controlMessageReceived(const char *message, Channel::MessageSi
     else if (messageType.compare("eos", Qt::CaseInsensitive) == 0) {
         LOG_I(LOG_TAG, "Got EOS message from server");
         KILL_TIMER(_punchTimerId);
-        disconnect(_mediaSocket, SIGNAL(readyRead()), 0, 0);
+        disconnect(_mediaSocket, &QUdpSocket::readyRead, 0, 0);
         _lastBitrate = 0;
         onServerEosMessageInternal();
         setState(ConnectedState);
@@ -123,7 +120,7 @@ void MediaClient::controlMessageReceived(const char *message, Channel::MessageSi
     else if (messageType.compare("error", Qt::CaseInsensitive) == 0) {
         stream >> _errorString;
         LOG_I(LOG_TAG, "Got error message from server: " + _errorString);
-        disconnect(_mediaSocket, SIGNAL(readyRead()), 0, 0);
+        disconnect(_mediaSocket, &QUdpSocket::readyRead, 0, 0);
         _lastBitrate = 0;
         KILL_TIMER(_punchTimerId);
         onServerErrorMessageInternal();
@@ -173,7 +170,7 @@ void MediaClient::controlChannelStateChanged(Channel::State state) {
         break;
     default:
         setState(ConnectingState);
-        disconnect(_mediaSocket, SIGNAL(readyRead()), 0, 0);
+        disconnect(_mediaSocket, &QUdpSocket::readyRead, 0, 0);
         KILL_TIMER(_punchTimerId);
         onServerDisconnectedInternal();
         break;

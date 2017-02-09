@@ -29,15 +29,13 @@ MediaServer::MediaServer(QString logTag, int mediaId, QString childProcessPath, 
     _controlChannel = Channel::createServer(this, host.port, "soro_media" + QString::number(mediaId), Channel::TcpProtocol, host.host);
     _controlChannel->open();
 
-    connect(_controlChannel, SIGNAL(stateChanged(Channel::State)),
-            this, SLOT(controlChannelStateChanged(Channel::State)));
+    connect(_controlChannel, &Channel::stateChanged, this, &MediaServer::controlChannelStateChanged);
 
     _mediaSocket = new QUdpSocket(this);
 
     _ipcServer = new QTcpServer(this);
     _ipcServer->listen(QHostAddress::LocalHost);
-    connect(_ipcServer, SIGNAL(newConnection()),
-            this, SLOT(ipcServerClientAvailable()));
+    connect(_ipcServer, &QTcpServer::newConnection, this, &MediaServer::ipcServerClientAvailable);
 
     _child.setProgram(childProcessPath);
 
@@ -66,8 +64,7 @@ void MediaServer::beginStream(SocketAddress address) {
     constructChildArguments(args, _host, address, _ipcServer->serverPort());
     _child.setArguments(args);
 
-    connect(&_child, SIGNAL(stateChanged(QProcess::ProcessState)),
-               this, SLOT(childStateChanged(QProcess::ProcessState)));
+    connect(&_child, &QProcess::stateChanged, this, &MediaServer::childStateChanged);
     _child.start();
 
     LOG_I(LOG_TAG, "beginStream(): Sending streaming message to client");
@@ -119,7 +116,7 @@ void MediaServer::stop() {
         disconnect(_ipcSocket, 0, 0, 0);
         _ipcSocket->abort();
         delete _ipcSocket;
-        _ipcSocket = NULL;
+        _ipcSocket = nullptr;
     }
 
     onStreamStoppedInternal();
@@ -155,7 +152,7 @@ void MediaServer::beginClientHandshake() {
             QTimer::singleShot(500, this, SLOT(beginClientHandshake()));
             return;
         }
-        connect(_mediaSocket, SIGNAL(readyRead()), this, SLOT(mediaSocketReadyRead()));
+        connect(_mediaSocket, &QUdpSocket::readyRead, this, &MediaServer::mediaSocketReadyRead);
         _mediaSocket->open(QIODevice::ReadWrite);
         // notify a connected client that there is about to be a stream change
         // and they should verify their UDP address
@@ -205,7 +202,7 @@ void MediaServer::mediaSocketReadyRead() {
     }
     LOG_I(LOG_TAG, "Client has completed handshake on its UDP address");
     // Disconnect the media UDP socket so udpsink can bind to it
-    disconnect(_mediaSocket, SIGNAL(readyRead()), this, SLOT(mediaSocketReadyRead()));
+    disconnect(_mediaSocket, &QUdpSocket::readyRead, this, &MediaServer::mediaSocketReadyRead);
     _mediaSocket->abort(); // MUST ABORT THE SOCKET!!!!
     beginStream(peer);
 }
@@ -213,8 +210,7 @@ void MediaServer::mediaSocketReadyRead() {
 void MediaServer::childStateChanged(QProcess::ProcessState state) {
     switch (state) {
     case QProcess::NotRunning:
-        disconnect(&_child, SIGNAL(stateChanged(QProcess::ProcessState)),
-                   this, SLOT(childStateChanged(QProcess::ProcessState)));
+        disconnect(&_child, &QProcess::stateChanged, this, &MediaServer::childStateChanged);
 
         switch (_child.exitCode()) {
         case 0:

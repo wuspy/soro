@@ -20,7 +20,7 @@ using namespace Soro;
 namespace Soro {
 namespace Rover {
 
-class Rover2Process : QObject {
+class Rover2Process : public QObject {
     Q_OBJECT
 
 public:
@@ -28,10 +28,10 @@ public:
     ~Rover2Process();
 
 private:
-    Channel *_masterComputerChannel = NULL;
-    QUdpSocket *_masterComputerBroadcastSocket = NULL;
+    Channel *_masterComputerChannel = nullptr;
+    QUdpSocket *_masterComputerBroadcastSocket = nullptr;
 
-    VideoServerArray *_videoServers = NULL;
+    VideoServerArray *_videoServers = nullptr;
 
     RoverConfigLoader _config;
 

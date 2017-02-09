@@ -53,7 +53,7 @@ public:
 signals:
     /* Emitted when the gamepad changes
      */
-    void gamepadChanged(SDL_GameController *controller, QString name);
+    void gamepadChanged(bool connected, QString name);
     /* Emitted when new values are read from the gamepad
      */
     void poll();
@@ -66,7 +66,7 @@ private:
     QString _gamepadName;
     bool _initialized = false;
     int _interval;
-    SDL_GameController *_gameController = NULL;
+    SDL_GameController *_gameController = nullptr;
     int _inputSelectorTimerId = TIMER_INACTIVE;
     int _updateTimerId = TIMER_INACTIVE;
 

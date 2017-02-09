@@ -43,7 +43,7 @@ protected:
 
 private:
     struct Connection {
-        Channel *channel = NULL;
+        Channel *channel = nullptr;
         Role role = SpectatorRole;
 
         ~Connection() {
@@ -54,9 +54,9 @@ private:
     bool _isBroker = false;
     SocketAddress _brokerAddress;
     bool _connected = false;
-    QUdpSocket *_broadcastSocket = NULL;
+    QUdpSocket *_broadcastSocket = nullptr;
     QList<Connection*> _brokerConnections;
-    Channel *_clientChannel = NULL;
+    Channel *_clientChannel = nullptr;
     Role _role = SpectatorRole;
     Role _pendingRole;
     int _broadcastIntentTimerId = TIMER_INACTIVE;

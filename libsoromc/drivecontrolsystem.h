@@ -34,7 +34,7 @@ private:
     DriveGamepadMode _mode = DualStickDrive;
     int _controlSendTimerId = TIMER_INACTIVE;
     float _midSkidFactor = 0.2; //The higher this is, the slower the middle wheels turn while skid steering
-    const GamepadManager *_input = NULL;
+    const GamepadManager *_input = nullptr;
     char _buffer[256];
 };
 

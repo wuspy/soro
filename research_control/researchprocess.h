@@ -53,29 +53,29 @@ private:
     SettingsModel _settings;
 
     // The main UI components
-    ResearchMainWindow *_mainUi = NULL;
-    QQuickWindow *_controlUi = NULL;
+    ResearchMainWindow *_mainUi = nullptr;
+    QQuickWindow *_controlUi = nullptr;
 
     // Communicates with the rover shared channel
-    Channel *_roverChannel = NULL;
+    Channel *_roverChannel = nullptr;
 
     // Connects to the drive system on the rover
-    DriveControlSystem *_driveSystem = NULL;
+    DriveControlSystem *_driveSystem = nullptr;
 
-    GamepadManager *_gamepad = NULL;
+    GamepadManager *_gamepad = nullptr;
 
     // Timer ID's
     int _pingTimerId = TIMER_INACTIVE;
     int _bitrateUpdateTimerId = TIMER_INACTIVE;
 
-    VideoClient *_stereoLVideoClient = NULL;
-    VideoClient *_stereoRVideoClient = NULL;
-    VideoClient *_monoVideoClient = NULL;
-    VideoClient *_aux1VideoClient = NULL;
+    VideoClient *_stereoLVideoClient = nullptr;
+    VideoClient *_stereoRVideoClient = nullptr;
+    VideoClient *_monoVideoClient = nullptr;
+    VideoClient *_aux1VideoClient = nullptr;
 
     // Audio stream subsystem
-    AudioClient *_audioClient = NULL;
-    Soro::Gst::AudioPlayer *_audioPlayer = NULL;
+    AudioClient *_audioClient = nullptr;
+    Soro::Gst::AudioPlayer *_audioPlayer = nullptr;
 
     SensorDataRecorder *_sensorRecorder;
     GpsDataRecorder *_gpsRecorder;
@@ -101,7 +101,7 @@ private slots:
     void videoClientStateChanged(MediaClient *client, MediaClient::State state);
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void driveConnectionStateChanged(Channel::State state);
-    void gamepadChanged(SDL_GameController *controller, QString name);
+    void gamepadChanged(bool connected, QString name);
     void newSensorData(SensorDataRecorder::DataTag tag, float value);
     void roverDataRecordResponseWatchdog();
 

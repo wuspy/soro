@@ -26,12 +26,9 @@ AudioControlWidget::AudioControlWidget(QWidget *parent) :
 
     ui->setupUi(this);
 
-    connect(ui->disabledRadioButton, SIGNAL(clicked(bool)),
-            this, SLOT(optionButtonClicked()));
-    connect(ui->playRadioButton, SIGNAL(clicked(bool)),
-            this, SLOT(optionButtonClicked()));
-    connect(ui->muteCheckBox, SIGNAL(clicked(bool)),
-            this, SIGNAL(muteToggled(bool)));
+    connect(ui->disabledRadioButton, &QRadioButton::clicked, this, &AudioControlWidget::optionButtonClicked);
+    connect(ui->playRadioButton, &QRadioButton::clicked, this, &AudioControlWidget::optionButtonClicked);
+    connect(ui->muteCheckBox, &QCheckBox::clicked, this, &AudioControlWidget::muteToggled);
 
     setAvailable(true);
     selectStop();
@@ -50,13 +47,11 @@ void AudioControlWidget::selectStop() {
 }
 
 void AudioControlWidget::setMute(bool mute) {
-    disconnect(ui->muteCheckBox, SIGNAL(clicked(bool)),
-            this, SIGNAL(muteToggled(bool)));
+    disconnect(ui->muteCheckBox, &QCheckBox::clicked, this, &AudioControlWidget::muteToggled);
 
     ui->muteCheckBox->setChecked(mute);
 
-    connect(ui->muteCheckBox, SIGNAL(clicked(bool)),
-            this, SIGNAL(muteToggled(bool)));
+    connect(ui->muteCheckBox, &QCheckBox::clicked, this, &AudioControlWidget::muteToggled);
 }
 
 void AudioControlWidget::optionButtonClicked() {

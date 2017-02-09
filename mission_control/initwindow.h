@@ -63,10 +63,10 @@ protected:
 private:
     bool _addressValid = false;
     Ui::InitWindow *ui;
-    MissionControlNetwork *_mcNetwork = NULL;
-    MissionControlProcess *_mc = NULL;
-    ControlSystem *_controlSystem = NULL;
-    GamepadManager *_gamepad = NULL;
+    MissionControlNetwork *_mcNetwork = nullptr;
+    MissionControlProcess *_mc = nullptr;
+    ControlSystem *_controlSystem = nullptr;
+    GamepadManager *_gamepad = nullptr;
 };
 
 }

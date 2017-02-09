@@ -82,7 +82,7 @@ Channel* Channel::createServer(QObject *parent, quint16 port, QString name, Prot
 }
 
 Channel::~Channel() {
-    if (_sentTimeLog != NULL) {
+    if (_sentTimeLog != nullptr) {
         delete [] _sentTimeLog;
     }
     if (_nameUtf8) {
@@ -116,16 +116,14 @@ void Channel::init() {  //PRIVATE
         //Clients and servers for UDP communication function similarly (unlike TCP)
         _socket = _udpSocket = new QUdpSocket(this);
         _socket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
-        connect(_socket, SIGNAL(readyRead()), this, SLOT(udpReadyRead()));
-        connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-                this, SLOT(connectionErrorInternal(QAbstractSocket::SocketError)));
+        connect(_socket, &QAbstractSocket::readyRead, this, &Channel::udpReadyRead);
+        connect(_socket, static_cast<void (QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &Channel::connectionErrorInternal);
     }
     else if (_isServer) {
         //Server for a TCP connection; we must use a QTcpServer to manage connecting peers
         _tcpServer = new QTcpServer(this);
-        connect(_tcpServer, SIGNAL(newConnection()), this, SLOT(newTcpClient()));
-        connect(_tcpServer, SIGNAL(acceptError(QAbstractSocket::SocketError)),
-                this, SLOT(serverErrorInternal(QAbstractSocket::SocketError)));
+        connect(_tcpServer, &QTcpServer::newConnection, this, &Channel::newTcpClient);
+        connect(_tcpServer, &QTcpServer::acceptError, this, &Channel::serverErrorInternal);
     }
     else {
         //Client for a TCP connection
@@ -161,7 +159,7 @@ void Channel::open() {
             _hostAddress.port = 0;
             LOG_I(LOG_TAG, "Attempting to bind to an available port on " + _hostAddress.host.toString());
         }
-        if (_tcpServer != NULL) {
+        if (_tcpServer != nullptr) {
             _tcpServer->setMaxPendingConnections(1);
         }
         //start the connection procedure
@@ -211,14 +209,14 @@ void Channel::resetConnection() {   //PRIVATE
         //Only allow the server address to connect
         setPeerAddress(_serverAddress);
     }
-    if (_tcpSocket != NULL) {
+    if (_tcpSocket != nullptr) {
         LOG_D(LOG_TAG, "Cancelling any previous TCP operations...");
         _tcpSocket->abort();
         if (_isServer) {
             LOG_D(LOG_TAG, "Cleaning up TCP connection with old client...");
             _tcpSocket->close();
             delete _tcpSocket;
-            _tcpSocket = NULL;
+            _tcpSocket = nullptr;
         }
         else {
             LOG_D(LOG_TAG, "Trying to establish TCP connection with server " + _serverAddress.toString());
@@ -228,7 +226,7 @@ void Channel::resetConnection() {   //PRIVATE
             LOG_I(LOG_TAG, "Bound to TCP port " + QString::number(_tcpSocket->localPort()));
         }
     }
-    else if (_udpSocket != NULL) {
+    else if (_udpSocket != nullptr) {
         LOG_D(LOG_TAG, "Cancelling any previous UDP operations...");
         _udpSocket->abort();
         _udpSocket->bind(_hostAddress.host, _hostAddress.port);
@@ -236,7 +234,7 @@ void Channel::resetConnection() {   //PRIVATE
         if (!_isServer) START_TIMER(_handshakeTimerID, HANDSHAKE_FREQUENCY);
         LOG_I(LOG_TAG, "Bound to UDP port " + QString::number(_udpSocket->localPort()));
     }
-    if (_tcpServer != NULL) {
+    if (_tcpServer != nullptr) {
         if (!_tcpServer->isListening()) {
             LOG_D(LOG_TAG, "Waiting for TCP client to connect on port " + QString::number(_hostAddress.port));
             _tcpServer->listen(_hostAddress.host, _hostAddress.port);
@@ -282,10 +280,10 @@ void Channel::timerEvent(QTimerEvent *e) {  //PROTECTED
         PacketWrapper* next = _delayPackets.dequeue();
         //This must be a delay send timer
         if (_state == ConnectedState) {
-            if (_udpSocket != NULL) {
+            if (_udpSocket != nullptr) {
                 _udpSocket->writeDatagram(next->data, next->len, _peerAddress.host, _peerAddress.port);
             }
-            else if (_tcpSocket != NULL) {
+            else if (_tcpSocket != nullptr) {
                 _tcpSocket->write(next->data, next->len);
             }
             delete next->data;
@@ -301,10 +299,9 @@ void Channel::configureNewTcpSocket() { //PRIVATE
         _socket = _tcpSocket;
         LOG_I(LOG_TAG, "New Socket");
         _socket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
-        connect(_socket, SIGNAL(readyRead()), this, SLOT(tcpReadyRead()));
-        connect(_socket, SIGNAL(connected()), this, SLOT(tcpConnected()));
-        connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-                this, SLOT(connectionErrorInternal(QAbstractSocket::SocketError)));
+        connect(_socket, &QAbstractSocket::readyRead, this, &Channel::tcpReadyRead);
+        connect(_socket, &QAbstractSocket::connected, this, &Channel::tcpConnected);
+        connect(_socket, static_cast<void (QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &Channel::connectionErrorInternal);
     }
 }
 
@@ -323,7 +320,7 @@ void Channel::tcpConnected() {  //PRIVATE SLOT
 }
 
 void Channel::newTcpClient() {  //PRIVATE SLOT
-    if (_tcpSocket != NULL) {
+    if (_tcpSocket != nullptr) {
         _tcpSocket->abort();
         if (_tcpSocket->isOpen()) {
             _tcpSocket->close();
@@ -395,7 +392,7 @@ void Channel::serverErrorInternal(QAbstractSocket::SocketError err) { //PRIVATE 
     LOG_E(LOG_TAG, "Server Error: " + _tcpServer->errorString());
     //don't automatically kill the connection if it's still active, only the listening server
     //experienced the error
-    if (_tcpSocket == NULL || _tcpSocket->state() != QAbstractSocket::ConnectedState) {
+    if (_tcpSocket == nullptr || _tcpSocket->state() != QAbstractSocket::ConnectedState) {
         START_TIMER(_resetTimerID, RECOVERY_DELAY);
     }
 }
@@ -639,7 +636,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
             status = size + UDP_HEADER_SIZE;
         }
     }
-    else if (_tcpSocket != NULL) {
+    else if (_tcpSocket != nullptr) {
         MessageSize newSize = size + TCP_HEADER_SIZE;
         if (_simulatedDelay == 0) {
             Util::serialize<MessageSize>(_sendBuffer, newSize);
@@ -752,13 +749,13 @@ void Channel::setSimulatedDelay(int ms) {
 }
 
 SocketAddress Channel::getHostAddress() const {
-    if (_udpSocket != NULL) {
+    if (_udpSocket != nullptr) {
         return SocketAddress(_udpSocket->localAddress(), _udpSocket->localPort());
     }
-    if (_tcpServer != NULL) {
+    if (_tcpServer != nullptr) {
         return SocketAddress(_tcpServer->serverAddress(), _tcpServer->serverPort());
     }
-    if (_tcpSocket != NULL) {
+    if (_tcpSocket != nullptr) {
         return SocketAddress(_tcpSocket->localAddress(), _tcpSocket->localPort());
     }
     return SocketAddress(QHostAddress::Null, 0);
@@ -778,10 +775,10 @@ bool Channel::wasConnected() const {
 
 void Channel::setLowDelaySocketOption(bool lowDelay) {
     _lowDelaySocketOption = lowDelay ? 1 : 0;
-    if (_udpSocket != NULL) {
+    if (_udpSocket != nullptr) {
         _udpSocket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
     }
-    if (_tcpSocket != NULL) {
+    if (_tcpSocket != nullptr) {
         _tcpSocket->setSocketOption(QAbstractSocket::LowDelayOption, _lowDelaySocketOption);
     }
 }

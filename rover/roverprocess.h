@@ -24,7 +24,7 @@
 namespace Soro {
 namespace Rover {
 
-class RoverProcess : QObject {
+class RoverProcess : public QObject {
     Q_OBJECT
 
 public:
@@ -33,25 +33,25 @@ public:
 
 private:
 
-    Channel *_armChannel = NULL;
-    Channel *_driveChannel = NULL;
-    Channel *_gimbalChannel = NULL;
-    Channel *_sharedChannel = NULL;
-    Channel *_secondaryComputerChannel = NULL;
+    Channel *_armChannel = nullptr;
+    Channel *_driveChannel = nullptr;
+    Channel *_gimbalChannel = nullptr;
+    Channel *_sharedChannel = nullptr;
+    Channel *_secondaryComputerChannel = nullptr;
 
-    QUdpSocket *_secondaryComputerBroadcastSocket = NULL;
+    QUdpSocket *_secondaryComputerBroadcastSocket = nullptr;
 
-    MbedChannel *_armControllerMbed = NULL;
-    MbedChannel *_driveGimbalControllerMbed = NULL;
+    MbedChannel *_armControllerMbed = nullptr;
+    MbedChannel *_driveGimbalControllerMbed = nullptr;
 
-    VideoServerArray *_videoServers = NULL;
+    VideoServerArray *_videoServers = nullptr;
 
-    AudioServer *_audioServer = NULL;
+    AudioServer *_audioServer = nullptr;
 
     // These hold the current stream formats for each camera.
     // If a camera currently isn't being streamed, the format will have an
     // encoding value of UnknownEncoding.
-    GpsServer *_gpsServer = NULL;
+    GpsServer *_gpsServer = nullptr;
 
     RoverConfigLoader _config;
 

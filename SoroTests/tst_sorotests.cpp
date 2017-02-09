@@ -25,7 +25,7 @@ SoroTests::SoroTests()
 void SoroTests::testSensorDataRecorder()
 {
     SensorDataRecorder recorder;
-    QSignalSpy spy(&recorder, SIGNAL(dataParsed(SensorDataRecorder::DataTag,float)));
+    QSignalSpy spy(&recorder, &SensorDataRecorder::newData);
 
     /* Test simple data
      */

@@ -35,7 +35,7 @@ protected:
 
     QGst::PipelinePtr _pipeline;
     QGst::PipelinePtr createPipeline();
-    QTcpSocket *_ipcSocket = NULL;
+    QTcpSocket *_ipcSocket = nullptr;
     QString LOG_TAG;
 
     /**

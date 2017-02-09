@@ -25,10 +25,8 @@ namespace Soro {
 
 GpsServer::GpsServer(SocketAddress hostAddress, QObject *parent) : QObject(parent) {
     _socket = new QUdpSocket(this);
-    connect(_socket, SIGNAL(readyRead()),
-            this, SLOT(socketReadyRead()));
-    connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(sockeError(QAbstractSocket::SocketError)));
+    connect(_socket, &QUdpSocket::readyRead, this, &GpsServer::socketReadyRead);
+    connect(_socket, static_cast<void (QUdpSocket::*)(QUdpSocket::SocketError)>(&QUdpSocket::error), this, &GpsServer::socketError);
     LOG_I(LOG_TAG, "Creating GPS server with host address " + hostAddress.toString());
     _hostAddress = hostAddress;
     resetConnection();
@@ -62,7 +60,7 @@ void GpsServer::socketReadyRead() {
     }
 }
 
-void GpsServer::sockeError(QAbstractSocket::SocketError err) {
+void GpsServer::socketError(QAbstractSocket::SocketError err) {
     emit connectionError(err);
     LOG_E(LOG_TAG, "Server Error: " + _socket->errorString());
     START_TIMER(_resetConnectionTimerId, RECOVERY_DELAY);

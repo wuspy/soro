@@ -34,11 +34,11 @@ public:
 protected:
     AbstractDataRecorder(QString logTag, QObject *parent=0);
     void addTimestamp();
-    QDataStream *_fileStream = NULL;
+    QDataStream *_fileStream = nullptr;
 
 private:
     QString _logTag;
-    QFile *_file = NULL;
+    QFile *_file = nullptr;
     qint64 _logStartTime;
     bool _isRecording=false;
 };

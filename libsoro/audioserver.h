@@ -23,7 +23,7 @@ public:
      * @param host Address for the socket that will be used to communicate with the media client.
      * @param parent
      */
-    explicit AudioServer(int mediaId, SocketAddress host, QObject *parent = NULL);
+    explicit AudioServer(int mediaId, SocketAddress host, QObject *parent = nullptr);
 
     /**
      * Starts an audio stream. If the server is already streaming, it will be stopped and restarted to

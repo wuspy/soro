@@ -28,21 +28,21 @@ bool AbstractDataRecorder::startLog(QString file, QDateTime loggedStartTime) {
     // could not open the file
     LOG_E(_logTag, "Unable to open the specified logfile for write access (" + file + ")");
     delete _file;
-    _file = NULL;
+    _file = nullptr;
     return false;
 }
 
 void AbstractDataRecorder::stopLog() {
     if (_isRecording) {
         delete _fileStream;
-        _fileStream = NULL;
+        _fileStream = nullptr;
         LOG_I(_logTag, "Ending log with start time " + QString::number(_logStartTime));
 
         if (_file->isOpen()) {
             _file->close();
         }
         delete _file;
-        _file = NULL;
+        _file = nullptr;
         _isRecording = false;
     }
 }

@@ -96,7 +96,7 @@ const UsbCamera* UsbCameraEnumerator::find(QString name, QString device, QString
 
         if (match) return camera;
     }
-    return NULL;
+    return nullptr;
 }
 
 void UsbCameraEnumerator::clearList() {

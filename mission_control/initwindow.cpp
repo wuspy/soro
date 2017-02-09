@@ -27,17 +27,11 @@ InitWindow::InitWindow(QWidget *parent) :
     ui(new Ui::InitWindow) {
     ui->setupUi(this);
 
-    connect(ui->armOperatorButton, SIGNAL(clicked(bool)),
-            this, SLOT(armOperatorSelected()));
-    connect(ui->driverButton, SIGNAL(clicked(bool)),
-            this, SLOT(driverSelected()));
-    connect(ui->spectatorButton, SIGNAL(clicked(bool)),
-            this, SLOT(driverSelected()));
-    connect(ui->cameraOperatorButton, SIGNAL(clicked(bool)),
-            this, SLOT(cameraOperatorSelected()));
-
-    connect(ui->roverAddressTextBox, SIGNAL(textChanged(QString)),
-            this, SLOT(roverAddressTextChanged(QString)));
+    connect(ui->armOperatorButton, &QPushButton::clicked, this, &InitWindow::armOperatorSelected);
+    connect(ui->driverButton, &QPushButton::clicked, this, &InitWindow::driverSelected);
+    connect(ui->spectatorButton, &QPushButton::clicked, this, &InitWindow::spectatorSelected);
+    connect(ui->cameraOperatorButton, &QPushButton::clicked, this, &InitWindow::cameraOperatorSelected);
+    connect(ui->roverAddressTextBox, &QLineEdit::textChanged, this, &InitWindow::roverAddressTextChanged);
 
     QTimer::singleShot(1, this, SLOT(init_start()));
 }
@@ -104,8 +98,7 @@ void InitWindow::init_gamepadManager() {
         setErrorText(err);
         delete _mcNetwork;
         disconnect(ui->retryButton, 0, this, 0);
-        connect(ui->retryButton, SIGNAL(clicked(bool)),
-                this, SLOT(init_gamepadManager()));
+        connect(ui->retryButton, &QPushButton::clicked, this, &InitWindow::init_gamepadManager);
         ui->retryButton->show();
         return;
     }
@@ -120,22 +113,17 @@ void InitWindow::init_mcNetwork() {
 
     if (!_mcNetwork) {
         _mcNetwork = new MissionControlNetwork(this);
-        connect(_mcNetwork, SIGNAL(connected(bool)),
-                this, SLOT(mcNetworkConnected(bool)));
-        connect(_mcNetwork, SIGNAL(disconnected()),
-                this, SLOT(mcNetworkDisconnected()));
-        connect(_mcNetwork, SIGNAL(roleGranted(Role)),
-                this, SLOT(mcNetworkRoleGranted(Role)));
-        connect(_mcNetwork, SIGNAL(roleDenied(Role)),
-                this, SLOT(mcNetworkRoleDenied()));
+        connect(_mcNetwork, &MissionControlNetwork::connected, this, &InitWindow::mcNetworkConnected);
+        connect(_mcNetwork, &MissionControlNetwork::disconnected, this, &InitWindow::mcNetworkDisconnected);
+        connect(_mcNetwork, &MissionControlNetwork::roleGranted, this, &InitWindow::mcNetworkRoleGranted);
+        connect(_mcNetwork, &MissionControlNetwork::roleDenied, this, &InitWindow::mcNetworkRoleDenied);
     }
     QString err;
     if (!_mcNetwork->init(&err)) {
         setErrorText(err);
         delete _mcNetwork;
         disconnect(ui->retryButton, 0, this, 0);
-        connect(ui->retryButton, SIGNAL(clicked(bool)),
-                this, SLOT(init_mcNetwork()));
+        connect(ui->retryButton, &QPushButton::clicked, this, &InitWindow::init_mcNetwork);
         ui->retryButton->show();
         return;
     }
@@ -163,8 +151,7 @@ void InitWindow::mcNetworkRoleDenied() {
     showStatus();
     setErrorText("That role is already filled on the mission control network. Select a different role for this mission control.");
     disconnect(ui->retryButton, 0, this, 0);
-    connect(ui->retryButton, SIGNAL(clicked(bool)),
-            this, SLOT(showRoleButtons()));
+    connect(ui->retryButton, &QPushButton::clicked, this, &InitWindow::showRoleButtons);
     ui->retryButton->show();
 }
 
@@ -172,8 +159,7 @@ void InitWindow::showInvalidAddressError() {
     showStatus();
     setErrorText("Please enter a valid IP address");
     disconnect(ui->retryButton, 0, this, 0);
-    connect(ui->retryButton, SIGNAL(clicked(bool)),
-            this, SLOT(showRoleButtons()));
+    connect(ui->retryButton, &QPushButton::clicked, this, &InitWindow::showRoleButtons);
     ui->retryButton->show();
 }
 
@@ -222,9 +208,7 @@ void InitWindow::mcNetworkDisconnected() {
     showStatus();
     setErrorText("The connection to the mission control network has unexpectedly closed.");
     disconnect(ui->retryButton, 0, this, 0);
-    connect(ui->retryButton, SIGNAL(clicked(bool)),
-            this, SLOT(init_start()));
-    ui->retryButton->hide();
+    connect(ui->retryButton, &QPushButton::clicked, this, &InitWindow::init_start);
 }
 
 void InitWindow::init_controlSystem() {
@@ -252,10 +236,9 @@ void InitWindow::init_controlSystem() {
         if (!_controlSystem->init(&err)) {
             setErrorText(err);
             delete _controlSystem;
-            _controlSystem = NULL;
+            _controlSystem = nullptr;
             disconnect(ui->retryButton, 0, this, 0);
-            connect(ui->retryButton, SIGNAL(clicked(bool)),
-                    this, SLOT(showRoleButtons()));
+            connect(ui->retryButton, &QPushButton::clicked, this, &InitWindow::showRoleButtons);
             ui->retryButton->show();
             return;
         }
@@ -267,7 +250,7 @@ void InitWindow::init_controlSystem() {
         delete _mc;
     }
     _mc = new MissionControlProcess(roverAddress, _gamepad, _mcNetwork, _controlSystem, this);
-    connect(_mc, SIGNAL(windowClosed()), this, SLOT(mcWindowClosed()));
+    connect(_mc, &MissionControlProcess::windowClosed, this, &InitWindow::mcWindowClosed);
     setCompletedText("Mission control is running");
 }
 
@@ -281,19 +264,19 @@ void InitWindow::reset() {
     LOG_I(LOG_TAG, "Resetting mission control");
     if (_mc) {
         delete _mc;
-        _mc = NULL;
+        _mc = nullptr;
     }
     if (_controlSystem) {
         delete _controlSystem;
-        _controlSystem = NULL;
+        _controlSystem = nullptr;
     }
     if (_gamepad) {
         delete _gamepad;
-        _gamepad = NULL;
+        _gamepad = nullptr;
     }
     if (_mcNetwork) {
         delete _mcNetwork;
-        _mcNetwork = NULL;
+        _mcNetwork = nullptr;
     }
 }
 

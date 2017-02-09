@@ -60,15 +60,15 @@ private:
     QHostAddress _roverAddress;
 
     // Communicates with the rover if the mission control is configured as broker
-    Channel *_roverChannel = NULL;
+    Channel *_roverChannel = nullptr;
 
     // Coordinates networking amoung mission controls
-    MissionControlNetwork *_mcNetwork = NULL;
+    MissionControlNetwork *_mcNetwork = nullptr;
 
     // Connects to a controllable rover system
-    ControlSystem *_controlSystem = NULL;
+    ControlSystem *_controlSystem = nullptr;
 
-    GamepadManager *_gamepad = NULL;
+    GamepadManager *_gamepad = nullptr;
 
     // Timers
     int _rttStatTimerId = TIMER_INACTIVE;
@@ -92,8 +92,8 @@ private:
     QList<NmeaMessage*> _gpsMessages;
 
     // Audio stream subsystem
-    AudioClient *_audioClient = NULL;
-    AudioPlayer *_audioPlayer = NULL;
+    AudioClient *_audioClient = nullptr;
+    AudioPlayer *_audioPlayer = nullptr;
     AudioFormat _audioFormat;
 
     // cache of last status information
@@ -118,7 +118,7 @@ private slots:
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void cycleVideosClockwise();
     void cycleVideosCounterClockwise();
-    void cameraFormatSelected(int camera, VideoFormat format);
+    void cameraFormatSelected(int camera, int formatIndex);
     void playAudioSelected();
     void stopAudioSelected();
     void audioStreamMuteSelected(bool mute);

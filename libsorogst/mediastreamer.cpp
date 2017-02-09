@@ -38,7 +38,7 @@ void MediaStreamer::stop() {
     if (_ipcSocket) {
         LOG_I(LOG_TAG, "stop(): deleting IPC socket");
         delete _ipcSocket;
-        _ipcSocket = NULL;
+        _ipcSocket = nullptr;
     }
 }
 
@@ -46,12 +46,9 @@ bool MediaStreamer::connectToParent(quint16 port) {
     LOG_I(LOG_TAG, "connectToParent(): Creating new TCP socket on port " + QString::number(port));
     _ipcSocket = new QTcpSocket(this);
 
-    connect(_ipcSocket, SIGNAL(readyRead()),
-            this, SLOT(ipcSocketReadyRead()));
-    connect(_ipcSocket, SIGNAL(disconnected()),
-            this, SLOT(ipcSocketDisconnected()));
-    connect(_ipcSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(ipcSocketError(QAbstractSocket::SocketError)));
+    connect(_ipcSocket, &QTcpSocket::readyRead, this, &MediaStreamer::ipcSocketReadyRead);
+    connect(_ipcSocket, &QTcpSocket::disconnected, this, &MediaStreamer::ipcSocketDisconnected);
+    connect(_ipcSocket, static_cast<void (QTcpSocket::*)(QTcpSocket::SocketError)>(&QTcpSocket::error), this, &MediaStreamer::ipcSocketError);
 
     _ipcSocket->connectToHost(QHostAddress::LocalHost, port);
     if (!_ipcSocket->waitForConnected(1000)) {

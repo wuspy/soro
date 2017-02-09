@@ -72,7 +72,7 @@ private:
 
     int _clearGpsStatusTimerId = TIMER_INACTIVE;
 
-    QMessageBox *_messageBoxHolder = NULL;
+    QMessageBox *_messageBoxHolder = nullptr;
 
 signals:
     void closed();
@@ -103,7 +103,7 @@ public slots:
     void setCameraName(int camera, QString name);
 
 private slots:
-    void onGamepadChanged(SDL_GameController *controller, QString name);
+    void onGamepadChanged(bool connected, QString name);
     void onControlChannelStateChanged(Channel::State state);
     void updateConnectionStateInformation();
     void updateSubsystemStateInformation();

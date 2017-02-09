@@ -29,7 +29,7 @@ signals:
     void connectionStateChanged(Channel::State state);
 
 protected:
-    Channel *_channel = NULL;
+    Channel *_channel = nullptr;
 
     bool init(QString channelName, quint16 channelPort, QString *errorString);
     explicit ControlSystem(const QHostAddress& roverAddress, QObject *parent = 0);
