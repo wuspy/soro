@@ -47,13 +47,12 @@ bool ControlSystem::init(QString channelName, quint16 channelPort, QString *erro
         return false;
     }
 
-    connect(_channel, SIGNAL(stateChanged(Channel*,Channel::State)),
-            this, SLOT(channelStateChanged(Channel*,Channel::State)));
+    connect(_channel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(channelStateChanged(Channel::State)));
     return true;
 }
 
-void ControlSystem::channelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
+void ControlSystem::channelStateChanged(Channel::State state) {
     emit connectionStateChanged(state);
 }
 

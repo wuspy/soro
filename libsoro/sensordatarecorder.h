@@ -40,11 +40,6 @@ private:
 public slots:
     void newData(const char* data, int len);
 
-    inline void newData(MbedChannel *mbed, const char* data, int len) {
-        Q_UNUSED(mbed);
-        newData(data, len);
-    }
-
 signals:
     void dataParsed(SensorDataRecorder::DataTag tag, float value);
 };

@@ -82,10 +82,10 @@ MissionControlProcess::MissionControlProcess(QHostAddress roverAddress, GamepadM
         _roverChannel = Channel::createClient(this, SocketAddress(_roverAddress, NETWORK_ALL_SHARED_CHANNEL_PORT), CHANNEL_NAME_SHARED,
                 Channel::TcpProtocol, QHostAddress::Any);
         _roverChannel->open();
-        connect(_roverChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
-                this, SLOT(roverSharedChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
-        connect(_roverChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                this, SLOT(roverSharedChannelStateChanged(Channel*,Channel::State)));
+        connect(_roverChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
+                this, SLOT(roverSharedChannelMessageReceived(const char*,Channel::MessageSize)));
+        connect(_roverChannel, SIGNAL(stateChanged(Channel::State)),
+                this, SLOT(roverSharedChannelStateChanged(Channel::State)));
     }
 
     if (_controlSystem) {
@@ -418,9 +418,7 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
 
 /* Receives the signal when the shard channel connection to the rover is lost. Only applicable to the broker.
  */
-void MissionControlProcess::roverSharedChannelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
-
+void MissionControlProcess::roverSharedChannelStateChanged(Channel::State state) {
     handleRoverSharedChannelStateChanged(state);
 
     // broadcast the new state to all other mission controls
@@ -434,9 +432,7 @@ void MissionControlProcess::roverSharedChannelStateChanged(Channel *channel, Cha
     _mcNetwork->sendSharedMessage(message.constData(), message.size());
 }
 
-void MissionControlProcess::roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
-
+void MissionControlProcess::roverSharedChannelMessageReceived(const char *message, Channel::MessageSize size) {
     handleSharedChannelMessage(message, size);
     _mcNetwork->sendSharedMessage(message, size);
 }

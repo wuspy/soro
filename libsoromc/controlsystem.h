@@ -35,7 +35,7 @@ protected:
     explicit ControlSystem(const QHostAddress& roverAddress, QObject *parent = 0);
 
 protected slots:
-    void channelStateChanged(Channel *channel, Channel::State state);
+    void channelStateChanged(Channel::State state);
 
 public:
     inline const Channel* getChannel() const {

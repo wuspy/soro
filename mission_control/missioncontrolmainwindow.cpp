@@ -135,8 +135,8 @@ MissionControlMainWindow::MissionControlMainWindow(GamepadManager *gamepad, Miss
     connect(_gamepad, SIGNAL(gamepadChanged(SDL_GameController*,QString)),
             this, SLOT(onGamepadChanged(SDL_GameController*,QString)));
     if (_controlSystem) {
-        connect(_controlSystem->getChannel(), SIGNAL(stateChanged(Channel*,Channel::State)),
-                this, SLOT(onControlChannelStateChanged(Channel*,Channel::State)));
+        connect(_controlSystem->getChannel(), SIGNAL(stateChanged(Channel::State)),
+                this, SLOT(onControlChannelStateChanged(Channel::State)));
     }
 
     onArmSubsystemStateChanged(UnknownSubsystemState);
@@ -450,8 +450,7 @@ void MissionControlMainWindow::timerEvent(QTimerEvent *e) {
     }
 }
 
-void MissionControlMainWindow::onControlChannelStateChanged(Channel *channel, Channel::State state) {
-    Q_UNUSED(channel);
+void MissionControlMainWindow::onControlChannelStateChanged(Channel::State state) {
     _lastControlChannelState = state;
     updateConnectionStateInformation();
 }

@@ -71,10 +71,10 @@ void ResearchRoverProcess::init() {
     _sharedChannel->open();
 
     // observers for network channel connectivity changes
-    connect(_sharedChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-            this, SLOT(sharedChannelStateChanged(Channel*,Channel::State)));
-    connect(_driveChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-            this, SLOT(driveChannelStateChanged(Channel*,Channel::State)));
+    connect(_sharedChannel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(sharedChannelStateChanged(Channel::State)));
+    connect(_driveChannel, SIGNAL(stateChanged(Channel::State)),
+            this, SLOT(driveChannelStateChanged(Channel::State)));
 
 
     LOG_I(LOG_TAG, "All network channels initialized successfully");
@@ -85,20 +85,20 @@ void ResearchRoverProcess::init() {
     _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_MBED_PORT), MBED_ID_RESEARCH, this);
 
     // setup mbed data parser/logger
-    connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
-            &_sensorRecorder, SLOT(newData(MbedChannel*, const char*,int)));
+    connect(_mbed, SIGNAL(messageReceived(const char*,int)),
+            &_sensorRecorder, SLOT(newData(const char*,int)));
 
     // observers for mbed events
-    connect(_mbed, SIGNAL(messageReceived(MbedChannel*,const char*,int)),
-            this, SLOT( mbedMessageReceived(MbedChannel*,const char*,int)));
-    connect(_mbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
-            this, SLOT(mbedChannelStateChanged(MbedChannel*,MbedChannel::State)));
+    connect(_mbed, SIGNAL(messageReceived(const char*,int)),
+            this, SLOT( mbedMessageReceived(const char*,int)));
+    connect(_mbed, SIGNAL(stateChanged(MbedChannel::State)),
+            this, SLOT(mbedChannelStateChanged(MbedChannel::State)));
 
     // observers for network channels message received
-    connect(_driveChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-             this, SLOT(driveChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
-    connect(_sharedChannel, SIGNAL(messageReceived(Channel*, const char*, Channel::MessageSize)),
-             this, SLOT(sharedChannelMessageReceived(Channel*, const char*, Channel::MessageSize)));
+    connect(_driveChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+             this, SLOT(driveChannelMessageReceived(const char*, Channel::MessageSize)));
+    connect(_sharedChannel, SIGNAL(messageReceived(const char*, Channel::MessageSize)),
+             this, SLOT(sharedChannelMessageReceived(const char*, Channel::MessageSize)));
 
     LOG_I(LOG_TAG, "*****************Initializing GPS system*******************");
 

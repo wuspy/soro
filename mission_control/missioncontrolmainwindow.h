@@ -104,7 +104,7 @@ public slots:
 
 private slots:
     void onGamepadChanged(SDL_GameController *controller, QString name);
-    void onControlChannelStateChanged(Channel *channel, Channel::State state);
+    void onControlChannelStateChanged(Channel::State state);
     void updateConnectionStateInformation();
     void updateSubsystemStateInformation();
     void reloadMasterArmClicked();

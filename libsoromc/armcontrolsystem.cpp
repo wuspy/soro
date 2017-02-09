@@ -40,8 +40,8 @@ bool ArmControlSystem::init(QString *errorString) {
 
     _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_MC_MASTER_ARM_PORT), MBED_ID_MASTER_ARM);
 
-    connect(_mbed, SIGNAL(stateChanged(MbedChannel*,MbedChannel::State)),
-            this, SLOT(mbedStateChanged(MbedChannel*,MbedChannel::State)));
+    connect(_mbed, SIGNAL(stateChanged(MbedChannel::State)),
+            this, SLOT(mbedStateChanged(MbedChannel::State)));
     connect(_mbed, SIGNAL(messageReceived(const char*,int)),
             this, SLOT(mbedMessageReceived(const char*,int)));
 
@@ -87,8 +87,7 @@ void ArmControlSystem::mbedMessageReceived(const char *message, int size) {
     emit masterArmStateChanged(message);
 }
 
-void ArmControlSystem::mbedStateChanged(MbedChannel *channel, MbedChannel::State state) {
-    Q_UNUSED(channel);
+void ArmControlSystem::mbedStateChanged(MbedChannel::State state) {
     emit masterArmStateChanged(state == MbedChannel::ConnectedState);
 }
 

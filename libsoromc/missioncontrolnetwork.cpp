@@ -114,10 +114,10 @@ void MissionControlNetwork::endNegotiation() {
             clearConnections();
         }
         _clientChannel = Channel::createServer(this, NETWORK_MC_BROADCAST_PORT, _name, Channel::TcpProtocol);
-        connect(_clientChannel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
-                this, SLOT(client_channelMessageReceived(Channel*,const char*,Channel::MessageSize)));
-        connect(_clientChannel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                this, SLOT(client_channelStateChanged(Channel*,Channel::State)));
+        connect(_clientChannel, SIGNAL(messageReceived(const char*,Channel::MessageSize)),
+                this, SLOT(client_channelMessageReceived(const char*,Channel::MessageSize)));
+        connect(_clientChannel, SIGNAL(stateChanged(Channel::State)),
+                this, SLOT(client_channelStateChanged(Channel::State)));
         connect(_broadcastSocket, SIGNAL(readyRead()),
                 this, SLOT(client_broadcastSocketReadyRead()));
         _clientChannel->open();
@@ -132,14 +132,14 @@ void MissionControlNetwork::socketError(QAbstractSocket::SocketError err) {
     startNegotiation();
 }
 
-void MissionControlNetwork::client_channelStateChanged(Channel *channel, Channel::State state) {
-    if ((state != Channel::ConnectedState) && channel->wasConnected()) {
+void MissionControlNetwork::client_channelStateChanged(Channel::State state) {
+    if ((state != Channel::ConnectedState) && _clientChannel->wasConnected()) {
         LOG_E(LOG_TAG, "Lost connection to broker");
         startNegotiation();
         emit disconnected();
     }
     else if (state == Channel::ConnectedState) {
-        LOG_I(LOG_TAG, "Connected to broker at " + channel->getPeerAddress().toString());
+        LOG_I(LOG_TAG, "Connected to broker at " + _clientChannel->getPeerAddress().toString());
         KILL_TIMER(_requestConnectionTimerId);
         _connected = true;
         emit connected(false);
@@ -357,10 +357,12 @@ void MissionControlNetwork::broker_broadcastSocketReadyRead() {
             // Create a channel for the new client
             Connection *connection = new Connection;
             connection->channel = Channel::createClient(this, address, requestName, Channel::TcpProtocol);
-            connect(connection->channel, SIGNAL(stateChanged(Channel*,Channel::State)),
-                    this, SLOT(broker_clientChannelStateChanged(Channel*,Channel::State)));
-            connect(connection->channel, SIGNAL(messageReceived(Channel*,const char*,Channel::MessageSize)),
-                    this, SLOT(broker_clientChannelMessageReceived(Channel*,const char*,Channel::MessageSize)));
+            connect(connection->channel, &Channel::stateChanged, [=](Channel::State state) {
+                broker_clientChannelStateChanged(connection->channel, state);
+            });
+            connect(connection->channel, &Channel::messageReceived, [=](const char* message, Channel::MessageSize size) {
+                broker_clientChannelMessageReceived(connection->channel, message, size);
+            });
             connection->channel->open();
             _brokerConnections.append(connection);
             break;
@@ -439,8 +441,7 @@ void MissionControlNetwork::broker_clientChannelMessageReceived(Channel *channel
     emit sharedMessageReceived(message, size);
 }
 
-void MissionControlNetwork::client_channelMessageReceived(Channel *channel, const char* message, Channel::MessageSize size) {
-    Q_UNUSED(channel);
+void MissionControlNetwork::client_channelMessageReceived(const char* message, Channel::MessageSize size) {
     emit sharedMessageReceived(message, size);
 }
 

@@ -77,10 +77,10 @@ private slots:
     void negotiation_broadcastSocketReadyRead();
     void broker_broadcastSocketReadyRead();
     void client_broadcastSocketReadyRead();
-    void client_channelStateChanged(Channel *channel, Channel::State state);
+    void client_channelStateChanged(Channel::State state);
     void broker_clientChannelStateChanged(Channel *channel, Channel::State state);
     void broker_clientChannelMessageReceived(Channel *channel, const char* message, Channel::MessageSize size);
-    void client_channelMessageReceived(Channel *channel, const char* message, Channel::MessageSize size);
+    void client_channelMessageReceived(const char* message, Channel::MessageSize size);
     void socketError(QAbstractSocket::SocketError err);
 };
 

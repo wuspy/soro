@@ -112,8 +112,8 @@ private:
 
 private slots:
     void onNewMissionControlClient(Channel *channel);
-    void roverSharedChannelStateChanged(Channel *channel, Channel::State state);
-    void roverSharedChannelMessageReceived(Channel *channel, const char *message, Channel::MessageSize size);
+    void roverSharedChannelStateChanged(Channel::State state);
+    void roverSharedChannelMessageReceived(const char *message, Channel::MessageSize size);
     void videoClientStateChanged(MediaClient *client, MediaClient::State state);
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void cycleVideosClockwise();

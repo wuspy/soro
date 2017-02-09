@@ -43,7 +43,7 @@ private:
 
 private slots:
     void mbedMessageReceived(const char *message, int size);
-    void mbedStateChanged(MbedChannel *channel, MbedChannel::State state);
+    void mbedStateChanged(MbedChannel::State state);
 };
 
 }

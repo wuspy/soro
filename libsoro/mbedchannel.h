@@ -83,7 +83,7 @@ signals:
     void messageReceived(const char* message, int length);
     /* Emitted when the mbed connects or times out
      */
-    void stateChanged( MbedChannel::State state);
+    void stateChanged(MbedChannel::State state);
 
 protected:
     void timerEvent(QTimerEvent *e);
