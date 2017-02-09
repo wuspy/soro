@@ -330,9 +330,9 @@ void ResearchRoverProcess::sharedChannelMessageReceived(const char* message, Cha
         _aux1CameraServer->stop();
         break;
     case SharedMessage_Research_StartDataRecording: {
-        QDateTime startTime;
+        qint64 startTime;
         stream >> startTime;
-        startDataRecording(startTime);
+        startDataRecording(QDateTime::fromMSecsSinceEpoch(startTime));
 
         // Echo the message back to mission control
         QByteArray byteArray;
