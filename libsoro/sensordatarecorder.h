@@ -35,7 +35,7 @@ private:
     QByteArray _buffer;
 
     void parseBuffer();
-    void parseNext(DataTag tag, int start);
+    bool parseNext(DataTag tag, int start);
 
 public slots:
     void newData(const char* data, int len);

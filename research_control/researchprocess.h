@@ -81,6 +81,8 @@ private:
     GpsDataRecorder *_gpsRecorder;
     MasterDataRecorder *_masterRecorder;
 
+    qint64 _recordStartTime;
+
 private:
     void stopAllRoverCameras();
     void startMonoCameraStream(VideoFormat format);

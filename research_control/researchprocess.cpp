@@ -173,6 +173,7 @@ void ResearchControlProcess::roverDataRecordResponseWatchdog() {
 }
 
 void ResearchControlProcess::startDataRecording() {
+    _recordStartTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     sendStartRecordCommandToRover();
     QTimer::singleShot(5000, this, SLOT(roverDataRecordResponseWatchdog()));
 }
@@ -448,6 +449,7 @@ void ResearchControlProcess::sendStartRecordCommandToRover() {
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_Research_StartDataRecording;
     stream << reinterpret_cast<const quint32&>(messageType);
+    stream << _recordStartTime;
     _roverChannel->sendMessage(message);
 }
 
@@ -545,11 +547,10 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
     }
     case SharedMessage_Research_StartDataRecording: {
         // Rover has responed that they are starting data recording, start ours
-        qint64 startTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
         bool success = true;
-        success &= _sensorRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime));
-        success &= _gpsRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime));
-        success &= _masterRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/" + QString::number(startTime));
+        success &= _sensorRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(_recordStartTime));
+        success &= _gpsRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(_recordStartTime));
+        success &= _masterRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/" + QString::number(_recordStartTime));
         if (!success) {
             stopDataRecording();
             QMetaObject::invokeMethod(_controlUi,

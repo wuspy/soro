@@ -52,8 +52,9 @@ void SensorDataRecorder::parseBuffer() {
 
     for (int i = 0; i < 12; i++) {
         if (_buffer.startsWith(TAGS[i])) {
-            parseNext(reinterpret_cast<const DataTag&>(i), strlen(TAGS[i]));
-            parseBuffer();
+            if (parseNext(reinterpret_cast<const DataTag&>(i), strlen(TAGS[i]))) {
+                parseBuffer();
+            }
             return;
         }
     }
@@ -61,20 +62,26 @@ void SensorDataRecorder::parseBuffer() {
     // Unknown start token in buffer, remove chars until one is recognized or
     // the buffer is empty
     LOG_E(LOG_TAG, "Invalid token, buffer contents: " + QString(_buffer));
-    _buffer.remove(0, 1);
+    _buffer = _buffer.remove(0, 1);
     parseBuffer();
 }
 
-void SensorDataRecorder::parseNext(DataTag tag, int start) {
-    if (start >= _buffer.length()) return;
+bool SensorDataRecorder::parseNext(DataTag tag, int start) {
+    if (start >= _buffer.size()) return false;
     int end = start;
     while (QChar(_buffer.at(end)) != DATA_FOOTER) {
         end++;
-        if (end == _buffer.length()) return;
+        if (end >= _buffer.size()) return false;
     }
 
-    float value = _buffer.mid(start, end - start).toFloat();
-    _buffer.remove(0, end + 1);
+    bool ok;
+    float value = _buffer.mid(start, end - start).toFloat(&ok);
+    _buffer = _buffer.remove(0, end + 1);
+    if (!ok) {
+        LOG_W(LOG_TAG, "Received invalid data, discarding");
+        return true;
+    }
+
 
     // Append this data to the logfile;
     if (_fileStream) {
@@ -83,6 +90,7 @@ void SensorDataRecorder::parseNext(DataTag tag, int start) {
     }
 
     emit dataParsed(tag, value);
+    return true;
 }
 
 } // namespace Soro
