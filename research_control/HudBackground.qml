@@ -33,7 +33,6 @@ Item {
 
     property int margin: 16
 
-
     DropShadow {
         anchors.fill: backdrop
         source: backdrop
@@ -46,9 +45,7 @@ Item {
         id: backdrop
         anchors.fill: parent
         anchors.margins: parent.margin
-        color: "#88000000"
-        border.color: "#0091EA"
-        border.width: 2
+        color: "#aa303030"
         radius: 10
     }
 }

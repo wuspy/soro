@@ -265,6 +265,7 @@ ApplicationWindow {
 
     onRecordingStateChanged: {
         testingTimer.restart()
+        testingTimer.elapsed = 0
         testingTimer.running = recordingState === "recording"
         recordButtonMouseArea.state = recordingState === "recording" ? "checked" : "unchecked"
         if (recordingState === "recording") {

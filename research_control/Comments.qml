@@ -28,6 +28,7 @@ ApplicationWindow {
     function recordComment(text, type) {
         commentsListModel.append({"commentText": "At " + testingTimer.elapsed + " seconds:", "messageType": "time"})
         commentsListModel.append({"commentText": text, "messageType": type})
+        commentsListView.positionViewAtEnd()
         if (type === "user") {
             // Send signal to backend
             logCommentEntered(text)
@@ -216,6 +217,7 @@ ApplicationWindow {
     onRecordingStateChanged: {
         commentsTextArea.enabled = recordingState === "recording"
         testingTimer.restart()
+        testingTimer.elapsed = 0
         testingTimer.running = recordingState === "recording"
         recordButtonMouseArea.state = recordingState === "recording" ? "checked" : "unchecked"
         if (recordingState === "recording") {
@@ -249,6 +251,8 @@ ApplicationWindow {
                */
             model: ListModel {
                 id: commentsListModel
+
+
             }
 
             delegate:Label {
@@ -270,6 +274,7 @@ ApplicationWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
+            anchors.topMargin: 10
             TextArea {
                 id: commentsTextArea
                 anchors.fill: parent
