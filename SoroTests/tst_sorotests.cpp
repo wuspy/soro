@@ -19,77 +19,73 @@ private Q_SLOTS:
 
 SoroTests::SoroTests()
 {
-    qRegisterMetaType<SensorDataRecorder::DataTag>("SensorDataRecorder::DataTag");
 }
 
 void SoroTests::testSensorDataRecorder()
 {
     SensorDataRecorder recorder;
-    QSignalSpy spy(&recorder, &SensorDataRecorder::newData);
+    QSignalSpy spy(&recorder, &SensorDataRecorder::dataParsed);
+    QSignalSpy spyErr(&recorder, &SensorDataRecorder::parseError);
+    QList<QVariant> args;
 
     /* Test simple data
      */
-    recorder.newData("+!123&", strlen("+!123&"));
-    if (spy.count() < 1) {
-        QVERIFY2(spy.wait(1000), "dataParsed signal was not emitted");
-    }
+    recorder.newData("a123b456c789", strlen("a123b456c789"));
+    QVERIFY(spy.count() == 3);
+    QVERIFY(spyErr.count() == 0);
 
-    QList<QVariant> args = spy.takeFirst();
-    qint32 arg1 = args.at(0).toInt();
-    float arg2 = args.at(1).toFloat();
-    QVERIFY2(reinterpret_cast<const SensorDataRecorder::DataTag&>(arg1) == SensorDataRecorder::DATATAG_IMUDATA_1_X,
-             "Data tag is incorrect");
-    QVERIFY2(arg2 == 123, "Wrong value was emitted");
+    args = spy.takeFirst();
+    QVERIFY(args.at(0).toChar() == 'a');
+    QVERIFY(args.at(1).toInt() == 123);
+    args = spy.takeFirst();
+    QVERIFY(args.at(0).toChar() == 'b');
+    QVERIFY(args.at(1).toInt() == 456);
+    args = spy.takeFirst();
+    QVERIFY(args.at(0).toChar() == 'c');
+    QVERIFY(args.at(1).toInt() == 789);
 
     /* Test complex data
      */
-    recorder.newData("@123&~#3421&+!124", strlen("@123&~#3421&+!124"));
-    recorder.newData("4&^1235", strlen("4&!1235"));
-    recorder.newData("&", strlen("&"));
-    while (spy.count() < 4) {
-        QVERIFY2(spy.wait(1000), "dataParsed signal was not emitted");
-    }
+    recorder.newData("x123y456z", strlen("x123y456z"));
+    recorder.newData("789p1", strlen("789p1"));
+    recorder.newData("23", strlen("23"));
+
+    QVERIFY(spy.count() == 4);
+    QVERIFY(spyErr.count() == 0);
 
     args = spy.takeFirst();
-    arg1 = args.at(0).toInt();
-    arg2 = args.at(1).toFloat();
-    QVERIFY2(reinterpret_cast<const SensorDataRecorder::DataTag&>(arg1) == SensorDataRecorder::DATATAG_WHEELDATA_2,
-             "Data tag is incorrect");
-    QVERIFY2(arg2 == 123, "Wrong value was emitted");
-
+    QVERIFY(args.at(0).toChar() == 'x');
+    QVERIFY(args.at(1).toInt() == 123);
     args = spy.takeFirst();
-    arg1 = args.at(0).toInt();
-    arg2 = args.at(1).toFloat();
-    QVERIFY2(reinterpret_cast<const SensorDataRecorder::DataTag&>(arg1) == SensorDataRecorder::DATATAG_IMUDATA_2_Z,
-             "Data tag is incorrect");
-    QVERIFY2(arg2 == 3421, "Wrong value was emitted");
-
+    QVERIFY(args.at(0).toChar() == 'y');
+    QVERIFY(args.at(1).toInt() == 456);
     args = spy.takeFirst();
-    arg1 = args.at(0).toInt();
-    arg2 = args.at(1).toFloat();
-    QVERIFY2(reinterpret_cast<const SensorDataRecorder::DataTag&>(arg1) == SensorDataRecorder::DATATAG_IMUDATA_1_X,
-             "Data tag is incorrect");
-    QVERIFY2(arg2 == 1244, "Wrong value was emitted");
-
+    QVERIFY(args.at(0).toChar() == 'z');
+    QVERIFY(args.at(1).toInt() == 789);
     args = spy.takeFirst();
-    arg1 = args.at(0).toInt();
-    arg2 = args.at(1).toFloat();
-    QVERIFY2(reinterpret_cast<const SensorDataRecorder::DataTag&>(arg1) == SensorDataRecorder::DATATAG_WHEELDATA_6,
-             "Data tag is incorrect");
-    QVERIFY2(arg2 == 1235, "Wrong value was emitted");
+    QVERIFY(args.at(0).toChar() == 'p');
+    QVERIFY(args.at(1).toInt() == 123);
 
     /* Test invalid data
      */
-    recorder.newData("(123&~#34A21$45&+!124&", strlen("(123&~#34A21$45&+!124&"));
-    if (spy.count() < 1) {
-        QVERIFY2(spy.wait(1000), "dataParsed signal was not emitted");
-    }
+    recorder.newData("fweanguewio", strlen("fweanguewio"));
+    QVERIFY(spy.count() == 0);
+    QVERIFY(spyErr.count() > 0);
+
+    spyErr.clear();
+
+    recorder.newData("x123456yz45p789", strlen("x123456yz45p789"));
+    QVERIFY(spy.count() == 2);
+    QVERIFY(spyErr.count() > 0);
+
     args = spy.takeFirst();
-    arg1 = args.at(0).toInt();
-    arg2 = args.at(1).toFloat();
-    QVERIFY2(reinterpret_cast<const SensorDataRecorder::DataTag&>(arg1) == SensorDataRecorder::DATATAG_IMUDATA_1_X,
-             "Data tag is incorrect");
-    QVERIFY2(arg2 == 124, "Wrong value was emitted");
+    QVERIFY(args.at(0).toChar() == 'x');
+    QVERIFY(args.at(1).toInt() == 123);
+    args = spy.takeFirst();
+    QVERIFY(args.at(0) == 'p');
+    QVERIFY(args.at(1) == 789);
+
+    spyErr.clear();
 }
 
 QTEST_GUILESS_MAIN(SoroTests)

@@ -46,6 +46,7 @@ void CameraControlSystem::timerEvent(QTimerEvent *e) {
         GimbalMessage::setGamepadData(_buffer, _input->axisLeftX, _input->axisRightY,
                                       _input->buttonX, _input->buttonY, _input->buttonB, _input->buttonA);
         _channel->sendMessage(_buffer, GimbalMessage::RequiredSize);
+        emit cameraMessageSent(_buffer, GimbalMessage::RequiredSize);
     }
 }
 

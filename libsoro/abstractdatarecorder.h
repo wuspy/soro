@@ -12,6 +12,8 @@ namespace Soro {
 
 /* Abstract class implemented by any class responsible for logging test data for the research
  * project
+ *
+ * All data is recorded in a big endian binary file
  */
 class LIBSORO_EXPORT AbstractDataRecorder : public QObject
 {
@@ -20,24 +22,32 @@ class LIBSORO_EXPORT AbstractDataRecorder : public QObject
 public:
     ~AbstractDataRecorder();
 
+    bool isRecording() const;
+
+    qint64 getStartTime() const;
+
+public slots:
     /* Starts logging data in the specified file, and calculates all timestamps offset from
      * the provided start time.
      */
-    bool startLog(QString file, QDateTime loggedStartTime=QDateTime::currentDateTime());
+    bool startLog(QDateTime loggedStartTime);
 
     /* Stops logging, if it is currently active.
      */
     void stopLog();
 
-    bool isRecording();
+signals:
+    void logStarted(QDateTime loggedStartTime);
+    void logStopped();
 
 protected:
-    AbstractDataRecorder(QString logTag, QObject *parent=0);
+    AbstractDataRecorder(QString logTag, QString logDirectory, QObject *parent=0);
     void addTimestamp();
     QDataStream *_fileStream = nullptr;
 
 private:
     QString _logTag;
+    QString _logDir;
     QFile *_file = nullptr;
     qint64 _logStartTime;
     bool _isRecording=false;

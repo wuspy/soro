@@ -1,5 +1,10 @@
 <RCC>
     <qresource prefix="/">
         <file>Main.qml</file>
+        <file>HudPower.qml</file>
+        <file>HudLatency.qml</file>
+        <file>HudOrientation.qml</file>
+        <file>HudBackground.qml</file>
+        <file>Comments.qml</file>
     </qresource>
 </RCC>

@@ -24,6 +24,7 @@ struct SettingsModel {
     int selectedVideoFormat;
     int selectedCamera;
     int selectedLatency;
+    int selectedHudParallax;
 
     int mainCameraIndex;
     int aux1CameraIndex;

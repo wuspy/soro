@@ -75,14 +75,9 @@ void ArmControlSystem::mbedMessageReceived(const char *message, int size) {
         //translate message from master pot values to slave servo values
         memcpy(_buffer, message, size);
         ArmMessage::translateMasterArmValues(_buffer, _armConfig);
-        if (_channel != nullptr) {
-            _channel->sendMessage(_buffer, size);
-        }
-        else {
-            LOG_E(LOG_TAG, "Got message from master arm with null control channel");
-        }
+        _channel->sendMessage(_buffer, size);
+        emit armMessageSent(_buffer, size);
     }
-    emit masterArmStateChanged(message);
 }
 
 void ArmControlSystem::mbedStateChanged(MbedChannel::State state) {

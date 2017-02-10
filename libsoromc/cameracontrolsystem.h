@@ -24,6 +24,9 @@ public:
     void enable();
     void disable();
 
+signals:
+    void cameraMessageSent(const char *message, int size);
+
 protected:
     void timerEvent(QTimerEvent *e);
 

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 The University of Oklahoma.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Controls.Material 2.0
@@ -36,6 +52,7 @@ ApplicationWindow {
     property alias simLatencySpinBox: simLatencySpinBox
     property alias enableHudSwitch: enableHudSwitch
     property alias stereoUiSwitch: stereoUiSwitch
+    property alias hudParallaxSpinBox: hudParallaxSpinBox
     property alias activeCameraCombo: activeCameraCombo
     property alias videoFormatCombo: videoFormatCombo
     property alias stereoVideoSwitch: stereoVideoSwitch
@@ -61,6 +78,7 @@ ApplicationWindow {
     property alias selectedVideoFormat: videoFormatCombo.currentIndex
     property alias enableAudio: enableAudioSwitch.checked
     property alias selectedLatency: simLatencySpinBox.value
+    property alias selectedHudParallax: hudParallaxSpinBox.value
     property alias enableGps: enableGpsSwitch.checked
 
     // Configuration properties
@@ -207,15 +225,6 @@ ApplicationWindow {
         webEngineView.reload()
     }
 
-    function recordComment(text, type) {
-        commentsListModel.append({"commentText": "At " + testingTimer.elapsed + " seconds:", "messageType": "time"});
-        commentsListModel.append({"commentText": text, "messageType": type});
-        if (type === "user") {
-        // Send signal to backend
-            logCommentEntered(text);
-        }
-    }
-
     ///////////////////////////////////////////////////////////////////////////////////////
 
     /*
@@ -255,13 +264,11 @@ ApplicationWindow {
     }
 
     onRecordingStateChanged: {
-        commentsTextArea.enabled = recordingState === "recording"
         testingTimer.restart()
         testingTimer.running = recordingState === "recording"
         recordButtonMouseArea.state = recordingState === "recording" ? "checked" : "unchecked"
         if (recordingState === "recording") {
-            // Clear comments and map since a new test is starting
-            commentsListModel.clear()
+            // Clear map since a new test is starting
             webEngineView.reload()
             gpsDataPoints = 0
         }
@@ -477,203 +484,13 @@ ApplicationWindow {
 
     /////////////////////////////////////////////////////////////////////////////////
 
-    Pane {
-        id: mainPane
-        anchors.top: headerPane.bottom
-        anchors.topMargin: 0
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 0
+    WebEngineView {
+        id: webEngineView
+        anchors.top: parent.top
         anchors.right: parent.right
-        anchors.rightMargin: 0
         anchors.left: asidePane.right
-        anchors.leftMargin: 0
-        padding: 0
-
-        GroupBox {
-            id: commentsPane
-            Layout.rowSpan: 2
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.topMargin: 8
-            anchors.bottomMargin: 8
-            anchors.leftMargin: 8
-            width: parent.width / 2
-            title: "Comments"
-
-            ListView {
-                id: commentsListView
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height * 0.8
-                clip: true
-
-                /* This list model accepts two parameters:
-                  - text: the comment text
-                  - type: can be either time, system, or user. Use user for user-entered comments,
-                   and system for system status messages.
-                   */
-                model: ListModel {
-                    id: commentsListModel
-                }
-
-                delegate:Label {
-                    width: parent.width
-                    text: commentText
-                    topPadding: 10
-                    leftPadding: 10
-                    rightPadding: 10
-                    bottomPadding: timeMessage ? 5 : 10
-                    wrapMode: Text.WordWrap
-                    color: messageType == "time" ? Material.accent : Material.foreground
-                    font.italic: messageType == "time"
-                    font.bold: messageType == "system"
-                }
-            }
-
-            GroupBox {
-                anchors.top: commentsListView.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                TextArea {
-                    id: commentsTextArea
-                    anchors.fill: parent
-                    placeholderText: "Enter your comments here"
-                    wrapMode: Text.WordWrap
-                    enabled: false
-
-                    Keys.onReturnPressed: {
-                        recordComment(text.trim(), "user")
-                        text = "";
-                    }
-                }
-            }
-        }
-
-        WebEngineView {
-            id: webEngineView
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.left: commentsPane.right
-            anchors.margins: 9
-            height: parent.height / 2
-            url: "qrc:/html/map.html"
-        }
-
-        Pane {
-            id: webEngineCover
-            anchors.fill: webEngineView
-            anchors.margins: -1
-            enabled: false
-        }
-
-        DropShadow {
-            id: webEngineShadow
-            source: webEngineOpacityMask
-            anchors.fill: webEngineOpacityMask
-            radius: 10
-            samples: 20
-            color: "#000000"
-            verticalOffset: 4
-        }
-
-        OpacityMask {
-            id: webEngineOpacityMask
-            source: webEngineView
-            anchors.fill: webEngineView
-            maskSource:
-                Rectangle {
-                    width: webEngineView.width
-                    height: webEngineView.height
-                    enabled: false
-                    visible: false
-                    radius: 6
-                }
-        }
-
-
-        DropShadow {
-            id: powerChartViewShadow
-            source: powerChartView
-            anchors.fill: powerChartView
-            radius: 10
-            samples: 20
-            color: "#000000"
-            verticalOffset: 4
-        }
-
-        ChartView {
-            id: powerChartView
-            theme: ChartView.ChartThemeBlueCerulean
-            antialiasing: true
-            anchors.bottom: parent.bottom
-            anchors.left: commentsPane.right
-            anchors.right: parent.right
-            anchors.top: webEngineView.bottom
-
-            title: "Line"
-
-            LineSeries {
-                id: powerLineSeries
-                name: "LineSeries"
-                XYPoint { id: powerLineSeriesP0; x: -0.0; y: 0 }
-                XYPoint { id: powerLineSeriesP1; x: -0.1; y: 0 }
-                XYPoint { id: powerLineSeriesP2; x: -0.2; y: 0 }
-                XYPoint { id: powerLineSeriesP3; x: -0.3; y: 0 }
-                XYPoint { id: powerLineSeriesP4; x: -0.4; y: 0 }
-                XYPoint { id: powerLineSeriesP5; x: -0.5; y: 0 }
-                XYPoint { id: powerLineSeriesP6; x: -0.6; y: 0 }
-                XYPoint { id: powerLineSeriesP7; x: -0.7; y: 0 }
-                XYPoint { id: powerLineSeriesP8; x: -0.8; y: 0 }
-                XYPoint { id: powerLineSeriesP9; x: -0.9; y: 0 }
-
-                XYPoint { id: powerLineSeriesP10; x: -1.0; y: 0 }
-                XYPoint { id: powerLineSeriesP11; x: -1.1; y: 0 }
-                XYPoint { id: powerLineSeriesP12; x: -1.2; y: 0 }
-                XYPoint { id: powerLineSeriesP13; x: -1.3; y: 0 }
-                XYPoint { id: powerLineSeriesP14; x: -1.4; y: 0 }
-                XYPoint { id: powerLineSeriesP15; x: -1.5; y: 0 }
-                XYPoint { id: powerLineSeriesP16; x: -1.6; y: 0 }
-                XYPoint { id: powerLineSeriesP17; x: -1.7; y: 0 }
-                XYPoint { id: powerLineSeriesP18; x: -1.8; y: 0 }
-                XYPoint { id: powerLineSeriesP19; x: -1.9; y: 0 }
-
-                XYPoint { id: powerLineSeriesP20; x: -1.0; y: 0 }
-                XYPoint { id: powerLineSeriesP21; x: -1.1; y: 0 }
-                XYPoint { id: powerLineSeriesP22; x: -1.2; y: 0 }
-                XYPoint { id: powerLineSeriesP23; x: -1.3; y: 0 }
-                XYPoint { id: powerLineSeriesP24; x: -1.4; y: 0 }
-                XYPoint { id: powerLineSeriesP25; x: -1.5; y: 0 }
-                XYPoint { id: powerLineSeriesP26; x: -1.6; y: 0 }
-                XYPoint { id: powerLineSeriesP27; x: -1.7; y: 0 }
-                XYPoint { id: powerLineSeriesP28; x: -1.8; y: 0 }
-                XYPoint { id: powerLineSeriesP29; x: -1.9; y: 0 }
-
-                XYPoint { id: powerLineSeriesP30; x: -1.0; y: 0 }
-                XYPoint { id: powerLineSeriesP31; x: -1.1; y: 0 }
-                XYPoint { id: powerLineSeriesP32; x: -1.2; y: 0 }
-                XYPoint { id: powerLineSeriesP33; x: -1.3; y: 0 }
-                XYPoint { id: powerLineSeriesP34; x: -1.4; y: 0 }
-                XYPoint { id: powerLineSeriesP35; x: -1.5; y: 0 }
-                XYPoint { id: powerLineSeriesP36; x: -1.6; y: 0 }
-                XYPoint { id: powerLineSeriesP37; x: -1.7; y: 0 }
-                XYPoint { id: powerLineSeriesP38; x: -1.8; y: 0 }
-                XYPoint { id: powerLineSeriesP39; x: -1.9; y: 0 }
-
-                XYPoint { id: powerLineSeriesP40; x: -1.0; y: 0 }
-                XYPoint { id: powerLineSeriesP41; x: -1.1; y: 0 }
-                XYPoint { id: powerLineSeriesP42; x: -1.2; y: 0 }
-                XYPoint { id: powerLineSeriesP43; x: -1.3; y: 0 }
-                XYPoint { id: powerLineSeriesP44; x: -1.4; y: 0 }
-                XYPoint { id: powerLineSeriesP45; x: -1.5; y: 0 }
-                XYPoint { id: powerLineSeriesP46; x: -1.6; y: 0 }
-                XYPoint { id: powerLineSeriesP47; x: -1.7; y: 0 }
-                XYPoint { id: powerLineSeriesP48; x: -1.8; y: 0 }
-                XYPoint { id: powerLineSeriesP49; x: -1.9; y: 0 }
-            }
-        }
+        anchors.bottom: parent.bottom
+        url: "qrc:/html/map.html"
     }
 
     DropShadow {
@@ -870,20 +687,6 @@ ApplicationWindow {
                     }
 
                     Label {
-                        id: interfaceNotesLabel
-                        text: qsTr("<b>Stereo UI</b> renders the interface in side-by-side stereo.  Video will not be streamed in stereo unless the 'Stereo Video' option is also selected.")
-                        textFormat: Text.RichText
-                        anchors.right: parent.right
-                        anchors.rightMargin: 0
-                        anchors.left: parent.left
-                        anchors.leftMargin: 0
-                        anchors.top: enableHudSwitch.bottom
-                        anchors.topMargin: 8
-                        wrapMode: Text.WordWrap
-                        verticalAlignment: Text.AlignBottom
-                    }
-
-                    Label {
                         id: enableHudLabel
                         y: 17
                         width: 100
@@ -903,6 +706,42 @@ ApplicationWindow {
                         onCheckedChanged: settingsFooterPane.state = "visible"
                     }
 
+                    Label {
+                        id: hudParallaxLabel
+                        y: 27
+                        width: 100
+                        text: qsTr("HUD Parallax")
+                        anchors.verticalCenter: hudParallaxSpinBox.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    SpinBox {
+                        id: hudParallaxSpinBox
+                        anchors.left: hudParallaxLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: enableHudSwitch.bottom
+                        anchors.topMargin: 0
+                        stepSize: 10
+                        editable: true
+                        from: 0
+                        to: 500
+                        onValueChanged: settingsFooterPane.state = "visible"
+                    }
+
+                    Label {
+                        id: interfaceNotesLabel
+                        text: qsTr("<b>Stereo UI</b> renders the interface in side-by-side stereo.  Video will not be streamed in stereo unless the 'Stereo Video' option is also selected.<br><br><b>HUD Parallax</b> changes the how far away the HUD appears to the viewer in stereo mode. Lower values make it appear farther away, and higher values make it appear closer.")
+                        textFormat: Text.RichText
+                        anchors.right: parent.right
+                        anchors.rightMargin: 0
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                        anchors.top: hudParallaxSpinBox.bottom
+                        anchors.topMargin: 8
+                        wrapMode: Text.WordWrap
+                        verticalAlignment: Text.AlignBottom
+                    }
                 }
 
                 GroupBox {
@@ -1074,7 +913,9 @@ ApplicationWindow {
                         anchors.topMargin: 0
                         stepSize: 50
                         editable: true
+                        from: 0
                         to: 10000
+                        onValueChanged: settingsFooterPane.state = "visible"
                     }
 
                     Label {

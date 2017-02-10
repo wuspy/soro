@@ -54,14 +54,23 @@ void DriveControlSystem::timerEvent(QTimerEvent *e) {
         //send the rover a drive gamepad packet
         switch (_mode) {
         case SingleStickDrive:
-            DriveMessage::setGamepadData_DualStick(_buffer, _input->axisLeftX, _input->axisLeftY, _midSkidFactor);
+            DriveMessage::setGamepadData_SingleStick(_buffer, _input->axisLeftX, _input->axisLeftY, _midSkidFactor);
             break;
         case DualStickDrive:
             DriveMessage::setGamepadData_DualStick(_buffer, _input->axisLeftY, _input->axisRightY, _midSkidFactor);
             break;
         }
         _channel->sendMessage(_buffer, DriveMessage::RequiredSize);
+        emit driveMessageSent(_buffer, DriveMessage::RequiredSize);
     }
+}
+
+DriveGamepadMode DriveControlSystem::getMode() const {
+    return _mode;
+}
+
+float DriveControlSystem::getMiddleSkidFactor() const {
+    return _midSkidFactor;
 }
 
 }

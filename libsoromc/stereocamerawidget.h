@@ -29,10 +29,19 @@ public:
     void playStereo(SocketAddress addressL, VideoFormat encodingL, SocketAddress addressR, VideoFormat encodingR);
     void playMono(SocketAddress address, VideoFormat encoding);
 
-    bool isPlayingStereo() const;
-    bool isPlayingMono() const;
     bool isPlaying() const;
+
+    /* Gets the stereo mode set on the widget
+     */
     VideoFormat::StereoMode getStereoMode() const;
+
+    /* Returns true if the widget is playing in stereo, or
+     * stopped with a stereo visualization
+     */
+    bool isStereoOn() const;
+
+signals:
+    void videoChanged();
 
 protected:
     void resizeEvent(QResizeEvent* event);
@@ -40,6 +49,7 @@ protected:
 private:
     Ui::StereoCameraWidget *ui;
     VideoFormat::StereoMode _stereoMode;
+    bool _isStereo = false;
 };
 
 } // namespace MissionControl

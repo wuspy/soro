@@ -34,23 +34,6 @@ ResearchRoverProcess::ResearchRoverProcess(QObject *parent) : QObject(parent)
 }
 
 void ResearchRoverProcess::init() {
-    LOG_I(LOG_TAG, "*****************Loading Configuration*******************");
-
-    // This is the directory mbed parser will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
-        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
-        }
-    }
-    // This is the directory gps logger will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
-        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
-        }
-    }
-
     LOG_I(LOG_TAG, "*************Initializing core networking*****************");
 
     _driveChannel = Channel::createServer(this, NETWORK_ALL_DRIVE_CHANNEL_PORT, CHANNEL_NAME_DRIVE,
@@ -205,16 +188,13 @@ void ResearchRoverProcess::sendSystemStatusMessage() {
     _sharedChannel->sendMessage(message);
 }
 
-void ResearchRoverProcess::startDataRecording(QDateTime startTime) {
+bool ResearchRoverProcess::startDataRecording(QDateTime startTime) {
     LOG_I(LOG_TAG, "Starting test log with start time of " + QString::number(startTime.toMSecsSinceEpoch()));
 
-    _sensorRecorder.startLog(
-                QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(startTime.toMSecsSinceEpoch()),
-                startTime);
-
-    _gpsRecorder.startLog(
-                QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(startTime.toMSecsSinceEpoch()),
-                startTime);
+    bool success = true;
+    success &= _sensorRecorder.startLog(startTime);
+    success &= _gpsRecorder.startLog(startTime);
+    return success;
 }
 
 void ResearchRoverProcess::stopDataRecording() {
@@ -332,14 +312,14 @@ void ResearchRoverProcess::sharedChannelMessageReceived(const char* message, Cha
     case SharedMessage_Research_StartDataRecording: {
         qint64 startTime;
         stream >> startTime;
-        startDataRecording(QDateTime::fromMSecsSinceEpoch(startTime));
-
-        // Echo the message back to mission control
-        QByteArray byteArray;
-        QDataStream stream(&byteArray, QIODevice::WriteOnly);
-        SharedMessageType messageType = SharedMessage_Research_StartDataRecording;
-        stream << reinterpret_cast<quint32&>(messageType);
-        _sharedChannel->sendMessage(byteArray);
+        if (startDataRecording(QDateTime::fromMSecsSinceEpoch(startTime))) {
+            // Echo the message back to mission control
+            QByteArray byteArray;
+            QDataStream stream(&byteArray, QIODevice::WriteOnly);
+            SharedMessageType messageType = SharedMessage_Research_StartDataRecording;
+            stream << reinterpret_cast<quint32&>(messageType);
+            _sharedChannel->sendMessage(byteArray);
+        }
     }
         break;
     case SharedMessage_Research_StopDataRecording:

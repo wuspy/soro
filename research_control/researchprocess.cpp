@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 The University of Oklahoma.
+ * Copyright 2017 The University of Oklahoma.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,29 +36,6 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     connect(_gamepad, &GamepadManager::gamepadChanged, this, &ResearchControlProcess::gamepadChanged);
 
     _settings = SettingsModel::Default(roverAddress);
-
-    // Create UI for rover control
-    _mainUi = new ResearchMainWindow;
-    _mainUi->getCameraWidget()->setStereoMode(VideoFormat::StereoMode_SideBySide);
-    connect(_mainUi, &ResearchMainWindow::closed, this, &ResearchControlProcess::windowClosed);
-
-    // Create UI for settings and control
-    QQmlComponent qmlComponent(qml, QUrl("qrc:/Main.qml"));
-    QObject *componentObject = qmlComponent.create();
-    if (!qmlComponent.errorString().isEmpty()) {
-        LOG_E(LOG_TAG, "Cannot create QML: " + qmlComponent.errorString());
-        QCoreApplication::exit(1);
-        return;
-    }
-    else {
-        _controlUi = qobject_cast<QQuickWindow*>(componentObject);
-    }
-
-    // Perform initial setup of control UI
-
-    connect(_controlUi, SIGNAL(requestUiSync()), this, SLOT(ui_requestUiSync()));
-    connect(_controlUi, SIGNAL(settingsApplied()), this, SLOT(ui_settingsApplied()));
-    connect (_controlUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
 
     LOG_I(LOG_TAG, "****************Initializing connections*******************");
 
@@ -111,34 +88,51 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
 
     LOG_I(LOG_TAG, "***************Initializing Data Recording system******************");
 
-    // Master logger logs to ../research-data
-
-    // This is the directory mbed parser will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/sensors").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/sensors directory does not exist, creating it");
-        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/sensors")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/sensors directory, sensor data may not be logged");
-        }
-    }
-    // This is the directory gps logger will log to
-    if (!QDir(QCoreApplication::applicationDirPath() + "/../research-data/gps").exists()) {
-        LOG_I(LOG_TAG, "/../research-data/gps directory does not exist, creating it");
-        if (!QDir().mkpath(QCoreApplication::applicationDirPath() + "/../research-data/gps")) {
-            LOG_E(LOG_TAG, "Cannot create /../research-data/gps directory, sensor data may not be logged");
-        }
-    }
-
     _sensorRecorder = new SensorDataRecorder(this);
     _gpsRecorder = new GpsDataRecorder(this);
     _masterRecorder = new MasterDataRecorder(_driveSystem->getChannel(), _roverChannel, this);
 
-    connect(_sensorRecorder, &SensorDataRecorder::dataParsed, this, &ResearchControlProcess::newSensorData);
-    connect(_controlUi, SIGNAL(logCommentEntered(QString)), _masterRecorder, SLOT(addComment(QString)));
+    LOG_I(LOG_TAG, "***************Initializing UI******************");
+
+    // Create UI for rover control
+    _mainUi = new ResearchMainWindow(_gamepad, _driveSystem);
+    _mainUi->getCameraWidget()->setStereoMode(VideoFormat::StereoMode_SideBySide);
+    connect(_mainUi, &ResearchMainWindow::closed, this, &ResearchControlProcess::windowClosed);
+
+    // Create UI for settings and control
+    QQmlComponent qmlComponent(qml, QUrl("qrc:/Main.qml"));
+    _controlUi = qobject_cast<QQuickWindow*>(qmlComponent.create());
+    if (!qmlComponent.errorString().isEmpty() || !_controlUi) {
+        LOG_E(LOG_TAG, "Cannot create main QML: " + qmlComponent.errorString());
+        QCoreApplication::exit(1);
+        return;
+    }
+
+
+    // Create UI for comments
+    QQmlComponent qmlComponent2(qml, QUrl("qrc:/Comments.qml"));
+    _commentsUi = qobject_cast<QQuickWindow*>(qmlComponent2.create());
+    if (!qmlComponent2.errorString().isEmpty() || !_commentsUi) {
+        LOG_E(LOG_TAG, "Cannot create comments QML: " + qmlComponent2.errorString());
+        QCoreApplication::exit(1);
+        return;
+    }
+
+    // Perform initial setup of control UI
+
+    connect(_controlUi, SIGNAL(requestUiSync()), this, SLOT(ui_requestUiSync()));
+    connect(_controlUi, SIGNAL(settingsApplied()), this, SLOT(ui_settingsApplied()));
+    connect (_controlUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
+    connect (_commentsUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
+
+    connect(_sensorRecorder, &SensorDataRecorder::dataParsed, _mainUi, &ResearchMainWindow::sensorUpdate);
+    connect(_commentsUi, SIGNAL(logCommentEntered(QString)), _masterRecorder, SLOT(addComment(QString)));
 
     // Show UI's
 
     _mainUi->show();
     _controlUi->setVisible(true);
+    _commentsUi->setVisible(true);
 
     // Start timers
 
@@ -161,6 +155,8 @@ void ResearchControlProcess::roverDataRecordResponseWatchdog() {
 void ResearchControlProcess::startDataRecording() {
     _recordStartTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     sendStartRecordCommandToRover();
+    _controlUi->setProperty("recordingState", "waiting");
+    _commentsUi->setProperty("recordingState", "waiting");
     QTimer::singleShot(5000, this, SLOT(roverDataRecordResponseWatchdog()));
 }
 
@@ -169,6 +165,7 @@ void ResearchControlProcess::stopDataRecording() {
     _gpsRecorder->stopLog();
     _masterRecorder->stopLog();
     _controlUi->setProperty("recordingState", "idle");
+    _commentsUi->setProperty("recordingState", "idle");
 
     // Send stop command to rover as well
     QByteArray byteArray;
@@ -269,12 +266,8 @@ void ResearchControlProcess::ui_settingsApplied() {
     else {
         stopAllRoverCameras();
     }
-    if (_settings.enableHud) {
-        //TODO
-    }
-    else {
-        //TODO
-    }
+    _mainUi->setHudVisible(_settings.enableHud);
+    _mainUi->setHudParallax(_settings.selectedHudParallax);
     if (_settings.enableAudio) {
         startAudioStream(_settings.defaultAudioFormat);
     }
@@ -365,6 +358,7 @@ void ResearchControlProcess::updateUiConnectionState() {
     switch (_roverChannel->getState()) {
     case Channel::ErrorState:
         _controlUi->setProperty("connectionState", "error");
+        _commentsUi->setProperty("connectionState", "error");
         QMetaObject::invokeMethod(_controlUi,
                                   "notify",
                                   Q_ARG(QVariant,"error"),
@@ -373,15 +367,13 @@ void ResearchControlProcess::updateUiConnectionState() {
         break;
     case Channel::ConnectedState:
         _controlUi->setProperty("connectionState", "connected");
+        _commentsUi->setProperty("connectionState", "connected");
         break;
     default:
         _controlUi->setProperty("connectionState", "connecting");
+        _commentsUi->setProperty("connectionState", "connecting");
         break;
     }
-}
-
-void ResearchControlProcess::newSensorData(SensorDataRecorder::DataTag tag, float value) {
-    //TODO
 }
 
 void ResearchControlProcess::timerEvent(QTimerEvent *e) {
@@ -533,9 +525,9 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
     case SharedMessage_Research_StartDataRecording: {
         // Rover has responed that they are starting data recording, start ours
         bool success = true;
-        success &= _sensorRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/sensors/" + QString::number(_recordStartTime));
-        success &= _gpsRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/gps/" + QString::number(_recordStartTime));
-        success &= _masterRecorder->startLog(QCoreApplication::applicationDirPath() + "/../research-data/" + QString::number(_recordStartTime));
+        success &= _sensorRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime));
+        success &= _gpsRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime));
+        success &= _masterRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime));
         if (!success) {
             stopDataRecording();
             QMetaObject::invokeMethod(_controlUi,
@@ -548,6 +540,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
             sendStopRecordCommandToRover();
         }
         _controlUi->setProperty("recordingState", "recording");
+        _commentsUi->setProperty("recordingState", "recording");
         break;
     }
     default:
@@ -559,7 +552,6 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
 void ResearchControlProcess::driveConnectionStateChanged(Channel::State state) {
     switch (state) {
     case Channel::ErrorState:
-        _controlUi->setProperty("status", "error");
         QMetaObject::invokeMethod(_controlUi,
                                   "notify",
                                   Q_ARG(QVariant,"error"),

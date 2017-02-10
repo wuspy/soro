@@ -18,79 +18,66 @@
 
 #define LOG_TAG "SensorDataRecorder"
 
-const char *TAGS[] =
-{
-    "!", // Wheeldata 1
-    "@", // Wheeldata 2
-    "#", // Wheeldata 3
-    "$", // Wheeldata 4
-    "%", // Wheeldata 5
-    "^", // Wheeldata 6
-    "+!", // IMUdata 1 X
-    "+@", // IMUdata 1 Y
-    "+#", // IMUdata 1 Z
-    "~!", // IMUdata 2 X
-    "~@", // IMUdata 2 Y
-    "~#" // IMUdata 2 Z
-};
-
-#define DATA_FOOTER '&'
-
 namespace Soro {
 
-SensorDataRecorder::SensorDataRecorder(QObject *parent) : AbstractDataRecorder(LOG_TAG, parent) {
-
+SensorDataRecorder::SensorDataRecorder(QObject *parent)
+    : AbstractDataRecorder(LOG_TAG, "sensor", parent) {
 }
 
 void SensorDataRecorder::newData(const char* data, int len) {
     _buffer.append(data, len);
-    parseBuffer();
+
+    parseBuffer(true);
 }
 
-void SensorDataRecorder::parseBuffer() {
-    if (_buffer.length() == 0) return;
+void SensorDataRecorder::parseBuffer(bool logErrors) {
+    if (_buffer.length() < 4) return; // 4  is the size of a complete data point
+    char tag = _buffer.at(0);
 
-    for (int i = 0; i < 12; i++) {
-        if (_buffer.startsWith(TAGS[i])) {
-            if (parseNext(reinterpret_cast<const DataTag&>(i), strlen(TAGS[i]))) {
-                parseBuffer();
+    if (isValidTag(tag)) {
+        bool ok;
+        int data = QString(_buffer.mid(1, 3)).toFloat(&ok);
+        if (ok) {
+            // Append this data to the logfile;
+            if (_fileStream) {
+                addTimestamp();
+                *_fileStream << tag << data;
             }
+            emit dataParsed(tag, data);
+            // Try to parse more data
+            _buffer.remove(0, 4);
+            parseBuffer(true);
             return;
         }
     }
 
-    // Unknown start token in buffer, remove chars until one is recognized or
-    // the buffer is empty
-    LOG_E(LOG_TAG, "Invalid token, buffer contents: " + QString(_buffer));
-    _buffer = _buffer.remove(0, 1);
-    parseBuffer();
+    // Something went wrong trying to parse
+    if (logErrors) {
+        if (_fileStream) {
+            addTimestamp();
+            *_fileStream << DATATAG_ERROR;
+        }
+        emit parseError();
+    }
+    // Remove the first char and try to parse again
+    _buffer.remove(0, 1);
+    parseBuffer(false);
 }
 
-bool SensorDataRecorder::parseNext(DataTag tag, int start) {
-    if (start >= _buffer.size()) return false;
-    int end = start;
-    while (QChar(_buffer.at(end)) != DATA_FOOTER) {
-        end++;
-        if (end >= _buffer.size()) return false;
-    }
-
-    bool ok;
-    float value = _buffer.mid(start, end - start).toFloat(&ok);
-    _buffer = _buffer.remove(0, end + 1);
-    if (!ok) {
-        LOG_W(LOG_TAG, "Received invalid data, discarding");
-        return true;
-    }
-
-
-    // Append this data to the logfile;
-    if (_fileStream) {
-        addTimestamp();
-        *_fileStream << reinterpret_cast<quint32&>(tag) << value;
-    }
-
-    emit dataParsed(tag, value);
-    return true;
+bool SensorDataRecorder::isValidTag(char c) {
+    return (c == DATATAG_WHEELDATA_A) ||
+            (c == DATATAG_WHEELDATA_B) ||
+            (c == DATATAG_WHEELDATA_C) ||
+            (c == DATATAG_WHEELDATA_D) ||
+            (c == DATATAG_WHEELDATA_E) ||
+            (c == DATATAG_WHEELDATA_F) ||
+            (c == DATATAG_IMUDATA_1_X) ||
+            (c == DATATAG_IMUDATA_1_X) ||
+            (c == DATATAG_IMUDATA_1_Y) ||
+            (c == DATATAG_IMUDATA_1_Z) ||
+            (c == DATATAG_IMUDATA_2_X) ||
+            (c == DATATAG_IMUDATA_2_Y) ||
+            (c == DATATAG_IMUDATA_2_Z);
 }
 
 } // namespace Soro

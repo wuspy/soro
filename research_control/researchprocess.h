@@ -55,6 +55,7 @@ private:
     // The main UI components
     ResearchMainWindow *_mainUi = nullptr;
     QQuickWindow *_controlUi = nullptr;
+    QQuickWindow *_commentsUi = nullptr;
 
     // Communicates with the rover shared channel
     Channel *_roverChannel = nullptr;
@@ -102,7 +103,6 @@ private slots:
     void audioClientStateChanged(MediaClient *client, MediaClient::State state);
     void driveConnectionStateChanged(Channel::State state);
     void gamepadChanged(bool connected, QString name);
-    void newSensorData(SensorDataRecorder::DataTag tag, float value);
     void roverDataRecordResponseWatchdog();
 
     /**

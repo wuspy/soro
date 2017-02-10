@@ -5,7 +5,7 @@
 
 #define LOG_TAG "StereoCameraWidget"
 
-#define NO_VIDEO_PATTERN CameraWidget::Pattern_Snow
+#define NO_VIDEO_PATTERN CameraWidget::Pattern_SMPTE
 
 namespace Soro {
 namespace MissionControl {
@@ -52,7 +52,7 @@ void StereoCameraWidget::resizeEvent(QResizeEvent* event) {
 
 void StereoCameraWidget::setStereoMode(VideoFormat::StereoMode mode) {
     if (_stereoMode != mode) {
-        if (isPlayingStereo()) {
+        if (isPlaying() && isStereoOn()) {
             LOG_E(LOG_TAG, "setStereoMode(): Cannot change stereo mode while playing in stereo. Please stop the player, then try again.");
             return;
         }
@@ -82,6 +82,8 @@ void StereoCameraWidget::playStereo(SocketAddress addressL, VideoFormat encoding
     ui->stereoRCameraWidget->play(addressR, encodingR);
     ui->stereoLCameraWidget->show();
     ui->stereoLCameraWidget->play(addressL, encodingL);
+    _isStereo = true;
+    emit videoChanged();
 }
 
 void StereoCameraWidget::playMono(SocketAddress address, VideoFormat encoding) {
@@ -95,6 +97,8 @@ void StereoCameraWidget::playMono(SocketAddress address, VideoFormat encoding) {
     // Play mono
     ui->monoCameraWidget->show();
     ui->monoCameraWidget->play(address, encoding);
+    _isStereo = false;
+    emit videoChanged();
 }
 
 void StereoCameraWidget::stop(bool stereo) {
@@ -102,10 +106,11 @@ void StereoCameraWidget::stop(bool stereo) {
         LOG_E(LOG_TAG, "stop(): Stereo mode is not set, cannot stop with stereo visualization. Please specify which stereo mode you want");
         stereo = false;
     }
+    _isStereo = stereo;
     ui->stereoLCameraWidget->stop("", NO_VIDEO_PATTERN);
     ui->stereoRCameraWidget->stop("", NO_VIDEO_PATTERN);
     ui->monoCameraWidget->stop("", NO_VIDEO_PATTERN);
-    if (stereo) {
+    if (_isStereo) {
         ui->monoCameraWidget->hide();
         ui->stereoLCameraWidget->show();
         ui->stereoRCameraWidget->show();
@@ -115,18 +120,17 @@ void StereoCameraWidget::stop(bool stereo) {
         ui->stereoRCameraWidget->hide();
         ui->monoCameraWidget->show();
     }
+    emit videoChanged();
 }
 
-bool StereoCameraWidget::isPlayingStereo() const {
-    return ui->stereoLCameraWidget->isPlaying() || ui->stereoRCameraWidget->isPlaying();
-}
-
-bool StereoCameraWidget::isPlayingMono() const {
-    return ui->monoCameraWidget->isPlaying();
+bool StereoCameraWidget::isStereoOn() const {
+    return _isStereo;
 }
 
 bool StereoCameraWidget::isPlaying() const {
-    return isPlayingStereo() || isPlayingMono();
+    return ui->monoCameraWidget->isPlaying() ||
+            ui->stereoLCameraWidget->isPlaying() ||
+            ui->stereoRCameraWidget->isPlaying();
 }
 
 } // namespace MissionControl

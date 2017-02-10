@@ -64,7 +64,7 @@ private slots:
     void mbedMessageReceived(const char* message, int size);
     void gpsUpdate(NmeaMessage message);
     void mediaServerError(MediaServer* server, QString message);
-    void startDataRecording(QDateTime startTime);
+    bool startDataRecording(QDateTime startTime);
     void stopDataRecording();
 
 public:

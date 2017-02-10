@@ -31,6 +31,7 @@ public slots:
 signals:
     void masterArmStateChanged(bool connected);
     void masterArmUpdate(const char *message);
+    void armMessageSent(const char *message, int size);
 
 protected:
     void send();

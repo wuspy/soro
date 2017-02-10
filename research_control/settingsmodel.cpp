@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 The University of Oklahoma.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "settingsmodel.h"
 
 namespace Soro {
@@ -15,6 +31,7 @@ SettingsModel SettingsModel::Default(QHostAddress roverAddress) {
     model.selectedVideoFormat = 0;
     model.selectedCamera = 0;
     model.selectedLatency = 0;
+    model.selectedHudParallax = 10;
 
     // Define media formats
     model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1920x1080, 12000000, 0, VideoFormat::StereoMode_None, 3));
@@ -53,6 +70,7 @@ void SettingsModel::syncUi(QQuickWindow *window) {
     window->setProperty("selectedVideoFormat", selectedVideoFormat);
     window->setProperty("selectedCamera", selectedCamera);
     window->setProperty("selectedLatency", selectedLatency);
+    window->setProperty("selectedHudParallax", selectedHudParallax);
 
     // Inform the view that the settings have been synced
     QMetaObject::invokeMethod(window, "uiSyncComplete");
@@ -68,6 +86,7 @@ void SettingsModel::syncModel(const QQuickWindow *window) {
     selectedVideoFormat = window->property("selectedVideoFormat").toInt();
     selectedCamera = window->property("selectedCamera").toInt();
     selectedLatency = window->property("selectedLatency").toInt();
+    selectedHudParallax = window->property("selectedHudParallax").toInt();
 }
 
 void SettingsModel::setSelectedCamera(int mediaId) {

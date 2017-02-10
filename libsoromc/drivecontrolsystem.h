@@ -25,10 +25,15 @@ public:
     void enable();
     void disable();
     void setMode(DriveGamepadMode mode);
+    DriveGamepadMode getMode() const;
     void setMiddleSkidFactor(float factor);
+    float getMiddleSkidFactor() const;
 
 protected:
     void timerEvent(QTimerEvent *e);
+
+signals:
+    void driveMessageSent(const char *message, int size);
 
 private:
     DriveGamepadMode _mode = DualStickDrive;
