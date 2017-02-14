@@ -30,40 +30,40 @@ void SoroTests::testSensorDataRecorder()
 
     /* Test simple data
      */
-    recorder.newData("a123b456c789", strlen("a123b456c789"));
+    recorder.newData("A123B456C789", strlen("A123B456C789"));
     QVERIFY(spy.count() == 3);
     QVERIFY(spyErr.count() == 0);
 
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'a');
+    QVERIFY(args.at(0).toChar() == 'A');
     QVERIFY(args.at(1).toInt() == 123);
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'b');
+    QVERIFY(args.at(0).toChar() == 'B');
     QVERIFY(args.at(1).toInt() == 456);
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'c');
+    QVERIFY(args.at(0).toChar() == 'C');
     QVERIFY(args.at(1).toInt() == 789);
 
     /* Test complex data
      */
-    recorder.newData("x123y456z", strlen("x123y456z"));
-    recorder.newData("789p1", strlen("789p1"));
+    recorder.newData("X123Y456Z", strlen("X123Y456Z"));
+    recorder.newData("789P1", strlen("789P1"));
     recorder.newData("23", strlen("23"));
 
     QVERIFY(spy.count() == 4);
     QVERIFY(spyErr.count() == 0);
 
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'x');
+    QVERIFY(args.at(0).toChar() == 'X');
     QVERIFY(args.at(1).toInt() == 123);
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'y');
+    QVERIFY(args.at(0).toChar() == 'Y');
     QVERIFY(args.at(1).toInt() == 456);
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'z');
+    QVERIFY(args.at(0).toChar() == 'Z');
     QVERIFY(args.at(1).toInt() == 789);
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'p');
+    QVERIFY(args.at(0).toChar() == 'P');
     QVERIFY(args.at(1).toInt() == 123);
 
     /* Test invalid data
@@ -74,15 +74,15 @@ void SoroTests::testSensorDataRecorder()
 
     spyErr.clear();
 
-    recorder.newData("x123456yz45p789", strlen("x123456yz45p789"));
+    recorder.newData("X123456YZ45P789", strlen("X123456YZ45P789"));
     QVERIFY(spy.count() == 2);
     QVERIFY(spyErr.count() > 0);
 
     args = spy.takeFirst();
-    QVERIFY(args.at(0).toChar() == 'x');
+    QVERIFY(args.at(0).toChar() == 'X');
     QVERIFY(args.at(1).toInt() == 123);
     args = spy.takeFirst();
-    QVERIFY(args.at(0) == 'p');
+    QVERIFY(args.at(0) == 'P');
     QVERIFY(args.at(1) == 789);
 
     spyErr.clear();

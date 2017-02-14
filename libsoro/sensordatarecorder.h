@@ -16,18 +16,18 @@ class LIBSORO_EXPORT SensorDataRecorder : public AbstractDataRecorder
 
 public:
 
-    static const char DATATAG_WHEELDATA_A = 'a';
-    static const char DATATAG_WHEELDATA_B = 'b';
-    static const char DATATAG_WHEELDATA_C = 'c';
-    static const char DATATAG_WHEELDATA_D = 'd';
-    static const char DATATAG_WHEELDATA_E = 'e';
-    static const char DATATAG_WHEELDATA_F = 'f';
-    static const char DATATAG_IMUDATA_1_X = 'x';
-    static const char DATATAG_IMUDATA_1_Y = 'y';
-    static const char DATATAG_IMUDATA_1_Z = 'z';
-    static const char DATATAG_IMUDATA_2_X = 'p';
-    static const char DATATAG_IMUDATA_2_Y = 'q';
-    static const char DATATAG_IMUDATA_2_Z = 'r';
+    static const char DATATAG_WHEELDATA_A = 'A';
+    static const char DATATAG_WHEELDATA_B = 'B';
+    static const char DATATAG_WHEELDATA_C = 'C';
+    static const char DATATAG_WHEELDATA_D = 'D';
+    static const char DATATAG_WHEELDATA_E = 'E';
+    static const char DATATAG_WHEELDATA_F = 'F';
+    static const char DATATAG_IMUDATA_1_X = 'X';
+    static const char DATATAG_IMUDATA_1_Y = 'Y';
+    static const char DATATAG_IMUDATA_1_Z = 'Z';
+    static const char DATATAG_IMUDATA_2_X = 'P';
+    static const char DATATAG_IMUDATA_2_Y = 'Q';
+    static const char DATATAG_IMUDATA_2_Z = 'R';
     static const char DATATAG_ERROR = '?';
 
     explicit SensorDataRecorder(QObject *parent = nullptr);
