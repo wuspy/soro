@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 The University of Oklahoma.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Controls.Material 2.0
@@ -13,6 +29,7 @@ ApplicationWindow {
 
     property alias connectionState: connectionStateGroup.state
     property alias recordingState: recordingStateGroup.state
+    property alias recordToolbarButton: recordToolbarButton
 
     signal logCommentEntered(string comment)
     signal recordButtonClicked()
@@ -43,34 +60,9 @@ ApplicationWindow {
     Universal.theme: Universal.Dark
     Universal.accent: accentColor
 
-    /*
-      Timer to keep track of how long a test has been running. Also updates
-      the testing time label.
-      */
-    Timer {
-        id: testingTimer
-        interval: 1000
-        repeat: true
-
-        property int elapsed;
-
-        onTriggered: {
-            elapsed++
-            var elapsedHours = Math.floor(elapsed / 3600)
-            var elapsedMinutes = Math.floor((elapsed - (elapsedHours * 3600)) / 60)
-            var elapsedSeconds = Math.floor((elapsed - (elapsedHours * 3600)) - (elapsedMinutes * 60));
-
-            if (elapsedMinutes.toString().length == 1) {
-                elapsedMinutes = "0" + elapsedMinutes
-            }
-            if (elapsedSeconds.toString().length == 1) {
-                elapsedSeconds = "0" + elapsedSeconds
-            }
-
-            var timeString = elapsedHours + ":" + elapsedMinutes + ":" + elapsedSeconds
-
-            recordButtonLabel.text = timeString
-        }
+    RecordingTimer {
+        id: recordingTimer
+        timeLabel: recordToolbarButton.label
     }
 
     /*
@@ -123,74 +115,46 @@ ApplicationWindow {
             State {
                 name: "recording"
                 PropertyChanges {
-                    target: recordButtonImage
-                    source: "qrc:/icons/ic_stop_white_48px.svg"
-                    visible: true
-                    width: 40
+                    target: recordToolbarButton
+                    state: "recording"
                 }
                 PropertyChanges {
-                    target: recordButtonTooltip
-                    text: qsTr("Stop Logging")
-                    visible: true
+                    target: recordingTimer
+                    running: true
+                    elapsed: 0
                 }
                 PropertyChanges {
-                    target: recordButtonLabel
-                    leftPadding: 5
-                    rightPadding: 5
-                    text: "0:00:00"
-                    visible: true
+                    target: commentsTextArea
+                    enabled: true
                 }
-                PropertyChanges {
-                    target: recordButtonBusyIndicator
-                    visible: false
-                    width: 0
+                StateChangeScript {
+                    script: commentsListModel.clear()
                 }
             },
             State {
                 name: "idle"
                 PropertyChanges {
-                    target: recordButtonImage
-                    source: "qrc:/icons/ic_play_arrow_white_48px.svg"
-                    visible: true
-                    width: 40
+                    target: recordToolbarButton
+                    state: "idle"
                 }
                 PropertyChanges {
-                    target: recordButtonTooltip
-                    text: qsTr("Begin Logging")
+                    target: recordingTimer
+                    running: false
                 }
                 PropertyChanges {
-                    target: recordButtonLabel
-                    leftPadding: 0
-                    rightPadding: 0
-                    text: ""
-                }
-                PropertyChanges {
-                    target: recordButtonBusyIndicator
-                    visible: false
-                    width: 0
+                    target: commentsTextArea
+                    enabled: false
                 }
             },
             State {
                 name: "waiting"
                 PropertyChanges {
-                    target: recordButtonBusyIndicator
-                    visible: true
-                    width: 40
+                    target: recordToolbarButton
+                    state: "waiting"
                 }
                 PropertyChanges {
-                    target: recordButtonImage
-                    visible: false
-                    width: 0
-                }
-                PropertyChanges {
-                    target: recordButtonLabel
-                    leftPadding: 0
-                    rightPadding: 0
-                    text: ""
-                }
-                PropertyChanges {
-                    target: recordButtonTooltip
-                    text: qsTr("Waiting...")
+                    target: commentsTextArea
+                    enabled: false
                 }
             }
         ]
@@ -211,18 +175,6 @@ ApplicationWindow {
                 recordComment("[System Message] Connection to the rover has been lost", "system");
                 break;
             }
-        }
-    }
-
-    onRecordingStateChanged: {
-        commentsTextArea.enabled = recordingState === "recording"
-        testingTimer.restart()
-        testingTimer.elapsed = 0
-        testingTimer.running = recordingState === "recording"
-        recordButtonMouseArea.state = recordingState === "recording" ? "checked" : "unchecked"
-        if (recordingState === "recording") {
-            // Clear comments since a new test is starting
-            commentsListModel.clear()
         }
     }
 
@@ -251,8 +203,6 @@ ApplicationWindow {
                */
             model: ListModel {
                 id: commentsListModel
-
-
             }
 
             delegate:Label {
@@ -329,69 +279,27 @@ ApplicationWindow {
             anchors.leftMargin: 12
         }
 
-        /* This is the test start/stop button. It also shows the elapsed time during a test,
-          which it calculates itself using a timer. This doesn't need to be completely accurate
-          as it only serves as a reference, the actual testing timestamps are saved elsewhere.
-          */
-        MouseArea {
-            id: recordButtonMouseArea
-            height: 40
-            width: recordButtonImage.width + recordButtonLabel.width + recordButtonBusyIndicator.width
-            anchors.verticalCenter: parent.verticalCenter
+        RecordButton {
+            id: recordToolbarButton
             anchors.right: parent.right
-            cursorShape: Qt.PointingHandCursor
-            hoverEnabled: true
+
             onClicked: {
-                if (recordingState !== "waiting") {
-                    recordingState = "waiting"
+                switch (recordingState) {
+                case "idle":
                     recordButtonClicked()
+                    break
+                case "recording":
+                    confirmRecordStopDialog.visible = true
+                    break
+                case "waiting":
+                    break
                 }
             }
-
-            BusyIndicator {
-                id: recordButtonBusyIndicator
-                width: 0
-                height: 40
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                visible: false
-                Material.accent: Material.foreground
-                Universal.accent: Universal.foreground
-            }
-
-            ToolTip {
-                id: recordButtonTooltip
-                visible: recordButtonMouseArea.containsMouse
-                delay: 500
-                timeout: 5000
-            }
-
-            Image {
-                id: recordButtonImage
-                sourceSize.height: height
-                sourceSize.width: width
-                fillMode: Image.PreserveAspectFit
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 40
-                height: 40
-            }
-
-            Label {
-                id: recordButtonLabel
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.left: recordButtonImage.right
-                text: ""
-                font.pointSize: 22
-            }
-
-            ColorOverlay {
-                id: recordButtonColorOverlay
-                anchors.fill: recordButtonImage
-                source: recordButtonImage
-                color: "#ffffff"
-            }
         }
+    }
+
+    ConfirmRecordStopDialog {
+        id: confirmRecordStopDialog
+        onAccepted: recordButtonClicked()
     }
 }

@@ -67,6 +67,11 @@ ApplicationWindow {
     property alias settingsFooterPane: settingsFooterPane
     property alias connectionState: connectionStateGroup.state
     property alias recordingState: recordingStateGroup.state
+    property alias fullscreenState: fullscreenStateGroup.state
+    property alias sidePaneVisibilityState: sidePaneVisibilityStateGroup.state
+    property alias fullscreenToolbarButton: fullscreenToolbarButton
+    property alias recordToolbarButton: recordToolbarButton
+    property alias sidebarToolbarButton: sidebarToolbarButton
 
     // Settings properties
 
@@ -184,7 +189,6 @@ ApplicationWindow {
       Valid types are: 'error', 'warning', or 'information'
       */
     function notify(type, title, message) {
-
         notificationPane.state = "hidden"
         switch (type) {
         case "error":
@@ -222,7 +226,7 @@ ApplicationWindow {
       */
     function clearGps() {
         gpsDataPoints = 0
-        webEngineView.reload()
+        webEngineView.runJavaScript("resetLocations()");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -263,21 +267,93 @@ ApplicationWindow {
         }
     }
 
-    onRecordingStateChanged: {
-        testingTimer.restart()
-        testingTimer.elapsed = 0
-        testingTimer.running = recordingState === "recording"
-        recordButtonMouseArea.state = recordingState === "recording" ? "checked" : "unchecked"
-        if (recordingState === "recording") {
-            // Clear map since a new test is starting
-            webEngineView.reload()
-            gpsDataPoints = 0
-        }
-    }
-
     onDriveStatusChanged: {
         // Update the drive status field
         driveStatusField.text = driveStatus
+    }
+
+    StateGroup {
+        id: fullscreenStateGroup
+        state: "normal"
+        states: [
+            State {
+                name: "fullscreen"
+                PropertyChanges {
+                    target: fullscreenToolbarButton
+                    tooltip.text: "Exit Fullscreen"
+                    image.source: "qrc:/icons/ic_fullscreen_exit_white_48px.svg"
+                }
+                StateChangeScript {
+                    script: mainWindow.showFullScreen()
+                }
+            },
+            State {
+                name: "normal"
+                PropertyChanges {
+                    target: fullscreenToolbarButton
+                    tooltip.text: "Show Fullscreen"
+                    image.source: "qrc:/icons/ic_fullscreen_white_48px.svg"
+                }
+                StateChangeScript {
+                    script: mainWindow.showNormal()
+                }
+            }
+        ]
+    }
+
+
+    /* State group to control the visibility of the options sidebar
+      */
+    StateGroup {
+        id: sidePaneVisibilityStateGroup
+        state: "visible"
+
+        states: [
+            State {
+                name: "hidden"
+                PropertyChanges {
+                    target: asidePane
+                    anchors.leftMargin: -asidePane.width
+                }
+                PropertyChanges {
+                    target: sidebarToolbarButton
+                    tooltip.text: "Show Sidebar"
+                    image.source: "qrc:/icons/ic_keyboard_arrow_right_white_48px.svg"
+                }
+            },
+            State {
+                name: "visible"
+                PropertyChanges {
+                    target: asidePane
+                    anchors.leftMargin: 0
+                }
+                PropertyChanges {
+                    target: sidebarToolbarButton
+                    tooltip.text: "Hide Sidebar"
+                    image.source: "qrc:/icons/ic_keyboard_arrow_left_white_48px.svg"
+                }
+            }
+
+        ]
+
+        transitions: [
+            Transition {
+                from: "visible"
+                to: "hidden"
+                PropertyAnimation {
+                    properties: "anchors.leftMargin"
+                    duration: 100
+                }
+            },
+            Transition {
+                from: "hidden"
+                to: "visible"
+                PropertyAnimation {
+                    properties: "anchors.leftMargin"
+                    duration: 100
+                }
+            }
+        ]
     }
 
     /*
@@ -341,8 +417,7 @@ ApplicationWindow {
     }
 
     /*
-      State group to update the UI to reflect a change in the rover's connection status
-      Can be accessed from the backend with the connectionState property
+      State group to show the recording status in the UI.
       */
     StateGroup {
         id: recordingStateGroup
@@ -351,74 +426,25 @@ ApplicationWindow {
             State {
                 name: "recording"
                 PropertyChanges {
-                    target: recordButtonImage
-                    source: "qrc:/icons/ic_stop_white_48px.svg"
-                    visible: true
-                    width: 40
+                    target: recordToolbarButton
+                    state: "recording"
                 }
-                PropertyChanges {
-                    target: recordButtonTooltip
-                    text: qsTr("Stop Logging")
-                    visible: true
-                }
-                PropertyChanges {
-                    target: recordButtonLabel
-                    leftPadding: 5
-                    rightPadding: 5
-                    text: "0:00:00"
-                    visible: true
-                }
-                PropertyChanges {
-                    target: recordButtonBusyIndicator
-                    visible: false
-                    width: 0
+                StateChangeScript {
+                    script: clearGps()
                 }
             },
             State {
                 name: "idle"
                 PropertyChanges {
-                    target: recordButtonImage
-                    source: "qrc:/icons/ic_play_arrow_white_48px.svg"
-                    visible: true
-                    width: 40
-                }
-                PropertyChanges {
-                    target: recordButtonTooltip
-                    text: qsTr("Begin Logging")
-                }
-                PropertyChanges {
-                    target: recordButtonLabel
-                    leftPadding: 0
-                    rightPadding: 0
-                    text: ""
-                }
-                PropertyChanges {
-                    target: recordButtonBusyIndicator
-                    visible: false
-                    width: 0
+                    target: recordToolbarButton
+                    state: "idle"
                 }
             },
             State {
                 name: "waiting"
                 PropertyChanges {
-                    target: recordButtonBusyIndicator
-                    visible: true
-                    width: 40
-                }
-                PropertyChanges {
-                    target: recordButtonImage
-                    visible: false
-                    width: 0
-                }
-                PropertyChanges {
-                    target: recordButtonLabel
-                    leftPadding: 0
-                    rightPadding: 0
-                    text: ""
-                }
-                PropertyChanges {
-                    target: recordButtonTooltip
-                    text: qsTr("Waiting...")
+                    target: recordToolbarButton
+                    state: "waiting"
                 }
             }
         ]
@@ -451,36 +477,6 @@ ApplicationWindow {
         running: false
         repeat: false
         onTriggered: notificationPane.state = "hidden"
-    }
-
-    /*
-      Timer to keep track of how long a test has been running. Also updates
-      the testing time label.
-      */
-    Timer {
-        id: testingTimer
-        interval: 1000
-        repeat: true
-
-        property int elapsed;
-
-        onTriggered: {
-            elapsed++
-            var elapsedHours = Math.floor(elapsed / 3600)
-            var elapsedMinutes = Math.floor((elapsed - (elapsedHours * 3600)) / 60)
-            var elapsedSeconds = Math.floor((elapsed - (elapsedHours * 3600)) - (elapsedMinutes * 60));
-
-            if (elapsedMinutes.toString().length == 1) {
-                elapsedMinutes = "0" + elapsedMinutes
-            }
-            if (elapsedSeconds.toString().length == 1) {
-                elapsedSeconds = "0" + elapsedSeconds
-            }
-
-            var timeString = elapsedHours + ":" + elapsedMinutes + ":" + elapsedSeconds
-
-            recordButtonLabel.text = timeString
-        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -517,44 +513,6 @@ ApplicationWindow {
         anchors.leftMargin: 0
         anchors.top: headerPane.bottom
         anchors.topMargin: 0
-        state: "visible"
-
-        states: [
-            State {
-                name: "hidden"
-                PropertyChanges {
-                    target: asidePane
-                    anchors.leftMargin: -asidePane.width
-                }
-            },
-            State {
-                name: "visible"
-                PropertyChanges {
-                    target: asidePane
-                    anchors.leftMargin: 0
-                }
-            }
-
-        ]
-
-        transitions: [
-            Transition {
-                from: "visible"
-                to: "hidden"
-                PropertyAnimation {
-                    properties: "anchors.leftMargin"
-                    duration: 100
-                }
-            },
-            Transition {
-                from: "hidden"
-                to: "visible"
-                PropertyAnimation {
-                    properties: "anchors.leftMargin"
-                    duration: 100
-                }
-            }
-        ]
 
         Flickable {
             id: settingsFlickable
@@ -1222,258 +1180,53 @@ ApplicationWindow {
             anchors.topMargin: 0
         }
 
-        MouseArea {
-            id: sidebarButtonMouseArea
-            width: height
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 0
+        ToolbarButton {
+            id: sidebarToolbarButton
             anchors.left: headerSeparator.right
-            anchors.rightMargin: 0
-            anchors.top: parent.top
-            anchors.topMargin: 0
-            cursorShape: Qt.PointingHandCursor
-            state: "unchecked"
-            hoverEnabled: true
 
             onClicked: {
-                if (state == "checked") {
-                    asidePane.state = "visible"
-                    state = "unchecked"
+                if (sidePaneVisibilityState === "visible") {
+                    sidePaneVisibilityState = "hidden"
                 }
                 else {
-                    asidePane.state = "hidden"
-                    state = "checked"
+                    sidePaneVisibilityState = "visible"
                 }
             }
-
-            ToolTip {
-                id: sidebarButtonTooltip
-                visible: sidebarButtonMouseArea.containsMouse
-                delay: 500
-                timeout: 5000
-            }
-
-            Image {
-                id: sidebarButtonImage
-                sourceSize.height: height
-                sourceSize.width: width
-                fillMode: Image.PreserveAspectFit
-                anchors.fill: parent
-            }
-
-            ColorOverlay {
-                id: sidebarButtonColorOverlay
-                anchors.fill: sidebarButtonImage
-                source: sidebarButtonImage
-                color: "#ffffff"
-            }
-
-            states: [
-                State {
-                    name: "checked"
-                    PropertyChanges {
-                        target: sidebarButtonImage
-                        source: "qrc:/icons/ic_keyboard_arrow_right_white_48px.svg"
-                    }
-                    PropertyChanges {
-                        target: sidebarButtonTooltip
-                        text: qsTr("Show Sidebar")
-                    }
-                },
-                State {
-                    name: "unchecked"
-                    PropertyChanges {
-                        target: sidebarButtonImage
-                        source: "qrc:/icons/ic_keyboard_arrow_left_white_48px.svg"
-                    }
-                    PropertyChanges {
-                        target: sidebarButtonTooltip
-                        text: qsTr("Hide Sidebar")
-                    }
-                }
-            ]
         }
 
-        /* This is the test start/stop button. It also shows the elapsed time during a test,
-          which it calculates itself using a timer. This doesn't need to be completely accurate
-          as it only serves as a reference, the actual testing timestamps are saved elsewhere.
-          */
-        MouseArea {
-            id: recordButtonMouseArea
-            height: 40
-            width: recordButtonImage.width + recordButtonLabel.width + recordButtonBusyIndicator.width
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right: fullscreenButtonMouseArea.left
-            anchors.rightMargin: 12
-            cursorShape: Qt.PointingHandCursor
-            hoverEnabled: true
+        RecordButton {
+            id: recordToolbarButton
+            anchors.right: fullscreenToolbarButton.left
+            anchors.rightMargin: 6
+
             onClicked: {
-                if (recordingState !== "waiting") {
-                    recordingState = "waiting"
+                switch (recordingState) {
+                case "recording":
+                    confirmRecordStopDialog.visible = true
+                    break
+                case "idle":
                     recordButtonClicked()
+                    break
+                case "waiting":
+                default:
+                    break
                 }
-            }
-
-            BusyIndicator {
-                id: recordButtonBusyIndicator
-                width: 0
-                height: 40
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                visible: false
-                Material.accent: Material.foreground
-                Universal.accent: Universal.foreground
-            }
-
-            ToolTip {
-                id: recordButtonTooltip
-                visible: recordButtonMouseArea.containsMouse
-                delay: 500
-                timeout: 5000
-            }
-
-            Image {
-                id: recordButtonImage
-                sourceSize.height: height
-                sourceSize.width: width
-                fillMode: Image.PreserveAspectFit
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 40
-                height: 40
-            }
-
-            Label {
-                id: recordButtonLabel
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.left: recordButtonImage.right
-                text: ""
-                font.pointSize: 22
-            }
-
-            ColorOverlay {
-                id: recordButtonColorOverlay
-                anchors.fill: recordButtonImage
-                source: recordButtonImage
-                color: "#ffffff"
             }
         }
 
-        MouseArea {
-            id: fullscreenButtonMouseArea
-            width: height
-            anchors.bottom: parent.bottom
+        ToolbarButton {
+            id: fullscreenToolbarButton
             anchors.right: parent.right
-            anchors.top: parent.top
-            cursorShape: Qt.PointingHandCursor
-            state: "unchecked"
-            hoverEnabled: true
 
             onClicked: {
-                if (state == "checked") {
-                    mainWindow.showNormal()
-                    state = "unchecked"
+                if (fullscreenState === "fullscreen") {
+                    fullscreenState = "normal"
                 }
                 else {
-                    mainWindow.showFullScreen()
-                    state = "checked"
+                    fullscreenState = "fullscreen"
                 }
             }
-
-            ToolTip {
-                id: fullscreenButtonTooltip
-                visible: fullscreenButtonMouseArea.containsMouse
-                delay: 500
-                timeout: 5000
-            }
-
-            Image {
-                id: fullscreenButtonImage
-                sourceSize.height: height
-                sourceSize.width: width
-                fillMode: Image.PreserveAspectFit
-                anchors.fill: parent
-            }
-
-            ColorOverlay {
-                id: fullscreenButtonColorOverlay
-                anchors.fill: fullscreenButtonImage
-                source: fullscreenButtonImage
-                color: "#ffffff"
-            }
-
-            states: [
-                State {
-                    name: "checked"
-                    PropertyChanges {
-                        target: fullscreenButtonImage
-                        source: "qrc:/icons/ic_fullscreen_exit_white_48px.svg"
-                    }
-                    PropertyChanges {
-                        target: fullscreenButtonTooltip
-                        text: qsTr("Exit Fullscreen")
-                    }
-                },
-                State {
-                    name: "unchecked"
-                    PropertyChanges {
-                        target: fullscreenButtonImage
-                        source: "qrc:/icons/ic_fullscreen_white_48px.svg"
-                    }
-                    PropertyChanges {
-                        target: fullscreenButtonTooltip
-                        text: qsTr("Fullscreen")
-                    }
-                }
-            ]
         }
-
-        /*TabBar {
-            id: headerTabBar
-            y: 12
-            anchors.bottomMargin: -headerPane.bottomPadding
-            anchors.topMargin: -headerPane.topPadding
-            clip: true
-            anchors.right: fullscreenButtonMouseArea.left
-            anchors.rightMargin: 12
-            anchors.left: headerSeparator.right
-            anchors.leftMargin: 12
-
-            Material.accent: Material.foreground
-            anchors.bottom: parent.bottom
-            anchors.top: parent.top
-
-            TabButton {
-                id: gpsTabButton
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                text: qsTr("GPS")
-                onCheckedChanged: {
-                    webEngineView.visible = checked;
-                }
-            }
-            TabButton {
-                id: proctorTabButton
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                text: qsTr("Proctoring")
-                onCheckedChanged: {
-                    proctorScreen.visible = checked;
-                }
-            }
-            TabButton {
-                id: reviewTabButton
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                text: qsTr("Review")
-                onCheckedChanged: {
-                    reviewScreen.visible = checked;
-                    asidePane.state = checked ? "hidden" : "visible";
-                }
-            }
-        }*/
-
     }
 
     DropShadow {
@@ -1603,5 +1356,9 @@ ApplicationWindow {
                 }
             }
         ]
+    }
+    ConfirmRecordStopDialog {
+        id: confirmRecordStopDialog
+        onAccepted: recordButtonClicked()
     }
 }

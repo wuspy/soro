@@ -6,5 +6,9 @@
         <file>HudOrientation.qml</file>
         <file>HudBackground.qml</file>
         <file>Comments.qml</file>
+        <file>ConfirmRecordStopDialog.qml</file>
+        <file>RecordButton.qml</file>
+        <file>ToolbarButton.qml</file>
+        <file>RecordingTimer.qml</file>
     </qresource>
 </RCC>
