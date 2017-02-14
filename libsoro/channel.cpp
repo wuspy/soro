@@ -631,6 +631,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
             wrapper->data[0] = reinterpret_cast<char&>(type);
             Util::serialize<MessageID>(wrapper->data + 1, _nextSendID);
             memcpy(wrapper->data + sizeof(MessageID) + 1, message, (size_t)size);
+            wrapper->len = size + UDP_HEADER_SIZE;
             _delayPackets.enqueue(wrapper);
             startTimer(_simulatedDelay);
             status = size + UDP_HEADER_SIZE;
@@ -652,6 +653,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
             wrapper->data[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
             Util::serialize<MessageID>(wrapper->data + sizeof(MessageSize) + 1, _nextSendID);
             memcpy(wrapper->data + sizeof(MessageID) + sizeof(MessageSize) + 1, message, (size_t)size);
+            wrapper->len = newSize;
             _delayPackets.enqueue(wrapper);
             startTimer(_simulatedDelay);
             status = newSize;
