@@ -9,7 +9,7 @@
         <file>ConfirmRecordStopDialog.qml</file>
         <file>RecordButton.qml</file>
         <file>ToolbarButton.qml</file>
-        <file>RecordingTimer.qml</file>
         <file>OnWindowCloseDialog.qml</file>
+        <file>RecordingTimer.qml</file>
     </qresource>
 </RCC>

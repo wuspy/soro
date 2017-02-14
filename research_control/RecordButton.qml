@@ -26,7 +26,7 @@ import QtGraphicalEffects 1.0
   */
 ToolbarButton {
     id: recordButton
-    width: label.width + label.x
+    width: label.width + busyIndicator.width + image.width
     height: parent.height
     state: "idle"
 

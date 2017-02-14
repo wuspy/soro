@@ -439,6 +439,11 @@ ApplicationWindow {
                     target: recordToolbarButton
                     state: "recording"
                 }
+                PropertyChanges {
+                    target: recordingTimer
+                    running: true
+                    elapsed: 0
+                }
                 StateChangeScript {
                     script: clearGps()
                 }
@@ -449,12 +454,20 @@ ApplicationWindow {
                     target: recordToolbarButton
                     state: "idle"
                 }
+                PropertyChanges {
+                    target: recordingTimer
+                    running: false
+                }
             },
             State {
                 name: "waiting"
                 PropertyChanges {
                     target: recordToolbarButton
                     state: "waiting"
+                }
+                PropertyChanges {
+                    target: recordingTimer
+                    running: false
                 }
             }
         ]
@@ -487,6 +500,14 @@ ApplicationWindow {
         running: false
         repeat: false
         onTriggered: notificationPane.state = "hidden"
+    }
+
+    RecordingTimer {
+        id: recordingTimer
+
+        onTimeStringChanged: {
+            recordToolbarButton.label.text = timeString
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -1204,52 +1225,33 @@ ApplicationWindow {
             }
         }
 
+        RecordButton {
+            id: recordToolbarButton
+            anchors.right: fullscreenToolbarButton.left
+            onClicked: {
+                switch (recordingState) {
+                case "recording":
+                    confirmRecordStopDialog.visible = true
+                    break
+                case "idle":
+                    recordButtonClicked()
+                    break
+                case "waiting":
+                default:
+                    break
+                }
+            }
+        }
 
-        RowLayout {
-            id: toolbarRowLayout
+        ToolbarButton {
+            id: fullscreenToolbarButton
             anchors.right: parent.right
-            height: parent.height
-            RecordButton {
-                id: recordToolbarButton
-
-                onClicked: {
-                    switch (recordingState) {
-                    case "recording":
-                        confirmRecordStopDialog.visible = true
-                        break
-                    case "idle":
-                        recordButtonClicked()
-                        break
-                    case "waiting":
-                    default:
-                        break
-                    }
+            onClicked: {
+                if (fullscreenState === "fullscreen") {
+                    fullscreenState = "normal"
                 }
-            }
-
-            ToolbarButton {
-                id: commentsWindowToolbarButton
-
-                onClicked: {
-                    if (fullscreenState === "fullscreen") {
-                        fullscreenState = "normal"
-                    }
-                    else {
-                        fullscreenState = "fullscreen"
-                    }
-                }
-            }
-
-            ToolbarButton {
-                id: fullscreenToolbarButton
-
-                onClicked: {
-                    if (fullscreenState === "fullscreen") {
-                        fullscreenState = "normal"
-                    }
-                    else {
-                        fullscreenState = "fullscreen"
-                    }
+                else {
+                    fullscreenState = "fullscreen"
                 }
             }
         }

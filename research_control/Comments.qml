@@ -31,6 +31,7 @@ ApplicationWindow {
     property alias connectionState: connectionStateGroup.state
     property alias recordingState: recordingStateGroup.state
     property alias recordToolbarButton: recordToolbarButton
+    property alias recordingTimer: recordingTimer
 
     signal logCommentEntered(string comment)
     signal recordButtonClicked()
@@ -45,7 +46,7 @@ ApplicationWindow {
     property color accentColor: "#616161"
 
     function recordComment(text, type) {
-        commentsListModel.append({"commentText": "At " + testingTimer.elapsed + " seconds:", "messageType": "time"})
+        commentsListModel.append({"commentText": "At " + recordingTimer.timeString + ":", "messageType": "time"})
         commentsListModel.append({"commentText": text, "messageType": type})
         commentsListView.positionViewAtEnd()
         if (type === "user") {
@@ -72,9 +73,13 @@ ApplicationWindow {
         }
     }
 
+
     RecordingTimer {
         id: recordingTimer
-        timeLabel: recordToolbarButton.label
+
+        onTimeStringChanged: {
+            recordToolbarButton.label.text = timeString
+        }
     }
 
     /*
@@ -163,6 +168,10 @@ ApplicationWindow {
                 PropertyChanges {
                     target: recordToolbarButton
                     state: "waiting"
+                }
+                PropertyChanges {
+                    target: recordingTimer
+                    running: false
                 }
                 PropertyChanges {
                     target: commentsTextArea

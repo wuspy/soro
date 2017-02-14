@@ -33,19 +33,19 @@ Item {
 
     property int margin: 16
 
-    DropShadow {
+    /*DropShadow {
         anchors.fill: backdrop
         source: backdrop
         radius: margin
         samples: radius * 2
         color: "black"
-    }
+    }*/
 
     Rectangle {
         id: backdrop
         anchors.fill: parent
         anchors.margins: parent.margin
-        color: "#aa303030"
+        color: "#34000000"
         radius: 10
     }
 }

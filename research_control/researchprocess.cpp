@@ -583,7 +583,7 @@ void ResearchControlProcess::driveConnectionStateChanged(Channel::State state) {
                                       "notify",
                                       Q_ARG(QVariant,"error"),
                                       Q_ARG(QVariant, "Drive Channel Disconnected"),
-                                      Q_ARG(QVariant, "The network connection to it's drive subsystem has been lost."));
+                                      Q_ARG(QVariant, "The network connection to the rover's drive system has been lost."));
             _controlUi->setProperty("driveStatus", "Network Disconnected");
         }
         break;
