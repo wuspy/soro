@@ -57,8 +57,7 @@ ResearchMainWindow::ResearchMainWindow(const GamepadManager *gamepad, const Driv
     adjustHud();
 }
 
-ResearchMainWindow::~ResearchMainWindow()
-{
+ResearchMainWindow::~ResearchMainWindow() {
     delete ui;
 }
 
@@ -67,7 +66,7 @@ StereoCameraWidget* ResearchMainWindow::getCameraWidget() {
 }
 
 void ResearchMainWindow::closeEvent(QCloseEvent *event) {
-    QMainWindow::closeEvent(event);
+    event->setAccepted(false);
     emit closed();
 }
 

@@ -5,6 +5,7 @@
 #include <QCloseEvent>
 #include <QQuickItem>
 #include <QTimerEvent>
+#include <QMouseEvent>
 
 #include "libsoromc/stereocamerawidget.h"
 #include "libsoromc/gamepadmanager.h"
@@ -54,6 +55,7 @@ private:
     int _updateLatencyTimerId = TIMER_INACTIVE;
     int _hudParallax = 50;
     bool _hudVisible = true;
+    QPoint _mouseDownPos;
 };
 
 } // namespace MissionControl

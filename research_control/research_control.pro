@@ -12,7 +12,7 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-QT       += core gui network widgets qml quick quickcontrols2 webengine charts quickwidgets
+QT       += core gui network widgets qml quick quickcontrols2 webengine quickwidgets
 CONFIG   += c++11
 
 TARGET = research_control

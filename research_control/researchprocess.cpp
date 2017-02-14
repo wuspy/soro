@@ -24,6 +24,15 @@ namespace Soro {
 namespace MissionControl {
 
 ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, GamepadManager *gamepad, QQmlEngine *qml, QObject *parent) : QObject(parent) {
+    _gamepad = gamepad;
+    _settings = SettingsModel::Default(roverAddress);
+    _qml = qml;
+
+    // Must initialize after event loop starts
+    QTimer::singleShot(1, this, &ResearchControlProcess::init);
+}
+
+void ResearchControlProcess::init() {
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
@@ -32,10 +41,7 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
 
-    _gamepad = gamepad;
     connect(_gamepad, &GamepadManager::gamepadChanged, this, &ResearchControlProcess::gamepadChanged);
-
-    _settings = SettingsModel::Default(roverAddress);
 
     LOG_I(LOG_TAG, "****************Initializing connections*******************");
 
@@ -97,10 +103,9 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
     // Create UI for rover control
     _mainUi = new ResearchMainWindow(_gamepad, _driveSystem);
     _mainUi->getCameraWidget()->setStereoMode(VideoFormat::StereoMode_SideBySide);
-    connect(_mainUi, &ResearchMainWindow::closed, this, &ResearchControlProcess::windowClosed);
 
     // Create UI for settings and control
-    QQmlComponent qmlComponent(qml, QUrl("qrc:/Main.qml"));
+    QQmlComponent qmlComponent(_qml, QUrl("qrc:/Main.qml"));
     _controlUi = qobject_cast<QQuickWindow*>(qmlComponent.create());
     if (!qmlComponent.errorString().isEmpty() || !_controlUi) {
         LOG_E(LOG_TAG, "Cannot create main QML: " + qmlComponent.errorString());
@@ -108,9 +113,8 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
         return;
     }
 
-
     // Create UI for comments
-    QQmlComponent qmlComponent2(qml, QUrl("qrc:/Comments.qml"));
+    QQmlComponent qmlComponent2(_qml, QUrl("qrc:/Comments.qml"));
     _commentsUi = qobject_cast<QQuickWindow*>(qmlComponent2.create());
     if (!qmlComponent2.errorString().isEmpty() || !_commentsUi) {
         LOG_E(LOG_TAG, "Cannot create comments QML: " + qmlComponent2.errorString());
@@ -127,6 +131,8 @@ ResearchControlProcess::ResearchControlProcess(QHostAddress roverAddress, Gamepa
 
     connect(_sensorRecorder, &SensorDataRecorder::dataParsed, _mainUi, &ResearchMainWindow::sensorUpdate);
     connect(_commentsUi, SIGNAL(logCommentEntered(QString)), _masterRecorder, SLOT(addComment(QString)));
+    connect(_controlUi, SIGNAL(closed()), this, SLOT(onQmlUiClosed()));
+    connect(_commentsUi, SIGNAL(closed()), this, SLOT(onQmlUiClosed()));
 
     // Show UI's
 
@@ -192,6 +198,10 @@ void ResearchControlProcess::gamepadChanged(bool connected, QString name) {
                                   Q_ARG(QVariant, "No Input Device"),
                                   Q_ARG(QVariant, "Driving will be unavailable until a compatible controller is connected."));
     }
+}
+
+void ResearchControlProcess::onQmlUiClosed() {
+    QCoreApplication::quit();
 }
 
 void ResearchControlProcess::ui_requestUiSync() {

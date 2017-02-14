@@ -43,19 +43,17 @@ class ResearchControlProcess : public QObject {
 public:
 
     explicit ResearchControlProcess(QHostAddress roverAddress, GamepadManager *gamepad, QQmlEngine *qml, QObject *parent = 0);
-
     ~ResearchControlProcess();
-
-signals:
-    void windowClosed();
 
 private:
     SettingsModel _settings;
+    bool _initialized = false;
 
     // The main UI components
     ResearchMainWindow *_mainUi = nullptr;
     QQuickWindow *_controlUi = nullptr;
     QQuickWindow *_commentsUi = nullptr;
+    QQmlEngine *_qml = nullptr;
 
     // Communicates with the rover shared channel
     Channel *_roverChannel = nullptr;
@@ -97,6 +95,7 @@ private:
     void sendStopRecordCommandToRover();
 
 private slots:
+    void init();
     void updateUiConnectionState();
     void roverSharedChannelMessageReceived(const char *message, Channel::MessageSize size);
     void videoClientStateChanged(MediaClient *client, MediaClient::State state);
@@ -104,6 +103,7 @@ private slots:
     void driveConnectionStateChanged(Channel::State state);
     void gamepadChanged(bool connected, QString name);
     void roverDataRecordResponseWatchdog();
+    void onQmlUiClosed();
 
     /**
      * Receives the signal from the UI when the settings have been applied and should be enacted

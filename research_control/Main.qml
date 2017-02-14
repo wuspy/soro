@@ -22,7 +22,6 @@ import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 import QtWebEngine 1.3
 import QtQuick.Window 2.2
-import QtCharts 2.0
 
 ApplicationWindow {
     id: mainWindow
@@ -109,6 +108,7 @@ ApplicationWindow {
     signal settingsApplied()
     signal logCommentEntered(string comment)
     signal recordButtonClicked()
+    signal closed()
 
     // Public functions
 
@@ -270,6 +270,16 @@ ApplicationWindow {
     onDriveStatusChanged: {
         // Update the drive status field
         driveStatusField.text = driveStatus
+    }
+
+    onClosing: {
+        if (recordingState !== "idle") {
+            close.accepted = false
+            onWindowCloseDialog.visible = true
+        }
+        else {
+            closed()
+        }
     }
 
     StateGroup {
@@ -1194,36 +1204,52 @@ ApplicationWindow {
             }
         }
 
-        RecordButton {
-            id: recordToolbarButton
-            anchors.right: fullscreenToolbarButton.left
-            anchors.rightMargin: 6
 
-            onClicked: {
-                switch (recordingState) {
-                case "recording":
-                    confirmRecordStopDialog.visible = true
-                    break
-                case "idle":
-                    recordButtonClicked()
-                    break
-                case "waiting":
-                default:
-                    break
+        RowLayout {
+            id: toolbarRowLayout
+            anchors.right: parent.right
+            height: parent.height
+            RecordButton {
+                id: recordToolbarButton
+
+                onClicked: {
+                    switch (recordingState) {
+                    case "recording":
+                        confirmRecordStopDialog.visible = true
+                        break
+                    case "idle":
+                        recordButtonClicked()
+                        break
+                    case "waiting":
+                    default:
+                        break
+                    }
                 }
             }
-        }
 
-        ToolbarButton {
-            id: fullscreenToolbarButton
-            anchors.right: parent.right
+            ToolbarButton {
+                id: commentsWindowToolbarButton
 
-            onClicked: {
-                if (fullscreenState === "fullscreen") {
-                    fullscreenState = "normal"
+                onClicked: {
+                    if (fullscreenState === "fullscreen") {
+                        fullscreenState = "normal"
+                    }
+                    else {
+                        fullscreenState = "fullscreen"
+                    }
                 }
-                else {
-                    fullscreenState = "fullscreen"
+            }
+
+            ToolbarButton {
+                id: fullscreenToolbarButton
+
+                onClicked: {
+                    if (fullscreenState === "fullscreen") {
+                        fullscreenState = "normal"
+                    }
+                    else {
+                        fullscreenState = "fullscreen"
+                    }
                 }
             }
         }
@@ -1357,8 +1383,13 @@ ApplicationWindow {
             }
         ]
     }
+
     ConfirmRecordStopDialog {
         id: confirmRecordStopDialog
         onAccepted: recordButtonClicked()
+    }
+
+    OnWindowCloseDialog {
+        id: onWindowCloseDialog
     }
 }

@@ -23,6 +23,7 @@ import QtGraphicalEffects 1.0
 
 ApplicationWindow {
     id: commentsWindow
+
     width: 640
     height: 480
     title: qsTr("Research Control - Comments")
@@ -33,6 +34,7 @@ ApplicationWindow {
 
     signal logCommentEntered(string comment)
     signal recordButtonClicked()
+    signal closed()
 
     // Internal properties
 
@@ -59,6 +61,16 @@ ApplicationWindow {
     Material.accent: accentColor
     Universal.theme: Universal.Dark
     Universal.accent: accentColor
+
+    onClosing: {
+        if (recordingState !== "idle") {
+            close.accepted = false
+            onWindowCloseDialog.visible = true
+        }
+        else {
+            closed()
+        }
+    }
 
     RecordingTimer {
         id: recordingTimer
@@ -301,5 +313,9 @@ ApplicationWindow {
     ConfirmRecordStopDialog {
         id: confirmRecordStopDialog
         onAccepted: recordButtonClicked()
+    }
+
+    OnWindowCloseDialog {
+        id: onWindowCloseDialog
     }
 }

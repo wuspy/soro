@@ -15,7 +15,7 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
-    <string notr="true">background: green;</string>
+    <string notr="true">background: black;</string>
    </property>
    <widget class="Soro::MissionControl::StereoCameraWidget" name="cameraWidget" native="true">
     <property name="geometry">
