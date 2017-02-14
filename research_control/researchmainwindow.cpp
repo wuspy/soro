@@ -52,6 +52,7 @@ ResearchMainWindow::ResearchMainWindow(const GamepadManager *gamepad, const Driv
     connect(_gamepad, &GamepadManager::poll, this, &ResearchMainWindow::gamepadPoll);
 
     START_TIMER(_updateLatencyTimerId, 500);
+    START_TIMER(_resizeTimerId, 1000);
 
     // Setup initial HUD config
     adjustHud();
@@ -78,7 +79,9 @@ void ResearchMainWindow::gamepadPoll() {
         y = GamepadUtil::axisShortToAxisFloat(_gamepad->axisLeftY);
         break;
     case DriveGamepadMode::DualStickDrive:
-        // TODO Unsupported currently
+        // TODO Unsupported currently, this is placeholder code
+        x = GamepadUtil::axisShortToAxisFloat(_gamepad->axisLeftX);
+        y = GamepadUtil::axisShortToAxisFloat(_gamepad->axisLeftY);
         break;
     default: break;
     }
@@ -216,6 +219,10 @@ void ResearchMainWindow::timerEvent(QTimerEvent *event) {
         int latency = _driveSystem->getChannel()->getLastRtt();
         ui->hudLatency->rootObject()->setProperty("latency", latency);
         ui->hudLatency2->rootObject()->setProperty("latency", latency);
+    }
+    else if (event->timerId() == _resizeTimerId) {
+        // This timer is necessary because maximizing the window sometimes doesn't cause a resize event
+        adjustSizeAndPosition();
     }
 }
 

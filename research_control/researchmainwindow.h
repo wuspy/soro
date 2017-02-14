@@ -53,6 +53,7 @@ private:
     const GamepadManager *_gamepad;
     const DriveControlSystem *_driveSystem;
     int _updateLatencyTimerId = TIMER_INACTIVE;
+    int _resizeTimerId = TIMER_INACTIVE;
     int _hudParallax = 50;
     bool _hudVisible = true;
     QPoint _mouseDownPos;
