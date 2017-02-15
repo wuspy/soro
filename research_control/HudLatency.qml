@@ -22,7 +22,8 @@ Item {
     property int latency: 0
     property real xValue: 0
     property real yValue: 0
-    property int refreshInterval: 20
+    property int refreshInterval: 5
+    property int linePixelsPerStep: 1
 
     // Should be in the range -1, +1
     property var xHistory: [0, 0, 0]
@@ -71,23 +72,9 @@ Item {
         anchors.fill: parent
     }
 
-    Text {
-        id: latencyText
-        color: "white"
-        font.pointSize: Math.pow(parent.width, 1.2) / 23
-        text: "19999ms"
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.margins: background.margin + 10
-    }
-
     Canvas {
         id: canvas
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.top: latencyText.bottom
-        anchors.topMargin: width / 10
+        anchors.fill: parent
         anchors.margins: background.margin + width / 10;
 
         function clamp(ratio) {
@@ -97,31 +84,58 @@ Item {
         }
 
         onPaint: {
+
+            latency = 1000
             // Get drawing context
             var context = getContext("2d");
-            context.fillStyle = "white"
+            context.fillStyle = "#ffffff"
             context.clearRect(0, 0, width, height)
 
-            var blobSize = width / 4
+            var blobSize = width / 5
 
             // Draw bottom blob
+            var bottomBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[xHistory.length - 1]))
             context.beginPath()
-            context.ellipse((width / 2) - (blobSize / 2) + ((width / 2 - blobSize / 2) * (xHistory[xHistory.length - 1])),
+            context.ellipse(bottomBlobX - (blobSize / 2),
                             height - blobSize,
                             blobSize,
                             blobSize)
             context.fill()
 
             // Draw top blob
-            var index = xHistory.length - 1 - (latency / refreshInterval);
+            var index = Math.floor(xHistory.length - 1 - (latency / refreshInterval))
+            var topBlobX = -1;
             if (index >= 0 && index < xHistory.length) {
+                topBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index]))
                 context.beginPath()
-                context.ellipse((width / 2) - (blobSize / 2) + ((width / 2 - blobSize / 2) * (xHistory[index])),
+                context.ellipse(topBlobX - (blobSize / 2),
                                 0,
                                 blobSize,
                                 blobSize)
                 context.fill()
             }
+
+            // Draw path connecting
+            context.strokeStyle = "#88ffffff"
+            context.lineWidth = blobSize / 5
+            context.beginPath()
+            context.moveTo(bottomBlobX, height - (blobSize / 2))
+            var resolution = height / linePixelsPerStep
+            for (var i = 1; i < resolution; i++) {
+                index = Math.floor(xHistory.length - 1 - ((latency / refreshInterval) * (i / resolution)))
+                if (index >= xHistory.length) return
+                context.lineTo((width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index])),
+                               (height - blobSize) - ((height - 2 * blobSize) * (i / resolution)))
+
+                var x = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index]))
+                var y = (height - blobSize) - ((height - 2 * blobSize) * (i / resolution))
+            }
+
+            if (topBlobX > 0) {
+                context.lineTo(topBlobX, blobSize / 2);
+            }
+
+            context.stroke()
         }
     }
 }
