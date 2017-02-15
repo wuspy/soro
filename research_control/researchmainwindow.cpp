@@ -103,8 +103,8 @@ void ResearchMainWindow::sensorUpdate(char tag, int value) {
         ui->hudPower2->rootObject()->setProperty("wheelFLPower", value);
         break;
     case SensorDataRecorder::DATATAG_WHEELDATA_C:
-        ui->hudPower->rootObject()->setProperty("wheelBLPower", value);
-        ui->hudPower2->rootObject()->setProperty("wheelBLPower", value);
+        ui->hudPower->rootObject()->setProperty("wheelFRPower", value);
+        ui->hudPower2->rootObject()->setProperty("wheelFRPower", value);
         break;
     case SensorDataRecorder::DATATAG_WHEELDATA_D:
         ui->hudPower->rootObject()->setProperty("wheelMRPower", value);
@@ -115,8 +115,8 @@ void ResearchMainWindow::sensorUpdate(char tag, int value) {
         ui->hudPower2->rootObject()->setProperty("wheelBRPower", value);
         break;
     case SensorDataRecorder::DATATAG_WHEELDATA_F:
-        ui->hudPower->rootObject()->setProperty("wheelFRPower", value);
-        ui->hudPower2->rootObject()->setProperty("wheelFRPower", value);
+        ui->hudPower->rootObject()->setProperty("wheelBLPower", value);
+        ui->hudPower2->rootObject()->setProperty("wheelBLPower", value);
         break;
     case SensorDataRecorder::DATATAG_IMUDATA_1_X:
         ui->hudOrientation->rootObject()->setProperty("imu1X", value);
