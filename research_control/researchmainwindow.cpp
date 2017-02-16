@@ -181,26 +181,26 @@ void ResearchMainWindow::adjustHud() {
 void ResearchMainWindow::adjustSizeAndPosition() {
     ui->cameraWidget->move(0, 0);
     ui->cameraWidget->resize(width(), height());
-    ui->hudPower->rootObject()->setProperty("height", height() / 4);
-    ui->hudPower2->rootObject()->setProperty("height", height() / 4);
-    ui->hudOrientation->rootObject()->setProperty("height", height() / 4);
-    ui->hudOrientation2->rootObject()->setProperty("height", height() / 4);
-    ui->hudLatency->rootObject()->setProperty("height", height() / 2);
-    ui->hudLatency2->rootObject()->setProperty("height", height() / 2);
+    ui->hudPower->rootObject()->setProperty("height", height() / 3);
+    ui->hudPower2->rootObject()->setProperty("height", height() / 3);
+    ui->hudOrientation->rootObject()->setProperty("height", height() / 3);
+    ui->hudOrientation2->rootObject()->setProperty("height", height() / 3);
+    ui->hudLatency->rootObject()->setProperty("height", height() / 1.5);
+    ui->hudLatency2->rootObject()->setProperty("height", height() / 1.5);
     if (ui->cameraWidget->isStereoOn()) {
         // STEREO
         ui->hudPower->move(_hudParallax, 0);
         ui->hudPower2->move(width() / 2, 0);
-        ui->hudLatency->move((width() / 2) - (ui->hudLatency->width() / 2), (height() / 2) - (ui->hudLatency->height() / 2));
-        ui->hudLatency2->move(width() - (ui->hudLatency->width() / 2) - _hudParallax, (height() / 2) - (ui->hudLatency->height() / 2));
-        ui->hudOrientation->move(_hudParallax, height() - ui->hudOrientation->height());
-        ui->hudOrientation2->move(width() / 2, height() - ui->hudOrientation->height());
+        ui->hudLatency->move(_hudParallax, height() - ui->hudLatency->height());
+        ui->hudLatency2->move(width() / 2, height() - ui->hudLatency2->height());
+        ui->hudOrientation->move(width() / 2 - ui->hudOrientation->width() / 2 - _hudParallax, 0);
+        ui->hudOrientation2->move(width() - ui->hudOrientation2->width() / 2, 0);
     }
     else {
         // MONO
         ui->hudPower->move(0, 0);
-        ui->hudLatency->move(width() - ui->hudLatency->width(), (height() / 2) - (ui->hudLatency->height() / 2));
-        ui->hudOrientation->move(0, height() - ui->hudOrientation->height());
+        ui->hudLatency->move(0, height() - ui->hudLatency->height());
+        ui->hudOrientation->move(width() - ui->hudOrientation->width(), 0);
     }
 }
 

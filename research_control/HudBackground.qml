@@ -19,6 +19,8 @@ import QtGraphicalEffects 1.0
 
 Item {
 
+    property alias backdrop: backdrop
+
     property int backgroundStyleTopLeft: 0
     property int backgroundStyleTop: 1
     property int backgroundStyleTopRight: 2

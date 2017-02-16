@@ -29,8 +29,8 @@ Item {
 
     /* Idle power (wheel will be pure green)
       */
-    property int powerBaseline: 100
-    /* Power that indicates a serious problem (wheel will be pure red)
+    property int powerBaseline: 150
+    /* Power that indicates a very high load (wheel will be pure red)
       */
     property int powerCritical: 500
 
@@ -74,7 +74,7 @@ Item {
             // Get drawing context
             var context = getContext("2d");
             context.strokeStyle = "white"
-            context.lineWidth = width / 40
+            context.lineWidth = width / 30
 
             var hueRange = colorCriticalHue - colorBaselineHue
             var powerRange = powerCritical - powerBaseline
@@ -112,7 +112,7 @@ Item {
 
             // Draw FL wheel
             context.beginPath()
-            context.fillStyle = Qt.hsva(colorBaselineHue + flRatio * hueRange, colorSat, colorValue, 1)
+            context.fillStyle = wheelFLPower > 0 ? Qt.hsva(colorBaselineHue + flRatio * hueRange, colorSat, colorValue, 1) : "gray"
             context.moveTo(0, 0);
             context.lineTo(width / 5, 0)
             context.lineTo(width * 2 / 5, height / 8)
@@ -123,7 +123,7 @@ Item {
 
             // Draw FR wheel
             context.beginPath()
-            context.fillStyle = Qt.hsva(colorBaselineHue + frRatio * hueRange, colorSat, colorValue, 1)
+            context.fillStyle = wheelFRPower > 0 ? Qt.hsva(colorBaselineHue + frRatio * hueRange, colorSat, colorValue, 1) : "gray"
             context.moveTo(width, 0);
             context.lineTo(width - width / 5, 0)
             context.lineTo(width - width * 2 / 5, height / 8)
@@ -134,7 +134,7 @@ Item {
 
             // Draw ML wheel
             context.beginPath()
-            context.fillStyle = Qt.hsva(colorBaselineHue + mlRatio * hueRange, colorSat, colorValue, 1)
+            context.fillStyle = wheelMLPower > 0 ? Qt.hsva(colorBaselineHue + mlRatio * hueRange, colorSat, colorValue, 1) : "gray"
             context.moveTo(0, height * 3 / 8);
             context.lineTo(width / 5, height * 3 / 8)
             context.lineTo(width * 2 / 5, height / 2)
@@ -145,7 +145,7 @@ Item {
 
             // Draw MR wheel
             context.beginPath()
-            context.fillStyle = Qt.hsva(colorBaselineHue + mrRatio * hueRange, colorSat, colorValue, 1)
+            context.fillStyle = wheelMRPower > 0 ? Qt.hsva(colorBaselineHue + mrRatio * hueRange, colorSat, colorValue, 1) : "gray"
             context.moveTo(width, height * 3 / 8);
             context.lineTo(width - width / 5, height * 3 / 8)
             context.lineTo(width - width * 2 / 5, height / 2)
@@ -156,7 +156,7 @@ Item {
 
             // Draw BL wheel
             context.beginPath()
-            context.fillStyle = Qt.hsva(colorBaselineHue + blRatio * hueRange, colorSat, colorValue, 1)
+            context.fillStyle = wheelBLPower > 0 ? Qt.hsva(colorBaselineHue + blRatio * hueRange, colorSat, colorValue, 1) : "gray"
             context.moveTo(0, height)
             context.lineTo(width / 5, height)
             context.lineTo(width * 2 / 5, height - height / 8)
@@ -167,7 +167,7 @@ Item {
 
             // Draw BR wheel
             context.beginPath()
-            context.fillStyle = Qt.hsva(colorBaselineHue + brRatio * hueRange, colorSat, colorValue, 1)
+            context.fillStyle = wheelBRPower > 0 ? Qt.hsva(colorBaselineHue + brRatio * hueRange, colorSat, colorValue, 1) : "gray"
             context.moveTo(width, height);
             context.lineTo(width - width / 5, height)
             context.lineTo(width - width * 2 / 5, height - height / 8)
