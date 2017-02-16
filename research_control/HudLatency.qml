@@ -30,16 +30,23 @@ Item {
     property var yHistory: [0, 0, 0]
 
     height: 600
-    width: height / 3
+    width: height
     opacity: 0.8
 
     onLatencyChanged: {
         if (latency < 0) {
-            latencyText.text = "N/A"
+            latencyText.text = "Delay<br><b>N/A</b>"
         }
         else {
-            latencyText.text = latency.toString() + "ms"
+            latencyText.text = "Delay<br><b>" + latency.toString() + "ms</b>"
         }
+    }
+
+
+    function clamp(ratio) {
+        if (ratio < 0) return 0
+        if (ratio > 1) return 1
+        return ratio
     }
 
     Timer {
@@ -61,31 +68,60 @@ Item {
             if (yHistory.length > 999) yHistory.shift();
             yHistory.push(clamp(yValue));
 
-            canvas.requestPaint()
+            xCanvas.requestPaint()
+            yCanvas.requestPaint()
         }
     }
 
     transform: Scale { xScale: halfWidth ? 0.5 : 1 }
 
     HudBackground {
-        id: background
-        anchors.fill: parent
+        id: xBackground
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 0
+        width:  parent.height / 4
+    }
+
+    HudBackground {
+        id: yBackground
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: 0
+        height: parent.height / 4
+    }
+
+    HudBackground {
+        id: latencyBackground
+        backdrop.color: "#4CAF50"
+        backdrop.radius: 0
+        opacity: 1
+        width: height
+        height: parent.height / 4
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+
+        Text {
+            id: latencyText
+            anchors.centerIn: parent
+            font.pointSize: parent.width / 8
+            text: "Delay<br><b>11352ms</b>"
+            horizontalAlignment: Text.AlignHCenter
+            color: "white"
+        }
     }
 
     Canvas {
-        id: canvas
-        anchors.fill: parent
-        anchors.margins: background.margin + width / 10;
-
-        function clamp(ratio) {
-            if (ratio < 0) return 0
-            if (ratio > 1) return 1
-            return ratio
-        }
+        id: xCanvas
+        anchors.fill: xBackground
+        anchors.topMargin: xBackground.margin + width / 10;
+        anchors.leftMargin: anchors.topMargin
+        anchors.rightMargin: anchors.topMargin
+        anchors.bottomMargin: latencyBackground.height + width / 10
 
         onPaint: {
-
-            latency = 1000
             // Get drawing context
             var context = getContext("2d");
             context.fillStyle = "#ffffff"
@@ -94,9 +130,9 @@ Item {
             var blobSize = width / 5
 
             // Draw bottom blob
-            var bottomBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[xHistory.length - 1]))
+            var startBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[xHistory.length - 1]))
             context.beginPath()
-            context.ellipse(bottomBlobX - (blobSize / 2),
+            context.ellipse(startBlobX - (blobSize / 2),
                             height - blobSize,
                             blobSize,
                             blobSize)
@@ -104,11 +140,11 @@ Item {
 
             // Draw top blob
             var index = Math.floor(xHistory.length - 1 - (latency / refreshInterval))
-            var topBlobX = -1;
+            var endBlobX = -1;
             if (index >= 0 && index < xHistory.length) {
-                topBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index]))
+                endBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index]))
                 context.beginPath()
-                context.ellipse(topBlobX - (blobSize / 2),
+                context.ellipse(endBlobX - (blobSize / 2),
                                 0,
                                 blobSize,
                                 blobSize)
@@ -119,20 +155,76 @@ Item {
             context.strokeStyle = "#88ffffff"
             context.lineWidth = blobSize / 5
             context.beginPath()
-            context.moveTo(bottomBlobX, height - (blobSize / 2))
+            context.moveTo(startBlobX, height - (blobSize / 2))
             var resolution = height / linePixelsPerStep
             for (var i = 1; i < resolution; i++) {
                 index = Math.floor(xHistory.length - 1 - ((latency / refreshInterval) * (i / resolution)))
                 if (index >= xHistory.length) return
                 context.lineTo((width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index])),
                                (height - blobSize) - ((height - 2 * blobSize) * (i / resolution)))
-
-                var x = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index]))
-                var y = (height - blobSize) - ((height - 2 * blobSize) * (i / resolution))
             }
 
-            if (topBlobX > 0) {
-                context.lineTo(topBlobX, blobSize / 2);
+            if (endBlobX > 0) {
+                context.lineTo(endBlobX, blobSize / 2);
+            }
+
+            context.stroke()
+        }
+    }
+
+    Canvas {
+        id: yCanvas
+        anchors.fill: yBackground
+        anchors.topMargin: yBackground.margin + height / 10;
+        anchors.bottomMargin: anchors.topMargin
+        anchors.rightMargin: anchors.topMargin
+        anchors.leftMargin: latencyBackground.width + height / 10
+
+        onPaint: {
+            // Get drawing context
+            var context = getContext("2d");
+            context.fillStyle = "#ffffff"
+            context.clearRect(0, 0, width, height)
+
+            var blobSize = height / 5
+
+            // Draw bottom blob
+            var startBlobY = (height / 2) + ((height / 2 - blobSize / 2) * (yHistory[yHistory.length - 1]))
+            context.beginPath()
+            context.ellipse(0,
+                            startBlobY - (blobSize / 2),
+                            blobSize,
+                            blobSize)
+            context.fill()
+
+            // Draw top blob
+            var index = Math.floor(xHistory.length - 1 - (latency / refreshInterval))
+            var endBlobY = -1;
+            if (index >= 0 && index < xHistory.length) {
+                endBlobY = (height / 2) + ((height / 2 - blobSize / 2) * (yHistory[index]))
+                context.beginPath()
+                context.ellipse(width - blobSize,
+                                endBlobY - (blobSize / 2),
+                                blobSize,
+                                blobSize)
+                context.fill()
+            }
+
+            // Draw path connecting
+            context.strokeStyle = "#88ffffff"
+            context.lineWidth = blobSize / 5
+            context.beginPath()
+            context.moveTo(blobSize / 2, startBlobY)
+            var resolution = width / linePixelsPerStep
+            for (var i = 1; i < resolution; i++) {
+                index = Math.floor(yHistory.length - 1 - ((latency / refreshInterval) * (i / resolution)))
+                if (index >= yHistory.length) return
+                context.lineTo(blobSize + ((width - 2 * blobSize) * (i / resolution)),
+                               (height / 2) + ((height / 2 - blobSize / 2) * (yHistory[index])))
+            }
+
+            if (endBlobY > 0) {
+                context.lineTo(width - blobSize / 2, endBlobY);
             }
 
             context.stroke()
