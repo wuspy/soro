@@ -19,7 +19,9 @@ public:
     Q_ENUM(Encoding)
 
     enum Resolution {
-        Resolution_640x360 = 0,
+        Resolution_176_144 = 0,
+        Resolution_432_240,
+        Resolution_640x360,
         Resolution_1024x576,
         Resolution_1152x648,
         Resolution_1280x720,

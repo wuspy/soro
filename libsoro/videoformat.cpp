@@ -90,6 +90,8 @@ void VideoFormat::setMaxThreads(quint32 maxThreads) {
 
 quint32 VideoFormat::getResolutionWidth() const {
     switch (_resolution) {
+    case Resolution_176_144:    return 176;
+    case Resolution_432_240:    return 432;
     case Resolution_640x360:    return 640;
     case Resolution_1024x576:   return 1024;
     case Resolution_1152x648:   return 1152;
@@ -106,6 +108,8 @@ quint32 VideoFormat::getResolutionWidth() const {
 
 quint32 VideoFormat::getResolutionHeight() const {
     switch (_resolution) {
+    case Resolution_176_144:    return 144;
+    case Resolution_432_240:    return 240;
     case Resolution_640x360:    return 360;
     case Resolution_1024x576:   return 576;
     case Resolution_1152x648:   return 648;
