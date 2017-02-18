@@ -10,6 +10,7 @@
 #include "libsoromc/stereocamerawidget.h"
 #include "libsoromc/gamepadmanager.h"
 #include "libsoromc/drivecontrolsystem.h"
+#include "hudlatencygraphimpl.h"
 
 namespace Ui {
 class ResearchMainWindow;

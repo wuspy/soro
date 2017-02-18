@@ -217,8 +217,8 @@ void ResearchMainWindow::setHudParallax(int parallax) {
 void ResearchMainWindow::timerEvent(QTimerEvent *event) {
     if (event->timerId() == _updateLatencyTimerId) {
         int latency = _driveSystem->getChannel()->getLastRtt();
-        ui->hudLatency->rootObject()->setProperty("latency", latency);
-        ui->hudLatency2->rootObject()->setProperty("latency", latency);
+        //ui->hudLatency->rootObject()->setProperty("latency", latency);
+        //ui->hudLatency2->rootObject()->setProperty("latency", latency);
     }
     else if (event->timerId() == _resizeTimerId) {
         // This timer is necessary because maximizing the window sometimes doesn't cause a resize event

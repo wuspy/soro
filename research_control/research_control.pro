@@ -30,13 +30,17 @@ SOURCES += main.cpp\
     researchprocess.cpp \
     researchmainwindow.cpp \
     settingsmodel.cpp \
-    masterdatarecorder.cpp
+    masterdatarecorder.cpp \
+    hudpowerimpl.cpp \
+    hudlatencygraphimpl.cpp
 
 HEADERS  += \
     researchprocess.h \
     researchmainwindow.h \
     settingsmodel.h \
-    masterdatarecorder.h
+    masterdatarecorder.h \
+    hudpowerimpl.h \
+    hudlatencygraphimpl.h
 
 FORMS    += \
     researchmainwindow.ui

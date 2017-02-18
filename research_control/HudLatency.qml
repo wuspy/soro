@@ -16,24 +16,27 @@
 
 import QtQuick 2.4
 import QtGraphicalEffects 1.0
+import Soro 1.0
 
 Item {
     property bool halfWidth: false
     property int latency: 0
     property real xValue: 0
     property real yValue: 0
-    property int refreshInterval: 5
-    property int linePixelsPerStep: 1
-
-    // Should be in the range -1, +1
-    property var xHistory: [0, 0, 0]
-    property var yHistory: [0, 0, 0]
+    property int latencyTolerance: 0
 
     height: 600
     width: height
     opacity: 0.8
 
+    onLatencyToleranceChanged: {
+        graphX.latencyTolerance = latencyTolerance
+        graphY.latencyTolerance = latencyTolerance
+    }
+
     onLatencyChanged: {
+        graphX.latency = latency
+        graphY.latency = latency
         if (latency < 0) {
             latencyText.text = "Delay<br><b>N/A</b>"
         }
@@ -42,34 +45,25 @@ Item {
         }
     }
 
+    onXValueChanged: {
+        graphX.value = xValue
+    }
 
-    function clamp(ratio) {
-        if (ratio < 0) return 0
-        if (ratio > 1) return 1
-        return ratio
+    onYValueChanged: {
+        graphY.value = yValue
     }
 
     Timer {
-        id: frameTimer
-        interval: refreshInterval
+        interval: 5000
         running: true
         repeat: true
-
-        function clamp(a) {
-            if (a > 1) return 1
-            if (a < -1) return -1
-            return a
-        }
-
         onTriggered: {
-            // Update history buffer
-            if (xHistory.length > 999) xHistory.shift();
-            xHistory.push(clamp(xValue));
-            if (yHistory.length > 999) yHistory.shift();
-            yHistory.push(clamp(yValue));
-
-            xCanvas.requestPaint()
-            yCanvas.requestPaint()
+            if (latency === 1000) {
+                latency = 5000
+            }
+            else {
+                latency = 1000
+            }
         }
     }
 
@@ -113,121 +107,23 @@ Item {
         }
     }
 
-    Canvas {
-        id: xCanvas
+    HudLatencyGraphImpl {
+        id: graphX
         anchors.fill: xBackground
         anchors.topMargin: xBackground.margin + width / 10;
         anchors.leftMargin: anchors.topMargin
         anchors.rightMargin: anchors.topMargin
         anchors.bottomMargin: latencyBackground.height + width / 10
-
-        onPaint: {
-            // Get drawing context
-            var context = getContext("2d");
-            context.fillStyle = "#ffffff"
-            context.clearRect(0, 0, width, height)
-
-            var blobSize = width / 5
-
-            // Draw bottom blob
-            var startBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[xHistory.length - 1]))
-            context.beginPath()
-            context.ellipse(startBlobX - (blobSize / 2),
-                            height - blobSize,
-                            blobSize,
-                            blobSize)
-            context.fill()
-
-            // Draw top blob
-            var index = Math.floor(xHistory.length - 1 - (latency / refreshInterval))
-            var endBlobX = -1;
-            if (index >= 0 && index < xHistory.length) {
-                endBlobX = (width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index]))
-                context.beginPath()
-                context.ellipse(endBlobX - (blobSize / 2),
-                                0,
-                                blobSize,
-                                blobSize)
-                context.fill()
-            }
-
-            // Draw path connecting
-            context.strokeStyle = "#88ffffff"
-            context.lineWidth = blobSize / 5
-            context.beginPath()
-            context.moveTo(startBlobX, height - (blobSize / 2))
-            var resolution = height / linePixelsPerStep
-            for (var i = 1; i < resolution; i++) {
-                index = Math.floor(xHistory.length - 1 - ((latency / refreshInterval) * (i / resolution)))
-                if (index >= xHistory.length) return
-                context.lineTo((width / 2) + ((width / 2 - blobSize / 2) * (xHistory[index])),
-                               (height - blobSize) - ((height - 2 * blobSize) * (i / resolution)))
-            }
-
-            if (endBlobX > 0) {
-                context.lineTo(endBlobX, blobSize / 2);
-            }
-
-            context.stroke()
-        }
+        mode: "vertical"
     }
 
-    Canvas {
-        id: yCanvas
+    HudLatencyGraphImpl {
+        id: graphY
         anchors.fill: yBackground
         anchors.topMargin: yBackground.margin + height / 10;
         anchors.bottomMargin: anchors.topMargin
         anchors.rightMargin: anchors.topMargin
         anchors.leftMargin: latencyBackground.width + height / 10
-
-        onPaint: {
-            // Get drawing context
-            var context = getContext("2d");
-            context.fillStyle = "#ffffff"
-            context.clearRect(0, 0, width, height)
-
-            var blobSize = height / 5
-
-            // Draw bottom blob
-            var startBlobY = (height / 2) + ((height / 2 - blobSize / 2) * (yHistory[yHistory.length - 1]))
-            context.beginPath()
-            context.ellipse(0,
-                            startBlobY - (blobSize / 2),
-                            blobSize,
-                            blobSize)
-            context.fill()
-
-            // Draw top blob
-            var index = Math.floor(xHistory.length - 1 - (latency / refreshInterval))
-            var endBlobY = -1;
-            if (index >= 0 && index < xHistory.length) {
-                endBlobY = (height / 2) + ((height / 2 - blobSize / 2) * (yHistory[index]))
-                context.beginPath()
-                context.ellipse(width - blobSize,
-                                endBlobY - (blobSize / 2),
-                                blobSize,
-                                blobSize)
-                context.fill()
-            }
-
-            // Draw path connecting
-            context.strokeStyle = "#88ffffff"
-            context.lineWidth = blobSize / 5
-            context.beginPath()
-            context.moveTo(blobSize / 2, startBlobY)
-            var resolution = width / linePixelsPerStep
-            for (var i = 1; i < resolution; i++) {
-                index = Math.floor(yHistory.length - 1 - ((latency / refreshInterval) * (i / resolution)))
-                if (index >= yHistory.length) return
-                context.lineTo(blobSize + ((width - 2 * blobSize) * (i / resolution)),
-                               (height / 2) + ((height / 2 - blobSize / 2) * (yHistory[index])))
-            }
-
-            if (endBlobY > 0) {
-                context.lineTo(width - blobSize / 2, endBlobY);
-            }
-
-            context.stroke()
-        }
+        mode: "horizontal"
     }
 }
