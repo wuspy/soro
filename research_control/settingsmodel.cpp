@@ -31,7 +31,8 @@ SettingsModel SettingsModel::Default(QHostAddress roverAddress) {
     model.selectedVideoFormat = 0;
     model.selectedCamera = 0;
     model.selectedLatency = 0;
-    model.selectedHudParallax = 10;
+    model.selectedHudParallax = 0;
+    model.selectedHudLatency = 100;
 
     // Define media formats
     model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1920x1080, 12000000, 0, VideoFormat::StereoMode_None, 3));
@@ -71,6 +72,7 @@ void SettingsModel::syncUi(QQuickWindow *window) {
     window->setProperty("selectedCamera", selectedCamera);
     window->setProperty("selectedLatency", selectedLatency);
     window->setProperty("selectedHudParallax", selectedHudParallax);
+    window->setProperty("selectedHudLatency", selectedHudLatency);
 
     // Inform the view that the settings have been synced
     QMetaObject::invokeMethod(window, "uiSyncComplete");
@@ -87,6 +89,7 @@ void SettingsModel::syncModel(const QQuickWindow *window) {
     selectedCamera = window->property("selectedCamera").toInt();
     selectedLatency = window->property("selectedLatency").toInt();
     selectedHudParallax = window->property("selectedHudParallax").toInt();
+    selectedHudLatency = window->property("selectedHudLatency").toInt();
 }
 
 void SettingsModel::setSelectedCamera(int mediaId) {

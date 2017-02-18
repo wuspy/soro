@@ -217,8 +217,11 @@ void ResearchMainWindow::setHudParallax(int parallax) {
 void ResearchMainWindow::timerEvent(QTimerEvent *event) {
     if (event->timerId() == _updateLatencyTimerId) {
         int latency = _driveSystem->getChannel()->getLastRtt();
-        //ui->hudLatency->rootObject()->setProperty("latency", latency);
-        //ui->hudLatency2->rootObject()->setProperty("latency", latency);
+        if (latency >= 0) { // Don't add to latency if there's no connection
+            latency += _hudLatency;
+        }
+        ui->hudLatency->rootObject()->setProperty("latency", latency);
+        ui->hudLatency2->rootObject()->setProperty("latency", latency);
     }
     else if (event->timerId() == _resizeTimerId) {
         // This timer is necessary because maximizing the window sometimes doesn't cause a resize event
@@ -237,6 +240,14 @@ bool ResearchMainWindow::isHudVisible() const {
 
 int ResearchMainWindow::getHudParallax() const {
     return _hudParallax;
+}
+
+void ResearchMainWindow::setHudLatency(int latency) {
+    _hudLatency = latency;
+}
+
+int ResearchMainWindow::getHudLatency() const {
+    return _hudLatency;
 }
 
 } // namespace MissionControl

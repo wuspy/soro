@@ -71,6 +71,7 @@ ApplicationWindow {
     property alias fullscreenToolbarButton: fullscreenToolbarButton
     property alias recordToolbarButton: recordToolbarButton
     property alias sidebarToolbarButton: sidebarToolbarButton
+    property alias hudLatencySpinBox: hudLatencySpinBox
 
     // Settings properties
 
@@ -84,6 +85,7 @@ ApplicationWindow {
     property alias selectedLatency: simLatencySpinBox.value
     property alias selectedHudParallax: hudParallaxSpinBox.value
     property alias enableGps: enableGpsSwitch.checked
+    property alias selectedHudLatency: hudLatencySpinBox.value
 
     // Configuration properties
 
@@ -720,14 +722,37 @@ ApplicationWindow {
                     }
 
                     Label {
+                        id: hudLatencyLabel
+                        y: 27
+                        width: 100
+                        text: qsTr("HUD Latency (ms)")
+                        anchors.verticalCenter: hudLatencySpinBox.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    SpinBox {
+                        id: hudLatencySpinBox
+                        anchors.left: hudLatencyLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: hudParallaxSpinBox.bottom
+                        anchors.topMargin: 0
+                        stepSize: 10
+                        editable: true
+                        from: 0
+                        to: 2000
+                        onValueChanged: settingsFooterPane.state = "visible"
+                    }
+
+                    Label {
                         id: interfaceNotesLabel
-                        text: qsTr("<b>Stereo UI</b> renders the interface in side-by-side stereo.  Video will not be streamed in stereo unless the 'Stereo Video' option is also selected.<br><br><b>HUD Parallax</b> changes the how far away the HUD appears to the viewer in stereo mode. Lower values make it appear farther away, and higher values make it appear closer.")
+                        text: qsTr("<b>Stereo UI</b> renders the interface in side-by-side stereo.  Video will not be streamed in stereo unless the 'Stereo Video' option is also selected.<br><br><b>HUD Parallax</b> changes the how far away the HUD appears to the viewer in stereo mode. Lower values make it appear farther away, and higher values make it appear closer.<br><br><b>HUD Latency</b> adds extra latency to the HUD latency visualizer if needed to better sync it with the actual rover response.")
                         textFormat: Text.RichText
                         anchors.right: parent.right
                         anchors.rightMargin: 0
                         anchors.left: parent.left
                         anchors.leftMargin: 0
-                        anchors.top: hudParallaxSpinBox.bottom
+                        anchors.top: hudLatencySpinBox.bottom
                         anchors.topMargin: 8
                         wrapMode: Text.WordWrap
                         verticalAlignment: Text.AlignBottom

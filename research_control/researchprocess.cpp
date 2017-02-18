@@ -278,6 +278,7 @@ void ResearchControlProcess::ui_settingsApplied() {
     }
     _mainUi->setHudVisible(_settings.enableHud);
     _mainUi->setHudParallax(_settings.selectedHudParallax);
+    _mainUi->setHudLatency(_settings.selectedHudLatency);
     if (_settings.enableAudio) {
         startAudioStream(_settings.defaultAudioFormat);
     }

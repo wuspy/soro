@@ -30,6 +30,7 @@ public:
     StereoCameraWidget *getCameraWidget();
     bool isHudVisible() const;
     int getHudParallax() const;
+    int getHudLatency() const;
 
 signals:
     void closed();
@@ -38,6 +39,7 @@ public slots:
     void sensorUpdate(char tag, int value);
     void setHudParallax(int parallax);
     void setHudVisible(bool visible);
+    void setHudLatency(int latency);
 
 protected:
     void closeEvent(QCloseEvent *event);
@@ -57,6 +59,7 @@ private:
     int _resizeTimerId = TIMER_INACTIVE;
     int _hudParallax = 50;
     bool _hudVisible = true;
+    int _hudLatency = 0;
     QPoint _mouseDownPos;
 };
 
