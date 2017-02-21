@@ -85,7 +85,7 @@ void ResearchMainWindow::gamepadPoll() {
         break;
     case DriveGamepadMode::DualStickDrive:
         // TODO Unsupported currently, this is placeholder code
-        x = GamepadUtil::axisShortToAxisFloat(_gamepad->axisLeftX);
+        x = 0;
         y = GamepadUtil::axisShortToAxisFloat(_gamepad->axisLeftY);
         break;
     default: break;

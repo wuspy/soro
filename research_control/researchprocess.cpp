@@ -55,6 +55,7 @@ void ResearchControlProcess::init() {
 
     LOG_I(LOG_TAG, "Creating drive control system");
     _driveSystem = new DriveControlSystem(_settings.roverAddress, _gamepad, this);
+    _driveSystem->setMode(DriveGamepadMode::SingleStickDrive);
     connect(_driveSystem, &DriveControlSystem::connectionStateChanged, this, &ResearchControlProcess::driveConnectionStateChanged);
     QString err;
     if (!_driveSystem->init(&err)) {
