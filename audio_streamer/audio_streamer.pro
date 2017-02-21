@@ -41,6 +41,6 @@ HEADERS += \
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../..
 
-LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0
+LIBS += -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUtils-1.0
 LIBS += -L../lib -lsoro
 LIBS += -L../lib -lsorogst

@@ -16,23 +16,30 @@
 
 import QtQuick 2.0
 import QtGraphicalEffects 1.0
+import Soro 1.0
 
 Item {
     property bool halfWidth: false;
-    property int imu1X: 0
-    property int imu1Y: 0
-    property int imu1Z: 0
-    property int imu2X: 0
-    property int imu2Y: 0
-    property int imu2Z: 0
 
-    width: 200
-    height: 160
+    property alias rearYaw: impl.rearYaw
+    property alias rearPitch: impl.rearPitch
+    property alias rearRoll: impl.rearRoll
+    property alias frontYaw: impl.frontYaw
+    property alias frontPitch: impl.frontPitch
+    property alias frontRoll: impl.frontRoll
+
+    width: height
     opacity: 0.8
 
     transform: Scale { xScale: halfWidth ? 0.5 : 1 }
 
     HudBackground {
         anchors.fill: parent
+    }
+
+    HudOrientationBackImpl {
+        id: impl
+        anchors.fill: parent
+        anchors.margins: 16 + parent.width / 10
     }
 }

@@ -30,7 +30,8 @@ ResearchMainWindow::ResearchMainWindow(const GamepadManager *gamepad, const Driv
     // These are always half-width because they are only shown in stereo mode
     ui->hudPower2->rootObject()->setProperty("halfWidth", true);
     ui->hudLatency2->rootObject()->setProperty("halfWidth", true);
-    ui->hudOrientation2->rootObject()->setProperty("halfWidth", true);
+    ui->hudOrientationBack2->rootObject()->setProperty("halfWidth", true);
+    ui->hudOrientationSide2->rootObject()->setProperty("halfWidth", true);
 
     // Make the embedded quick widgets transparent
     ui->hudPower->setAttribute(Qt::WA_AlwaysStackOnTop);
@@ -41,10 +42,14 @@ ResearchMainWindow::ResearchMainWindow(const GamepadManager *gamepad, const Driv
     ui->hudLatency->setClearColor(Qt::transparent);
     ui->hudLatency2->setAttribute(Qt::WA_AlwaysStackOnTop);
     ui->hudLatency2->setClearColor(Qt::transparent);
-    ui->hudOrientation->setAttribute(Qt::WA_AlwaysStackOnTop);
-    ui->hudOrientation->setClearColor(Qt::transparent);
-    ui->hudOrientation2->setAttribute(Qt::WA_AlwaysStackOnTop);
-    ui->hudOrientation2->setClearColor(Qt::transparent);
+    ui->hudOrientationBack->setAttribute(Qt::WA_AlwaysStackOnTop);
+    ui->hudOrientationBack->setClearColor(Qt::transparent);
+    ui->hudOrientationBack2->setAttribute(Qt::WA_AlwaysStackOnTop);
+    ui->hudOrientationBack2->setClearColor(Qt::transparent);
+    ui->hudOrientationSide->setAttribute(Qt::WA_AlwaysStackOnTop);
+    ui->hudOrientationSide->setClearColor(Qt::transparent);
+    ui->hudOrientationSide2->setAttribute(Qt::WA_AlwaysStackOnTop);
+    ui->hudOrientationSide2->setClearColor(Qt::transparent);
 
     _gamepad = gamepad;
     _driveSystem = driveSystem;
@@ -94,53 +99,65 @@ void ResearchMainWindow::gamepadPoll() {
 
 void ResearchMainWindow::sensorUpdate(char tag, int value) {
     switch (tag) {
-    case SensorDataRecorder::DATATAG_WHEELDATA_A:
+    case SensorDataRecorder::DATATAG_WHEELPOWER_A:
         ui->hudPower->rootObject()->setProperty("wheelMLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelMLPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELDATA_B:
+    case SensorDataRecorder::DATATAG_WHEELPOWER_B:
         ui->hudPower->rootObject()->setProperty("wheelFLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelFLPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELDATA_C:
+    case SensorDataRecorder::DATATAG_WHEELPOWER_C:
         ui->hudPower->rootObject()->setProperty("wheelFRPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelFRPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELDATA_D:
+    case SensorDataRecorder::DATATAG_WHEELPOWER_D:
         ui->hudPower->rootObject()->setProperty("wheelMRPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelMRPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELDATA_E:
+    case SensorDataRecorder::DATATAG_WHEELPOWER_E:
         ui->hudPower->rootObject()->setProperty("wheelBRPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelBRPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELDATA_F:
+    case SensorDataRecorder::DATATAG_WHEELPOWER_F:
         ui->hudPower->rootObject()->setProperty("wheelBLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelBLPower", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_1_X:
-        ui->hudOrientation->rootObject()->setProperty("imu1X", value);
-        ui->hudOrientation2->rootObject()->setProperty("imu1X", value);
+    case SensorDataRecorder::DATATAG_IMUDATA_REAR_YAW:
+        ui->hudOrientationBack->rootObject()->setProperty("rearYaw", value);
+        ui->hudOrientationBack2->rootObject()->setProperty("rearYaw", value);
+        ui->hudOrientationSide->rootObject()->setProperty("rearYaw", value);
+        ui->hudOrientationSide2->rootObject()->setProperty("rearYaw", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_1_Y:
-        ui->hudOrientation->rootObject()->setProperty("imu1Y", value);
-        ui->hudOrientation2->rootObject()->setProperty("imu1Y", value);
+    case SensorDataRecorder::DATATAG_IMUDATA_REAR_PITCH:
+        ui->hudOrientationBack->rootObject()->setProperty("rearPitch", value);
+        ui->hudOrientationBack2->rootObject()->setProperty("rearPitch", value);
+        ui->hudOrientationSide->rootObject()->setProperty("rearPitch", value);
+        ui->hudOrientationSide2->rootObject()->setProperty("rearPitch", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_1_Z:
-        ui->hudOrientation->rootObject()->setProperty("imu1Z", value);
-        ui->hudOrientation2->rootObject()->setProperty("imu1Z", value);
+    case SensorDataRecorder::DATATAG_IMUDATA_REAR_ROLL:
+        ui->hudOrientationBack->rootObject()->setProperty("rearRoll", value);
+        ui->hudOrientationBack2->rootObject()->setProperty("rearRoll", value);
+        ui->hudOrientationSide->rootObject()->setProperty("rearRoll", value);
+        ui->hudOrientationSide2->rootObject()->setProperty("rearRoll", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_2_X:
-        ui->hudOrientation->rootObject()->setProperty("imu2X", value);
-        ui->hudOrientation2->rootObject()->setProperty("imu2X", value);
+    case SensorDataRecorder::DATATAG_IMUDATA_FRONT_YAW:
+        ui->hudOrientationBack->rootObject()->setProperty("frontYaw", value);
+        ui->hudOrientationBack2->rootObject()->setProperty("frontYaw", value);
+        ui->hudOrientationSide->rootObject()->setProperty("frontYaw", value);
+        ui->hudOrientationSide2->rootObject()->setProperty("frontYaw", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_2_Y:
-        ui->hudOrientation->rootObject()->setProperty("imu2Y", value);
-        ui->hudOrientation2->rootObject()->setProperty("imu2Y", value);
+    case SensorDataRecorder::DATATAG_IMUDATA_FRONT_PITCH:
+        ui->hudOrientationBack->rootObject()->setProperty("frontPitch", value);
+        ui->hudOrientationBack2->rootObject()->setProperty("frontPitch", value);
+        ui->hudOrientationSide->rootObject()->setProperty("frontPitch", value);
+        ui->hudOrientationSide2->rootObject()->setProperty("frontPitch", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_2_Z:
-        ui->hudOrientation->rootObject()->setProperty("imu2Z", value);
-        ui->hudOrientation2->rootObject()->setProperty("imu2Z", value);
+    case SensorDataRecorder::DATATAG_IMUDATA_FRONT_ROLL:
+        ui->hudOrientationBack->rootObject()->setProperty("frontRoll", value);
+        ui->hudOrientationBack2->rootObject()->setProperty("frontRoll", value);
+        ui->hudOrientationSide->rootObject()->setProperty("frontRoll", value);
+        ui->hudOrientationSide2->rootObject()->setProperty("frontRoll", value);
         break;
     }
 }
@@ -149,31 +166,38 @@ void ResearchMainWindow::adjustHud() {
     if (_hudVisible) {
         ui->hudPower->show();
         ui->hudLatency->show();
-        ui->hudOrientation->show();
+        ui->hudOrientationSide->show();
+        ui->hudOrientationBack->show();
         if (ui->cameraWidget->isStereoOn()) {
             ui->hudPower2->show();
             ui->hudLatency2->show();
-            ui->hudOrientation2->show();
+            ui->hudOrientationBack2->show();
+            ui->hudOrientationSide2->show();
             ui->hudPower->rootObject()->setProperty("halfWidth", true);
             ui->hudLatency->rootObject()->setProperty("halfWidth", true);
-            ui->hudOrientation->rootObject()->setProperty("halfWidth", true);
+            ui->hudOrientationBack->rootObject()->setProperty("halfWidth", true);
+            ui->hudOrientationSide->rootObject()->setProperty("halfWidth", true);
         }
         else {
             ui->hudPower2->hide();
             ui->hudLatency2->hide();
-            ui->hudOrientation2->hide();
+            ui->hudOrientationBack2->hide();
+            ui->hudOrientationSide2->hide();
             ui->hudPower->rootObject()->setProperty("halfWidth", false);
             ui->hudLatency->rootObject()->setProperty("halfWidth", false);
-            ui->hudOrientation->rootObject()->setProperty("halfWidth", false);
+            ui->hudOrientationBack->rootObject()->setProperty("halfWidth", false);
+            ui->hudOrientationSide->rootObject()->setProperty("halfWidth", false);
         }
     }
     else {
         ui->hudPower->hide();
         ui->hudLatency->hide();
-        ui->hudOrientation->hide();
+        ui->hudOrientationBack->hide();
+        ui->hudOrientationSide->hide();
         ui->hudPower2->hide();
         ui->hudLatency2->hide();
-        ui->hudOrientation2->hide();
+        ui->hudOrientationBack2->hide();
+        ui->hudOrientationSide2->hide();
     }
     adjustSizeAndPosition();
 }
@@ -183,24 +207,65 @@ void ResearchMainWindow::adjustSizeAndPosition() {
     ui->cameraWidget->resize(width(), height());
     ui->hudPower->rootObject()->setProperty("height", height() / 3);
     ui->hudPower2->rootObject()->setProperty("height", height() / 3);
-    ui->hudOrientation->rootObject()->setProperty("height", height() / 3);
-    ui->hudOrientation2->rootObject()->setProperty("height", height() / 3);
+    ui->hudOrientationBack->rootObject()->setProperty("height", height() / 3);
+    ui->hudOrientationBack2->rootObject()->setProperty("height", height() / 3);
+    ui->hudOrientationSide->rootObject()->setProperty("height", height() / 3);
+    ui->hudOrientationSide2->rootObject()->setProperty("height", height() / 3);
     ui->hudLatency->rootObject()->setProperty("height", height() / 1.5);
     ui->hudLatency2->rootObject()->setProperty("height", height() / 1.5);
     if (ui->cameraWidget->isStereoOn()) {
         // STEREO
-        ui->hudPower->move(_hudParallax, 0);
-        ui->hudPower2->move(width() / 2, 0);
-        ui->hudLatency->move(_hudParallax, height() - ui->hudLatency->height());
-        ui->hudLatency2->move(width() / 2, height() - ui->hudLatency2->height());
-        ui->hudOrientation->move(width() / 2 - ui->hudOrientation->width() / 2 - _hudParallax, 0);
-        ui->hudOrientation2->move(width() - ui->hudOrientation2->width() / 2, 0);
+        ui->hudPower->move(
+                    _hudParallax,
+                    0
+                );
+        ui->hudPower2->move(
+                    width() / 2,
+                    0
+                );
+        ui->hudLatency->move(
+                    _hudParallax,
+                    height() - ui->hudLatency->height()
+                );
+        ui->hudLatency2->move(
+                    width() / 2,
+                    height() - ui->hudLatency2->height()
+                );
+        ui->hudOrientationBack->move(
+                    width() / 2 - ui->hudOrientationBack->width() / 2 - _hudParallax,
+                    height() - ui->hudOrientationBack->height()
+                );
+        ui->hudOrientationBack2->move(
+                    width() - ui->hudOrientationBack2->width() / 2,
+                    height() - ui->hudOrientationBack2->height()
+                );
+        ui->hudOrientationSide->move(
+                    width() / 2 - ui->hudOrientationSide->width() / 2 - _hudParallax,
+                    height() - ui->hudOrientationSide->height() - ui->hudOrientationBack->height()
+                );
+        ui->hudOrientationSide2->move(
+                    width() - ui->hudOrientationSide2->width() / 2,
+                    height() - ui->hudOrientationBack2->height() - ui->hudOrientationBack2->height()
+                );
     }
     else {
         // MONO
-        ui->hudPower->move(0, 0);
-        ui->hudLatency->move(0, height() - ui->hudLatency->height());
-        ui->hudOrientation->move(width() - ui->hudOrientation->width(), 0);
+        ui->hudPower->move(
+                    0,
+                    0
+                );
+        ui->hudLatency->move(
+                    0,
+                    height() - ui->hudLatency->height()
+                );
+        ui->hudOrientationBack->move(
+                    width() - ui->hudOrientationBack->width(),
+                    height() - ui->hudOrientationBack->height()
+                );
+        ui->hudOrientationSide->move(
+                    width() - ui->hudOrientationSide->width(),
+                    height() - ui->hudOrientationSide->height() - ui->hudOrientationBack->height()
+                );
     }
 }
 

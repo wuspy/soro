@@ -32,7 +32,10 @@ SOURCES += main.cpp\
     settingsmodel.cpp \
     masterdatarecorder.cpp \
     hudpowerimpl.cpp \
-    hudlatencygraphimpl.cpp
+    hudlatencygraphimpl.cpp \
+    hudorientationsideimpl.cpp \
+    hudorientationbackimpl.cpp \
+    abstracthudorientationimpl.cpp
 
 HEADERS  += \
     researchprocess.h \
@@ -40,7 +43,10 @@ HEADERS  += \
     settingsmodel.h \
     masterdatarecorder.h \
     hudpowerimpl.h \
-    hudlatencygraphimpl.h
+    hudlatencygraphimpl.h \
+    hudorientationsideimpl.h \
+    hudorientationbackimpl.h \
+    abstracthudorientationimpl.h
 
 FORMS    += \
     researchmainwindow.ui
@@ -57,3 +63,5 @@ LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStrea
 LIBS += -L../lib -lsoro
 LIBS += -L../lib -lsoromc
 LIBS += -L../lib -lsorogst
+
+DISTFILES +=

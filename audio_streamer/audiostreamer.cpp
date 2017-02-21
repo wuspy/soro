@@ -41,6 +41,8 @@ AudioStreamer::AudioStreamer(QString sourceDevice, AudioFormat format, SocketAdd
                         address.host.toString(),
                         QString::number(address.port));
 
+    LOG_I(LOG_TAG, "Creating gstreamer bin " + binStr);
+
     QGst::BinPtr encoder = QGst::Bin::fromDescription(binStr);
 
     LOG_I(LOG_TAG, "Created gstreamer bin " + binStr);

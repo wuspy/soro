@@ -42,6 +42,6 @@ Item {
     HudPowerImpl {
         id: impl
         anchors.fill: parent
-        anchors.margins: background.margin + width / 10
+        anchors.margins: 16 + parent.width / 10
     }
 }

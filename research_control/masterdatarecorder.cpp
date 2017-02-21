@@ -24,8 +24,13 @@ namespace MissionControl {
 
 MasterDataRecorder::MasterDataRecorder(const Channel* driveChannel, const Channel* sharedChannel, QObject *parent)
     : AbstractDataRecorder(LOG_TAG, "master", parent) {
-    connect(driveChannel, &Channel::stateChanged, this, &MasterDataRecorder::driveChannelStateChanged);
-    connect(sharedChannel, &Channel::stateChanged, this, &MasterDataRecorder::sharedChannelStateChanged);
+    _driveChannel = driveChannel;
+    _sharedChannel = sharedChannel;
+    connect(_driveChannel, &Channel::stateChanged, this, &MasterDataRecorder::driveChannelStateChanged);
+    connect(_sharedChannel, &Channel::stateChanged, this, &MasterDataRecorder::sharedChannelStateChanged);
+
+    // Start the timer to poll latency
+    START_TIMER(_latencyPollTimerId, 500);
 }
 
 void MasterDataRecorder::driveChannelStateChanged(Channel::State state) {
@@ -61,6 +66,22 @@ void MasterDataRecorder::addComment(QString comment) {
         addTimestamp();
         *_fileStream << Event_CommentEntered;
         *_fileStream << comment;
+    }
+}
+
+void MasterDataRecorder::fakeLatencyUpdated(int latency) {
+    if (_fileStream) {
+        addTimestamp();
+        *_fileStream << Event_FakeLatencyUpdate;
+        *_fileStream << latency;
+    }
+}
+
+void MasterDataRecorder::timerEvent(QTimerEvent *event) {
+    if (_fileStream && (_driveChannel->getState() == Channel::ConnectedState) && (event->timerId() == _latencyPollTimerId)) {
+        addTimestamp();
+        *_fileStream << Event_RealLatencyUpdate;
+        *_fileStream << _driveChannel->getLastRtt();
     }
 }
 

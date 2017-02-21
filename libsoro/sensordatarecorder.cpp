@@ -65,19 +65,19 @@ void SensorDataRecorder::parseBuffer(bool logErrors) {
 }
 
 bool SensorDataRecorder::isValidTag(char c) {
-    return (c == DATATAG_WHEELDATA_A) ||
-            (c == DATATAG_WHEELDATA_B) ||
-            (c == DATATAG_WHEELDATA_C) ||
-            (c == DATATAG_WHEELDATA_D) ||
-            (c == DATATAG_WHEELDATA_E) ||
-            (c == DATATAG_WHEELDATA_F) ||
-            (c == DATATAG_IMUDATA_1_X) ||
-            (c == DATATAG_IMUDATA_1_X) ||
-            (c == DATATAG_IMUDATA_1_Y) ||
-            (c == DATATAG_IMUDATA_1_Z) ||
-            (c == DATATAG_IMUDATA_2_X) ||
-            (c == DATATAG_IMUDATA_2_Y) ||
-            (c == DATATAG_IMUDATA_2_Z);
+    return (c == DATATAG_WHEELPOWER_A) ||
+            (c == DATATAG_WHEELPOWER_B) ||
+            (c == DATATAG_WHEELPOWER_C) ||
+            (c == DATATAG_WHEELPOWER_D) ||
+            (c == DATATAG_WHEELPOWER_E) ||
+            (c == DATATAG_WHEELPOWER_F) ||
+            (c == DATATAG_IMUDATA_REAR_YAW) ||
+            (c == DATATAG_IMUDATA_REAR_YAW) ||
+            (c == DATATAG_IMUDATA_REAR_PITCH) ||
+            (c == DATATAG_IMUDATA_REAR_ROLL) ||
+            (c == DATATAG_IMUDATA_FRONT_YAW) ||
+            (c == DATATAG_IMUDATA_FRONT_PITCH) ||
+            (c == DATATAG_IMUDATA_FRONT_ROLL);
 }
 
 } // namespace Soro

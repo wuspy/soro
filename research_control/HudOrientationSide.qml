@@ -16,16 +16,31 @@
 
 import QtQuick 2.0
 import QtGraphicalEffects 1.0
+import Soro 1.0
+
 
 Item {
+    property bool halfWidth: false;
 
-    property alias backdrop: backdrop
+    property alias rearYaw: impl.rearYaw
+    property alias rearPitch: impl.rearPitch
+    property alias rearRoll: impl.rearRoll
+    property alias frontYaw: impl.frontYaw
+    property alias frontPitch: impl.frontPitch
+    property alias frontRoll: impl.frontRoll
 
-    Rectangle {
-        id: backdrop
+    width: height
+    opacity: 0.8
+
+    transform: Scale { xScale: halfWidth ? 0.5 : 1 }
+
+    HudBackground {
         anchors.fill: parent
-        anchors.margins: 16
-        color: "#34000000"
-        radius: 10
+    }
+
+    HudOrientationSideImpl {
+        id: impl
+        anchors.fill: parent
+        anchors.margins: 16 + parent.width / 10
     }
 }

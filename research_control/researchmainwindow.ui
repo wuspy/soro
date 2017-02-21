@@ -98,7 +98,7 @@
       </url>
      </property>
     </widget>
-    <widget class="QQuickWidget" name="hudOrientation">
+    <widget class="QQuickWidget" name="hudOrientationSide">
      <property name="geometry">
       <rect>
        <x>170</x>
@@ -112,11 +112,11 @@
      </property>
      <property name="source">
       <url>
-       <string>qrc:/HudOrientation.qml</string>
+       <string>qrc:/HudOrientationSide.qml</string>
       </url>
      </property>
     </widget>
-    <widget class="QQuickWidget" name="hudOrientation2">
+    <widget class="QQuickWidget" name="hudOrientationSide2">
      <property name="geometry">
       <rect>
        <x>260</x>
@@ -130,7 +130,43 @@
      </property>
      <property name="source">
       <url>
-       <string>qrc:/HudOrientation.qml</string>
+       <string>qrc:/HudOrientationSide.qml</string>
+      </url>
+     </property>
+    </widget>
+    <widget class="QQuickWidget" name="hudOrientationBack2">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>0</y>
+       <width>0</width>
+       <height>0</height>
+      </rect>
+     </property>
+     <property name="resizeMode">
+      <enum>QQuickWidget::SizeViewToRootObject</enum>
+     </property>
+     <property name="source">
+      <url>
+       <string>qrc:/HudOrientationBack.qml</string>
+      </url>
+     </property>
+    </widget>
+    <widget class="QQuickWidget" name="hudOrientationBack">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>0</width>
+       <height>0</height>
+      </rect>
+     </property>
+     <property name="resizeMode">
+      <enum>QQuickWidget::SizeViewToRootObject</enum>
+     </property>
+     <property name="source">
+      <url>
+       <string>qrc:/HudOrientationBack.qml</string>
       </url>
      </property>
     </widget>

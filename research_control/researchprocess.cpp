@@ -286,6 +286,7 @@ void ResearchControlProcess::ui_settingsApplied() {
         stopAudio();
     }
     _driveSystem->getChannel()->setSimulatedDelay(_settings.selectedLatency);
+    _masterRecorder->fakeLatencyUpdated(_settings.selectedLatency);
 }
 
 void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaClient::State state) {

@@ -27,6 +27,8 @@
 #include "researchprocess.h"
 #include "hudlatencygraphimpl.h"
 #include "hudpowerimpl.h"
+#include "hudorientationsideimpl.h"
+#include "hudorientationbackimpl.h"
 
 #define LOG_TAG "Main"
 
@@ -76,6 +78,8 @@ int main(int argc, char *argv[]) {
 
     qmlRegisterType<HudLatencyGraphImpl>("Soro", 1, 0, "HudLatencyGraphImpl");
     qmlRegisterType<HudPowerImpl>("Soro", 1, 0, "HudPowerImpl");
+    qmlRegisterType<HudOrientationSideImpl>("Soro", 1, 0, "HudOrientationSideImpl");
+    qmlRegisterType<HudOrientationBackImpl>("Soro", 1, 0, "HudOrientationBackImpl");
     QQmlEngine engine(&a);
     QQuickStyle::setStyle("Material");
     ResearchControlProcess process(QHostAddress(roverIP), &gamepad, &engine, &a);

@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-import QtQuick 2.0
-import QtGraphicalEffects 1.0
+#include "hudorientationsideimpl.h"
 
-Item {
+namespace Soro {
+namespace MissionControl {
 
-    property alias backdrop: backdrop
+HudOrientationSideImpl::HudOrientationSideImpl(QQuickItem *parent): AbstractHudOrientationImpl(parent)
+{
 
-    Rectangle {
-        id: backdrop
-        anchors.fill: parent
-        anchors.margins: 16
-        color: "#34000000"
-        radius: 10
-    }
 }
+
+void HudOrientationSideImpl::paint(QPainter *painter) {
+
+}
+
+} // namespace MissionControl
+} // namespace Soro

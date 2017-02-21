@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 The University of Oklahoma.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "hudlatencygraphimpl.h"
 #include "qmath.h"
 
@@ -171,11 +187,9 @@ void HudLatencyGraphImpl::timerEvent(QTimerEvent *e) {
         }
 
         // Remove values farther in the future than our latency
-        if (!_history.empty()) {
-            qint64 lastKey;
-            while ((lastKey = _history.lastKey()) > now + _latency) {
-                _history.remove(lastKey);
-            }
+        qint64 lastKey;
+        while (!_history.empty() && ((lastKey = _history.lastKey()) > now + _latency)) {
+            _history.remove(lastKey);
         }
 
         _history.insert((now + _latency), _value);

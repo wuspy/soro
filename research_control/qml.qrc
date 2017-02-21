@@ -3,7 +3,6 @@
         <file>Main.qml</file>
         <file>HudPower.qml</file>
         <file>HudLatency.qml</file>
-        <file>HudOrientation.qml</file>
         <file>HudBackground.qml</file>
         <file>Comments.qml</file>
         <file>ConfirmRecordStopDialog.qml</file>
@@ -11,5 +10,7 @@
         <file>ToolbarButton.qml</file>
         <file>OnWindowCloseDialog.qml</file>
         <file>RecordingTimer.qml</file>
+        <file>HudOrientationSide.qml</file>
+        <file>HudOrientationBack.qml</file>
     </qresource>
 </RCC>

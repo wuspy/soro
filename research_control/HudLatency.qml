@@ -53,20 +53,6 @@ Item {
         graphY.value = yValue
     }
 
-    Timer {
-        interval: 5000
-        running: true
-        repeat: true
-        onTriggered: {
-            if (latency === 1000) {
-                latency = 5000
-            }
-            else {
-                latency = 1000
-            }
-        }
-    }
-
     transform: Scale { xScale: halfWidth ? 0.5 : 1 }
 
     HudBackground {
@@ -87,6 +73,26 @@ Item {
         height: parent.height / 4
     }
 
+    HudLatencyGraphImpl {
+        id: graphX
+        anchors.fill: xBackground
+        anchors.topMargin: 16 + xBackground.width / 10;
+        anchors.leftMargin: anchors.topMargin
+        anchors.rightMargin: anchors.topMargin
+        anchors.bottomMargin: latencyBackground.height + xBackground.width / 10
+        mode: "vertical"
+    }
+
+    HudLatencyGraphImpl {
+        id: graphY
+        anchors.fill: yBackground
+        anchors.topMargin: 16 + yBackground.height / 10;
+        anchors.bottomMargin: anchors.topMargin
+        anchors.rightMargin: anchors.topMargin
+        anchors.leftMargin: latencyBackground.width + yBackground.height / 10
+        mode: "horizontal"
+    }
+
     HudBackground {
         id: latencyBackground
         backdrop.color: "#4CAF50"
@@ -101,29 +107,9 @@ Item {
             id: latencyText
             anchors.centerIn: parent
             font.pointSize: parent.width / 8
-            text: "Delay<br><b>11352ms</b>"
+            text: "Delay<br><b>N/A</b>"
             horizontalAlignment: Text.AlignHCenter
             color: "white"
         }
-    }
-
-    HudLatencyGraphImpl {
-        id: graphX
-        anchors.fill: xBackground
-        anchors.topMargin: xBackground.margin + width / 10;
-        anchors.leftMargin: anchors.topMargin
-        anchors.rightMargin: anchors.topMargin
-        anchors.bottomMargin: latencyBackground.height + width / 10
-        mode: "vertical"
-    }
-
-    HudLatencyGraphImpl {
-        id: graphY
-        anchors.fill: yBackground
-        anchors.topMargin: yBackground.margin + height / 10;
-        anchors.bottomMargin: anchors.topMargin
-        anchors.rightMargin: anchors.topMargin
-        anchors.leftMargin: latencyBackground.width + height / 10
-        mode: "horizontal"
     }
 }
