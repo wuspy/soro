@@ -23,7 +23,7 @@
 
 #define MSG_TYPE_NORMAL 1
 #define MSG_TYPE_LOG 2
-#define MSG_TYPE_BROADCAST 3
+//#define MSG_TYPE_BROADCAST 3
 #define MSG_TYPE_HEARTBEAT 4
 #define IDLE_CONNECTION_TIMEOUT 2000
 #define MAX_PACKET_LEN 1024
@@ -90,10 +90,10 @@ void MbedChannel::socketReadyRead() {
         case MSG_TYPE_LOG: // Mbed wants to log something
             LOG_I(LOG_TAG, "Mbed:" + QString(_buffer + 6));
             break;
-        case MSG_TYPE_BROADCAST: // Handshake message
+        /*case MSG_TYPE_BROADCAST: // Handshake message
             LOG_I(LOG_TAG, "Responding to handshake from mbed");
             sendMessage(nullptr, 0);
-            break;
+            break;*/
         case MSG_TYPE_HEARTBEAT: // Heartbeat message
             break;
         default:
@@ -143,6 +143,7 @@ void MbedChannel::sendMessage(const char *message, int length) {
         _buffer[1] = _mbedId;
         Util::serialize<unsigned int>(_buffer + 2, _nextSendId++);
         memcpy(_buffer + 6, message, length);
+        LOG_I(LOG_TAG, _socket->localAddress().toString());
         _socket->writeDatagram(_buffer, length + 6, QHostAddress::Broadcast, _host.port);
     }
 }
@@ -169,25 +170,20 @@ MbedChannel::State MbedChannel::getState() const {
 #endif
 #ifdef TARGET_LPC1768 ////////////////////////////////////////////////////////////////
 
+DigitalOut _led1(LED1);
+DigitalOut _led2(LED2);
+DigitalOut _led3(LED3);
+DigitalOut _led4(LED4);
+
 extern "C" void mbed_reset();
 
 void MbedChannel::panic() {
-    DigitalOut led1(LED1);
-    DigitalOut led2(LED2);
-    DigitalOut led3(LED3);
-    DigitalOut led4(LED4);
-    while (1) {
-        led1 = 1;
-        led2 = 0;
-        led3 = 0;
-        led4 = 1;
-        wait_ms(150);
-        led1 = 0;
-        led2 = 1;
-        led3 = 1;
-        led4 = 0;
-        wait_ms(150);
-    }
+    _led1 = 1;
+    _led2 = 0;
+    _led3 = 0;
+    _led4 = 1;
+    wait(5);
+    reset();
 }
 
 void MbedChannel::reset() {
@@ -246,26 +242,20 @@ void MbedChannel::initConnection() {
     Serial pc(USBTX, USBRX);
     pc.printf("Port: %u\r\n", _serverPort); // DEBUG
     //initialize ethernet interface
-    DigitalOut led1(LED1);
-    DigitalOut led2(LED2);
-    DigitalOut led3(LED3);
-    DigitalOut led4(LED4);
-    led1 = 1;
+    _led1 = 1;
     if (_eth->init() != 0) {
-        wait(0.5);
-        reset();
+        panic();
     }
     // connect to ethernet and get address through DHCP
-    led2 = 1;
+    _led2 = 1;
     if (_eth->connect() != 0) {
-        wait(0.5);
-        reset();
+        panic();
     }
-    led3 = 1;
+    _led3 = 1;
 
     // Ensure the network allows broadcasting
     if (strcmp(strrchr(_eth->getNetworkMask(), '.'), ".0") != 0) {
-        pc.printf("FATAL: Network mask doesn't allow broadcasting\r\n"); // DEBUG
+        // Network doesn't allow broadcasting
         panic();
     }
 
@@ -281,18 +271,24 @@ void MbedChannel::initConnection() {
     setTimeout(IDLE_CONNECTION_TIMEOUT / 3);
     //initialize socket
     while (_socket->bind(_serverPort) != 0) {
-        pc.printf("Waiting for socket to bind to port %u...\r\n", _serverPort); // DEBUG
         wait(0.2);
-        led3 = 0;
+        _led3 = 0;
         wait(0.2);
-        led3 = 1;
+        _led3 = 1;
     }
     if (_socket->set_broadcasting(true) != 0) {
-        pc.printf("FATAL: Unable to set socket to broadcast\r\n"); // DEBUG
+        // Cannot set broadcasting on socket
         panic();
     }
 
-    Endpoint peer;
+    _led4 = 1;
+    wait(1);
+    _led1 = 0;
+    _led2 = 0;
+    _led3 = 0;
+    _led4 = 0;
+
+    /*Endpoint peer;
     while (1) {
         //send broadcast handshake
         sendMessage(NULL, 0, MSG_TYPE_BROADCAST);
@@ -303,25 +299,22 @@ void MbedChannel::initConnection() {
             if ((len < 6) || (len == MAX_PACKET_LEN)) break;
             if (_buffer[0] == '\0' && _buffer[1] == _mbedId) {
                 //received a response from the server
-                pc.printf("Got response from peer at %s:%u\r\n", peer.get_address(), peer.get_port()); // DEBUG
                 _server.set_address(peer.get_address(), _serverPort);
                 if (_socket->set_broadcasting(false) != 0) {
-                    pc.printf("FATAL: Unable to set socket to stop broadcast\r\n"); // DEBUG
                     panic();
                 }
-                led1 = 0;
-                led2 = 0;
-                led3 = 0;
-                led4 = 0;
+                _led1 = 0;
+                _led2 = 0;
+                _led3 = 0;
+                _led4 = 0;
                 return;
             }
         }
         wait(0.2);
-        led4 = 0;
+        _led4 = 0;
         wait(0.2);
-        led4 = 1;
-    }
-    pc.printf("Handshake complete\r\n"); // DEBUG
+        _led4 = 1;
+    }*/
 }
 
 MbedChannel::MbedChannel(unsigned char mbedId, unsigned int port) {
@@ -363,7 +356,7 @@ void MbedChannel::log(char *message) {
 
 void MbedChannel::sendMessage(char *message, int length, unsigned char type) {
     if (!isEthernetActive()) {
-        reset();
+        panic();
     }
     _buffer[0] = _mbedId;
     _buffer[1] = reinterpret_cast<char&>(type);
@@ -371,6 +364,8 @@ void MbedChannel::sendMessage(char *message, int length, unsigned char type) {
     memcpy(_buffer + 6, message, length);
     _socket->sendTo(_server, _buffer, length + 6);
     _lastSendTime = time(NULL);
+    if (_led2 == 1) _led2 = 0;
+    else _led2 = 1;
 }
 
 void MbedChannel::setResetListener(void (*callback)(void)) {
@@ -379,7 +374,7 @@ void MbedChannel::setResetListener(void (*callback)(void)) {
 
 int MbedChannel::read(char *outMessage, int maxLength) {
     if (!isEthernetActive()) {
-        reset();
+        panic();
     }
     Endpoint peer;
     //Check if a heartbeat should be sent
@@ -389,11 +384,13 @@ int MbedChannel::read(char *outMessage, int maxLength) {
     int len = _socket->receiveFrom(peer, _buffer, maxLength);
     unsigned int sequence = Util::deserialize<unsigned int>(_buffer + 2);
     if ((len < 6)
-            || (peer.get_port() != _server.get_port())
+            || (peer.get_port() != _serverPort)
             || (_buffer[0] != '\0')
             || (_buffer[1] != _mbedId)) {
         return -1;
     }
+    if (_led1 == 1) _led1 = 0;
+    else _led1 = 1;
     if ((sequence < _lastReceiveId) && (time(NULL) - _lastReceiveTime < 2)) {
         return -1;
     }
