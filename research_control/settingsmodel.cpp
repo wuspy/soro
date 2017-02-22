@@ -54,6 +54,7 @@ SettingsModel SettingsModel::Default(QHostAddress roverAddress) {
     model.videoEncodingNames << "MPEG2";
     model.videoEncodingNames << "MJPEG";
     model.videoEncodingNames << "x264";
+    model.videoEncodingNames << "VP8";
 
     return model;
 }

@@ -178,6 +178,12 @@ QString VideoFormat::toHumanReadableString() const {
                     QString::number(getResolutionHeight()),
                     framerate,
                     QString::number(_bitrate / 1000));
+    case Encoding_VP8:
+        return QString("VP8 %1x%2@%3 (%4K)").arg(
+                    QString::number(getResolutionWidth()),
+                    QString::number(getResolutionHeight()),
+                    framerate,
+                    QString::number(_bitrate / 1000));
     default:
         return "Unknown Encoding";
     }
@@ -251,6 +257,15 @@ QString VideoFormat::createGstEncodingArgs() const {
                         QString::number(_maxThreads)
                     );
         break;
+    case Encoding_VP8:
+        encString += QString(
+                        "vp8enc target-bitrate=%1 threads=%2 ! "
+                        "rtpvp8pay pt=96"
+                    ).arg(
+                        QString::number(bitrate), // vp8 has bitrate in bit/sec
+                        QString::number(_maxThreads)
+                    );
+        break;
     default:
         //unknown codec
         LOG_E(LOG_TAG, "Unknown video encoding");
@@ -272,9 +287,13 @@ QString VideoFormat::createGstDecodingArgs() const {
                "rtph264depay ! "
                "avdec_h264";
     case Encoding_MJPEG:
-        return "application/x-rtp,media=video,encoding=JPEG,payload=26 ! "
+        return "application/x-rtp,media=video,encoding-name=JPEG,payload=26 ! "
                "rtpjpegdepay ! "
                "jpegdec";
+    case Encoding_VP8:
+        return "application/x-rtp,media=video,encoding-name=VP8,clock-rate=90000,payload=96 ! "
+               "rtpvp8depay ! "
+               "avdec_vp8";
     default:
         // unknown codec
         LOG_E(LOG_TAG, "Unknown video encoding");
