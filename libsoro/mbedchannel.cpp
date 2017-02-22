@@ -143,7 +143,6 @@ void MbedChannel::sendMessage(const char *message, int length) {
         _buffer[1] = _mbedId;
         Util::serialize<unsigned int>(_buffer + 2, _nextSendId++);
         memcpy(_buffer + 6, message, length);
-        LOG_I(LOG_TAG, _socket->localAddress().toString());
         _socket->writeDatagram(_buffer, length + 6, QHostAddress::Broadcast, _host.port);
     }
 }
