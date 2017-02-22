@@ -14,8 +14,9 @@ public:
         Encoding_Null = -1,
         Encoding_MPEG2,
         Encoding_MJPEG,
-        Encoding_X264,
-        Encoding_VP8
+        Encoding_H264,
+        Encoding_VP8,
+        Encoding_H265
     };
     Q_ENUM(Encoding)
 

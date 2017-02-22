@@ -172,14 +172,20 @@ QString VideoFormat::toHumanReadableString() const {
                     QString::number(getResolutionHeight()),
                     framerate,
                     QString::number(_mjpegQuality));
-    case Encoding_X264:
-        return QString("x264 %1x%2@%3 (%4K)").arg(
+    case Encoding_H264:
+        return QString("H264 %1x%2@%3 (%4K)").arg(
                     QString::number(getResolutionWidth()),
                     QString::number(getResolutionHeight()),
                     framerate,
                     QString::number(_bitrate / 1000));
     case Encoding_VP8:
         return QString("VP8 %1x%2@%3 (%4K)").arg(
+                    QString::number(getResolutionWidth()),
+                    QString::number(getResolutionHeight()),
+                    framerate,
+                    QString::number(_bitrate / 1000));
+    case Encoding_H265:
+        return QString("H265 %1x%2@%3 (%4K)").arg(
                     QString::number(getResolutionWidth()),
                     QString::number(getResolutionHeight()),
                     framerate,
@@ -248,7 +254,7 @@ QString VideoFormat::createGstEncodingArgs() const {
                         QString::number(_mjpegQuality)
                     );
         break;
-    case Encoding_X264:
+    case Encoding_H264:
         encString += QString(
                         "x264enc tune=zerolatency bitrate=%1 threads=%2 ! "
                         "rtph264pay config-interval=3 pt=96"
@@ -263,6 +269,15 @@ QString VideoFormat::createGstEncodingArgs() const {
                         "rtpvp8pay pt=96"
                     ).arg(
                         QString::number(bitrate), // vp8 has bitrate in bit/sec
+                        QString::number(_maxThreads)
+                    );
+        break;
+    case Encoding_H265:
+        encString += QString(
+                        "x265enc speed-preset=fast tune=zerolatency bitrate=%1 threads=%2 ! "
+                        "rtph265pay config-interval=3 pt=96"
+                    ).arg(
+                        QString::number(bitrate / 1000), // x265 has bitrate in kbit/sec
                         QString::number(_maxThreads)
                     );
         break;
@@ -282,7 +297,7 @@ QString VideoFormat::createGstDecodingArgs() const {
         return "application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96 ! "
                "rtpmp4vdepay ! "
                "avdec_mpeg4";
-    case Encoding_X264:
+    case Encoding_H264:
         return "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
                "rtph264depay ! "
                "avdec_h264";
@@ -294,6 +309,10 @@ QString VideoFormat::createGstDecodingArgs() const {
         return "application/x-rtp,media=video,encoding-name=VP8,clock-rate=90000,payload=96 ! "
                "rtpvp8depay ! "
                "avdec_vp8";
+    case Encoding_H265:
+        return "application/x-rtp,media=video,clock-rate=90000,encoding-name=H265 ! "
+               "rtph265depay ! "
+               "avdec_h265";
     default:
         // unknown codec
         LOG_E(LOG_TAG, "Unknown video encoding");
