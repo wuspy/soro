@@ -14,4 +14,7 @@
     <qresource prefix="/html">
         <file>map.html</file>
     </qresource>
+    <qresource prefix="/config">
+        <file>gamecontrollerdb.txt</file>
+    </qresource>
 </RCC>

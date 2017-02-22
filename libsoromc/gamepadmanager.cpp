@@ -32,17 +32,23 @@ bool GamepadManager::init(int interval, QString *error) {
     _interval = interval;
     _sdlInitialized = SDL_Init(SDL_INIT_GAMECONTROLLER) == 0;
     if (_sdlInitialized) {
-        QString path = QCoreApplication::applicationDirPath() + "/../config/gamecontrollerdb.txt";
-        if (SDL_GameControllerAddMappingsFromFile(path.toLocal8Bit().constData()) != -1) {
-            START_TIMER(_inputSelectorTimerId, 1000);
-            return true;
+        // Add gamepad map
+        QFile gamepadMap(":/config/gamecontrollerdb.txt"); // Loads from assets.qrc
+        gamepadMap.open(QIODevice::ReadOnly);
+        while (gamepadMap.bytesAvailable()) {
+            if (SDL_GameControllerAddMapping(gamepadMap.readLine().data()) == -1) {
+                if (error) *error = "Unable to apply SDL gamepad map";
+                gamepadMap.close();
+                return false;
+            }
         }
-        else {
-            *error = "The gamepad map file at '../config/gamecontrollerdb.txt' is missing or invalid. You can obtain this file from https://github.com/gabomdq/SDL_GameControllerDB.";
-        }
+        gamepadMap.close();
+        START_TIMER(_inputSelectorTimerId, 1000);
+        return true;
+
     }
     else {
-        *error = "SDL failed to initialize: " + QString(SDL_GetError());
+        if (error) *error = "SDL failed to initialize: " + QString(SDL_GetError());
     }
     return false;
 }
@@ -74,7 +80,7 @@ void GamepadManager::timerEvent(QTimerEvent *e) {
         for (int i = 0; i < SDL_NumJoysticks(); ++i) {
             if (SDL_IsGameController(i)) {
                 SDL_GameController *controller = SDL_GameControllerOpen(i);
-                if (controller && SDL_GameControllerMapping(controller)) {
+                if (controller) {
                     //this gamepad will do
                     setGamepad(controller);
                     KILL_TIMER(_inputSelectorTimerId);
