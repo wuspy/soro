@@ -893,7 +893,7 @@ ApplicationWindow {
                         enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked & videoEncodingCombo.currentText !== "MJPEG"
                         stepSize: 10
                         to: 10000
-                        from: 500
+                        from: 10
                         value: 500
                         anchors.left: videoBitrateLabel.right
                         anchors.leftMargin: 12
