@@ -79,7 +79,8 @@ public:
                 (_stereoMode == other._stereoMode) &&
                 (_bitrate == other._bitrate) &&
                 (_framerate == other._framerate) &&
-                (_maxThreads == other._maxThreads);
+                (_maxThreads == other._maxThreads) &&
+                (_mjpegQuality == other._mjpegQuality);
     }
 
     inline bool operator!=(const VideoFormat& other) {

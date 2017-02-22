@@ -12,6 +12,7 @@ VideoFormat::VideoFormat() {
     _stereoMode = StereoMode_None;
     _bitrate = 1000000;
     _maxThreads = 3;
+    _mjpegQuality = 50;
     _framerate = 0;
 }
 
@@ -21,6 +22,7 @@ VideoFormat::VideoFormat(const VideoFormat &other) {
     _stereoMode = other._stereoMode;
     _bitrate = other._bitrate;
     _maxThreads = other._maxThreads;
+    _mjpegQuality = other._mjpegQuality;
     _framerate = other._framerate;
 }
 
