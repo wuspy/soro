@@ -904,6 +904,7 @@ ApplicationWindow {
                         anchors.top: videoResolutionCombo.bottom
                         anchors.topMargin: 8
                         onValueChanged: settingsFooterPane.state = "visible"
+                        editable: true
                     }
 
                     Label {
@@ -926,6 +927,7 @@ ApplicationWindow {
                         anchors.top: videoBitrateSpinBox.bottom
                         anchors.topMargin: 8
                         onValueChanged: settingsFooterPane.state = "visible"
+                        editable: true
                     }
 
                     Label {
@@ -948,6 +950,7 @@ ApplicationWindow {
                         anchors.top: mjpegQualitySpinBox.bottom
                         anchors.topMargin: 8
                         onValueChanged: settingsFooterPane.state = "visible"
+                        editable: true
                     }
 
                     Label {
