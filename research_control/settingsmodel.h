@@ -21,7 +21,11 @@ struct SettingsModel {
     bool enableHud;
     bool enableGps;
 
-    int selectedVideoFormat;
+    int selectedVideoEncoding;
+    int selectedVideoResolution;
+    int selectedVideoFramerate;
+    int selectedVideoBitrate;
+    int selectedMjpegQuality;
     int selectedCamera;
     int selectedLatency;
     int selectedHudParallax;
@@ -33,7 +37,7 @@ struct SettingsModel {
     QHostAddress roverAddress;
 
     QStringList cameraNames;
-    QList<VideoFormat> defaultVideoFormats;
+    //QList<VideoFormat> defaultVideoFormats;
     AudioFormat defaultAudioFormat;
 
     static SettingsModel Default(QHostAddress roverAddress);

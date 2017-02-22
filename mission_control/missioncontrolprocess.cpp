@@ -138,9 +138,9 @@ void MissionControlProcess::videoClientStateChanged(MediaClient *client, MediaCl
     SharedMessageType messageType = SharedMessage_CameraChanged;
     VideoFormat format = videoClient->getVideoFormat();
 
-    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << (qint32)client->getMediaId();
-    stream << reinterpret_cast<const quint32&>(state);
+    stream << static_cast<qint32>(state);
     stream << format.serialize();
     stream << client->getErrorString();
 
@@ -161,8 +161,8 @@ void MissionControlProcess::audioClientStateChanged(MediaClient *client, MediaCl
     SharedMessageType messageType = SharedMessage_AudioStreamChanged;
     AudioFormat format = audioClient->getAudioFormat();
 
-    stream << reinterpret_cast<const quint32&>(messageType);
-    stream << reinterpret_cast<const quint32&>(state);
+    stream << static_cast<qint32>(messageType);
+    stream << static_cast<qint32>(state);
     stream << format.serialize();
     stream << client->getErrorString();
 
@@ -301,11 +301,11 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
 
     LOG_I(LOG_TAG, "Getting shared channel message");
 
-    stream >> reinterpret_cast<quint32&>(messageType);
+    stream >> reinterpret_cast<qint32&>(messageType);
     switch (messageType) {
     case SharedMessage_RoverSharedChannelStateChanged: {
         Channel::State state;
-        stream >> reinterpret_cast<quint32&>(state);
+        stream >> reinterpret_cast<qint32&>(state);
         handleRoverSharedChannelStateChanged(state);
     }
         break;
@@ -333,7 +333,7 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         QString formatString;
 
         stream >> cameraID;
-        stream >> reinterpret_cast<quint32&>(state);
+        stream >> reinterpret_cast<qint32&>(state);
         stream >> formatString;
         stream >> errorString;
 
@@ -347,7 +347,7 @@ void MissionControlProcess::handleSharedChannelMessage(const char *message, Chan
         QString errorString;
         QString formatString;
 
-        stream >> reinterpret_cast<quint32&>(state);
+        stream >> reinterpret_cast<qint32&>(state);
         stream >> formatString;
         stream >> errorString;
 
@@ -414,8 +414,8 @@ void MissionControlProcess::roverSharedChannelStateChanged(Channel::State state)
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
 
-    stream << reinterpret_cast<const quint32&>(messageType);
-    stream << reinterpret_cast<const quint32&>(state);
+    stream << static_cast<qint32>(messageType);
+    stream << static_cast<qint32>(state);
 
     _mcNetwork->sendSharedMessage(message.constData(), message.size());
 }
@@ -437,8 +437,8 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
     QByteArray roverConnectionMessage;
     QDataStream stream(&roverConnectionMessage, QIODevice::WriteOnly);
     Channel::State roverState = _roverChannel->getState();
-    stream << reinterpret_cast<const quint32&>(messageType);
-    stream << reinterpret_cast<const quint32&>(roverState);
+    stream << static_cast<qint32>(messageType);
+    stream << static_cast<qint32>(roverState);
 
     channel->sendMessage(roverConnectionMessage);
 
@@ -448,7 +448,7 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
     QDataStream stream2(&roverSubsystemMessage, QIODevice::WriteOnly);
     messageType = SharedMessage_RoverStatusUpdate;
 
-    stream2 << reinterpret_cast<const quint32&>(messageType);
+    stream2 << static_cast<qint32>(messageType);
     stream2 << (_lastArmSubsystemState == NormalSubsystemState);
     stream2 << (_lastDriveGimbalSubsystemState == NormalSubsystemState);
     stream2 << (_lastArmSubsystemState == NormalSubsystemState);
@@ -464,9 +464,9 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
         VideoClient::State state = client->getState();
         VideoFormat format = client->getVideoFormat();
 
-        stream3 << reinterpret_cast<const quint32&>(messageType);
-        stream3 << (qint32)client->getMediaId();
-        stream3 << reinterpret_cast<const quint32&>(state);
+        stream3 << static_cast<qint32>(messageType);
+        stream3 << static_cast<qint32>(client->getMediaId());
+        stream3 << static_cast<qint32>(state);
         stream3 << format.serialize();
         stream3 << client->getErrorString();
 
@@ -481,8 +481,8 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
     VideoClient::State state = _audioClient->getState();
     AudioFormat format = _audioClient->getAudioFormat();
 
-    stream4 << reinterpret_cast<const quint32&>(messageType);
-    stream4 << reinterpret_cast<const quint32&>(state);
+    stream4 << static_cast<qint32>(messageType);
+    stream4 << static_cast<qint32>(state);
     stream4 << format.serialize();
     stream4 << _audioClient->getErrorString();
 
@@ -496,8 +496,8 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_CameraNameChanged;
 
-        stream << reinterpret_cast<const quint32&>(messageType);
-        stream << (qint32)i;
+        stream << static_cast<qint32>(messageType);
+        stream << static_cast<qint32>(i);
         stream << _cameraNames.at(i);
 
         channel->sendMessage(message.constData(), message.size());
@@ -511,7 +511,7 @@ void MissionControlProcess::onNewMissionControlClient(Channel *channel) {
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_RoverGpsUpdate;
 
-        stream << reinterpret_cast<const quint32&>(messageType);
+        stream << static_cast<qint32>(messageType);
         stream << *nmeaMessage;
 
         channel->sendMessage(message.constData(), message.size());
@@ -530,14 +530,14 @@ void MissionControlProcess::cameraFormatSelected(int camera, int formatIndex) {
     if (!format.isUseable()) {
         messageType = SharedMessage_RequestDeactivateCamera;
 
-        stream << reinterpret_cast<const quint32&>(messageType);
-        stream << (qint32)camera;
+        stream << static_cast<qint32>(messageType);
+        stream << static_cast<qint32>(camera);
     }
     else {
         messageType = SharedMessage_RequestActivateCamera;
 
-        stream << reinterpret_cast<const quint32&>(messageType);
-        stream << (qint32)camera;
+        stream << static_cast<qint32>(messageType);
+        stream << static_cast<qint32>(camera);
         stream << format.serialize();
     }
 
@@ -559,8 +559,8 @@ void MissionControlProcess::cameraNameEdited(int camera, QString newName) {
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_CameraNameChanged;
 
-    stream << reinterpret_cast<const quint32&>(messageType);
-    stream << (qint32)camera;
+    stream << static_cast<qint32>(messageType);
+    stream << static_cast<qint32>(camera);
     stream << newName;
 
     _mcNetwork->sendSharedMessage(message.constData(), message.size());
@@ -573,7 +573,7 @@ void MissionControlProcess::playAudioSelected() {
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_RequestActivateAudioStream;
 
-    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << _defaultAudioFormat.serialize();
 
     if (_mcNetwork->isBroker() && _roverChannel) {
@@ -591,7 +591,7 @@ void MissionControlProcess::stopAudioSelected() {
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_RequestDeactivateAudioStream;
 
-    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
 
     if (_mcNetwork->isBroker() && _roverChannel) {
         _roverChannel->sendMessage(message);
@@ -660,7 +660,7 @@ void MissionControlProcess::timerEvent(QTimerEvent *e) {
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_BitrateUpdate;
 
-        stream << reinterpret_cast<const quint32&>(messageType);
+        stream << static_cast<qint32>(messageType);
         stream << bpsRoverDown;
         stream << bpsRoverUp;
 

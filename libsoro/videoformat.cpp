@@ -25,13 +25,14 @@ VideoFormat::VideoFormat(const VideoFormat &other) {
 }
 
 VideoFormat::VideoFormat(VideoFormat::Encoding encoding, VideoFormat::Resolution resolution, quint32 bitrate,
-                         quint32 framerate, StereoMode stereo, quint32 maxThreads) {
+                         quint32 framerate, StereoMode stereo, quint32 mjpegQuality, quint32 maxThreads) {
     _encoding = encoding;
     _resolution = resolution;
     _bitrate = bitrate;
     _framerate = framerate;
     _stereoMode = stereo;
     _maxThreads = maxThreads;
+    _mjpegQuality = mjpegQuality;
 }
 
 VideoFormat::~VideoFormat() { }
@@ -64,6 +65,10 @@ quint32 VideoFormat::getMaxThreads() const {
     return _maxThreads;
 }
 
+quint32 VideoFormat::getMjpegQuality() const {
+    return _mjpegQuality;
+}
+
 void VideoFormat::setEncoding(VideoFormat::Encoding encoding) {
     _encoding = encoding;
 }
@@ -86,6 +91,10 @@ void VideoFormat::setStereoMode(VideoFormat::StereoMode stereo) {
 
 void VideoFormat::setMaxThreads(quint32 maxThreads) {
     _maxThreads = maxThreads;
+}
+
+void VideoFormat::setMjpegQuality(quint32 quality) {
+    _mjpegQuality = quality;
 }
 
 quint32 VideoFormat::getResolutionWidth() const {
@@ -135,24 +144,7 @@ quint32 VideoFormat::getHeight() const {
 }
 
 QString VideoFormat::toHumanReadableString() const {
-    QString str = "%1 %2x%3@%4 (%5Kb)";
-    QString encoding;
     QString framerate;
-    switch (_encoding) {
-    case Encoding_Null:
-        return "No Video";
-    case Encoding_MPEG2:
-        encoding = "MPEG2";
-        break;
-    case Encoding_MJPEG:
-        encoding = "MJPEG";
-        break;
-    case Encoding_X264:
-        encoding = "x264";
-        break;
-    default:
-        return "Unknown Encoding";
-    }
 
     switch (_framerate) {
     case 0:
@@ -163,11 +155,30 @@ QString VideoFormat::toHumanReadableString() const {
         break;
     }
 
-    return str.arg(encoding,
-                   QString::number(getResolutionWidth()),
-                   QString::number(getResolutionHeight()),
-                   framerate,
-                   QString::number(_bitrate / 1000));
+    switch (_encoding) {
+    case Encoding_Null:
+        return "No Video";
+    case Encoding_MPEG2:
+        return QString("MPEG2 %1x%2@%3 (%4K)").arg(
+                    QString::number(getResolutionWidth()),
+                    QString::number(getResolutionHeight()),
+                    framerate,
+                    QString::number(_bitrate / 1000));
+    case Encoding_MJPEG:
+        return QString("MJPEG %1x%2@%3 (%4\%)").arg(
+                    QString::number(getResolutionWidth()),
+                    QString::number(getResolutionHeight()),
+                    framerate,
+                    QString::number(_mjpegQuality));
+    case Encoding_X264:
+        return QString("x264 %1x%2@%3 (%4K)").arg(
+                    QString::number(getResolutionWidth()),
+                    QString::number(getResolutionHeight()),
+                    framerate,
+                    QString::number(_bitrate / 1000));
+    default:
+        return "Unknown Encoding";
+    }
 }
 
 QString VideoFormat::createGstEncodingArgs() const {
@@ -217,21 +228,24 @@ QString VideoFormat::createGstEncodingArgs() const {
                         "avenc_mpeg4 bitrate=%1 bitrate-tolerance=%2 max-threads=%3 ! "
                         "rtpmp4vpay config-interval=3 pt=96"
                     ).arg(
-                        QString::number(bitrate),
+                        QString::number(bitrate),  // mpeg2 has bitrate in bit/sec
                         QString::number(bitrate / 4),
                         QString::number(_maxThreads)
                     );
         break;
     case Encoding_MJPEG:
-        // TODO adjustable mjpeg quality
-        encString += "jpegenc quality=50 ! rtpjpegpay";
+        encString += QString(
+                        "jpegenc quality=%1 ! rtpjpegpay"
+                    ).arg(
+                        QString::number(_mjpegQuality)
+                    );
         break;
     case Encoding_X264:
         encString += QString(
                         "x264enc tune=zerolatency bitrate=%1 threads=%2 ! "
                         "rtph264pay config-interval=3 pt=96"
                     ).arg(
-                        QString::number(bitrate / 1000),
+                        QString::number(bitrate / 1000), // x264 has bitrate in kbit/sec
                         QString::number(_maxThreads)
                     );
         break;
@@ -268,9 +282,9 @@ QString VideoFormat::createGstDecodingArgs() const {
 
 QString VideoFormat::serialize() const {
     QString serial;
-    serial += QString::number(reinterpret_cast<const quint32&>(_encoding)) + "_";
-    serial += QString::number(reinterpret_cast<const quint32&>(_resolution)) + "_";
-    serial += QString::number(reinterpret_cast<const quint32&>(_stereoMode)) + "_";
+    serial += QString::number(static_cast<qint32>(_encoding)) + "_";
+    serial += QString::number(static_cast<qint32>(_resolution)) + "_";
+    serial += QString::number(static_cast<qint32>(_stereoMode)) + "_";
     serial += QString::number(_framerate) + "_";
     serial += QString::number(_bitrate) + "_";
     serial += QString::number(_maxThreads);
@@ -286,15 +300,15 @@ void VideoFormat::deserialize(QString serial) {
     }
 
     bool ok;
-    reinterpret_cast<quint32&>(_encoding) = items[0].toUInt(&ok);
+    reinterpret_cast<qint32&>(_encoding) = items[0].toInt(&ok);
     if (!ok) {
         LOG_E(LOG_TAG, "deserialize(): Invalid option for encoding");
     }
-    reinterpret_cast<quint32&>(_resolution) = items[1].toUInt(&ok);
+    reinterpret_cast<qint32&>(_resolution) = items[1].toInt(&ok);
     if (!ok) {
         LOG_E(LOG_TAG, "deserialize(): Invalid option for resolution");
     }
-    reinterpret_cast<quint32&>(_stereoMode) = items[2].toUInt(&ok);
+    reinterpret_cast<qint32&>(_stereoMode) = items[2].toInt(&ok);
     if (!ok) {
         LOG_E(LOG_TAG, "deserialize(): Invalid option for stereo mode");
     }

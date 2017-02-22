@@ -417,7 +417,7 @@ void Channel::udpReadyRead() {  //PRIVATE SLOT
             return;
         }
         _receiveBufferLength = status;
-        type = reinterpret_cast<MessageType&>(_receiveBuffer[0]);
+        type = static_cast<MessageType>(_receiveBuffer[0]);
         //ensure the datagram either came from the correct address, or is marked as a handshake
         if (_isServer) {
             if ((address != _peerAddress) & (type != MSGTYPE_CLIENT_HANDSHAKE)) {
@@ -467,7 +467,7 @@ void Channel::tcpReadyRead() {  //PRIVATE SLOT
             if (_receiveBufferLength == length) {
                 //we have the whole message
                 _bytesDown += length;
-                MessageType type = reinterpret_cast<MessageType&>(_receiveBuffer[sizeof(MessageSize)]);
+                MessageType type = static_cast<MessageType>(_receiveBuffer[sizeof(MessageSize)]);
                 MessageID ID = Util::deserialize<MessageID>(_receiveBuffer + sizeof(MessageSize) + 1);
                 processBufferedMessage(type, ID, _receiveBuffer + TCP_HEADER_SIZE, _receiveBufferLength - TCP_HEADER_SIZE, _peerAddress);
                 _receiveBufferLength = 0;
@@ -620,7 +620,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
     //LOG_D(LOG_TAG, "Sending packet type=" + QString::number(type) + ",id=" + QString::number(_nextSendID));
     if (_protocol == UdpProtocol) {
         if (_simulatedDelay == 0) {
-            _sendBuffer[0] = reinterpret_cast<char&>(type);
+            _sendBuffer[0] = static_cast<char>(type);
             Util::serialize<MessageID>(_sendBuffer + 1, _nextSendID);
             memcpy(_sendBuffer + sizeof(MessageID) + 1, message, (size_t)size);
             status = _udpSocket->writeDatagram(_sendBuffer, size + UDP_HEADER_SIZE, _peerAddress.host, _peerAddress.port);
@@ -628,7 +628,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
         else {
             PacketWrapper *wrapper = new PacketWrapper;
             wrapper->data = new char[size + UDP_HEADER_SIZE];
-            wrapper->data[0] = reinterpret_cast<char&>(type);
+            wrapper->data[0] = static_cast<char>(type);
             Util::serialize<MessageID>(wrapper->data + 1, _nextSendID);
             memcpy(wrapper->data + sizeof(MessageID) + 1, message, (size_t)size);
             wrapper->len = size + UDP_HEADER_SIZE;
@@ -641,7 +641,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
         MessageSize newSize = size + TCP_HEADER_SIZE;
         if (_simulatedDelay == 0) {
             Util::serialize<MessageSize>(_sendBuffer, newSize);
-            _sendBuffer[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
+            _sendBuffer[sizeof(MessageSize)] = static_cast<char>(type);
             Util::serialize<MessageID>(_sendBuffer + sizeof(MessageSize) + 1, _nextSendID);
             memcpy(_sendBuffer + sizeof(MessageID) + sizeof(MessageSize) + 1, message, (size_t)size);
             status = _tcpSocket->write(_sendBuffer, newSize);
@@ -650,7 +650,7 @@ bool Channel::sendMessage(const char *message, MessageSize size, MessageType typ
             PacketWrapper *wrapper = new PacketWrapper;
             wrapper->data = new char[newSize];
             Util::serialize<MessageSize>(wrapper->data, newSize);
-            wrapper->data[sizeof(MessageSize)] = reinterpret_cast<char&>(type);
+            wrapper->data[sizeof(MessageSize)] = static_cast<char>(type);
             Util::serialize<MessageID>(wrapper->data + sizeof(MessageSize) + 1, _nextSendID);
             memcpy(wrapper->data + sizeof(MessageID) + sizeof(MessageSize) + 1, message, (size_t)size);
             wrapper->len = newSize;

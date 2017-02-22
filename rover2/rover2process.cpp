@@ -133,7 +133,7 @@ void Rover2Process::masterChannelMessageReceived(const char *message, Channel::M
     QDataStream stream(byteArray);
     SharedMessageType messageType;
 
-    stream >> reinterpret_cast<quint32&>(messageType);
+    stream >> reinterpret_cast<qint32&>(messageType);
     switch (messageType) {
     case SharedMessage_RequestActivateCamera: {
         qint32 camera;
@@ -173,8 +173,8 @@ void Rover2Process::mediaServerError(MediaServer *server, QString message) {
     SharedMessageType messageType = SharedMessage_RoverMediaServerError;
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream << reinterpret_cast<quint32&>(messageType);
-    stream << (qint32)server->getMediaId();
+    stream << static_cast<qint32>(messageType);
+    stream << static_cast<qint32>(server->getMediaId());
     stream << message;
 
     _masterComputerChannel->sendMessage(byteArray);

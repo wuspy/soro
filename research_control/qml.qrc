@@ -12,5 +12,6 @@
         <file>RecordingTimer.qml</file>
         <file>HudOrientationSide.qml</file>
         <file>HudOrientationBack.qml</file>
+        <file>blah.qml</file>
     </qresource>
 </RCC>

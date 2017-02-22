@@ -178,7 +178,7 @@ void ResearchControlProcess::stopDataRecording() {
     QByteArray byteArray;
     QDataStream stream(&byteArray, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_Research_StopDataRecording;
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
 
     _roverChannel->sendMessage(byteArray);
 }
@@ -264,14 +264,12 @@ void ResearchControlProcess::ui_settingsApplied() {
                 LOG_E(LOG_TAG, "Unknown camera index selected in UI");
                 _settings.enableVideo = false;
                 _settings.selectedCamera = 0;
-                _settings.selectedVideoFormat = 0;
             }
         }
         else {
             LOG_E(LOG_TAG, "Unknown video format index selected in UI");
             _settings.enableVideo = false;
             _settings.selectedCamera = 0;
-            _settings.selectedVideoFormat = 0;
         }
     }
     else {
@@ -438,7 +436,7 @@ void ResearchControlProcess::sendStartRecordCommandToRover() {
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_Research_StartDataRecording;
-    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << _recordStartTime;
     _roverChannel->sendMessage(message);
 }
@@ -447,7 +445,7 @@ void ResearchControlProcess::sendStopRecordCommandToRover() {
     QByteArray message;
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_Research_StopDataRecording;
-    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     _roverChannel->sendMessage(message);
 }
 
@@ -459,7 +457,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
 
     LOG_D(LOG_TAG, "Getting shared channel message");
 
-    stream >> reinterpret_cast<quint32&>(messageType);
+    stream >> reinterpret_cast<qint32&>(messageType);
     switch (messageType) {
     case SharedMessage_RoverStatusUpdate: {
         bool driveNormal;
@@ -599,7 +597,7 @@ void ResearchControlProcess::stopAllRoverCameras() {
     SharedMessageType messageType = SharedMessage_Research_StopAllCameraStreams;
 
     _mainUi->getCameraWidget()->stop(_settings.enableStereoUi);
-    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     _roverChannel->sendMessage(message);
 }
 
@@ -611,7 +609,7 @@ void ResearchControlProcess::startMonoCameraStream(VideoFormat format) {
         QByteArray message;
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_Research_StartMonoCameraStream;
-        stream << reinterpret_cast<const quint32&>(messageType);
+        stream << static_cast<qint32>(messageType);
         stream << format.serialize();
 
         _roverChannel->sendMessage(message);
@@ -629,7 +627,7 @@ void ResearchControlProcess::startStereoCameraStream(VideoFormat format) {
         QByteArray message;
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_Research_StartStereoCameraStream;
-        stream << reinterpret_cast<const quint32&>(messageType);
+        stream << static_cast<qint32>(messageType);
         stream << format.serialize();
 
         _roverChannel->sendMessage(message);
@@ -647,7 +645,7 @@ void ResearchControlProcess::startAux1CameraStream(VideoFormat format) {
         QByteArray message;
         QDataStream stream(&message, QIODevice::WriteOnly);
         SharedMessageType messageType = SharedMessage_Research_StartAux1CameraStream;
-        stream << reinterpret_cast<const quint32&>(messageType);
+        stream << static_cast<qint32>(messageType);
         stream << format.serialize();
 
         _roverChannel->sendMessage(message);
@@ -662,7 +660,7 @@ void ResearchControlProcess::stopAudio() {
     QDataStream stream(&message, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_RequestDeactivateAudioStream;
 
-    stream << reinterpret_cast<const quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     _roverChannel->sendMessage(message);
 }
 
@@ -673,7 +671,7 @@ void ResearchControlProcess::startAudioStream(AudioFormat format) {
         SharedMessageType messageType;
         messageType = SharedMessage_RequestActivateAudioStream;
 
-        stream << reinterpret_cast<const quint32&>(messageType);
+        stream << static_cast<qint32>(messageType);
         stream << format.serialize();
         _roverChannel->sendMessage(message);
     }

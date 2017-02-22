@@ -228,7 +228,7 @@ void MissionControlNetwork::timerEvent(QTimerEvent *e) {
         QDataStream stream(&message, QIODevice::WriteOnly);
         stream << (quint8)MSG_REQUEST_ROLE;
         stream << _name;
-        stream << reinterpret_cast<quint32&>(_pendingRole);
+        stream << static_cast<qint32>(_pendingRole);
 
         _broadcastSocket->writeDatagram(message, QHostAddress::Broadcast, NETWORK_MC_BROADCAST_PORT);
     }
@@ -269,7 +269,7 @@ void MissionControlNetwork::acceptClientRole(SocketAddress address, Role role, Q
     QDataStream responseStream(&response, QIODevice::WriteOnly);
     responseStream << (quint8)MSG_ACCEPT_ROLE;
     responseStream << _name;
-    responseStream << reinterpret_cast<quint32&>(role);
+    responseStream << static_cast<qint32>(role);
     _broadcastSocket->writeDatagram(response, address.host, address.port);
     // update client's role information
     foreach (Connection *connection, _brokerConnections) {
@@ -288,7 +288,7 @@ void MissionControlNetwork::denyClientRole(SocketAddress address, Role role) {
     QDataStream responseStream(&response, QIODevice::WriteOnly);
     responseStream << (quint8)MSG_DENY_ROLE;
     responseStream << _name;
-    responseStream << reinterpret_cast<quint32&>(role);
+    responseStream << static_cast<qint32>(role);
     _broadcastSocket->writeDatagram(response, address.host, address.port);
 }
 
@@ -321,7 +321,7 @@ void MissionControlNetwork::broker_broadcastSocketReadyRead() {
         case MSG_REQUEST_ROLE:
             // Client is requesting to fill a role on the network
             Role requestRole;
-            stream >> reinterpret_cast<quint32&>(requestRole);
+            stream >> reinterpret_cast<qint32&>(requestRole);
             if (requestRole != SpectatorRole) {
                 if (_role == requestRole) {
                     // Request denied
@@ -380,7 +380,7 @@ void MissionControlNetwork::client_broadcastSocketReadyRead() {
 
         switch (header) {
         case MSG_ACCEPT_ROLE:
-            stream >> reinterpret_cast<quint32&>(responseRole);
+            stream >> reinterpret_cast<qint32&>(responseRole);
             if ((_pendingRole != _role) && (responseRole == _pendingRole)) {
                 KILL_TIMER(_requestRoleTimerId);
                 // Role request accepted
@@ -390,7 +390,7 @@ void MissionControlNetwork::client_broadcastSocketReadyRead() {
             }
             break;
         case MSG_DENY_ROLE:
-            stream >> reinterpret_cast<quint32&>(responseRole);
+            stream >> reinterpret_cast<qint32&>(responseRole);
             if ((_pendingRole != _role) && (responseRole == _pendingRole)) {
                 KILL_TIMER(_requestRoleTimerId);
                 // Role request denied

@@ -35,7 +35,7 @@ ApplicationWindow {
 
     // Alias properties
 
-    property alias simulationGroupBox: simulationGroupBox
+    /*property alias simulationGroupBox: simulationGroupBox
     property alias avGroupBox: avGroupBox
     property alias settingsPane: settingsPane
     property alias statusImage: statusImage
@@ -53,7 +53,7 @@ ApplicationWindow {
     property alias stereoUiSwitch: stereoUiSwitch
     property alias hudParallaxSpinBox: hudParallaxSpinBox
     property alias activeCameraCombo: activeCameraCombo
-    property alias videoFormatCombo: videoFormatCombo
+    property alias videoEncodingCombo: videoEncodingCombo
     property alias stereoVideoSwitch: stereoVideoSwitch
     property alias enableAudioSwitch: enableAudioSwitch
     property alias enableVideoSwitch: enableVideoSwitch
@@ -72,6 +72,12 @@ ApplicationWindow {
     property alias recordToolbarButton: recordToolbarButton
     property alias sidebarToolbarButton: sidebarToolbarButton
     property alias hudLatencySpinBox: hudLatencySpinBox
+    property alias videoFramerateCombo: videoFramerate*/
+
+    property alias connectionState: connectionStateGroup.state
+    property alias recordingState: recordingStateGroup.state
+    property alias fullscreenState: fullscreenStateGroup.state
+    property alias sidePaneVisibilityState: sidePaneVisibilityStateGroup.state
 
     // Settings properties
 
@@ -80,7 +86,11 @@ ApplicationWindow {
     property alias enableStereoVideo: stereoVideoSwitch.checked
     property alias enableHud: enableHudSwitch.checked
     property alias selectedCamera: activeCameraCombo.currentIndex
-    property alias selectedVideoFormat: videoFormatCombo.currentIndex
+    property alias selectedVideoEncoding: videoEncodingCombo.currentIndex
+    property alias selectedVideoResolution: videoResolutionCombo.currentIndex
+    property alias selectedVideoFramerate: videoFramerateSpinBox.value
+    property alias selectedVideoBitrate: videoBitrateSpinBox.value
+    property alias selectedMjpegQuality: mjpegQualitySpinBox.value
     property alias enableAudio: enableAudioSwitch.checked
     property alias selectedLatency: simLatencySpinBox.value
     property alias selectedHudParallax: hudParallaxSpinBox.value
@@ -89,7 +99,8 @@ ApplicationWindow {
 
     // Configuration properties
 
-    property alias videoFormatNames: videoFormatCombo.model
+    property alias videoEncodingNames: videoEncodingCombo.model
+    property alias videoResolutionNames: videoResolutionCombo.model
     property alias cameraNames: activeCameraCombo.model
     property string roverAddress: "0.0.0.0"
     property string gamepad: "None"
@@ -774,87 +785,6 @@ ApplicationWindow {
                     anchors.topMargin: 8
 
                     Switch {
-                        id: stereoVideoSwitch
-                        text: checked ? qsTr("Stereo On") : qsTr("Stereo Off")
-                        enabled: stereoUiSwitch.checked & enableVideoSwitch.enabled & enableVideoSwitch.checked
-                        anchors.left: stereoVideoLabel.right
-                        anchors.leftMargin: 12
-                        anchors.top: videoFormatCombo.bottom
-                        anchors.topMargin: 8
-                        onCheckedChanged: settingsFooterPane.state = "visible"
-                    }
-
-                    Label {
-                        id: stereoVideoLabel
-                        width: 100
-                        height: 18
-                        text: qsTr("Stereo Video")
-                        anchors.verticalCenter: stereoVideoSwitch.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 0
-                    }
-
-                    ComboBox {
-                        id: videoFormatCombo
-                        textRole: qsTr("")
-                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
-                        anchors.left: videoEncodingLabel.right
-                        anchors.leftMargin: 12
-                        anchors.top: activeCameraCombo.bottom
-                        anchors.topMargin: 8
-                        anchors.right: parent.right
-                        anchors.rightMargin: 0
-                        onCurrentIndexChanged: settingsFooterPane.state = "visible"
-                    }
-
-                    Label {
-                        id: videoEncodingLabel
-                        width: 100
-                        text: qsTr("Encoding")
-                        anchors.verticalCenter: videoFormatCombo.verticalCenter
-                        anchors.leftMargin: 0
-                        anchors.left: parent.left
-                    }
-
-
-                    Label {
-                        id: activeCameraLabel
-                        y: 125
-                        width: 100
-                        text: qsTr("Active Camera")
-                        anchors.verticalCenter: activeCameraCombo.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 0
-                    }
-
-
-                    ComboBox {
-                        id: activeCameraCombo
-                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
-                        anchors.right: parent.right
-                        anchors.rightMargin: 0
-                        anchors.top: enableAudioSwitch.bottom
-                        anchors.topMargin: 8
-                        anchors.left: activeCameraLabel.right
-                        anchors.leftMargin: 12
-                        onCurrentIndexChanged: settingsFooterPane.state = "visible"
-                    }
-
-                    Label {
-                        id: videoNotesLabel
-                        text: qsTr("<b>Stereo Video</b> has the same target bitrate as mono video, with half the horizontal resolution per eye.")
-                        textFormat: Text.RichText
-                        verticalAlignment: Text.AlignBottom
-                        anchors.top: stereoVideoSwitch.bottom
-                        anchors.topMargin: 8
-                        anchors.right: parent.right
-                        anchors.rightMargin: 0
-                        anchors.left: parent.left
-                        anchors.leftMargin: 0
-                        wrapMode: Text.WordWrap
-                    }
-
-                    Switch {
                         id: enableVideoSwitch
                         y: 96
                         text: checked ? qsTr("Video On") : qsTr("Video Off")
@@ -896,6 +826,172 @@ ApplicationWindow {
                         anchors.verticalCenter: enableAudioSwitch.verticalCenter
                         anchors.left: parent.left
                         anchors.leftMargin: 0
+                    }
+
+                    ComboBox {
+                        id: activeCameraCombo
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
+                        anchors.right: parent.right
+                        anchors.rightMargin: 0
+                        anchors.top: enableAudioSwitch.bottom
+                        anchors.topMargin: 8
+                        anchors.left: activeCameraLabel.right
+                        anchors.leftMargin: 12
+                        onCurrentIndexChanged: settingsFooterPane.state = "visible"
+                    }
+
+                    Label {
+                        id: activeCameraLabel
+                        y: 125
+                        width: 100
+                        text: qsTr("Active Camera")
+                        anchors.verticalCenter: activeCameraCombo.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    ComboBox {
+                        id: videoEncodingCombo
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
+                        anchors.left: videoEncodingLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: activeCameraCombo.bottom
+                        anchors.topMargin: 8
+                        anchors.right: parent.right
+                        anchors.rightMargin: 0
+                        onCurrentIndexChanged: settingsFooterPane.state = "visible"
+                    }
+
+                    Label {
+                        id: videoEncodingLabel
+                        width: 100
+                        text: qsTr("Encoding")
+                        anchors.verticalCenter: videoEncodingCombo.verticalCenter
+                        anchors.leftMargin: 0
+                        anchors.left: parent.left
+                    }
+
+                    ComboBox {
+                        id: videoResolutionCombo
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
+                        anchors.right: parent.right
+                        anchors.rightMargin: 0
+                        anchors.left: videoResolutionLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: videoEncodingCombo.bottom
+                        anchors.topMargin: 8
+                    }
+
+                    Label {
+                        id: videoResolutionLabel
+                        width: 100
+                        text: qsTr("Resolution")
+                        anchors.verticalCenter: videoResolutionCombo.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    SpinBox {
+                        id: videoBitrateSpinBox
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
+                        visible: videoEncodingCombo.currentText != "MJPEG"
+                        stepSize: 10
+                        to: 10000
+                        from: 500
+                        value: 500
+                        anchors.left: videoBitrateLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: videoResolutionCombo.bottom
+                        anchors.topMargin: 8
+                    }
+
+                    Label {
+                        id: videoBitrateLabel
+                        width: 100
+                        visible: videoBitrateSpinBox.visible
+                        text: qsTr("Bitrate (Kb/s)")
+                        anchors.verticalCenter: videoBitrateSpinBox.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    SpinBox {
+                        id: mjpegQualitySpinBox
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
+                        visible: videoEncodingCombo.currentText == "MJPEG"
+                        to: 100
+                        from: 1
+                        value: 50
+                        anchors.left: mjpegQualityLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: videoBitrateSpinBox.bottom
+                        anchors.topMargin: 8
+                    }
+
+                    Label {
+                        id: mjpegQualityLabel
+                        visible: mjpegQualitySpinBox.visible
+                        width: 100
+                        text: qsTr("Quality (%)")
+                        anchors.verticalCenter: mjpegQualitySpinBox.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    SpinBox {
+                        id: videoFramerateSpinBox
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
+                        to: 30
+                        value: 0
+                        stepSize: 1
+                        anchors.left: videoFramerateLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: mjpegQualitySpinBox.bottom
+                        anchors.topMargin: 8
+                    }
+
+                    Label {
+                        id: videoFramerateLabel
+                        width: 100
+                        text: qsTr("Framerate (fps)")
+                        anchors.verticalCenter: videoFramerateSpinBox.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    Switch {
+                        id: stereoVideoSwitch
+                        text: checked ? qsTr("Stereo On") : qsTr("Stereo Off")
+                        enabled: stereoUiSwitch.checked & enableVideoSwitch.enabled & enableVideoSwitch.checked
+                        anchors.left: stereoVideoLabel.right
+                        anchors.leftMargin: 12
+                        anchors.top: videoFramerateSpinBox.bottom
+                        anchors.topMargin: 8
+                        onCheckedChanged: settingsFooterPane.state = "visible"
+                    }
+
+                    Label {
+                        id: stereoVideoLabel
+                        width: 100
+                        height: 18
+                        text: qsTr("Stereo Video")
+                        anchors.verticalCenter: stereoVideoSwitch.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                    }
+
+                    Label {
+                        id: videoNotesLabel
+                        text: qsTr("<b>Stereo Video</b> has the same target bitrate as mono video, with half the horizontal resolution per eye.")
+                        textFormat: Text.RichText
+                        verticalAlignment: Text.AlignBottom
+                        anchors.top: stereoVideoSwitch.bottom
+                        anchors.topMargin: 8
+                        anchors.right: parent.right
+                        anchors.rightMargin: 0
+                        anchors.left: parent.left
+                        anchors.leftMargin: 0
+                        wrapMode: Text.WordWrap
                     }
                 }
 

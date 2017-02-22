@@ -268,7 +268,7 @@ MediaServer::State MediaServer::getState() const {
 
 void MediaServer::setState(MediaServer::State state) {
     if (_state != state) {
-        LOG_I(LOG_TAG, "Changing to state " + QString::number(reinterpret_cast<quint32&>(state)));
+        LOG_I(LOG_TAG, "Changing to state " + QString::number(static_cast<qint32>(state)));
         _state = state;
         emit stateChanged(this, state);
     }

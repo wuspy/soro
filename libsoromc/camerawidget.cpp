@@ -97,7 +97,7 @@ void CameraWidget::stop(QString reason, CameraWidget::Pattern pattern) {
     resetPipeline();
     //create videotestsrc pipeline for coolness
     QString binStr = "videotestsrc pattern=%1 ! video/x-raw,width=%2,height=%3 ! videoconvert";
-    binStr = binStr.arg(QString::number((int)reinterpret_cast<quint32&>(pattern)),
+    binStr = binStr.arg(QString::number(static_cast<qint32>(pattern)),
                         QString::number(ui->videoWidget->width()),
                         QString::number(ui->videoWidget->height()));
 

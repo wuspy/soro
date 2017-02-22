@@ -28,20 +28,15 @@ SettingsModel SettingsModel::Default(QHostAddress roverAddress) {
     model.enableStereoVideo = false;
     model.enableAudio = false;
     model.enableGps = true;
-    model.selectedVideoFormat = 0;
+    model.selectedVideoEncoding = 1;
+    model.selectedVideoResolution = 0;
+    model.selectedVideoBitrate = 500;
+    model.selectedVideoFramerate = 0;
+    model.selectedMjpegQuality = 50;
     model.selectedCamera = 0;
     model.selectedLatency = 0;
     model.selectedHudParallax = 0;
     model.selectedHudLatency = 100;
-
-    // Define media formats
-    model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1280x720, 8000000, 0, VideoFormat::StereoMode_None, 3));
-    model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1280x720, 5000000, 0, VideoFormat::StereoMode_None, 3));
-    model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1152x648, 3000000, 0, VideoFormat::StereoMode_None, 3));
-    model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_1024x576, 1500000, 0, VideoFormat::StereoMode_None, 3));
-    model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_640x360, 750000, 0, VideoFormat::StereoMode_None, 3));
-    model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_432_240, 400000, 0, VideoFormat::StereoMode_None, 3));
-    model.defaultVideoFormats.append(VideoFormat(VideoFormat::Encoding_MPEG2, VideoFormat::Resolution_176_144, 100000, 0, VideoFormat::StereoMode_None, 3));
 
     model.defaultAudioFormat = AudioFormat(AudioFormat::Encoding_AC3, 32000);
 
@@ -55,12 +50,22 @@ void SettingsModel::syncUi(QQuickWindow *window) {
     // Prepare the view to be synced
     QMetaObject::invokeMethod(window, "prepareForUiSync");
 
-    QStringList formatNames;
-    foreach (VideoFormat format, defaultVideoFormats) {
-        formatNames << format.toHumanReadableString();
-    }
-    window->setProperty("videoFormatNames", formatNames);
-    window->setProperty("cameraNames", cameraNames);
+    QStringList encodingNames;
+    encodingNames << "MPEG2";
+    encodingNames << "MJPEG";
+    encodingNames << "x264";
+
+    QStringList resolutionNames;
+    encodingNames << "176x144";
+    encodingNames << "432x240";
+    encodingNames << "640x360";
+    encodingNames << "1024x576";
+    encodingNames << "1152x648";
+    encodingNames << "1280x720";
+    encodingNames << "1600x900";
+
+    window->setProperty("videoEncodingNames", encodingNames);
+    window->setProperty("videoResolutionNames", resolutionNames);
     window->setProperty("roverAddress", roverAddress.toString());
 
     window->setProperty("enableStereoUi", enableStereoUi);
@@ -69,7 +74,11 @@ void SettingsModel::syncUi(QQuickWindow *window) {
     window->setProperty("enableStereoVideo", enableStereoVideo);
     window->setProperty("enableAudio", enableAudio);
     window->setProperty("enableGps", enableGps);
-    window->setProperty("selectedVideoFormat", selectedVideoFormat);
+    window->setProperty("selectedVideoEncoding", selectedVideoEncoding);
+    window->setProperty("selectedVideoResolution", selectedVideoResolution);
+    window->setProperty("selectedVideoFramerate", selectedVideoFramerate);
+    window->setProperty("selectedVideoBitrate", selectedVideoBitrate);
+    window->setProperty("selectedMjpegQuality", selectedMjpegQuality);
     window->setProperty("selectedCamera", selectedCamera);
     window->setProperty("selectedLatency", selectedLatency);
     window->setProperty("selectedHudParallax", selectedHudParallax);
@@ -86,7 +95,11 @@ void SettingsModel::syncModel(const QQuickWindow *window) {
     enableStereoVideo = window->property("enableStereoVideo").toBool();
     enableAudio = window->property("enableAudio").toBool();
     enableGps = window->property("enableGps").toBool();
-    selectedVideoFormat = window->property("selectedVideoFormat").toInt();
+    selectedVideoEncoding = window->property("selectedVideoEncoding").toInt();
+    selectedVideoResolution = window->property("selectedVideoResolution").toInt();
+    selectedVideoFramerate = window->property("selectedVideoFramerate").toInt();
+    selectedVideoBitrate = window->property("selectedVideoBitrate").toInt();
+    selectedMjpegQuality = window->property("selectedMjpegQuality").toInt();
     selectedCamera = window->property("selectedCamera").toInt();
     selectedLatency = window->property("selectedLatency").toInt();
     selectedHudParallax = window->property("selectedHudParallax").toInt();
@@ -112,10 +125,14 @@ void SettingsModel::setSelectedCamera(int mediaId) {
 }
 
 VideoFormat SettingsModel::getSelectedVideoFormat() {
-    if ((selectedVideoFormat >= 0) && (selectedVideoFormat < defaultVideoFormats.length())) {
-        return defaultVideoFormats[selectedVideoFormat];
-    }
-    return VideoFormat();
+    VideoFormat format;
+    format.setEncoding(static_cast<VideoFormat::Encoding>(selectedVideoEncoding));
+    format.setResolution(static_cast<VideoFormat::Resolution>(selectedVideoResolution));
+    format.setBitrate(selectedVideoBitrate * 1000);
+    format.setFramerate(selectedVideoFramerate);
+    format.setMjpegQuality(selectedMjpegQuality);
+    format.setMaxThreads(3);
+    return format;
 }
 
 } // namespace MissionControl

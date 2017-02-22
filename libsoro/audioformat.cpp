@@ -94,7 +94,7 @@ QString AudioFormat::createGstDecodingArgs() const {
 
 QString AudioFormat::serialize() const {
     QString serial;
-    serial += QString::number(reinterpret_cast<const quint32&>(_encoding)) + "_";
+    serial += QString::number(static_cast<qint32>(_encoding)) + "_";
     serial += QString::number(_bitrate);
 
     return serial;
@@ -108,7 +108,7 @@ void AudioFormat::deserialize(QString serial) {
     }
 
     bool ok;
-    reinterpret_cast<quint32&>(_encoding) = items[0].toUInt(&ok);
+    reinterpret_cast<qint32&>(_encoding) = items[0].toUInt(&ok);
     if (!ok) {
         LOG_E(LOG_TAG, "deserialize(): Invalid option for encoding");
     }

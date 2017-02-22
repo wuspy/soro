@@ -81,7 +81,7 @@ void MbedChannel::socketReadyRead() {
         _active = true; // Mark the mbed as active so it doesn't time out
 
         // See what type of message we got
-        switch (reinterpret_cast<unsigned char&>(_buffer[1])) {
+        switch (static_cast<unsigned char>(_buffer[1])) {
         case MSG_TYPE_NORMAL: // Normal message, emit messageReceived
             if (length > 6) {
                 emit messageReceived(_buffer + 6, length - 6);
@@ -122,7 +122,7 @@ MbedChannel::MbedChannel(SocketAddress host, unsigned char mbedId, QObject *pare
     _host = host;
     _buffer = new char[MAX_PACKET_LEN];
     _socket = new QUdpSocket(this);
-    _mbedId = reinterpret_cast<char&>(mbedId);
+    _mbedId = static_cast<char>(mbedId);
     LOG_TAG = "Mbed(" + QString::number(mbedId) + ")";
     LOG_I(LOG_TAG, "Creating new mbed channel");
     connect(_socket, &QUdpSocket::readyRead, this, &MbedChannel::socketReadyRead);
@@ -319,7 +319,7 @@ void MbedChannel::initConnection() {
 MbedChannel::MbedChannel(unsigned char mbedId, unsigned int port) {
     _resetCallback = NULL;
     _buffer = new char[MAX_PACKET_LEN];
-    _mbedId = reinterpret_cast<char&>(mbedId);
+    _mbedId = static_cast<char>(mbedId);
     _eth = new EthernetInterface;
     _socket = new UDPSocket;
     _serverPort = port;
@@ -358,7 +358,7 @@ void MbedChannel::sendMessage(char *message, int length, unsigned char type) {
         panic();
     }
     _buffer[0] = _mbedId;
-    _buffer[1] = reinterpret_cast<char&>(type);
+    _buffer[1] = static_cast<char>(type);
     Util::serialize<unsigned int>(_buffer + 2, _nextSendId++);
     memcpy(_buffer + 6, message, length);
     _socket->sendTo(_server, _buffer, length + 6);

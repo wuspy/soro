@@ -183,7 +183,7 @@ void RoverProcess::sendSystemStatusMessage() {
     bool driveGimbalState = _driveGimbalControllerMbed->getState() == MbedChannel::ConnectedState;
     bool secondaryComputerState = _secondaryComputerChannel->getState() == Channel::ConnectedState;
 
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << armState;
     stream << driveGimbalState;
     stream << secondaryComputerState;
@@ -195,7 +195,7 @@ void RoverProcess::sendSystemStatusMessage() {
 void RoverProcess::armChannelMessageReceived(const char *message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
-    reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
+    reinterpret_cast<qint32&>(messageType) = (qint32)reinterpret_cast<unsigned char&>(header);
     switch (messageType) {
     case MbedMessage_ArmGamepad:
     case MbedMessage_ArmMaster:
@@ -210,7 +210,7 @@ void RoverProcess::armChannelMessageReceived(const char *message, Channel::Messa
 void RoverProcess::driveChannelMessageReceived(const char *message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
-    reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
+    reinterpret_cast<qint32&>(messageType) = (qint32)reinterpret_cast<unsigned char&>(header);
     switch (messageType) {
     case MbedMessage_Drive:
         _driveGimbalControllerMbed->sendMessage(message, (int)size);
@@ -224,7 +224,7 @@ void RoverProcess::driveChannelMessageReceived(const char *message, Channel::Mes
 void RoverProcess::gimbalChannelMessageReceived(const char *message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
-    reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
+    reinterpret_cast<qint32&>(messageType) = (qint32)reinterpret_cast<unsigned char&>(header);
     switch (messageType) {
     case MbedMessage_Gimbal:
         _driveGimbalControllerMbed->sendMessage(message, (int)size);
@@ -240,7 +240,7 @@ void RoverProcess::sharedChannelMessageReceived(const char *message, Channel::Me
     QDataStream stream(byteArray);
     SharedMessageType messageType;
 
-    stream >> reinterpret_cast<quint32&>(messageType);
+    stream >> reinterpret_cast<qint32&>(messageType);
     switch (messageType) {
     case SharedMessage_RequestActivateCamera: {
         qint32 camera;
@@ -253,7 +253,7 @@ void RoverProcess::sharedChannelMessageReceived(const char *message, Channel::Me
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
-            stream2 << reinterpret_cast<quint32&>(messageType);
+            stream2 << static_cast<qint32>(messageType);
             stream2 << camera;
             stream2 << format.serialize();
             _secondaryComputerChannel->sendMessage(byteArray2);
@@ -270,7 +270,7 @@ void RoverProcess::sharedChannelMessageReceived(const char *message, Channel::Me
             // this is the second odroid's camera
             QByteArray byteArray2;
             QDataStream stream2(&byteArray2, QIODevice::WriteOnly);
-            stream2 << reinterpret_cast<quint32&>(messageType);
+            stream2 << static_cast<qint32>(messageType);
             stream2 << camera;
             _secondaryComputerChannel->sendMessage(byteArray2);
         }
@@ -280,7 +280,7 @@ void RoverProcess::sharedChannelMessageReceived(const char *message, Channel::Me
         break;
     case SharedMessage_RequestActivateAudioStream: {
         AudioFormat format;
-        stream >> reinterpret_cast<quint32&>(format);
+        stream >> reinterpret_cast<qint32&>(format);
         _audioServer->start(DEFAULT_AUDIO_DEVICE, format);
     }
         break;
@@ -312,8 +312,8 @@ void RoverProcess::mediaServerError(MediaServer *server, QString message) {
     SharedMessageType messageType = SharedMessage_RoverMediaServerError;
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream << reinterpret_cast<quint32&>(messageType);
-    stream << (qint32)server->getMediaId();
+    stream << static_cast<qint32>(messageType);
+    stream << static_cast<qint32>(server->getMediaId());
     stream << message;
 
     _sharedChannel->sendMessage(byteArray);
@@ -325,7 +325,7 @@ void RoverProcess::gpsUpdate(NmeaMessage message) {
     SharedMessageType messageType = SharedMessage_RoverGpsUpdate;
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << message;
 
     _sharedChannel->sendMessage(byteArray);

@@ -60,7 +60,7 @@ bool Logger::setLogfile(QString file) {
 void Logger::publish(Level level, QString tag, QString message) { //PRIVATE
     // check for file output
     if (level <= _maxFileLevel) {
-        QString formatted = _textFormat[reinterpret_cast<unsigned int&>(level) - 1]
+        QString formatted = _textFormat[reinterpret_cast<int&>(level) - 1]
                 .arg(QTime::currentTime().toString(), tag, message);
         _fileMutex.lock();
         if (_fileStream != nullptr) {
@@ -71,7 +71,7 @@ void Logger::publish(Level level, QString tag, QString message) { //PRIVATE
     }
     // check for Qt logger output
     if (level <= _maxQtLogLevel) {
-        QString formatted = _stdoutFormat[reinterpret_cast<unsigned int&>(level) - 1]
+        QString formatted = _stdoutFormat[reinterpret_cast<int&>(level) - 1]
                 .arg(QTime::currentTime().toString(), tag, message);
         QTextStream(stdout) << formatted << endl;
     }

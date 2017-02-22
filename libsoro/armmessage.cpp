@@ -28,8 +28,7 @@ namespace ArmMessage {
 
 void setGamepadData(char *armMessage, short leftXAxis, short leftYAxis, short rightYAxis,
                            short leftTriggerAxis, short rightTriggerAxis, bool rightButton, bool leftButton, bool yButton, bool xButton) {
-    MbedMessageType messageType = MbedMessage_ArmGamepad;
-    armMessage[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as gamepad and not master arm
+    armMessage[0] = (unsigned char)static_cast<int>(MbedMessage_ArmGamepad);  //identify this message as gamepad and not master arm
     armMessage[Index_GamepadX] = GamepadUtil::axisShortToAxisByte(GamepadUtil::filterGamepadDeadzone(leftXAxis, GAMEPAD_DEADZONE));
     armMessage[Index_GamepadY] = GamepadUtil::axisShortToAxisByte(GamepadUtil::filterGamepadDeadzone(rightYAxis, GAMEPAD_DEADZONE));
     armMessage[Index_GamepadYaw] = GamepadUtil::axisShortToAxisByte(GamepadUtil::filterGamepadDeadzone(leftYAxis, GAMEPAD_DEADZONE));
@@ -75,8 +74,7 @@ void translateMasterArmValues(char *message, const MasterArmConfig& ranges) {
 
 void setMasterArmData(char *message, unsigned short yaw, unsigned short shoulder,
                                     unsigned short elbow, unsigned short wrist, bool bucket, bool stow, bool dump) {
-    MbedMessageType messageType = MbedMessage_ArmMaster;
-    message[0] = (unsigned char)reinterpret_cast<unsigned int&>(messageType);  //identify this message as master and not gamepad
+    message[0] = (unsigned char)static_cast<int&>(MbedMessage_ArmMaster);  //identify this message as master and not gamepad
     Util::serialize<unsigned short>(message + Index_MasterYaw, yaw);
     Util::serialize<unsigned short>(message + Index_MasterShoulder, shoulder);
     Util::serialize<unsigned short>(message + Index_MasterElbow, elbow);

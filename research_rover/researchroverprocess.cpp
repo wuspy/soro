@@ -183,7 +183,7 @@ void ResearchRoverProcess::sendSystemStatusMessage() {
     SharedMessageType messageType = SharedMessage_Research_RoverStatusUpdate;
     bool driveState = _mbed->getState() == MbedChannel::ConnectedState;
 
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << driveState;
     _sharedChannel->sendMessage(message);
 }
@@ -221,7 +221,7 @@ void ResearchRoverProcess::mbedChannelStateChanged(MbedChannel::State state) {
 void ResearchRoverProcess::driveChannelMessageReceived(const char* message, Channel::MessageSize size) {
     char header = message[0];
     MbedMessageType messageType;
-    reinterpret_cast<quint32&>(messageType) = (quint32)reinterpret_cast<unsigned char&>(header);
+    reinterpret_cast<qint32&>(messageType) = (qint32)reinterpret_cast<unsigned char&>(header);
     switch (messageType) {
     case MbedMessage_Drive:
         _mbed->sendMessage(message, (int)size);
@@ -249,7 +249,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(const char* message, Cha
     QDataStream stream(byteArray);
     SharedMessageType messageType;
 
-    stream >> reinterpret_cast<quint32&>(messageType);
+    stream >> reinterpret_cast<qint32&>(messageType);
     switch (messageType) {
     case SharedMessage_RequestActivateAudioStream: {
         QString formatString;
@@ -317,7 +317,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(const char* message, Cha
             QByteArray byteArray;
             QDataStream stream(&byteArray, QIODevice::WriteOnly);
             SharedMessageType messageType = SharedMessage_Research_StartDataRecording;
-            stream << reinterpret_cast<quint32&>(messageType);
+            stream << static_cast<qint32>(messageType);
             _sharedChannel->sendMessage(byteArray);
         }
     }
@@ -338,7 +338,7 @@ void ResearchRoverProcess::mbedMessageReceived(const char* message, int size) {
     QDataStream stream(&byteArray, QIODevice::WriteOnly);
     SharedMessageType messageType = SharedMessage_Research_SensorUpdate;
 
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << QByteArray(message, size);
 
     _sharedChannel->sendMessage(byteArray);
@@ -351,7 +351,7 @@ void ResearchRoverProcess::gpsUpdate(NmeaMessage message) {
     SharedMessageType messageType = SharedMessage_RoverGpsUpdate;
     stream.setByteOrder(QDataStream::BigEndian);
 
-    stream << reinterpret_cast<quint32&>(messageType);
+    stream << static_cast<qint32>(messageType);
     stream << message;
 
     _sharedChannel->sendMessage(byteArray);

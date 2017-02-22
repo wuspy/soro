@@ -11,7 +11,7 @@ class VideoFormat: public MediaFormat {
 public:
 
     enum Encoding {
-        Encoding_Null = 0,
+        Encoding_Null = -1,
         Encoding_MPEG2,
         Encoding_MJPEG,
         Encoding_X264
@@ -41,7 +41,7 @@ public:
     VideoFormat();
     VideoFormat(const VideoFormat& other);
     VideoFormat(VideoFormat::Encoding encoding, VideoFormat::Resolution resolution, quint32 bitrate,
-                quint32 framerate=0, StereoMode stereo=StereoMode_None, quint32 maxThreads=0);
+                quint32 framerate=0, StereoMode stereo=StereoMode_None, quint32 mjpegQuality=50, quint32 maxThreads=0);
 
     ~VideoFormat();
 
@@ -55,6 +55,7 @@ public:
     quint32 getFramerate() const;
     VideoFormat::StereoMode getStereoMode() const;
     quint32 getMaxThreads() const;
+    quint32 getMjpegQuality() const;
 
     void setEncoding(VideoFormat::Encoding encoding);
     void setResolution(VideoFormat::Resolution resolution);
@@ -62,6 +63,7 @@ public:
     void setFramerate(quint32 framerate);
     void setStereoMode(VideoFormat::StereoMode stereo);
     void setMaxThreads(quint32 maxThreads);
+    void setMjpegQuality(quint32 quality);
 
     quint32 getWidth() const;
     quint32 getHeight() const;
@@ -91,6 +93,7 @@ protected:
     quint32 _bitrate;
     quint32 _maxThreads;
     quint32 _framerate;
+    qint32 _mjpegQuality;
 
     quint32 getResolutionHeight() const;
     quint32 getResolutionWidth() const;
