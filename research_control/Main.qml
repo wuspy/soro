@@ -34,18 +34,18 @@ ApplicationWindow {
     title: "Research Control"
 
     // Alias properties
-
-    /*property alias simulationGroupBox: simulationGroupBox
+    property alias busyIndicator: busyIndicator
+    property alias statusImage: statusImage
+    property alias statusLabel: statusLabel
+    property alias bitrateLabel: bitrateLabel
     property alias avGroupBox: avGroupBox
     property alias settingsPane: settingsPane
-    property alias statusImage: statusImage
+    property alias gpsGroupBox: gpsGroupBox
+    property alias simulationGroupBox: simulationGroupBox
     property alias notificationImageColorOverlay: notificationImageColorOverlay
     property alias notificationPane: notificationPane
     property alias notificationImage: notificationImage
     property alias notificationLabel: notificationLabel
-    property alias busyIndicator: busyIndicator
-    property alias statusLabel: statusLabel
-    property alias bitrateLabel: bitrateLabel
     property alias revertSettingsButton: revertSettingsButton
     property alias applySettingsButton: applySettingsButton
     property alias simLatencySpinBox: simLatencySpinBox
@@ -57,7 +57,6 @@ ApplicationWindow {
     property alias stereoVideoSwitch: stereoVideoSwitch
     property alias enableAudioSwitch: enableAudioSwitch
     property alias enableVideoSwitch: enableVideoSwitch
-    property alias gpsGroupBox: gpsGroupBox
     property alias gpsClearButton: gpsClearButton
     property alias gpsHistoryField: gpsHistoryField
     property alias gpsLocationField: gpsLocationField
@@ -72,12 +71,9 @@ ApplicationWindow {
     property alias recordToolbarButton: recordToolbarButton
     property alias sidebarToolbarButton: sidebarToolbarButton
     property alias hudLatencySpinBox: hudLatencySpinBox
-    property alias videoFramerateCombo: videoFramerate*/
-
-    property alias connectionState: connectionStateGroup.state
-    property alias recordingState: recordingStateGroup.state
-    property alias fullscreenState: fullscreenStateGroup.state
-    property alias sidePaneVisibilityState: sidePaneVisibilityStateGroup.state
+    property alias videoFramerateSpinBox: videoFramerateSpinBox
+    property alias videoBitrateSpinBox: videoBitrateSpinBox
+    property alias mjpegQualitySpinBox: mjpegQualitySpinBox
 
     // Settings properties
 
