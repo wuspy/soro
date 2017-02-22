@@ -16,12 +16,14 @@
 
 #include "hudpowerimpl.h"
 
+#include <QDateTime>
+
 namespace Soro {
 namespace MissionControl {
 
 HudPowerImpl::HudPowerImpl(QQuickItem *parent) : QQuickPaintedItem(parent)
 {
-
+    START_TIMER(_checkValueLifeTimerId, _valueLifetime / 2);
 }
 
 int HudPowerImpl::wheelFLPower() const {
@@ -30,6 +32,7 @@ int HudPowerImpl::wheelFLPower() const {
 
 void HudPowerImpl::setWheelFLPower(int power) {
     _wheelFLPower = power;
+    _wheelFLTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     update();
 }
 
@@ -39,6 +42,7 @@ int HudPowerImpl::wheelFRPower() const {
 
 void HudPowerImpl::setWheelFRPower(int power) {
     _wheelFRPower = power;
+    _wheelFRTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     update();
 }
 
@@ -48,6 +52,7 @@ int HudPowerImpl::wheelMLPower() const {
 
 void HudPowerImpl::setWheelMLPower(int power) {
     _wheelMLPower = power;
+    _wheelMLTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     update();
 }
 
@@ -57,6 +62,7 @@ int HudPowerImpl::wheelMRPower() const {
 
 void HudPowerImpl::setWheelMRPower(int power) {
     _wheelMRPower = power;
+    _wheelMRTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     update();
 }
 
@@ -66,6 +72,7 @@ int HudPowerImpl::wheelBLPower() const {
 
 void HudPowerImpl::setWheelBLPower(int power) {
     _wheelBLPower = power;
+    _wheelBLTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     update();
 }
 
@@ -75,6 +82,7 @@ int HudPowerImpl::wheelBRPower() const {
 
 void HudPowerImpl::setWheelBRPower(int power) {
     _wheelBRPower = power;
+    _wheelBRTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
     update();
 }
 
@@ -132,10 +140,47 @@ void HudPowerImpl::setWheelColorCriticalHue(float hue) {
     update();
 }
 
+int HudPowerImpl::valueLifetime() const {
+    return _valueLifetime;
+}
+
+void HudPowerImpl::setValueLifetime(int lifetime) {
+    if (lifetime < 10) lifetime = 10;
+    _valueLifetime = lifetime;
+    KILL_TIMER(_checkValueLifeTimerId);
+    START_TIMER(_checkValueLifeTimerId, _valueLifetime / 2);
+}
+
 float HudPowerImpl::clamp(float value) {
     if (value < 0) return 0;
     if (value > 1) return 1;
     return value;
+}
+
+void HudPowerImpl::timerEvent(QTimerEvent *e) {
+    QQuickPaintedItem::timerEvent(e);
+    if (e->timerId() == _checkValueLifeTimerId) {
+        // Check for any outdated power values
+        qint64 now = QDateTime::currentDateTime().toMSecsSinceEpoch();
+        if (now - _wheelFLTime > _valueLifetime) {
+            setWheelFLPower(0);
+        }
+        if (now - _wheelFRTime > _valueLifetime) {
+            setWheelFRPower(0);
+        }
+        if (now - _wheelMLTime > _valueLifetime) {
+            setWheelMLPower(0);
+        }
+        if (now - _wheelMRTime > _valueLifetime) {
+            setWheelMRPower(0);
+        }
+        if (now - _wheelBLTime > _valueLifetime) {
+            setWheelBLPower(0);
+        }
+        if (now - _wheelBRTime > _valueLifetime) {
+            setWheelBRPower(0);
+        }
+    }
 }
 
 void HudPowerImpl::paint(QPainter *painter) {

@@ -929,7 +929,7 @@ ApplicationWindow {
                     Label {
                         id: mjpegQualityLabel
                         width: 100
-                        text: qsTr("Quality (%)")
+                        text: qsTr("MJPEG: Quality")
                         anchors.verticalCenter: mjpegQualitySpinBox.verticalCenter
                         anchors.left: parent.left
                         anchors.leftMargin: 0

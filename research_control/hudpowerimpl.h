@@ -4,6 +4,7 @@
 #include <QQuickPaintedItem>
 #include <QQuickItem>
 #include <QPainter>
+#include <QTimerEvent>
 
 #include "libsoro/constants.h"
 
@@ -26,6 +27,7 @@ class HudPowerImpl: public QQuickPaintedItem
     Q_PROPERTY(float wheelColorValue READ wheelColorValue WRITE setWheelColorValue)
     Q_PROPERTY(float wheelColorBaselineHue READ wheelColorBaselineHue WRITE setWheelColorBaselineHue)
     Q_PROPERTY(float wheelColorCriticalHue READ wheelColorCriticalHue WRITE setWheelColorCriticalHue)
+    Q_PROPERTY(int valueLifetime READ valueLifetime WRITE setValueLifetime)
 
 public:
     HudPowerImpl(QQuickItem *parent=0);
@@ -66,7 +68,13 @@ public:
     float wheelColorBaselineHue() const;
     void setWheelColorBaselineHue(float saturation);
 
+    int valueLifetime() const;
+    void setValueLifetime(int lifetime);
+
     void paint(QPainter *painter);
+
+protected:
+    void timerEvent(QTimerEvent *e);
 
 private:
     int _wheelFLPower = 0;
@@ -76,6 +84,8 @@ private:
     int _wheelBLPower = 0;
     int _wheelBRPower = 0;
 
+    int _valueLifetime = 1000;
+
     int _baselinePower = 150;
     int _criticalPower = 500;
 
@@ -83,6 +93,15 @@ private:
     float _wheelColorValue = 0.86666;
     float _wheelColorBaselineHue = 0.26666;
     float _wheelColorCriticalHue = 0.00000;
+
+    qint64 _wheelFLTime;
+    qint64 _wheelFRTime;
+    qint64 _wheelMLTime;
+    qint64 _wheelMRTime;
+    qint64 _wheelBLTime;
+    qint64 _wheelBRTime;
+
+    int _checkValueLifeTimerId = TIMER_INACTIVE;
 
     float clamp(float value);
 
