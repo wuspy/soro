@@ -28,7 +28,7 @@ SettingsModel SettingsModel::Default(QHostAddress roverAddress) {
     model.enableStereoVideo = false;
     model.enableAudio = false;
     model.enableGps = true;
-    model.selectedVideoEncoding = 1;
+    model.selectedVideoEncoding = 0;
     model.selectedVideoResolution = 0;
     model.selectedVideoBitrate = 500;
     model.selectedVideoFramerate = 0;
@@ -43,6 +43,18 @@ SettingsModel SettingsModel::Default(QHostAddress roverAddress) {
     model.cameraNames << "Main Camera [Mono/Stereo]";   model.mainCameraIndex = 0;
     model.cameraNames << "Fisheye Camera [Mono]";       model.aux1CameraIndex = 1;
 
+    model.videoResolutionNames << "176x144";
+    model.videoResolutionNames << "432x240";
+    model.videoResolutionNames << "640x360";
+    model.videoResolutionNames << "1024x576";
+    model.videoResolutionNames << "1152x648";
+    model.videoResolutionNames << "1280x720";
+    model.videoResolutionNames << "1600x900";
+
+    model.videoEncodingNames << "MPEG2";
+    model.videoEncodingNames << "MJPEG";
+    model.videoEncodingNames << "x264";
+
     return model;
 }
 
@@ -50,22 +62,9 @@ void SettingsModel::syncUi(QQuickWindow *window) {
     // Prepare the view to be synced
     QMetaObject::invokeMethod(window, "prepareForUiSync");
 
-    QStringList encodingNames;
-    encodingNames << "MPEG2";
-    encodingNames << "MJPEG";
-    encodingNames << "x264";
-
-    QStringList resolutionNames;
-    encodingNames << "176x144";
-    encodingNames << "432x240";
-    encodingNames << "640x360";
-    encodingNames << "1024x576";
-    encodingNames << "1152x648";
-    encodingNames << "1280x720";
-    encodingNames << "1600x900";
-
-    window->setProperty("videoEncodingNames", encodingNames);
-    window->setProperty("videoResolutionNames", resolutionNames);
+    window->setProperty("videoEncodingNames", videoEncodingNames);
+    window->setProperty("videoResolutionNames", videoResolutionNames);
+    window->setProperty("cameraNames", cameraNames);
     window->setProperty("roverAddress", roverAddress.toString());
 
     window->setProperty("enableStereoUi", enableStereoUi);

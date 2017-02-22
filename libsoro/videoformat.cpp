@@ -287,14 +287,14 @@ QString VideoFormat::serialize() const {
     serial += QString::number(static_cast<qint32>(_stereoMode)) + "_";
     serial += QString::number(_framerate) + "_";
     serial += QString::number(_bitrate) + "_";
-    serial += QString::number(_maxThreads);
-
+    serial += QString::number(_maxThreads) + "_";
+    serial += QString::number(_mjpegQuality);
     return serial;
 }
 
 void VideoFormat::deserialize(QString serial) {
     QStringList items = serial.split('_');
-    if (items.size() < 6) {
+    if (items.size() < 7) {
         LOG_E(LOG_TAG, "deserialize(): Invalid string");
         return;
     }
@@ -323,6 +323,10 @@ void VideoFormat::deserialize(QString serial) {
     _maxThreads = items[5].toUInt(&ok);
     if (!ok) {
         LOG_E(LOG_TAG, "deserialize(): Invalid option for max threads");
+    }
+    _mjpegQuality = items[6].toUInt(&ok);
+    if (!ok) {
+        LOG_E(LOG_TAG, "deserialize(): Invalid option for mjpeg quality");
     }
 }
 

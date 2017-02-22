@@ -37,7 +37,8 @@ struct SettingsModel {
     QHostAddress roverAddress;
 
     QStringList cameraNames;
-    //QList<VideoFormat> defaultVideoFormats;
+    QStringList videoEncodingNames;
+    QStringList videoResolutionNames;
     AudioFormat defaultAudioFormat;
 
     static SettingsModel Default(QHostAddress roverAddress);

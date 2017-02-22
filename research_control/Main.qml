@@ -880,6 +880,7 @@ ApplicationWindow {
                         anchors.leftMargin: 12
                         anchors.top: videoEncodingCombo.bottom
                         anchors.topMargin: 8
+                        onCurrentIndexChanged: settingsFooterPane.state = "visible"
                     }
 
                     Label {
@@ -893,8 +894,7 @@ ApplicationWindow {
 
                     SpinBox {
                         id: videoBitrateSpinBox
-                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
-                        visible: videoEncodingCombo.currentText != "MJPEG"
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked & videoEncodingCombo.currentText !== "MJPEG"
                         stepSize: 10
                         to: 10000
                         from: 500
@@ -903,12 +903,12 @@ ApplicationWindow {
                         anchors.leftMargin: 12
                         anchors.top: videoResolutionCombo.bottom
                         anchors.topMargin: 8
+                        onValueChanged: settingsFooterPane.state = "visible"
                     }
 
                     Label {
                         id: videoBitrateLabel
                         width: 100
-                        visible: videoBitrateSpinBox.visible
                         text: qsTr("Bitrate (Kb/s)")
                         anchors.verticalCenter: videoBitrateSpinBox.verticalCenter
                         anchors.left: parent.left
@@ -917,8 +917,7 @@ ApplicationWindow {
 
                     SpinBox {
                         id: mjpegQualitySpinBox
-                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked
-                        visible: videoEncodingCombo.currentText == "MJPEG"
+                        enabled: enableVideoSwitch.enabled & enableVideoSwitch.checked & videoEncodingCombo.currentText === "MJPEG"
                         to: 100
                         from: 1
                         value: 50
@@ -926,11 +925,11 @@ ApplicationWindow {
                         anchors.leftMargin: 12
                         anchors.top: videoBitrateSpinBox.bottom
                         anchors.topMargin: 8
+                        onValueChanged: settingsFooterPane.state = "visible"
                     }
 
                     Label {
                         id: mjpegQualityLabel
-                        visible: mjpegQualitySpinBox.visible
                         width: 100
                         text: qsTr("Quality (%)")
                         anchors.verticalCenter: mjpegQualitySpinBox.verticalCenter
@@ -948,6 +947,7 @@ ApplicationWindow {
                         anchors.leftMargin: 12
                         anchors.top: mjpegQualitySpinBox.bottom
                         anchors.topMargin: 8
+                        onValueChanged: settingsFooterPane.state = "visible"
                     }
 
                     Label {
