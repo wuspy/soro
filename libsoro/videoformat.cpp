@@ -210,6 +210,7 @@ QString VideoFormat::createGstEncodingArgs() const {
 
     // Comming encoding params for all codecs
     encString = QString(
+                    "videoscale method=0 ! "
                     "video/x-raw,width=%1,height=%2 ! "
                     "%3" // For stereo
                     "%4" // For framerate
