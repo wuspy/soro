@@ -51,6 +51,7 @@ private:
     QString LOG_TAG;
     QUdpSocket *_socket;
     SocketAddress _host;
+    SocketAddress _mbed;
     State _state;
     char *_buffer;
     bool _active;

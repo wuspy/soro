@@ -70,6 +70,8 @@ void MbedChannel::socketReadyRead() {
             continue;
         }
         // By this point, we have verified the packet is from the mbed we want
+        _mbed.host = peer.host;
+        _mbed.port = peer.port;
 
         unsigned int sequence = Util::deserialize<unsigned int>(_buffer + 2);
         if (_state == ConnectingState) {
@@ -143,7 +145,7 @@ void MbedChannel::sendMessage(const char *message, int length) {
         _buffer[1] = _mbedId;
         Util::serialize<unsigned int>(_buffer + 2, _nextSendId++);
         memcpy(_buffer + 6, message, length);
-        _socket->writeDatagram(_buffer, length + 6, QHostAddress::Broadcast, _host.port);
+        _socket->writeDatagram(_buffer, length + 6, _mbed.host, _mbed.port);
     }
 }
 
