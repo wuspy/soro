@@ -42,7 +42,4 @@
         <file>splash.jpg</file>
         <file>splash2.jpg</file>
     </qresource>
-    <qresource prefix="/config">
-        <file>gamecontrollerdb.txt</file>
-    </qresource>
 </RCC>
