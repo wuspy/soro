@@ -274,11 +274,10 @@ QString VideoFormat::createGstEncodingArgs() const {
         break;
     case Encoding_H265:
         encString += QString(
-                        "x265enc speed-preset=fast tune=zerolatency bitrate=%1 threads=%2 ! "
+                        "x265enc speed-preset=ultrafast tune=zerolatency bitrate=%1 ! "
                         "rtph265pay config-interval=3 pt=96"
                     ).arg(
                         QString::number(bitrate / 1000), // x265 has bitrate in kbit/sec
-                        QString::number(_maxThreads)
                     );
         break;
     default:
@@ -294,11 +293,11 @@ QString VideoFormat::createGstDecodingArgs() const {
     switch (_encoding) {
     case Encoding_MPEG2:
         // Same decoding args for all MPEG2 formats
-        return "application/x-rtp,media=video,clock-rate=90000,encoding-name=MP4V-ES,profile-level-id=1,payload=96 ! "
+        return "application/x-rtp,media=video,encoding-name=MP4V-ES,clock-rate=90000,profile-level-id=1,payload=96 ! "
                "rtpmp4vdepay ! "
                "avdec_mpeg4";
     case Encoding_H264:
-        return "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
+        return "application/x-rtp,media=video,encoding-name=H264,clock-rate=90000,payload=96 ! "
                "rtph264depay ! "
                "avdec_h264";
     case Encoding_MJPEG:
@@ -310,7 +309,7 @@ QString VideoFormat::createGstDecodingArgs() const {
                "rtpvp8depay ! "
                "avdec_vp8";
     case Encoding_H265:
-        return "application/x-rtp,media=video,clock-rate=90000,encoding-name=H265 ! "
+        return "application/x-rtp,media=video,encoding-name=H265,clock-rate=90000,payload=96  ! "
                "rtph265depay ! "
                "avdec_h265";
     default:
