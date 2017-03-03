@@ -33,7 +33,7 @@ bool GamepadManager::init(int interval, QString *error) {
     _sdlInitialized = SDL_Init(SDL_INIT_GAMECONTROLLER) == 0;
     if (_sdlInitialized) {
         // Add gamepad map
-        QFile gamepadMap(":/config/gamecontrollerdb.txt"); // Loads from assets.qrc
+        QFile gamepadMap(":/libsoromc_assets/gcdb.txt"); // Loads from libsoromc_assets.qrc
         gamepadMap.open(QIODevice::ReadOnly);
         while (gamepadMap.bytesAvailable()) {
             if (SDL_GameControllerAddMapping(gamepadMap.readLine().data()) == -1) {
@@ -45,7 +45,6 @@ bool GamepadManager::init(int interval, QString *error) {
         gamepadMap.close();
         START_TIMER(_inputSelectorTimerId, 1000);
         return true;
-
     }
     else {
         if (error) *error = "SDL failed to initialize: " + QString(SDL_GetError());
@@ -77,8 +76,14 @@ void GamepadManager::timerEvent(QTimerEvent *e) {
          * suitable controller
          */
         SDL_GameControllerUpdate();
+        LOG_I(LOG_TAG, "Looking for usable joysticks...");
         for (int i = 0; i < SDL_NumJoysticks(); ++i) {
+            char guid_str[256];
+            SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
+            SDL_JoystickGetGUIDString(guid, guid_str, sizeof(guid_str));
+            LOG_I(LOG_TAG, QString("Considering joystick %1 with GUID %2...").arg(QString::number(i), QString(guid_str)));
             if (SDL_IsGameController(i)) {
+                LOG_I(LOG_TAG, QString("Joystick %1 is a game controller").arg(i));
                 SDL_GameController *controller = SDL_GameControllerOpen(i);
                 if (controller) {
                     //this gamepad will do
@@ -131,7 +136,12 @@ void GamepadManager::setGamepad(SDL_GameController *controller) {
     if (_gameController != controller) {
         _gameController = controller;
         _gamepadName = _gameController ? QString(SDL_GameControllerName(_gameController)) : "";
-        LOG_I(LOG_TAG, "Active controller is \'" + _gamepadName + "\'");
+        if (controller) {
+            LOG_I(LOG_TAG, "Active controller is \'" + _gamepadName + "\'");
+        }
+        else {
+            LOG_W(LOG_TAG, "No usable controller connected");
+        }
         emit gamepadChanged(isGamepadConnected(), _gamepadName);
     }
 }

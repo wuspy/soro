@@ -57,7 +57,7 @@ void DriveControlSystem::timerEvent(QTimerEvent *e) {
             DriveMessage::setGamepadData_SingleStick(_buffer, _input->axisLeftX, _input->axisLeftY, _midSkidFactor);
             break;
         case DualStickDrive:
-            DriveMessage::setGamepadData_DualStick(_buffer, _input->axisLeftY, _input->axisRightY, _midSkidFactor);
+            DriveMessage::setGamepadData_DualStick(_buffer, _input->axisLeftY, _input->axisRightX, _midSkidFactor);
             break;
         }
         _channel->sendMessage(_buffer, DriveMessage::RequiredSize);

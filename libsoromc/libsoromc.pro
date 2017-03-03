@@ -41,7 +41,8 @@ SOURCES +=\
         googlemapview.cpp \
         missioncontrolnetwork.cpp \
         videocontrolwidget.cpp \
-    stereocamerawidget.cpp
+    stereocamerawidget.cpp \
+    qquickgstreamersurface.cpp
 
 HEADERS +=\
         soro_missioncontrol_global.h \
@@ -58,7 +59,8 @@ HEADERS +=\
         missioncontrolnetwork.h \
         videocontrolwidget.h \
         util.h \
-    stereocamerawidget.h
+    stereocamerawidget.h \
+    qquickgstreamersurface.h
 
 FORMS   +=\
         audiocontrolwidget.ui \
@@ -72,3 +74,6 @@ INCLUDEPATH += $$PWD/../..
 LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStreamerUtils-1.0
 #LIBS += -lflycapture
 LIBS += -L../lib -lsoro
+
+RESOURCES += \
+    libsoromc_assets.qrc

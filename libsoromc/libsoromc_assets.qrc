@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/libsoromc_assets">
+        <file>gcdb.txt</file>
+    </qresource>
+</RCC>
