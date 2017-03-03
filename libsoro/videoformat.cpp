@@ -277,7 +277,7 @@ QString VideoFormat::createGstEncodingArgs() const {
                         "x265enc speed-preset=ultrafast tune=zerolatency bitrate=%1 ! "
                         "rtph265pay config-interval=3 pt=96"
                     ).arg(
-                        QString::number(bitrate / 1000), // x265 has bitrate in kbit/sec
+                        QString::number(bitrate / 1000) // x265 has bitrate in kbit/sec
                     );
         break;
     default:
