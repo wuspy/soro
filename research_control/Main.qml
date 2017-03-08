@@ -27,7 +27,8 @@ ApplicationWindow {
     id: mainWindow
     width: 1000
     height: 1200
-    property alias driveStatusField: driveStatusField
+    property alias driveMbedStatusField: driveMbedStatusField
+    property alias dataMbedStatusField: dataMbedStatusField
     property alias gamepadField: gamepadField
     property alias roverAddressField: roverAddressField
     property alias notificationTitleLabel: notificationTitleLabel
@@ -100,7 +101,8 @@ ApplicationWindow {
     property alias cameraNames: activeCameraCombo.model
     property string roverAddress: "0.0.0.0"
     property string gamepad: "None"
-    property string driveStatus: "Unknown"
+    property string driveMbedStatus: "Unknown"
+    property string dataMbedStatus: "Unknown"
 
     // Internal properties
 
@@ -276,9 +278,14 @@ ApplicationWindow {
         }
     }
 
-    onDriveStatusChanged: {
+    onDriveMbedStatusChanged: {
         // Update the drive status field
-        driveStatusField.text = driveStatus
+        driveMbedStatusField.text = driveMbedStatus
+    }
+
+    onDataMbedStatusChanged: {
+        // Update the data status field
+        dataMbedStatusField.text = dataMbedStatus
     }
 
     onClosing: {
@@ -577,7 +584,7 @@ ApplicationWindow {
                 GroupBox {
                     id: infoGroupBox
                     width: 200
-                    height: driveStatusField.y + driveStatusField.height + topPadding + bottomPadding
+                    height: dataMbedStatusField.y + dataMbedStatusField.height + topPadding + bottomPadding
                     anchors.right: parent.right
                     anchors.rightMargin: 0
                     anchors.left: parent.left
@@ -629,24 +636,47 @@ ApplicationWindow {
                     }
 
                     Label {
-                        id: driveStatusLabel
+                        id: driveMbedStatusLabel
                         x: 5
                         y: 60
                         width: 100
-                        text: qsTr("Drive Status")
+                        text: qsTr("Drive System Status")
                         anchors.verticalCenterOffset: 0
                         anchors.leftMargin: 0
-                        anchors.verticalCenter: driveStatusField.verticalCenter
+                        anchors.verticalCenter: driveMbedStatusField.verticalCenter
                         anchors.left: parent.left
                     }
 
                     Label {
-                        id: driveStatusField
+                        id: driveMbedStatusField
                         text: qsTr("Unknown")
                         anchors.leftMargin: 12
-                        anchors.left: driveStatusLabel.right
+                        anchors.left: driveMbedStatusLabel.right
                         anchors.rightMargin: 0
                         anchors.top: gamepadField.bottom
+                        anchors.topMargin: 8
+                        anchors.right: parent.right
+                    }
+
+                    Label {
+                        id: dataMbedStatusLabel
+                        x: 5
+                        y: 60
+                        width: 100
+                        text: qsTr("Data System Status")
+                        anchors.verticalCenterOffset: 0
+                        anchors.leftMargin: 0
+                        anchors.verticalCenter: dataMbedStatusField.verticalCenter
+                        anchors.left: parent.left
+                    }
+
+                    Label {
+                        id: dataMbedStatusField
+                        text: qsTr("Unknown")
+                        anchors.leftMargin: 12
+                        anchors.left: dataMbedStatusLabel.right
+                        anchors.rightMargin: 0
+                        anchors.top: driveMbedStatusField.bottom
                         anchors.topMargin: 8
                         anchors.right: parent.right
                     }
@@ -744,7 +774,7 @@ ApplicationWindow {
                         anchors.leftMargin: 12
                         anchors.top: hudParallaxSpinBox.bottom
                         anchors.topMargin: 0
-                        stepSize: 10
+                        stepSize: 1
                         editable: true
                         from: 0
                         to: 2000

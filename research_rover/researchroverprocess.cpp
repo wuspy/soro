@@ -63,14 +63,16 @@ void ResearchRoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Initializing MBED systems*******************");
 
     // create mbed channels
-    _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_MBED_PORT), MBED_ID_RESEARCH, this);
+    _driveMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_DRIVE_MBED_PORT), MBED_ID_RESEARCH_DRIVE, this);
+    _dataMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_DATA_MBED_PORT), MBED_ID_RESEARCH_DATA, this);
 
     // setup mbed data parser/logger
-    connect(_mbed, &MbedChannel::messageReceived, &_sensorRecorder, &SensorDataRecorder::newData);
+    connect(_dataMbed, &MbedChannel::messageReceived, &_sensorRecorder, &SensorDataRecorder::newData);
 
     // observers for mbed events
-    connect(_mbed, &MbedChannel::messageReceived, this, &ResearchRoverProcess::mbedMessageReceived);
-    connect(_mbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::mbedChannelStateChanged);
+    connect(_dataMbed, &MbedChannel::messageReceived, this, &ResearchRoverProcess::dataMbedMessageReceived);
+    connect(_dataMbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::dataMbedChannelStateChanged);
+    connect(_driveMbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::driveMbedChannelStateChanged);
 
     // observers for network channels message received
     connect(_driveChannel, &Channel::messageReceived, this, &ResearchRoverProcess::driveChannelMessageReceived);
@@ -181,10 +183,12 @@ void ResearchRoverProcess::sendSystemStatusMessage() {
     stream.setByteOrder(QDataStream::BigEndian);
 
     SharedMessageType messageType = SharedMessage_Research_RoverStatusUpdate;
-    bool driveState = _mbed->getState() == MbedChannel::ConnectedState;
+    bool driveState = _driveMbed->getState() == MbedChannel::ConnectedState;
+    bool dataState = _dataMbed->getState() == MbedChannel::ConnectedState;
 
     stream << static_cast<qint32>(messageType);
     stream << driveState;
+    stream << dataState;
     _sharedChannel->sendMessage(message);
 }
 
@@ -209,11 +213,16 @@ void ResearchRoverProcess::driveChannelStateChanged(Channel::State state) {
         //Send a stop command to the rover
         char stopMessage[DriveMessage::RequiredSize];
         DriveMessage::setGamepadData_SingleStick(stopMessage, 0, 0, 0);
-        _mbed->sendMessage(stopMessage, DriveMessage::RequiredSize);
+        _driveMbed->sendMessage(stopMessage, DriveMessage::RequiredSize);
     }
 }
 
-void ResearchRoverProcess::mbedChannelStateChanged(MbedChannel::State state) {
+void ResearchRoverProcess::dataMbedChannelStateChanged(MbedChannel::State state) {
+    Q_UNUSED(state);
+    sendSystemStatusMessage();
+}
+
+void ResearchRoverProcess::driveMbedChannelStateChanged(MbedChannel::State state) {
     Q_UNUSED(state);
     sendSystemStatusMessage();
 }
@@ -224,7 +233,7 @@ void ResearchRoverProcess::driveChannelMessageReceived(const char* message, Chan
     reinterpret_cast<qint32&>(messageType) = (qint32)reinterpret_cast<unsigned char&>(header);
     switch (messageType) {
     case MbedMessage_Drive:
-        _mbed->sendMessage(message, (int)size);
+        _driveMbed->sendMessage(message, (int)size);
         break;
     default:
         LOG_E(LOG_TAG, "Received invalid message from mission control on drive control channel");
@@ -331,7 +340,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(const char* message, Cha
     }
 }
 
-void ResearchRoverProcess::mbedMessageReceived(const char* message, int size) {
+void ResearchRoverProcess::dataMbedMessageReceived(const char* message, int size) {
     // Forward the message to mission control (MbedDataParser instance will take care of logging it)
 
     QByteArray byteArray;

@@ -461,14 +461,30 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
     switch (messageType) {
     case SharedMessage_RoverStatusUpdate: {
         bool driveNormal;
+        bool dataNormal;
         stream >> driveNormal;
+        stream >> dataNormal;
         if (!driveNormal) {
             QMetaObject::invokeMethod(_controlUi,
                                       "notify",
                                       Q_ARG(QVariant, "error"),
-                                      Q_ARG(QVariant, "Mbed Error"),
-                                      Q_ARG(QVariant, "The rover has lost connection to its mbed. Driving and data recording will no longer work."));
-            _controlUi->setProperty("driveStatus", "Mbed Error");
+                                      Q_ARG(QVariant, "Drive Mbed Error"),
+                                      Q_ARG(QVariant, "The rover has lost connection to the drive mbed. Driving will no longer work."));
+            _controlUi->setProperty("driveMbedStatus", "Mbed Error");
+        }
+        else {
+            _controlUi->setProperty("driveMbedStatus", "Operational");
+        }
+        if (!dataNormal) {
+            QMetaObject::invokeMethod(_controlUi,
+                                      "notify",
+                                      Q_ARG(QVariant, "error"),
+                                      Q_ARG(QVariant, "Data Mbed Error"),
+                                      Q_ARG(QVariant, "The rover has lost connection to the data mbed. Data recording will no longer work."));
+            _controlUi->setProperty("dataMbedStatus", "Mbed Error");
+        }
+        else {
+            _controlUi->setProperty("dataMbedStatus", "Operational");
         }
     }
         break;
@@ -516,7 +532,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
                                   Q_ARG(QVariant, "information"),
                                   Q_ARG(QVariant, "Network Driving Disabled"),
                                   Q_ARG(QVariant, "The rover is being driven by serial override. Network drive commands will not be accepted."));
-        _controlUi->setProperty("driveStatus", "Serial Override");
+        _controlUi->setProperty("driveMbedStatus", "Serial Override");
         break;
     case SharedMessage_Research_RoverDriveOverrideEnd:
         QMetaObject::invokeMethod(_controlUi,
@@ -524,7 +540,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
                                   Q_ARG(QVariant, "information"),
                                   Q_ARG(QVariant, "Network Driving Enabled"),
                                   Q_ARG(QVariant, "The rover has resumed accepting network drive commands."));
-        _controlUi->setProperty("driveStatus", "Operational");
+        _controlUi->setProperty("driveMbedStatus", "Operational");
         break;
     case SharedMessage_Research_SensorUpdate: {
         QByteArray data;
@@ -568,7 +584,7 @@ void ResearchControlProcess::driveConnectionStateChanged(Channel::State state) {
                                   Q_ARG(QVariant,"error"),
                                   Q_ARG(QVariant, "Drive Channel Error"),
                                   Q_ARG(QVariant, "An unrecoverable netowork error occurred. Please exit and check the log."));
-        _controlUi->setProperty("driveStatus", "Network Error");
+        _controlUi->setProperty("driveMbedStatus", "Network Error");
         break;
     case Channel::ConnectedState:
         QMetaObject::invokeMethod(_controlUi,
@@ -576,7 +592,7 @@ void ResearchControlProcess::driveConnectionStateChanged(Channel::State state) {
                                   Q_ARG(QVariant,"information"),
                                   Q_ARG(QVariant, "Drive Channel Connected"),
                                   Q_ARG(QVariant, "You are now connected to the rover's drive system."));
-        _controlUi->setProperty("driveStatus", "Operational");
+        _controlUi->setProperty("driveMbedStatus", "Operational");
         break;
     default:
         if (_driveSystem->getChannel()->wasConnected()) {
@@ -585,7 +601,7 @@ void ResearchControlProcess::driveConnectionStateChanged(Channel::State state) {
                                       Q_ARG(QVariant,"error"),
                                       Q_ARG(QVariant, "Drive Channel Disconnected"),
                                       Q_ARG(QVariant, "The network connection to the rover's drive system has been lost."));
-            _controlUi->setProperty("driveStatus", "Network Disconnected");
+            _controlUi->setProperty("driveMbedStatus", "Network Disconnected");
         }
         break;
     }
