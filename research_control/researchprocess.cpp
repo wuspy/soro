@@ -95,9 +95,33 @@ void ResearchControlProcess::init() {
 
     LOG_I(LOG_TAG, "***************Initializing Data Recording system******************");
 
-    _sensorRecorder = new SensorDataRecorder(this);
-    _gpsRecorder = new GpsDataRecorder(this);
-    _masterRecorder = new MasterDataRecorder(_driveSystem->getChannel(), _roverChannel, this);
+    _sensorDataSeries = new SensorDataParser(this);
+    _gpsDataSeries = new GpsDataSeries(this);
+    _connectionEventSeries = new ConnectionEventSeries(_driveSystem->getChannel(), _roverChannel, this);
+    _latencyDataSeries = new LatencySeries(this);
+    _commentDataSeries = new CommentSeries(this);
+
+    _dataRecorder = new CsvRecorder(this);
+    _dataRecorder->setUpdateInterval(50);
+
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerASeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerBSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerCSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerDSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerESeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerFSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuRearYawSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuRearPitchSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuRearRollSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuFrontYawSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuFrontPitchSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuFrontRollSeries());
+    _dataRecorder->addColumn(_gpsDataSeries->getLatitudeSeries());
+    _dataRecorder->addColumn(_gpsDataSeries->getLongitudeSeries());
+    _dataRecorder->addColumn(_connectionEventSeries);
+    _dataRecorder->addColumn(_latencyDataSeries->getRealLatencySeries());
+    _dataRecorder->addColumn(_latencyDataSeries->getSimulatedLatencySeries());
+    _dataRecorder->addColumn(_commentDataSeries);
 
     LOG_I(LOG_TAG, "***************Initializing UI******************");
 
@@ -130,8 +154,8 @@ void ResearchControlProcess::init() {
     connect (_controlUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
     connect (_commentsUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
 
-    connect(_sensorRecorder, &SensorDataRecorder::dataParsed, _mainUi, &ResearchMainWindow::sensorUpdate);
-    connect(_commentsUi, SIGNAL(logCommentEntered(QString)), _masterRecorder, SLOT(addComment(QString)));
+    connect(_sensorDataSeries, &SensorDataParser::dataParsed, _mainUi, &ResearchMainWindow::sensorUpdate);
+    connect(_commentsUi, SIGNAL(logCommentEntered(QString)), _commentDataSeries, SLOT(addComment(QString)));
     connect(_controlUi, SIGNAL(closed()), this, SLOT(onQmlUiClosed()));
     connect(_commentsUi, SIGNAL(closed()), this, SLOT(onQmlUiClosed()));
 
@@ -148,7 +172,7 @@ void ResearchControlProcess::init() {
 }
 
 void ResearchControlProcess::roverDataRecordResponseWatchdog() {
-    if (!_masterRecorder->isRecording()) {
+    if (!_dataRecorder->isRecording()) {
         // Rover did not respond to our record request in time
         stopDataRecording();
         QMetaObject::invokeMethod(_controlUi,
@@ -168,9 +192,7 @@ void ResearchControlProcess::startDataRecording() {
 }
 
 void ResearchControlProcess::stopDataRecording() {
-    _sensorRecorder->stopLog();
-    _gpsRecorder->stopLog();
-    _masterRecorder->stopLog();
+    _dataRecorder->stopLog();
     _controlUi->setProperty("recordingState", "idle");
     _commentsUi->setProperty("recordingState", "idle");
 
@@ -213,7 +235,7 @@ void ResearchControlProcess::ui_requestUiSync() {
 }
 
 void ResearchControlProcess::ui_toggleDataRecordButtonClicked() {
-    if (_masterRecorder->isRecording()) {
+    if (_dataRecorder->isRecording()) {
         stopDataRecording();
     }
     else {
@@ -285,7 +307,7 @@ void ResearchControlProcess::ui_settingsApplied() {
         stopAudio();
     }
     _driveSystem->getChannel()->setSimulatedDelay(_settings.selectedLatency);
-    _masterRecorder->fakeLatencyUpdated(_settings.selectedLatency);
+    _latencyDataSeries->updateSimulatedLatency(_settings.selectedLatency);
 }
 
 void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaClient::State state) {
@@ -523,7 +545,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
                                   Q_ARG(QVariant, location.Heading));
 
         // Forward to logger
-        _gpsRecorder->addLocation(location);
+        _gpsDataSeries->addLocation(location);
     }
         break;
     case SharedMessage_Research_RoverDriveOverrideStart:
@@ -546,16 +568,12 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
         QByteArray data;
         stream >> data;
         // This raw data should be sent to an MbedParser to be decoded
-        _sensorRecorder->newData(data.data(), data.length());
+        _sensorDataSeries->newData(data.data(), data.length());
         break;
     }
     case SharedMessage_Research_StartDataRecording: {
         // Rover has responed that they are starting data recording, start ours
-        bool success = true;
-        success &= _sensorRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime));
-        success &= _gpsRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime));
-        success &= _masterRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime));
-        if (!success) {
+        if (_dataRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime))) {
             stopDataRecording();
             QMetaObject::invokeMethod(_controlUi,
                                       "notify",

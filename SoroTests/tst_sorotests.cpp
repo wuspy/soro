@@ -2,7 +2,7 @@
 #include <QtTest>
 #include <QSignalSpy>
 
-#include "libsoro/sensordatarecorder.h"
+#include "libsoro/sensordataparser.h"
 
 using namespace Soro;
 
@@ -23,9 +23,9 @@ SoroTests::SoroTests()
 
 void SoroTests::testSensorDataRecorder()
 {
-    SensorDataRecorder recorder;
-    QSignalSpy spy(&recorder, &SensorDataRecorder::dataParsed);
-    QSignalSpy spyErr(&recorder, &SensorDataRecorder::parseError);
+    SensorDataParser recorder;
+    QSignalSpy spy(&recorder, &SensorDataParser::dataParsed);
+    QSignalSpy spyErr(&recorder, &SensorDataParser::parseError);
     QList<QVariant> args;
 
     /* Test simple data

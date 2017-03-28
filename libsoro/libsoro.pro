@@ -54,9 +54,9 @@ SOURCES += \
     audioclient.cpp \
     videoformat.cpp \
     audioformat.cpp \
-    abstractdatarecorder.cpp \
-    gpsdatarecorder.cpp \
-    sensordatarecorder.cpp
+    csvrecorder.cpp \
+    sensordataparser.cpp \
+    gpsdataseries.cpp
 
 HEADERS += \
     latlng.h \
@@ -89,6 +89,6 @@ HEADERS += \
     videoformat.h \
     mediaformat.h \
     audioformat.h \
-    abstractdatarecorder.h \
-    gpsdatarecorder.h \
-    sensordatarecorder.h
+    csvrecorder.h \
+    sensordataparser.h \
+    gpsdataseries.h

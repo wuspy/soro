@@ -17,7 +17,7 @@
 #include "researchmainwindow.h"
 #include "ui_researchmainwindow.h"
 #include "libsoro/gamepadutil.h"
-#include "libsoro/sensordatarecorder.h"
+#include "libsoro/sensordataparser.h"
 
 namespace Soro {
 namespace MissionControl {
@@ -99,61 +99,61 @@ void ResearchMainWindow::gamepadPoll() {
 
 void ResearchMainWindow::sensorUpdate(char tag, int value) {
     switch (tag) {
-    case SensorDataRecorder::DATATAG_WHEELPOWER_A:
+    case SensorDataParser::DATATAG_WHEELPOWER_A:
         ui->hudPower->rootObject()->setProperty("wheelMLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelMLPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELPOWER_B:
+    case SensorDataParser::DATATAG_WHEELPOWER_B:
         ui->hudPower->rootObject()->setProperty("wheelFLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelFLPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELPOWER_C:
+    case SensorDataParser::DATATAG_WHEELPOWER_C:
         ui->hudPower->rootObject()->setProperty("wheelFRPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelFRPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELPOWER_D:
+    case SensorDataParser::DATATAG_WHEELPOWER_D:
         ui->hudPower->rootObject()->setProperty("wheelMRPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelMRPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELPOWER_E:
+    case SensorDataParser::DATATAG_WHEELPOWER_E:
         ui->hudPower->rootObject()->setProperty("wheelBRPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelBRPower", value);
         break;
-    case SensorDataRecorder::DATATAG_WHEELPOWER_F:
+    case SensorDataParser::DATATAG_WHEELPOWER_F:
         ui->hudPower->rootObject()->setProperty("wheelBLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelBLPower", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_REAR_YAW:
+    case SensorDataParser::DATATAG_IMUDATA_REAR_YAW:
         ui->hudOrientationBack->rootObject()->setProperty("rearYaw", value);
         ui->hudOrientationBack2->rootObject()->setProperty("rearYaw", value);
         ui->hudOrientationSide->rootObject()->setProperty("rearYaw", value);
         ui->hudOrientationSide2->rootObject()->setProperty("rearYaw", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_REAR_PITCH:
+    case SensorDataParser::DATATAG_IMUDATA_REAR_PITCH:
         ui->hudOrientationBack->rootObject()->setProperty("rearPitch", value);
         ui->hudOrientationBack2->rootObject()->setProperty("rearPitch", value);
         ui->hudOrientationSide->rootObject()->setProperty("rearPitch", value);
         ui->hudOrientationSide2->rootObject()->setProperty("rearPitch", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_REAR_ROLL:
+    case SensorDataParser::DATATAG_IMUDATA_REAR_ROLL:
         ui->hudOrientationBack->rootObject()->setProperty("rearRoll", value);
         ui->hudOrientationBack2->rootObject()->setProperty("rearRoll", value);
         ui->hudOrientationSide->rootObject()->setProperty("rearRoll", value);
         ui->hudOrientationSide2->rootObject()->setProperty("rearRoll", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_FRONT_YAW:
+    case SensorDataParser::DATATAG_IMUDATA_FRONT_YAW:
         ui->hudOrientationBack->rootObject()->setProperty("frontYaw", value);
         ui->hudOrientationBack2->rootObject()->setProperty("frontYaw", value);
         ui->hudOrientationSide->rootObject()->setProperty("frontYaw", value);
         ui->hudOrientationSide2->rootObject()->setProperty("frontYaw", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_FRONT_PITCH:
+    case SensorDataParser::DATATAG_IMUDATA_FRONT_PITCH:
         ui->hudOrientationBack->rootObject()->setProperty("frontPitch", value);
         ui->hudOrientationBack2->rootObject()->setProperty("frontPitch", value);
         ui->hudOrientationSide->rootObject()->setProperty("frontPitch", value);
         ui->hudOrientationSide2->rootObject()->setProperty("frontPitch", value);
         break;
-    case SensorDataRecorder::DATATAG_IMUDATA_FRONT_ROLL:
+    case SensorDataParser::DATATAG_IMUDATA_FRONT_ROLL:
         ui->hudOrientationBack->rootObject()->setProperty("frontRoll", value);
         ui->hudOrientationBack2->rootObject()->setProperty("frontRoll", value);
         ui->hudOrientationSide->rootObject()->setProperty("frontRoll", value);

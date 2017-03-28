@@ -11,8 +11,8 @@
 #include "libsoro/videoserver.h"
 #include "libsoro/videoformat.h"
 #include "libsoro/enums.h"
-#include "libsoro/sensordatarecorder.h"
-#include "libsoro/gpsdatarecorder.h"
+#include "libsoro/sensordataparser.h"
+#include "libsoro/gpsdataseries.h"
 #include "libsoro/drivemessage.h"
 
 namespace Soro {
@@ -31,7 +31,6 @@ private:
      */
     MbedChannel *_driveMbed = nullptr;
     MbedChannel *_dataMbed = nullptr;
-    SensorDataRecorder _sensorRecorder;
 
     /* Provides GPS coordinates back to mission control
      */
@@ -52,7 +51,9 @@ private:
     VideoServer *_monoCameraServer = nullptr;
     QString _monoCameraDevice;
 
-    GpsDataRecorder _gpsRecorder;
+    CsvRecorder *_dataRecorder;
+    GpsDataSeries *_gpsDataSeries;
+    SensorDataParser *_sensorDataSeries;
 
 private slots:
     void init();

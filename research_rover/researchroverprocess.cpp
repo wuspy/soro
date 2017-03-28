@@ -66,9 +66,6 @@ void ResearchRoverProcess::init() {
     _driveMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_DRIVE_MBED_PORT), MBED_ID_RESEARCH_DRIVE, this);
     _dataMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_DATA_MBED_PORT), MBED_ID_RESEARCH_DATA, this);
 
-    // setup mbed data parser/logger
-    connect(_dataMbed, &MbedChannel::messageReceived, &_sensorRecorder, &SensorDataRecorder::newData);
-
     // observers for mbed events
     connect(_dataMbed, &MbedChannel::messageReceived, this, &ResearchRoverProcess::dataMbedMessageReceived);
     connect(_dataMbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::dataMbedChannelStateChanged);
@@ -82,8 +79,6 @@ void ResearchRoverProcess::init() {
 
     _gpsServer = new GpsServer(SocketAddress(QHostAddress::Any, NETWORK_ROVER_GPS_PORT), this);
     connect(_gpsServer, &GpsServer::gpsUpdate, this, &ResearchRoverProcess::gpsUpdate);
-
-    connect(_gpsServer, &GpsServer::gpsUpdate, &_gpsRecorder, &GpsDataRecorder::addLocation);
 
     LOG_I(LOG_TAG, "*****************Initializing Video system*******************");
 
@@ -160,6 +155,30 @@ void ResearchRoverProcess::init() {
 
     connect(_audioServer, &AudioServer::error, this, &ResearchRoverProcess::mediaServerError);
 
+    LOG_I(LOG_TAG, "*****************Initializing Data Recording System*******************");
+
+    _sensorDataSeries = new SensorDataParser(this);
+    _gpsDataSeries = new GpsDataSeries(this);
+    _dataRecorder = new CsvRecorder(this);
+
+    _dataRecorder->setUpdateInterval(50);
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerASeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerBSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerCSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerDSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerESeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getWheelPowerFSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuRearYawSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuRearPitchSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuRearRollSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuFrontYawSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuFrontPitchSeries());
+    _dataRecorder->addColumn(_sensorDataSeries->getImuFrontRollSeries());
+    _dataRecorder->addColumn(_gpsDataSeries->getLatitudeSeries());
+    _dataRecorder->addColumn(_gpsDataSeries->getLongitudeSeries());
+    connect(_gpsServer, &GpsServer::gpsUpdate, _gpsDataSeries, &GpsDataSeries::addLocation);
+    connect(_dataMbed, &MbedChannel::messageReceived, _sensorDataSeries, &SensorDataParser::newData);
+
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
@@ -195,17 +214,13 @@ void ResearchRoverProcess::sendSystemStatusMessage() {
 bool ResearchRoverProcess::startDataRecording(QDateTime startTime) {
     LOG_I(LOG_TAG, "Starting test log with start time of " + QString::number(startTime.toMSecsSinceEpoch()));
 
-    bool success = true;
-    success &= _sensorRecorder.startLog(startTime);
-    success &= _gpsRecorder.startLog(startTime);
-    return success;
+    return _dataRecorder->startLog(startTime);
 }
 
 void ResearchRoverProcess::stopDataRecording() {
     LOG_I(LOG_TAG, "Ending test log");
 
-    _sensorRecorder.stopLog();
-    _gpsRecorder.stopLog();
+    _dataRecorder->stopLog();
 }
 
 void ResearchRoverProcess::driveChannelStateChanged(Channel::State state) {

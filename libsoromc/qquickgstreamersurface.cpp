@@ -37,7 +37,7 @@ QColor QQuickGStreamerSurface::getBackgroundColor() const {
 }
 
 QGst::ElementPtr QQuickGStreamerSurface::createRecommendedSink() const {
-    QGst::ElementPtr sink = QGst::ElementFactory::create("qt5videosink");
+    QGst::ElementPtr sink = QGst::ElementFactory::make("qt5videosink");
     sink->setProperty("force-aspect-ratio", false);
     return sink;
 }

@@ -30,23 +30,27 @@ SOURCES += main.cpp\
     researchprocess.cpp \
     researchmainwindow.cpp \
     settingsmodel.cpp \
-    masterdatarecorder.cpp \
     hudpowerimpl.cpp \
     hudlatencygraphimpl.cpp \
     hudorientationsideimpl.cpp \
     hudorientationbackimpl.cpp \
-    abstracthudorientationimpl.cpp
+    abstracthudorientationimpl.cpp \
+    connectioneventseries.cpp \
+    commentseries.cpp \
+    latencyseries.cpp
 
 HEADERS  += \
     researchprocess.h \
     researchmainwindow.h \
     settingsmodel.h \
-    masterdatarecorder.h \
     hudpowerimpl.h \
     hudlatencygraphimpl.h \
     hudorientationsideimpl.h \
     hudorientationbackimpl.h \
-    abstracthudorientationimpl.h
+    abstracthudorientationimpl.h \
+    connectioneventseries.h \
+    commentseries.h \
+    latencyseries.h
 
 FORMS    += \
     researchmainwindow.ui

@@ -76,4 +76,5 @@ LIBS += -lSDL2 -lQt5GStreamer-1.0 -lQt5GLib-2.0 -lQt5GStreamerUi-1.0 -lQt5GStrea
 LIBS += -L../lib -lsoro
 
 RESOURCES += \
-    libsoromc_assets.qrc
+    libsoromc_assets.qrc \
+    libsoromc_qml.qrc
