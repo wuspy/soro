@@ -295,28 +295,28 @@ QString VideoFormat::createGstDecodingArgs(DecodingType type) const {
         // Same decoding args for all MPEG2 formats
         return QString("application/x-rtp,media=video,encoding-name=MP4V-ES,clock-rate=90000,profile-level-id=1,payload=96"
                         " ! rtpmp4vdepay")
-                + type != DecodingType_RtpDecodeOnly ?
-                        " ! avdec_mpeg4" : "";
+                + ((type != DecodingType_RtpDecodeOnly) ?
+                        " ! avdec_mpeg4" : "");
     case Encoding_H264:
         return QString("application/x-rtp,media=video,encoding-name=H264,clock-rate=90000,payload=96"
                         " ! rtph264depay")
-                + type != DecodingType_RtpDecodeOnly ?
-                        " ! avdec_h264" : "";
+                + ((type != DecodingType_RtpDecodeOnly) ?
+                        " ! avdec_h264" : "");
     case Encoding_MJPEG:
         return QString("application/x-rtp,media=video,encoding-name=JPEG,payload=26"
                        " ! rtpjpegdepay")
-                + type != DecodingType_RtpDecodeOnly ?
-                       " ! jpegdec" : "";
+                + ((type != DecodingType_RtpDecodeOnly) ?
+                       " ! jpegdec" : "");
     case Encoding_VP8:
         return QString("application/x-rtp,media=video,encoding-name=VP8,clock-rate=90000,payload=96"
                        " ! rtpvp8depay")
-                + type != DecodingType_RtpDecodeOnly ?
-                       " ! avdec_vp8" : "";
+                + ((type != DecodingType_RtpDecodeOnly) ?
+                       " ! avdec_vp8" : "");
     case Encoding_H265:
         return QString("application/x-rtp,media=video,encoding-name=H265,clock-rate=90000,payload=96"
                        " ! rtph265depay")
-                + type != DecodingType_RtpDecodeOnly ?
-                       " ! avdec_h265" : "";
+                + ((type != DecodingType_RtpDecodeOnly) ?
+                       " ! avdec_h265" : "");
     default:
         // unknown codec
         LOG_E(LOG_TAG, "Unknown video encoding");
