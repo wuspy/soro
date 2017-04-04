@@ -224,12 +224,12 @@ void ResearchMainWindow::adjustSizeAndPosition() {
                     0
                 );
         ui->hudLatency->move(
-                    _hudParallax,
-                    height() - ui->hudLatency->height()
+                    width() / 2 - ui->hudLatency->width() / 2 -  _hudParallax,
+                    0
                 );
         ui->hudLatency2->move(
-                    width() / 2,
-                    height() - ui->hudLatency2->height()
+                    width() - ui->hudLatency2->width() / 2 - _hudParallax,
+                    0
                 );
         ui->hudOrientationBack->move(
                     width() / 2 - ui->hudOrientationBack->width() / 2 - _hudParallax,
@@ -240,12 +240,12 @@ void ResearchMainWindow::adjustSizeAndPosition() {
                     height() - ui->hudOrientationBack2->height()
                 );
         ui->hudOrientationSide->move(
-                    width() / 2 - ui->hudOrientationSide->width() / 2 - _hudParallax,
-                    height() - ui->hudOrientationSide->height() - ui->hudOrientationBack->height()
+                    _hudParallax,
+                    height() - ui->hudOrientationSide->height()
                 );
         ui->hudOrientationSide2->move(
-                    width() - ui->hudOrientationSide2->width() / 2,
-                    height() - ui->hudOrientationBack2->height() - ui->hudOrientationBack2->height()
+                    width() / 2,
+                    height() - ui->hudOrientationBack2->height()
                 );
     }
     else {
@@ -255,16 +255,16 @@ void ResearchMainWindow::adjustSizeAndPosition() {
                     0
                 );
         ui->hudLatency->move(
-                    0,
-                    height() - ui->hudLatency->height()
+                    width() - ui->hudLatency->width(),
+                    0
                 );
         ui->hudOrientationBack->move(
                     width() - ui->hudOrientationBack->width(),
                     height() - ui->hudOrientationBack->height()
                 );
         ui->hudOrientationSide->move(
-                    width() - ui->hudOrientationSide->width(),
-                    height() - ui->hudOrientationSide->height() - ui->hudOrientationBack->height()
+                    0,
+                    height() - ui->hudOrientationSide->height()
                 );
     }
 }

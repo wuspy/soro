@@ -40,6 +40,7 @@ int HudLatencyGraphImpl::latency() const {
 
 void HudLatencyGraphImpl::setLatency(int latency) {
     if (qAbs(_latency - latency) > _latencyThreshold) {
+        qDebug() << "Latency changed to " << latency << "ms";
         _latency = latency;
     }
 }

@@ -57,7 +57,7 @@ Item {
 
     HudBackground {
         id: xBackground
-        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 0
@@ -68,18 +68,18 @@ Item {
         id: yBackground
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.top: parent.top
         anchors.leftMargin: 0
         height: parent.height / 4
     }
 
     HudLatencyGraphImpl {
         id: graphX
+        anchors.rightMargin: anchors.bottomMargin
+        anchors.bottomMargin: 16 + yBackground.height / 10
+        anchors.leftMargin: anchors.bottomMargin
+        anchors.topMargin: latencyBackground.height + xBackground.width / 10
         anchors.fill: xBackground
-        anchors.topMargin: 16 + xBackground.width / 10;
-        anchors.leftMargin: anchors.topMargin
-        anchors.rightMargin: anchors.topMargin
-        anchors.bottomMargin: latencyBackground.height + xBackground.width / 10
         mode: "vertical"
     }
 
@@ -88,8 +88,8 @@ Item {
         anchors.fill: yBackground
         anchors.topMargin: 16 + yBackground.height / 10;
         anchors.bottomMargin: anchors.topMargin
-        anchors.rightMargin: anchors.topMargin
-        anchors.leftMargin: latencyBackground.width + yBackground.height / 10
+        anchors.leftMargin: anchors.topMargin
+        anchors.rightMargin: latencyBackground.width + yBackground.height / 10
         mode: "horizontal"
     }
 
@@ -100,8 +100,8 @@ Item {
         opacity: 1
         width: height
         height: parent.height / 4
-        anchors.left: parent.left
-        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        anchors.top: parent.top
 
         Text {
             id: latencyText
