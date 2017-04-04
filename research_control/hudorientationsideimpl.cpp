@@ -25,8 +25,58 @@ HudOrientationSideImpl::HudOrientationSideImpl(QQuickItem *parent): AbstractHudO
 }
 
 void HudOrientationSideImpl::paint(QPainter *painter) {
+    painter->setRenderHint(QPainter::Antialiasing);
+    //painter->rotate(90);
 
+    int wheelSize = height() / 4;
+
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(QBrush(Qt::white));
+
+    // Draw back wheel
+    painter->drawEllipse(QRectF(0, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+
+    // Draw middle wheel
+    painter->drawEllipse(QRectF(width() / 2 - wheelSize / 2, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+
+    // Draw front wheel
+    painter->drawEllipse(QRectF(width() - wheelSize, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+
+    QPen pen;
+    pen.setColor(Qt::white);
+    pen.setWidth(height() / 40);
+
+    // Draw connecting line from back to middle wheel
+    QPainterPath bmPath;
+    bmPath.moveTo(wheelSize / 2, height() / 2);
+    bmPath.lineTo(width() / 2, height() / 2);
+    painter->strokePath(bmPath, pen);
+
+    // Draw connecting line from middle to front wheel
+    QPainterPath mfPath;
+    mfPath.moveTo(width() / 2, height() / 2);
+    mfPath.lineTo(width() - wheelSize / 2, height() / 2);
+    painter->strokePath(mfPath, pen);
 }
+
+void HudOrientationSideImpl::setFrontPitch(float frontPitch) {
+    _frontPitch = frontPitch;
+    update();
+}
+
+float HudOrientationSideImpl::getFrontPitch() const {
+    return _frontPitch;
+}
+
+void HudOrientationSideImpl::setRearPitch(float rearPitch) {
+    _rearPitch = rearPitch;
+    update();
+}
+
+float HudOrientationSideImpl::getRearPitch() const {
+    return _rearPitch;
+}
+
 
 } // namespace MissionControl
 } // namespace Soro

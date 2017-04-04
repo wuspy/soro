@@ -13,10 +13,22 @@ namespace MissionControl {
 class HudOrientationBackImpl: public AbstractHudOrientationImpl
 {
     Q_OBJECT
+    Q_PROPERTY(float frontRoll READ getFrontRoll WRITE setFrontRoll)
+    Q_PROPERTY(float rearRoll READ getRearRoll WRITE setRearRoll)
 public:
     HudOrientationBackImpl(QQuickItem *parent=0);
 
     void paint(QPainter *painter);
+
+    float getRearRoll() const;
+    void setRearRoll(float rearRoll);
+
+    float getFrontRoll() const;
+    void setFrontRoll(float frontRoll);
+
+private:
+    float _frontRoll = 0;
+    float _rearRoll = 0;
 };
 
 } // namespace MissionControl

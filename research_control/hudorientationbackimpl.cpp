@@ -29,7 +29,7 @@ void HudOrientationBackImpl::paint(QPainter *painter) {
     //painter->rotate(90);
 
     QPen pen;
-    pen.setColor(Qt::darkGray);
+    pen.setColor(Qt::white);
     pen.setWidth(width() / 20);
     painter->setPen(pen);
 
@@ -47,7 +47,7 @@ void HudOrientationBackImpl::paint(QPainter *painter) {
     flPath.lineTo(width() / 5, height() * 11 / 15);
     flPath.lineTo(0, height() * 11 / 15);
     flPath.closeSubpath();
-    painter->fillPath(flPath, QBrush(Qt::darkGray));
+    painter->fillPath(flPath, QBrush(Qt::white));
 
     // Draw FR wheel
     QPainterPath frPath;
@@ -57,7 +57,25 @@ void HudOrientationBackImpl::paint(QPainter *painter) {
     frPath.lineTo(width() - width() / 5, height() * 11 / 15);
     frPath.lineTo(width(), height()  * 11 / 15);
     frPath.closeSubpath();
-    painter->fillPath(frPath, QBrush(Qt::darkGray));
+    painter->fillPath(frPath, QBrush(Qt::white));
+}
+
+float HudOrientationBackImpl::getRearRoll() const {
+    return _rearRoll;
+}
+
+void HudOrientationBackImpl::setRearRoll(float rearRoll) {
+    _rearRoll = rearRoll;
+    update();
+}
+
+float HudOrientationBackImpl::getFrontRoll() const {
+    return _frontRoll;
+}
+
+void HudOrientationBackImpl::setFrontRoll(float frontRoll) {
+    _frontRoll = frontRoll;
+    update();
 }
 
 } // namespace MissionControl
