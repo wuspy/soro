@@ -18,8 +18,9 @@ namespace Soro {
 class LIBSORO_EXPORT CsvDataSeries {
 public:
     QVariant getValue() const;
-    qint64 getValueAge() const;
+    qint64 getValueTime() const;
     virtual QString getSeriesName() const=0;
+    virtual bool shouldKeepOldValues() const=0;
 
 protected:
     void update(QVariant value);
@@ -67,6 +68,7 @@ protected:
 
 private:
     QList<const CsvDataSeries*> _columns;
+    QHash<const CsvDataSeries*, qint64> _columnDataTimestamps;
     int _updateTimerId = TIMER_INACTIVE;
     QTextStream *_fileStream = nullptr;
     QString _logDir;

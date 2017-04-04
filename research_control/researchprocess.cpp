@@ -96,10 +96,10 @@ void ResearchControlProcess::init() {
     LOG_I(LOG_TAG, "***************Initializing Data Recording system******************");
 
     _sensorDataSeries = new SensorDataParser(this);
-    _gpsDataSeries = new GpsDataSeries(this);
-    _connectionEventSeries = new ConnectionEventSeries(_driveSystem->getChannel(), _roverChannel, this);
-    _latencyDataSeries = new LatencySeries(this);
-    _commentDataSeries = new CommentSeries(this);
+    _gpsDataSeries = new GpsCsvSeries(this);
+    _connectionEventSeries = new ConnectionEventCsvSeries(_driveSystem->getChannel(), _roverChannel, this);
+    _latencyDataSeries = new LatencyCsvSeries(this);
+    _commentDataSeries = new CommentCsvSeries(this);
 
     _dataRecorder = new CsvRecorder(this);
     _dataRecorder->setUpdateInterval(50);

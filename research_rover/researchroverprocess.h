@@ -12,7 +12,7 @@
 #include "libsoro/videoformat.h"
 #include "libsoro/enums.h"
 #include "libsoro/sensordataparser.h"
-#include "libsoro/gpsdataseries.h"
+#include "libsoro/gpscsvseries.h"
 #include "libsoro/drivemessage.h"
 
 namespace Soro {
@@ -52,7 +52,7 @@ private:
     QString _monoCameraDevice;
 
     CsvRecorder *_dataRecorder;
-    GpsDataSeries *_gpsDataSeries;
+    GpsCsvSeries *_gpsDataSeries;
     SensorDataParser *_sensorDataSeries;
 
 private slots:

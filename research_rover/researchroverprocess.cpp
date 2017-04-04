@@ -158,7 +158,7 @@ void ResearchRoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Initializing Data Recording System*******************");
 
     _sensorDataSeries = new SensorDataParser(this);
-    _gpsDataSeries = new GpsDataSeries(this);
+    _gpsDataSeries = new GpsCsvSeries(this);
     _dataRecorder = new CsvRecorder(this);
 
     _dataRecorder->setUpdateInterval(50);
@@ -176,7 +176,7 @@ void ResearchRoverProcess::init() {
     _dataRecorder->addColumn(_sensorDataSeries->getImuFrontRollSeries());
     _dataRecorder->addColumn(_gpsDataSeries->getLatitudeSeries());
     _dataRecorder->addColumn(_gpsDataSeries->getLongitudeSeries());
-    connect(_gpsServer, &GpsServer::gpsUpdate, _gpsDataSeries, &GpsDataSeries::addLocation);
+    connect(_gpsServer, &GpsServer::gpsUpdate, _gpsDataSeries, &GpsCsvSeries::addLocation);
     connect(_dataMbed, &MbedChannel::messageReceived, _sensorDataSeries, &SensorDataParser::newData);
 
     LOG_I(LOG_TAG, "-------------------------------------------------------");

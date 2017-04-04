@@ -1,5 +1,5 @@
-#ifndef CONNECTIONEVENTSERIES_H
-#define CONNECTIONEVENTSERIES_H
+#ifndef CONNECTIONEVENTCSVSERIES_H
+#define CONNECTIONEVENTCSVSERIES_H
 
 #include <QObject>
 #include <QTimerEvent>
@@ -10,12 +10,13 @@
 namespace Soro {
 namespace MissionControl {
 
-class ConnectionEventSeries: public QObject, public CsvDataSeries
+class ConnectionEventCsvSeries: public QObject, public CsvDataSeries
 {
     Q_OBJECT
 public:
-    ConnectionEventSeries(const Channel* driveChannel, const Channel* sharedChannel, QObject *parent=0);
+    ConnectionEventCsvSeries(const Channel* driveChannel, const Channel* sharedChannel, QObject *parent=0);
     QString getSeriesName() const;
+    bool shouldKeepOldValues() const;
 
 private slots:
     void driveChannelStateChanged(Channel::State state);
@@ -25,4 +26,4 @@ private slots:
 } // namespace MissionControl
 } // namespace Soro
 
-#endif // CONNECTIONEVENTSERIES_H
+#endif // CONNECTIONEVENTCSVSERIES_H

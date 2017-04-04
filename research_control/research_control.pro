@@ -35,9 +35,9 @@ SOURCES += main.cpp\
     hudorientationsideimpl.cpp \
     hudorientationbackimpl.cpp \
     abstracthudorientationimpl.cpp \
-    connectioneventseries.cpp \
-    commentseries.cpp \
-    latencyseries.cpp
+    latencycsvseries.cpp \
+    commentcsvseries.cpp \
+    connectioneventcsvseries.cpp
 
 HEADERS  += \
     researchprocess.h \
@@ -48,9 +48,9 @@ HEADERS  += \
     hudorientationsideimpl.h \
     hudorientationbackimpl.h \
     abstracthudorientationimpl.h \
-    connectioneventseries.h \
-    commentseries.h \
-    latencyseries.h
+    latencycsvseries.h \
+    commentcsvseries.h \
+    connectioneventcsvseries.h
 
 FORMS    += \
     researchmainwindow.ui

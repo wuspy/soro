@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-#include "latencyseries.h"
+#include "latencycsvseries.h"
 
 namespace Soro {
 namespace MissionControl {
 
-LatencySeries::LatencySeries(QObject *parent) : QObject(parent) {
+LatencyCsvSeries::LatencyCsvSeries(QObject *parent) : QObject(parent) {
 
 }
 
-const LatencySeries::RealLatencySeries* LatencySeries::getRealLatencySeries() const {
+const LatencyCsvSeries::RealLatencyCsvSeries* LatencyCsvSeries::getRealLatencySeries() const {
     return &_realLatencySeries;
 }
 
-const LatencySeries::SimulatedLatencySeries* LatencySeries::getSimulatedLatencySeries() const {
+const LatencyCsvSeries::SimulatedLatencyCsvSeries* LatencyCsvSeries::getSimulatedLatencySeries() const {
     return &_simulatedLatencySeries;
 }
 
-void LatencySeries::updateRealLatency(int latency) {
+void LatencyCsvSeries::updateRealLatency(int latency) {
     _realLatencySeries.update(QVariant(latency));
 }
 
-void LatencySeries::updateSimulatedLatency(int latency) {
+void LatencyCsvSeries::updateSimulatedLatency(int latency) {
     _simulatedLatencySeries.update(QVariant(latency));
 }
 

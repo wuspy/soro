@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-#include "gpsdataseries.h"
+#include "gpscsvseries.h"
 #include "logger.h"
 
 namespace Soro {
 
-GpsDataSeries::GpsDataSeries(QObject *parent) : QObject(parent) {
+GpsCsvSeries::GpsCsvSeries(QObject *parent) : QObject(parent) {
 
 }
 
-const GpsDataSeries::LatitudeSeries* GpsDataSeries::getLatitudeSeries() const {
+const GpsCsvSeries::LatitudeCsvSeries* GpsCsvSeries::getLatitudeSeries() const {
     return &_latitudeSeries;
 }
 
-const GpsDataSeries::LongitudeSeries* GpsDataSeries::getLongitudeSeries() const {
+const GpsCsvSeries::LongitudeCsvSeries* GpsCsvSeries::getLongitudeSeries() const {
     return &_longitudeSeries;
 }
 
-void GpsDataSeries::addLocation(NmeaMessage location) {
+void GpsCsvSeries::addLocation(NmeaMessage location) {
     _latitudeSeries.update(location);
     _longitudeSeries.update(location);
     emit locationUpdated(location);

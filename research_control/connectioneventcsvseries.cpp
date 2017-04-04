@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-#include "connectioneventseries.h"
+#include "connectioneventcsvseries.h"
 
 namespace Soro {
 namespace MissionControl {
 
-ConnectionEventSeries::ConnectionEventSeries(const Channel* driveChannel, const Channel* sharedChannel, QObject *parent)
+ConnectionEventCsvSeries::ConnectionEventCsvSeries(const Channel* driveChannel, const Channel* sharedChannel, QObject *parent)
         : QObject(parent) {
 
-    connect(driveChannel, &Channel::stateChanged, this, &ConnectionEventSeries::driveChannelStateChanged);
-    connect(sharedChannel, &Channel::stateChanged, this, &ConnectionEventSeries::sharedChannelStateChanged);
+    connect(driveChannel, &Channel::stateChanged, this, &ConnectionEventCsvSeries::driveChannelStateChanged);
+    connect(sharedChannel, &Channel::stateChanged, this, &ConnectionEventCsvSeries::sharedChannelStateChanged);
 }
 
-QString ConnectionEventSeries::getSeriesName() const {
+QString ConnectionEventCsvSeries::getSeriesName() const {
     return "Events";
 }
 
-void ConnectionEventSeries::driveChannelStateChanged(Channel::State state) {
+bool ConnectionEventCsvSeries::shouldKeepOldValues() const {
+    return false;
+}
+
+void ConnectionEventCsvSeries::driveChannelStateChanged(Channel::State state) {
     switch (state) {
     case Channel::ConnectedState:
         update(QVariant("Drive Channel CONNECTED"));
@@ -41,7 +45,7 @@ void ConnectionEventSeries::driveChannelStateChanged(Channel::State state) {
     }
 }
 
-void ConnectionEventSeries::sharedChannelStateChanged(Channel::State state) {
+void ConnectionEventCsvSeries::sharedChannelStateChanged(Channel::State state) {
     switch (state) {
     case Channel::ConnectedState:
         update(QVariant("Shared Channel CONNECTED"));

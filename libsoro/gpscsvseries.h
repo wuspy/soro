@@ -1,5 +1,5 @@
-#ifndef GPSLOGGER_H
-#define GPSLOGGER_H
+#ifndef GPSCSVSERIES_H
+#define GPSCSVSERIES_H
 
 #include <QObject>
 #include <QFile>
@@ -11,23 +11,25 @@
 
 namespace Soro {
 
-class LIBSORO_EXPORT GpsDataSeries : public QObject
+class LIBSORO_EXPORT GpsCsvSeries : public QObject
 {
     Q_OBJECT
 public:
-    explicit GpsDataSeries(QObject *parent = 0);
+    explicit GpsCsvSeries(QObject *parent = 0);
 
-    class LatitudeSeries : public CsvDataSeries { friend class GpsDataSeries;
+    class LatitudeCsvSeries : public CsvDataSeries { friend class GpsCsvSeries;
     public:     QString getSeriesName() const { return "GPS Latitude"; }
+                bool shouldKeepOldValues() const { return true; }
     private:    void update(NmeaMessage location) { CsvDataSeries::update(QVariant(location.Latitude)); }
     };
-    class LongitudeSeries : public CsvDataSeries { friend class GpsDataSeries;
+    class LongitudeCsvSeries : public CsvDataSeries { friend class GpsCsvSeries;
     public:     QString getSeriesName() const { return "GPS Longitude"; }
+                bool shouldKeepOldValues() const { return true; }
     private:    void update(NmeaMessage location) { CsvDataSeries::update(QVariant(location.Longitude)); }
     };
 
-    const LatitudeSeries* getLatitudeSeries() const;
-    const LongitudeSeries* getLongitudeSeries() const;
+    const LatitudeCsvSeries* getLatitudeSeries() const;
+    const LongitudeCsvSeries* getLongitudeSeries() const;
 
 signals:
     void locationUpdated(NmeaMessage location);
@@ -36,10 +38,10 @@ public slots:
     void addLocation(NmeaMessage location);
 
 private:
-    LatitudeSeries _latitudeSeries;
-    LongitudeSeries _longitudeSeries;
+    LatitudeCsvSeries _latitudeSeries;
+    LongitudeCsvSeries _longitudeSeries;
 };
 
 } // namespace Soro
 
-#endif // GPSLOGGER_H
+#endif // GPSCSVSERIES_H

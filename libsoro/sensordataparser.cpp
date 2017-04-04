@@ -27,89 +27,123 @@ SensorDataParser::SensorDataParser(QObject *parent) : QObject(parent) {
 void SensorDataParser::newData(const char* data, int len) {
     _buffer.append(data, len);
 
-    parseBuffer(true);
+    parseBuffer();
 }
 
-void SensorDataParser::parseBuffer(bool logErrors) {
+void SensorDataParser::parseBuffer() {
     if (_buffer.length() < 4) return; // 4  is the size of a complete data point
+
     char tag = _buffer.at(0);
+    bool ok;
+    float data = QString(_buffer.mid(1, 3)).toFloat(&ok);
 
-    if (isValidTag(tag)) {
-        bool ok;
-        int data = QString(_buffer.mid(1, 3)).toFloat(&ok);
-        if (ok) {
-            _wheelPowerASeries.update(tag, data);
-            _wheelPowerBSeries.update(tag, data);
-            _wheelPowerCSeries.update(tag, data);
-            _wheelPowerDSeries.update(tag, data);
-            _wheelPowerESeries.update(tag, data);
-            _wheelPowerFSeries.update(tag, data);
-            _imuRearYawSeries.update(tag, data);
-            _imuRearPitchSeries.update(tag, data);
-            _imuRearRollSeries.update(tag, data);
-            _imuFrontYawSeries.update(tag, data);
-            _imuFrontPitchSeries.update(tag, data);
-            _imuFrontRollSeries.update(tag, data);
-
-            emit dataParsed(tag, data);
-            // Try to parse more data
-            _buffer.remove(0, 4);
-            parseBuffer(true);
+    if (ok) {
+        switch (tag) {
+        case DATATAG_WHEELPOWER_A:
+            _wheelPowerASeries.update(QVariant(data));
+            break;
+        case DATATAG_WHEELPOWER_B:
+            _wheelPowerBSeries.update(QVariant(data));
+            break;
+        case DATATAG_WHEELPOWER_C:
+            _wheelPowerCSeries.update(QVariant(data));
+            break;
+        case DATATAG_WHEELPOWER_D:
+            _wheelPowerDSeries.update(QVariant(data));
+            break;
+        case DATATAG_WHEELPOWER_E:
+            _wheelPowerESeries.update(QVariant(data));
+            break;
+        case DATATAG_WHEELPOWER_F:
+            _wheelPowerFSeries.update(QVariant(data));
+            break;
+        case DATATAG_IMUDATA_REAR_YAW:
+            _imuRearYawSeries.update(QVariant(data));
+            break;
+        case DATATAG_IMUDATA_REAR_PITCH:
+            _imuRearPitchSeries.update(QVariant(data));
+            break;
+        case DATATAG_IMUDATA_REAR_ROLL:
+            _imuRearRollSeries.update(QVariant(data));
+            break;
+        case DATATAG_IMUDATA_FRONT_YAW:
+            _imuFrontYawSeries.update(QVariant(data));
+            break;
+        case DATATAG_IMUDATA_FRONT_PITCH:
+            // P: [ 100 - 800 ] -> [ -90, 90 ]
+            data = (data - 100) * (180/800) - 90;
+            _imuFrontPitchSeries.update(QVariant(data));
+            break;
+        case DATATAG_IMUDATA_FRONT_ROLL:
+            // R: [ 100 - 900 ] -> [ -180, 180 ]
+            data = (data - 100) * (360/800) - 180;
+            _imuFrontRollSeries.update(QVariant(data));
+            break;
+        default:
+            // Something went wrong trying to parse
+            // Remove the first char and try to parse again
+            _buffer.remove(0, 1);
+            parseBuffer();
             return;
         }
-    }
 
-    // Something went wrong trying to parse
-    // Remove the first char and try to parse again
-    _buffer.remove(0, 1);
-    parseBuffer(false);
+        emit dataParsed(tag, data);
+        _buffer.remove(0, 4);
+        parseBuffer();
+    }
+    else {
+        // Something went wrong trying to parse
+        // Remove the first char and try to parse again
+        _buffer.remove(0, 1);
+        parseBuffer();
+    }
 }
 
-const SensorDataParser::WheelPowerASeries* SensorDataParser::getWheelPowerASeries() const {
+const SensorDataParser::WheelPowerACsvSeries* SensorDataParser::getWheelPowerASeries() const {
     return &_wheelPowerASeries;
 }
 
-const SensorDataParser::WheelPowerBSeries* SensorDataParser::getWheelPowerBSeries() const {
+const SensorDataParser::WheelPowerBCsvSeries* SensorDataParser::getWheelPowerBSeries() const {
     return &_wheelPowerBSeries;
 }
 
-const SensorDataParser::WheelPowerCSeries* SensorDataParser::getWheelPowerCSeries() const {
+const SensorDataParser::WheelPowerCCsvSeries* SensorDataParser::getWheelPowerCSeries() const {
     return &_wheelPowerCSeries;
 }
 
-const SensorDataParser::WheelPowerDSeries* SensorDataParser::getWheelPowerDSeries() const {
+const SensorDataParser::WheelPowerDCsvSeries* SensorDataParser::getWheelPowerDSeries() const {
     return &_wheelPowerDSeries;
 }
 
-const SensorDataParser::WheelPowerESeries* SensorDataParser::getWheelPowerESeries() const {
+const SensorDataParser::WheelPowerECsvSeries* SensorDataParser::getWheelPowerESeries() const {
     return &_wheelPowerESeries;
 }
 
-const SensorDataParser::WheelPowerFSeries* SensorDataParser::getWheelPowerFSeries() const {
+const SensorDataParser::WheelPowerFCsvSeries* SensorDataParser::getWheelPowerFSeries() const {
     return &_wheelPowerFSeries;
 }
 
-const SensorDataParser::ImuRearYawSeries* SensorDataParser::getImuRearYawSeries() const {
+const SensorDataParser::ImuRearYawCsvSeries* SensorDataParser::getImuRearYawSeries() const {
     return &_imuRearYawSeries;
 }
 
-const SensorDataParser::ImuRearPitchSeries* SensorDataParser::getImuRearPitchSeries() const {
+const SensorDataParser::ImuRearPitchCsvSeries* SensorDataParser::getImuRearPitchSeries() const {
     return &_imuRearPitchSeries;
 }
 
-const SensorDataParser::ImuRearRollSeries* SensorDataParser::getImuRearRollSeries() const {
+const SensorDataParser::ImuRearRollCsvSeries* SensorDataParser::getImuRearRollSeries() const {
     return &_imuRearRollSeries;
 }
 
-const SensorDataParser::ImuFrontYawSeries* SensorDataParser::getImuFrontYawSeries() const {
+const SensorDataParser::ImuFrontYawCsvSeries* SensorDataParser::getImuFrontYawSeries() const {
     return &_imuFrontYawSeries;
 }
 
-const SensorDataParser::ImuFrontPitchSeries* SensorDataParser::getImuFrontPitchSeries() const {
+const SensorDataParser::ImuFrontPitchCsvSeries* SensorDataParser::getImuFrontPitchSeries() const {
     return &_imuFrontPitchSeries;
 }
 
-const SensorDataParser::ImuFrontRollSeries* SensorDataParser::getImuFrontRollSeries() const {
+const SensorDataParser::ImuFrontRollCsvSeries* SensorDataParser::getImuFrontRollSeries() const {
     return &_imuFrontRollSeries;
 }
 

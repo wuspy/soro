@@ -28,8 +28,8 @@ QVariant CsvDataSeries::getValue() const {
     return _value;
 }
 
-qint64 CsvDataSeries::getValueAge() const {
-    return QDateTime::currentDateTime().toMSecsSinceEpoch() - _valueTime;
+qint64 CsvDataSeries::getValueTime() const {
+    return _valueTime;
 }
 
 void CsvDataSeries::update(QVariant value) {
@@ -71,7 +71,7 @@ bool CsvRecorder::startLog(QDateTime loggedStartTime) {
         *_fileStream << "\n";
 
         foreach (const CsvDataSeries* column, _columns) {
-            *_fileStream << column->getSeriesName() << "," << column->getSeriesName() << " (age),";
+            *_fileStream << column->getSeriesName() << "," << column->getSeriesName() << " (timestamp),";
         }
         *_fileStream << "\n";
 
@@ -130,6 +130,7 @@ void CsvRecorder::addColumn(const CsvDataSeries *series) {
     }
     if (!_columns.contains(series)) {
         _columns.append(series);
+        _columnDataTimestamps.insert(series, -1);
     }
 }
 
@@ -140,6 +141,7 @@ void CsvRecorder::removeColumn(const CsvDataSeries *series) {
     }
     if (_columns.contains(series)) {
         _columns.removeAll(series);
+        _columnDataTimestamps.remove(series);
     }
 }
 
@@ -149,6 +151,7 @@ void CsvRecorder::clearColumns() {
         return;
     }
     _columns.clear();
+    _columnDataTimestamps.clear();
 }
 
 void CsvRecorder::timerEvent(QTimerEvent *e) {
@@ -156,7 +159,13 @@ void CsvRecorder::timerEvent(QTimerEvent *e) {
 
     if ((e->timerId() == _updateTimerId) && _fileStream) {
         foreach (const CsvDataSeries *column, _columns) {
-            *_fileStream << column->getValue().toString() << "," << column->getValueAge() << ",";
+            if ((_columnDataTimestamps.value(column) != column->getValueTime()) || column->shouldKeepOldValues()) {
+                *_fileStream << column->getValue().toString() << "," << (column->getValueTime() - _logStartTime) << ",";
+                _columnDataTimestamps.insert(column, column->getValueTime());
+            }
+            else {
+                *_fileStream << ",,";
+            }
         }
         *_fileStream << "\n";
     }

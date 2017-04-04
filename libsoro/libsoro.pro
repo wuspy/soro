@@ -56,7 +56,7 @@ SOURCES += \
     audioformat.cpp \
     csvrecorder.cpp \
     sensordataparser.cpp \
-    gpsdataseries.cpp
+    gpscsvseries.cpp
 
 HEADERS += \
     latlng.h \
@@ -91,4 +91,4 @@ HEADERS += \
     audioformat.h \
     csvrecorder.h \
     sensordataparser.h \
-    gpsdataseries.h
+    gpscsvseries.h

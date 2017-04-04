@@ -1,5 +1,5 @@
-#ifndef MBEDDATAPARSER_H
-#define MBEDDATAPARSER_H
+#ifndef SENSORDATAPARSER_H
+#define SENSORDATAPARSER_H
 
 #include "soro_global.h"
 #include "mbedchannel.h"
@@ -31,53 +31,65 @@ public:
     static const char DATATAG_IMUDATA_FRONT_ROLL = 'R';
     static const char DATATAG_ERROR = '?';
 
-    class WheelPowerASeries : public CsvDataSeries { friend class SensorDataParser;
+    class WheelPowerACsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Wheel A Power"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_A) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_A) CsvDataSeries::update(QVariant(value)); }
     };
-    class WheelPowerBSeries : public CsvDataSeries { friend class SensorDataParser;
+    class WheelPowerBCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Wheel B Power"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_B) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_B) CsvDataSeries::update(QVariant(value)); }
     };
-    class WheelPowerCSeries : public CsvDataSeries { friend class SensorDataParser;
+    class WheelPowerCCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Wheel C Power"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_C) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_C) CsvDataSeries::update(QVariant(value)); }
     };
-    class WheelPowerDSeries : public CsvDataSeries { friend class SensorDataParser;
+    class WheelPowerDCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Wheel D Power"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_D) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_D) CsvDataSeries::update(QVariant(value)); }
     };
-    class WheelPowerESeries : public CsvDataSeries { friend class SensorDataParser;
+    class WheelPowerECsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Wheel E Power"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_E) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_E) CsvDataSeries::update(QVariant(value)); }
     };
-    class WheelPowerFSeries : public CsvDataSeries { friend class SensorDataParser;
+    class WheelPowerFCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Wheel F Power"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_F) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_WHEELPOWER_F) CsvDataSeries::update(QVariant(value)); }
     };
-    class ImuRearYawSeries : public CsvDataSeries { friend class SensorDataParser;
+    class ImuRearYawCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Rear Yaw"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_REAR_YAW) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_REAR_YAW) CsvDataSeries::update(QVariant(value)); }
     };
-    class ImuRearPitchSeries : public CsvDataSeries { friend class SensorDataParser;
+    class ImuRearPitchCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Rear Pitch"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_REAR_PITCH) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_REAR_PITCH) CsvDataSeries::update(QVariant(value)); }
     };
-    class ImuRearRollSeries : public CsvDataSeries { friend class SensorDataParser;
+    class ImuRearRollCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Rear Roll"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_REAR_ROLL) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_REAR_ROLL) CsvDataSeries::update(QVariant(value)); }
     };
-    class ImuFrontYawSeries : public CsvDataSeries { friend class SensorDataParser;
+    class ImuFrontYawCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Front Yaw"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_FRONT_YAW) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_FRONT_YAW) CsvDataSeries::update(QVariant(value)); }
     };
-    class ImuFrontPitchSeries : public CsvDataSeries { friend class SensorDataParser;
+    class ImuFrontPitchCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Front Pitch"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_FRONT_PITCH) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_FRONT_PITCH) CsvDataSeries::update(QVariant(value)); }
     };
-    class ImuFrontRollSeries : public CsvDataSeries { friend class SensorDataParser;
+    class ImuFrontRollCsvSeries : public CsvDataSeries { friend class SensorDataParser;
     public:     QString getSeriesName() const { return "Front Roll"; }
-    private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_FRONT_ROLL) CsvDataSeries::update(QVariant(value)); }
+                bool shouldKeepOldValues() const { return true; }
+    //private:    void update(char tag, int value) { if (tag == DATATAG_IMUDATA_FRONT_ROLL) CsvDataSeries::update(QVariant(value)); }
     };
 
     explicit SensorDataParser(QObject *parent=0);
@@ -85,35 +97,35 @@ public:
     bool isValidTag(char c);
     QString getSeriesName() const;
 
-    const WheelPowerASeries* getWheelPowerASeries() const;
-    const WheelPowerBSeries* getWheelPowerBSeries() const;
-    const WheelPowerCSeries* getWheelPowerCSeries() const;
-    const WheelPowerDSeries* getWheelPowerDSeries() const;
-    const WheelPowerESeries* getWheelPowerESeries() const;
-    const WheelPowerFSeries* getWheelPowerFSeries() const;
-    const ImuRearYawSeries* getImuRearYawSeries() const;
-    const ImuRearPitchSeries* getImuRearPitchSeries() const;
-    const ImuRearRollSeries* getImuRearRollSeries() const;
-    const ImuFrontYawSeries* getImuFrontYawSeries() const;
-    const ImuFrontPitchSeries* getImuFrontPitchSeries() const;
-    const ImuFrontRollSeries* getImuFrontRollSeries() const;
+    const WheelPowerACsvSeries* getWheelPowerASeries() const;
+    const WheelPowerBCsvSeries* getWheelPowerBSeries() const;
+    const WheelPowerCCsvSeries* getWheelPowerCSeries() const;
+    const WheelPowerDCsvSeries* getWheelPowerDSeries() const;
+    const WheelPowerECsvSeries* getWheelPowerESeries() const;
+    const WheelPowerFCsvSeries* getWheelPowerFSeries() const;
+    const ImuRearYawCsvSeries* getImuRearYawSeries() const;
+    const ImuRearPitchCsvSeries* getImuRearPitchSeries() const;
+    const ImuRearRollCsvSeries* getImuRearRollSeries() const;
+    const ImuFrontYawCsvSeries* getImuFrontYawSeries() const;
+    const ImuFrontPitchCsvSeries* getImuFrontPitchSeries() const;
+    const ImuFrontRollCsvSeries* getImuFrontRollSeries() const;
 
 private:
     QByteArray _buffer;
-    WheelPowerASeries _wheelPowerASeries;
-    WheelPowerBSeries _wheelPowerBSeries;
-    WheelPowerCSeries _wheelPowerCSeries;
-    WheelPowerDSeries _wheelPowerDSeries;
-    WheelPowerESeries _wheelPowerESeries;
-    WheelPowerFSeries _wheelPowerFSeries;
-    ImuRearYawSeries _imuRearYawSeries;
-    ImuRearPitchSeries _imuRearPitchSeries;
-    ImuRearRollSeries _imuRearRollSeries;
-    ImuFrontYawSeries _imuFrontYawSeries;
-    ImuFrontPitchSeries _imuFrontPitchSeries;
-    ImuFrontRollSeries _imuFrontRollSeries;
+    WheelPowerACsvSeries _wheelPowerASeries;
+    WheelPowerBCsvSeries _wheelPowerBSeries;
+    WheelPowerCCsvSeries _wheelPowerCSeries;
+    WheelPowerDCsvSeries _wheelPowerDSeries;
+    WheelPowerECsvSeries _wheelPowerESeries;
+    WheelPowerFCsvSeries _wheelPowerFSeries;
+    ImuRearYawCsvSeries _imuRearYawSeries;
+    ImuRearPitchCsvSeries _imuRearPitchSeries;
+    ImuRearRollCsvSeries _imuRearRollSeries;
+    ImuFrontYawCsvSeries _imuFrontYawSeries;
+    ImuFrontPitchCsvSeries _imuFrontPitchSeries;
+    ImuFrontRollCsvSeries _imuFrontRollSeries;
 
-    void parseBuffer(bool logErrors);
+    void parseBuffer();
 
 public slots:
     void newData(const char* data, int len);
@@ -125,4 +137,4 @@ signals:
 
 } // namespace Soro
 
-#endif // MBEDDATAPARSER_H
+#endif // SENSORDATAPARSER_H

@@ -23,7 +23,7 @@
 #include "libsoro/audioclient.h"
 #include "libsoro/videoformat.h"
 #include "libsoro/sensordataparser.h"
-#include "libsoro/gpsdataseries.h"
+#include "libsoro/gpscsvseries.h"
 #include "libsoro/csvrecorder.h"
 
 #include "libsorogst/audioplayer.h"
@@ -33,9 +33,9 @@
 #include "libsoromc/cameracontrolsystem.h"
 
 #include "researchmainwindow.h"
-#include "latencyseries.h"
-#include "connectioneventseries.h"
-#include "commentseries.h"
+#include "latencycsvseries.h"
+#include "connectioneventcsvseries.h"
+#include "commentcsvseries.h"
 #include "settingsmodel.h"
 
 namespace Soro {
@@ -80,10 +80,10 @@ private:
     Soro::Gst::AudioPlayer *_audioPlayer = nullptr;
 
     SensorDataParser *_sensorDataSeries = nullptr;
-    GpsDataSeries *_gpsDataSeries = nullptr;
-    ConnectionEventSeries *_connectionEventSeries = nullptr;
-    LatencySeries *_latencyDataSeries = nullptr;
-    CommentSeries *_commentDataSeries = nullptr;
+    GpsCsvSeries *_gpsDataSeries = nullptr;
+    ConnectionEventCsvSeries *_connectionEventSeries = nullptr;
+    LatencyCsvSeries *_latencyDataSeries = nullptr;
+    CommentCsvSeries *_commentDataSeries = nullptr;
 
     CsvRecorder *_dataRecorder = nullptr;
     qint64 _recordStartTime;
