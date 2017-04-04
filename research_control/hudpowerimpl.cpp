@@ -233,7 +233,7 @@ void HudPowerImpl::paint(QPainter *painter) {
     flPath.lineTo(width() / 5, height() / 4);
     flPath.lineTo(0, height() / 4);
     flPath.closeSubpath();
-    painter->fillPath(flPath, QBrush(_wheelFLPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + flRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::darkGray));
+    painter->fillPath(flPath, QBrush(_wheelFLPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + flRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::white));
 
     // Draw FR wheel
     QPainterPath frPath;
@@ -243,7 +243,7 @@ void HudPowerImpl::paint(QPainter *painter) {
     frPath.lineTo(width() - width() / 5, height() / 4);
     frPath.lineTo(width(), height() / 4);
     frPath.closeSubpath();
-    painter->fillPath(frPath, QBrush(_wheelFRPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + frRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::darkGray));
+    painter->fillPath(frPath, QBrush(_wheelFRPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + frRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::white));
 
     // Draw ML wheel
     QPainterPath mlPath;
@@ -253,7 +253,7 @@ void HudPowerImpl::paint(QPainter *painter) {
     mlPath.lineTo(width() / 5, height() * 5 / 8);
     mlPath.lineTo(0, height() * 5 / 8);
     mlPath.closeSubpath();
-    painter->fillPath(mlPath, QBrush(_wheelMLPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + mlRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::darkGray));
+    painter->fillPath(mlPath, QBrush(_wheelMLPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + mlRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::white));
 
     // Draw MR wheel
     QPainterPath mrPath;
@@ -263,7 +263,7 @@ void HudPowerImpl::paint(QPainter *painter) {
     mrPath.lineTo(width() - width() / 5, height() * 5 / 8);
     mrPath.lineTo(width(), height() * 5 / 8);
     mrPath.closeSubpath();
-    painter->fillPath(mrPath, QBrush(_wheelMRPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + mrRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::darkGray));
+    painter->fillPath(mrPath, QBrush(_wheelMRPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + mrRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::white));
 
     // Draw BL wheel
     QPainterPath blPath;
@@ -273,7 +273,7 @@ void HudPowerImpl::paint(QPainter *painter) {
     blPath.lineTo(width() / 5, height() - height() / 4);
     blPath.lineTo(0, height() - height() / 4);
     blPath.closeSubpath();
-    painter->fillPath(blPath, QBrush(_wheelBLPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + blRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::darkGray));
+    painter->fillPath(blPath, QBrush(_wheelBLPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + blRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::white));
 
     // Draw BR wheel
     QPainterPath brPath;
@@ -283,7 +283,7 @@ void HudPowerImpl::paint(QPainter *painter) {
     brPath.lineTo(width() - width() / 5, height() - height() / 4);
     brPath.lineTo(width(), height() - height() / 4);
     brPath.closeSubpath();
-    painter->fillPath(brPath, QBrush(_wheelBRPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + brRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::darkGray));
+    painter->fillPath(brPath, QBrush(_wheelBRPower > 0 ? QColor::fromHsvF(_wheelColorBaselineHue + brRatio * hueRange, _wheelColorSaturation, _wheelColorValue) : Qt::white));
 }
 
 } // namespace MissionControl

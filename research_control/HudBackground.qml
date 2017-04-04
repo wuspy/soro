@@ -25,7 +25,7 @@ Item {
         id: backdrop
         anchors.fill: parent
         anchors.margins: 16
-        color: "#34000000"
+        color: "#64000000"
         radius: 10
     }
 }
