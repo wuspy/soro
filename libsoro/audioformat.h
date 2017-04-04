@@ -23,7 +23,7 @@ public:
 
     QString toHumanReadableString() const Q_DECL_OVERRIDE;
     QString createGstEncodingArgs() const Q_DECL_OVERRIDE;
-    QString createGstDecodingArgs() const Q_DECL_OVERRIDE;
+    QString createGstDecodingArgs(DecodingType type=DecodingType_Full) const Q_DECL_OVERRIDE;
 
     AudioFormat::Encoding getEncoding() const;
     quint32 getBitrate() const;

@@ -42,7 +42,8 @@ SOURCES +=\
         missioncontrolnetwork.cpp \
         videocontrolwidget.cpp \
     stereocamerawidget.cpp \
-    qquickgstreamersurface.cpp
+    qquickgstreamersurface.cpp \
+    gstreamerrecorder.cpp
 
 HEADERS +=\
         soro_missioncontrol_global.h \
@@ -60,7 +61,8 @@ HEADERS +=\
         videocontrolwidget.h \
         util.h \
     stereocamerawidget.h \
-    qquickgstreamersurface.h
+    qquickgstreamersurface.h \
+    gstreamerrecorder.h
 
 FORMS   +=\
         audiocontrolwidget.ui \

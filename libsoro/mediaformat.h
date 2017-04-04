@@ -10,11 +10,19 @@ class MediaFormat {
 
 public:
 
+    enum DecodingType {
+        /* Fully decodes the video to a raw video stream */
+        DecodingType_Full = 0,
+        /* Only decodes the RTP stream to an encoded video stream */
+        DecodingType_RtpDecodeOnly
+    };
+    Q_ENUM(DecodingType)
+
     virtual ~MediaFormat() { }
 
     virtual QString toHumanReadableString() const=0;
     virtual QString createGstEncodingArgs() const=0;
-    virtual QString createGstDecodingArgs() const=0;
+    virtual QString createGstDecodingArgs(DecodingType type=DecodingType_Full) const=0;
 
     virtual bool isUseable() const=0;
 
