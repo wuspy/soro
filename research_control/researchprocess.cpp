@@ -573,7 +573,7 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
     }
     case SharedMessage_Research_StartDataRecording: {
         // Rover has responed that they are starting data recording, start ours
-        if (_dataRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime))) {
+        if (!_dataRecorder->startLog(QDateTime::fromMSecsSinceEpoch(_recordStartTime))) {
             stopDataRecording();
             QMetaObject::invokeMethod(_controlUi,
                                       "notify",

@@ -224,7 +224,7 @@ void ResearchMainWindow::adjustSizeAndPosition() {
                     0
                 );
         ui->hudLatency->move(
-                    width() / 2 - ui->hudLatency->width() / 2 -  _hudParallax,
+                    width() / 2 - ui->hudLatency->width() / 2,
                     0
                 );
         ui->hudLatency2->move(
