@@ -289,7 +289,7 @@ QString VideoFormat::createGstEncodingArgs() const {
     return encString;
 }
 
-QString VideoFormat::createGstDecodingArgs(DecodingType type) const {
+QString VideoFormat::createGstDecodingArgs(VideoFormat::DecodingType type) const {
     switch (_encoding) {
     case Encoding_MPEG2:
         // Same decoding args for all MPEG2 formats

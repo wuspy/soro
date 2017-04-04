@@ -84,8 +84,8 @@ QString AudioFormat::createGstDecodingArgs(DecodingType type) const {
     case Encoding_AC3:
         return QString("application/x-rtp,media=audio,clock-rate=44100,encoding-name=AC3 ! "
                         " ! rtpac3depay")
-                + type != DecodingType_RtpDecodeOnly ?
-                        " ! a52dec" : "";
+                + ((type != DecodingType_RtpDecodeOnly) ?
+                        " ! a52dec" : "";)
     default:
         // unknown codec
         LOG_E(LOG_TAG, "Unknown audio encoding");
