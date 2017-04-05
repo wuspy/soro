@@ -27,8 +27,8 @@ public:
     void setFrontRoll(float frontRoll);
 
 private:
-    float _frontRoll = 0;
-    float _rearRoll = 0;
+    float _frontRoll = 500;
+    float _rearRoll = 500;
 };
 
 } // namespace MissionControl

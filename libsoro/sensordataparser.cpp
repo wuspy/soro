@@ -61,9 +61,13 @@ void SensorDataParser::parseBuffer() {
             _imuRearYawSeries.update(QVariant(data));
             break;
         case DATATAG_IMUDATA_REAR_PITCH:
+            // P: [ 100 - 800 ] -> [ -90, 90 ]
+            //data = (data - 100) * (180/800) - 90;
             _imuRearPitchSeries.update(QVariant(data));
             break;
         case DATATAG_IMUDATA_REAR_ROLL:
+            // R: [ 100 - 900 ] -> [ -180, 180 ]
+            //data = (data - 100) * (360/800) - 180;
             _imuRearRollSeries.update(QVariant(data));
             break;
         case DATATAG_IMUDATA_FRONT_YAW:
@@ -71,12 +75,12 @@ void SensorDataParser::parseBuffer() {
             break;
         case DATATAG_IMUDATA_FRONT_PITCH:
             // P: [ 100 - 800 ] -> [ -90, 90 ]
-            data = (data - 100) * (180/800) - 90;
+            //data = (data - 100) * (180/800) - 90;
             _imuFrontPitchSeries.update(QVariant(data));
             break;
         case DATATAG_IMUDATA_FRONT_ROLL:
             // R: [ 100 - 900 ] -> [ -180, 180 ]
-            data = (data - 100) * (360/800) - 180;
+            //data = (data - 100) * (360/800) - 180;
             _imuFrontRollSeries.update(QVariant(data));
             break;
         default:
@@ -86,7 +90,7 @@ void SensorDataParser::parseBuffer() {
             parseBuffer();
             return;
         }
-
+        LOG_I(LOG_TAG, "Got value " + QString::number(data) + " for tag " + QChar(tag));
         emit dataParsed(tag, data);
         _buffer.remove(0, 4);
         parseBuffer();

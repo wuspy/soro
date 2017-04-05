@@ -123,41 +123,33 @@ void ResearchMainWindow::sensorUpdate(char tag, int value) {
         ui->hudPower->rootObject()->setProperty("wheelBLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelBLPower", value);
         break;
-    case SensorDataParser::DATATAG_IMUDATA_REAR_YAW:
+    /*case SensorDataParser::DATATAG_IMUDATA_REAR_YAW:
         ui->hudOrientationBack->rootObject()->setProperty("rearYaw", value);
         ui->hudOrientationBack2->rootObject()->setProperty("rearYaw", value);
         ui->hudOrientationSide->rootObject()->setProperty("rearYaw", value);
         ui->hudOrientationSide2->rootObject()->setProperty("rearYaw", value);
-        break;
+        break;*/
     case SensorDataParser::DATATAG_IMUDATA_REAR_PITCH:
-        ui->hudOrientationBack->rootObject()->setProperty("rearPitch", value);
-        ui->hudOrientationBack2->rootObject()->setProperty("rearPitch", value);
         ui->hudOrientationSide->rootObject()->setProperty("rearPitch", value);
         ui->hudOrientationSide2->rootObject()->setProperty("rearPitch", value);
         break;
     case SensorDataParser::DATATAG_IMUDATA_REAR_ROLL:
         ui->hudOrientationBack->rootObject()->setProperty("rearRoll", value);
         ui->hudOrientationBack2->rootObject()->setProperty("rearRoll", value);
-        ui->hudOrientationSide->rootObject()->setProperty("rearRoll", value);
-        ui->hudOrientationSide2->rootObject()->setProperty("rearRoll", value);
         break;
-    case SensorDataParser::DATATAG_IMUDATA_FRONT_YAW:
+    /*case SensorDataParser::DATATAG_IMUDATA_FRONT_YAW:
         ui->hudOrientationBack->rootObject()->setProperty("frontYaw", value);
         ui->hudOrientationBack2->rootObject()->setProperty("frontYaw", value);
         ui->hudOrientationSide->rootObject()->setProperty("frontYaw", value);
         ui->hudOrientationSide2->rootObject()->setProperty("frontYaw", value);
-        break;
+        break;*/
     case SensorDataParser::DATATAG_IMUDATA_FRONT_PITCH:
-        ui->hudOrientationBack->rootObject()->setProperty("frontPitch", value);
-        ui->hudOrientationBack2->rootObject()->setProperty("frontPitch", value);
         ui->hudOrientationSide->rootObject()->setProperty("frontPitch", value);
         ui->hudOrientationSide2->rootObject()->setProperty("frontPitch", value);
         break;
     case SensorDataParser::DATATAG_IMUDATA_FRONT_ROLL:
         ui->hudOrientationBack->rootObject()->setProperty("frontRoll", value);
         ui->hudOrientationBack2->rootObject()->setProperty("frontRoll", value);
-        ui->hudOrientationSide->rootObject()->setProperty("frontRoll", value);
-        ui->hudOrientationSide2->rootObject()->setProperty("frontRoll", value);
         break;
     }
 }

@@ -30,18 +30,6 @@ void HudOrientationSideImpl::paint(QPainter *painter) {
 
     int wheelSize = height() / 4;
 
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(QBrush(Qt::white));
-
-    // Draw back wheel
-    painter->drawEllipse(QRectF(0, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
-
-    // Draw middle wheel
-    painter->drawEllipse(QRectF(width() / 2 - wheelSize / 2, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
-
-    // Draw front wheel
-    painter->drawEllipse(QRectF(width() - wheelSize, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
-
     QPen pen;
     pen.setColor(Qt::white);
     pen.setWidth(height() / 40);
@@ -57,6 +45,20 @@ void HudOrientationSideImpl::paint(QPainter *painter) {
     mfPath.moveTo(width() / 2, height() / 2);
     mfPath.lineTo(width() - wheelSize / 2, height() / 2);
     painter->strokePath(mfPath, pen);
+
+    painter->setPen(Qt::NoPen);
+
+    // Draw back wheel
+    painter->setBrush(QBrush(Qt::blue));
+    painter->drawEllipse(QRectF(0, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+
+    // Draw middle wheel
+    painter->setBrush(QBrush(Qt::green));
+    painter->drawEllipse(QRectF(width() / 2 - wheelSize / 2, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+
+    // Draw front wheel
+    painter->setBrush(QBrush(Qt::red));
+    painter->drawEllipse(QRectF(width() - wheelSize, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
 }
 
 void HudOrientationSideImpl::setFrontPitch(float frontPitch) {
