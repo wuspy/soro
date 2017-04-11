@@ -90,7 +90,7 @@ void SensorDataParser::parseBuffer() {
             parseBuffer();
             return;
         }
-        LOG_I(LOG_TAG, "Got value " + QString::number(data) + " for tag " + QChar(tag));
+        //LOG_I(LOG_TAG, "Got value " + QString::number(data) + " for tag " + QChar(tag));
         emit dataParsed(tag, data);
         _buffer.remove(0, 4);
         parseBuffer();

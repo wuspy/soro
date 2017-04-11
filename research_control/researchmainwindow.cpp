@@ -77,6 +77,7 @@ void ResearchMainWindow::closeEvent(QCloseEvent *event) {
 }
 
 void ResearchMainWindow::zeroHudOrientation() {
+    qDebug() << "Zeroing values";
     ui->hudOrientationBack->rootObject()->setProperty(
                 "frontRollZero",
                 ui->hudOrientationBack->rootObject()->property("frontRoll"));

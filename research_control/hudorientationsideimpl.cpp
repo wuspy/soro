@@ -15,18 +15,23 @@
  */
 
 #include "hudorientationsideimpl.h"
+#include <qmath.h>
 
 namespace Soro {
 namespace MissionControl {
 
 HudOrientationSideImpl::HudOrientationSideImpl(QQuickItem *parent): AbstractHudOrientationImpl(parent)
 {
-    _frontPitch = _frontPitchZero = 500;
-    _rearPitch = _rearPitchZero = 500;
+    _frontPitch = _frontPitchZero = 400;
+    _rearPitch = _rearPitchZero = 400;
 }
 
 float HudOrientationSideImpl::pitchToDegrees(float pitch, float pitchZero) {
-    return 1.5 * -((pitch - (pitchZero - 500) - 100.0) * (180.0/800.0) - 90.0);
+    return 1.3 * -((pitch - (pitchZero - 500) - 100.0) * (180.0/800.0) - 90.0);
+}
+
+float HudOrientationSideImpl::degToRad(float deg) {
+    return M_PI * deg / 180;
 }
 
 void HudOrientationSideImpl::paint(QPainter *painter) {
@@ -40,11 +45,11 @@ void HudOrientationSideImpl::paint(QPainter *painter) {
 
     QPointF backCenter, middleCenter, frontCenter;
 
-    backCenter.setX(width() / 2 - cos(pitchToDegrees(-_rearPitch, -_rearPitchZero)) * (width() / 2 - wheelSize / 2));
-    backCenter.setY(width() / 2 - sin(pitchToDegrees(-_rearPitch, -_rearPitchZero)) * (width() / 2 - wheelSize / 2));
+    backCenter.setX(width() / 2 - cos(degToRad(pitchToDegrees(_rearPitch, _rearPitchZero))) * (width() / 2 - wheelSize / 2));
+    backCenter.setY(width() / 2 - sin(degToRad(pitchToDegrees(_rearPitch, _rearPitchZero))) * (width() / 2 - wheelSize / 2));
 
-    frontCenter.setX(width() / 2 + cos(pitchToDegrees(_frontPitch, _frontPitchZero)) * (width() / 2 - wheelSize / 2));
-    frontCenter.setY(width() / 2 + sin(pitchToDegrees(_frontPitch, _frontPitchZero)) * (width() / 2 - wheelSize / 2));
+    frontCenter.setX(width() / 2 + cos(degToRad(pitchToDegrees(_frontPitch, _frontPitchZero))) * (width() / 2 - wheelSize / 2));
+    frontCenter.setY(width() / 2 + sin(degToRad(pitchToDegrees(_frontPitch, _frontPitchZero))) * (width() / 2 - wheelSize / 2));
 
     middleCenter.setX(width() / 2);
     middleCenter.setY(height() / 2);

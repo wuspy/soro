@@ -37,6 +37,7 @@ public:
 
 private:
     float pitchToDegrees(float pitch, float pitchZero);
+    float degToRad(float deg);
 
     float _rearPitch;
     float _frontPitch;
