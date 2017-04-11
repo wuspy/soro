@@ -31,6 +31,7 @@
 #include "libsoromc/camerawidget.h"
 #include "libsoromc/drivecontrolsystem.h"
 #include "libsoromc/cameracontrolsystem.h"
+#include "libsoromc/gstreamerrecorder.h"
 
 #include "researchmainwindow.h"
 #include "latencycsvseries.h"
@@ -75,9 +76,15 @@ private:
     VideoClient *_monoVideoClient = nullptr;
     VideoClient *_aux1VideoClient = nullptr;
 
+    GStreamerRecorder *_stereoLGStreamerRecorder = nullptr;
+    GStreamerRecorder *_stereoRGStreamerRecorder = nullptr;
+    GStreamerRecorder *_monoGStreamerRecorder = nullptr;
+    GStreamerRecorder *_aux1GStreamerRecorder = nullptr;
+
     // Audio stream subsystem
     AudioClient *_audioClient = nullptr;
     Soro::Gst::AudioPlayer *_audioPlayer = nullptr;
+    GStreamerRecorder *_audioGStreamerRecorder = nullptr;
 
     SensorDataParser *_sensorDataSeries = nullptr;
     GpsCsvSeries *_gpsDataSeries = nullptr;

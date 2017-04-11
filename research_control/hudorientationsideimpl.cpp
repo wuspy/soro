@@ -21,7 +21,8 @@ namespace MissionControl {
 
 HudOrientationSideImpl::HudOrientationSideImpl(QQuickItem *parent): AbstractHudOrientationImpl(parent)
 {
-
+    _frontPitch = _frontPitchZero = 0;
+    _rearPitch = _rearPitchZero = 0;
 }
 
 void HudOrientationSideImpl::paint(QPainter *painter) {
@@ -79,6 +80,23 @@ float HudOrientationSideImpl::getRearPitch() const {
     return _rearPitch;
 }
 
+void HudOrientationSideImpl::setFrontPitchZero(float frontPitchZero) {
+    _frontPitchZero = frontPitchZero;
+    update();
+}
+
+float HudOrientationSideImpl::getFrontPitchZero() const {
+    return _frontPitchZero;
+}
+
+void HudOrientationSideImpl::setRearPitchZero(float rearPitchZero) {
+    _rearPitchZero = rearPitchZero;
+    update();
+}
+
+float HudOrientationSideImpl::getRearPitchZero() const {
+    return _rearPitchZero;
+}
 
 } // namespace MissionControl
 } // namespace Soro

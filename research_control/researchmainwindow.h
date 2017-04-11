@@ -40,6 +40,7 @@ public slots:
     void setHudParallax(int parallax);
     void setHudVisible(bool visible);
     void setHudLatency(int latency);
+    void zeroHudOrientation();
 
 protected:
     void closeEvent(QCloseEvent *event);

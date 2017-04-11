@@ -15,6 +15,9 @@ class HudOrientationSideImpl: public AbstractHudOrientationImpl
     Q_OBJECT
     Q_PROPERTY(float frontPitch READ getFrontPitch WRITE setFrontPitch)
     Q_PROPERTY(float rearPitch READ getRearPitch WRITE setRearPitch)
+    Q_PROPERTY(float frontPitchZero READ getFrontPitchZero WRITE setFrontPitchZero)
+    Q_PROPERTY(float rearPitchZero READ getRearPitchZero WRITE setRearPitchZero)
+
 public:
     HudOrientationSideImpl(QQuickItem *parent=0);
 
@@ -26,9 +29,18 @@ public:
     void setRearPitch(float rearPitch);
     float getRearPitch() const;
 
+    void setFrontPitchZero(float frontPitchZero);
+    float getFrontPitchZero() const;
+
+    void setRearPitchZero(float rearPitchZero);
+    float getRearPitchZero() const;
+
 private:
-    float _rearPitch = 0;
-    float _frontPitch = 0;
+    float _rearPitch;
+    float _frontPitch;
+
+    float _rearPitchZero;
+    float _frontPitchZero;
 };
 
 } // namespace MissionControl

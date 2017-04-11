@@ -76,6 +76,34 @@ void ResearchMainWindow::closeEvent(QCloseEvent *event) {
     emit closed();
 }
 
+void ResearchMainWindow::zeroHudOrientation() {
+    ui->hudOrientationBack->rootObject()->setProperty(
+                "frontRollZero",
+                ui->hudOrientationBack->rootObject()->property("frontRoll"));
+    ui->hudOrientationBack->rootObject()->setProperty(
+                "rearRollZero",
+                ui->hudOrientationBack->rootObject()->property("rearRoll"));
+    ui->hudOrientationBack2->rootObject()->setProperty(
+                "frontRollZero",
+                ui->hudOrientationBack2->rootObject()->property("frontRoll"));
+    ui->hudOrientationBack2->rootObject()->setProperty(
+                "rearRollZero",
+                ui->hudOrientationBack2->rootObject()->property("rearRoll"));
+
+    ui->hudOrientationSide->rootObject()->setProperty(
+                "frontPitchZero",
+                ui->hudOrientationSide->rootObject()->property("frontPitch"));
+    ui->hudOrientationSide->rootObject()->setProperty(
+                "rearPitchZero",
+                ui->hudOrientationSide->rootObject()->property("rearPitch"));
+    ui->hudOrientationSide2->rootObject()->setProperty(
+                "frontPitchZero",
+                ui->hudOrientationSide2->rootObject()->property("frontPitch"));
+    ui->hudOrientationSide2->rootObject()->setProperty(
+                "rearPitchZero",
+                ui->hudOrientationSide2->rootObject()->property("rearPitch"));
+}
+
 void ResearchMainWindow::gamepadPoll() {
     float x = 0, y = 0;
     switch (_driveSystem->getMode()) {
@@ -123,12 +151,6 @@ void ResearchMainWindow::sensorUpdate(char tag, int value) {
         ui->hudPower->rootObject()->setProperty("wheelBLPower", value);
         ui->hudPower2->rootObject()->setProperty("wheelBLPower", value);
         break;
-    /*case SensorDataParser::DATATAG_IMUDATA_REAR_YAW:
-        ui->hudOrientationBack->rootObject()->setProperty("rearYaw", value);
-        ui->hudOrientationBack2->rootObject()->setProperty("rearYaw", value);
-        ui->hudOrientationSide->rootObject()->setProperty("rearYaw", value);
-        ui->hudOrientationSide2->rootObject()->setProperty("rearYaw", value);
-        break;*/
     case SensorDataParser::DATATAG_IMUDATA_REAR_PITCH:
         ui->hudOrientationSide->rootObject()->setProperty("rearPitch", value);
         ui->hudOrientationSide2->rootObject()->setProperty("rearPitch", value);
@@ -137,12 +159,6 @@ void ResearchMainWindow::sensorUpdate(char tag, int value) {
         ui->hudOrientationBack->rootObject()->setProperty("rearRoll", value);
         ui->hudOrientationBack2->rootObject()->setProperty("rearRoll", value);
         break;
-    /*case SensorDataParser::DATATAG_IMUDATA_FRONT_YAW:
-        ui->hudOrientationBack->rootObject()->setProperty("frontYaw", value);
-        ui->hudOrientationBack2->rootObject()->setProperty("frontYaw", value);
-        ui->hudOrientationSide->rootObject()->setProperty("frontYaw", value);
-        ui->hudOrientationSide2->rootObject()->setProperty("frontYaw", value);
-        break;*/
     case SensorDataParser::DATATAG_IMUDATA_FRONT_PITCH:
         ui->hudOrientationSide->rootObject()->setProperty("frontPitch", value);
         ui->hudOrientationSide2->rootObject()->setProperty("frontPitch", value);

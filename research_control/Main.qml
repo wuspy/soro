@@ -119,6 +119,7 @@ ApplicationWindow {
     signal settingsApplied()
     signal logCommentEntered(string comment)
     signal recordButtonClicked()
+    signal zeroOrientationButtonClicked()
     signal closed()
 
     // Public functions
@@ -760,7 +761,6 @@ ApplicationWindow {
 
                     Label {
                         id: hudLatencyLabel
-                        y: 27
                         width: 100
                         text: qsTr("HUD Latency (ms)")
                         anchors.verticalCenter: hudLatencySpinBox.verticalCenter
@@ -781,6 +781,17 @@ ApplicationWindow {
                         onValueChanged: settingsFooterPane.state = "visible"
                     }
 
+                    Button {
+                        id: hudOrientationZeroButton
+                        width: 200
+                        text: qsTr("Zero Orientation");
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: hudLatencySpinBox.bottom
+                        anchors.topMargin: 8
+
+                        onClicked: zeroOrientationButtonClicked()
+                    }
+
                     Label {
                         id: interfaceNotesLabel
                         text: qsTr("<b>Stereo UI</b> renders the interface in side-by-side stereo.  Video will not be streamed in stereo unless the 'Stereo Video' option is also selected.<br><br><b>HUD Parallax</b> changes the how far away the HUD appears to the viewer in stereo mode. Lower values make it appear farther away, and higher values make it appear closer.<br><br><b>HUD Latency</b> adds extra latency to the HUD latency visualizer if needed to better sync it with the actual rover response.")
@@ -789,7 +800,7 @@ ApplicationWindow {
                         anchors.rightMargin: 0
                         anchors.left: parent.left
                         anchors.leftMargin: 0
-                        anchors.top: hudLatencySpinBox.bottom
+                        anchors.top: hudOrientationZeroButton.bottom
                         anchors.topMargin: 8
                         wrapMode: Text.WordWrap
                         verticalAlignment: Text.AlignBottom

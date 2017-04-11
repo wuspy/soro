@@ -5,21 +5,27 @@
 namespace Soro {
 namespace MissionControl {
 
-GStreamerRecorder::GStreamerRecorder(SocketAddress videoAddress, QString name, QObject *parent) : QObject(parent)
+GStreamerRecorder::GStreamerRecorder(SocketAddress mediaAddress, QString name, QObject *parent) : QObject(parent)
 {
     _name = name;
-    _videoAddress = videoAddress;
+    _mediaAddress = mediaAddress;
 }
 
-void GStreamerRecorder::begin(VideoFormat format, qint64 timestamp) {
+void GStreamerRecorder::begin(const MediaFormat* format, qint64 timestamp) {
     stop();
-    QString binStr = QString("udpsrc host=%1 port=%2 ! %3 ! filesink locaiton=%4../research_videos/%5_%6.raw").arg(
-                _videoAddress.host.toString(),
-                QString::number(_videoAddress.port),
-                format.createGstDecodingArgs(VideoFormat::DecodingType_RtpDecodeOnly),
-                QCoreApplication::applicationDirPath(),
-                QString::number(timestamp),
-                _name);
+    QString binStr = QString("udpsrc host=%1 port=%2 ! %3 ! %4").arg(
+                _mediaAddress.host.toString(),
+                QString::number(_mediaAddress.port),
+                format->createGstDecodingArgs(VideoFormat::DecodingType_RtpDecodeOnly),
+                format->createGstFileRecordingArgs(
+                    QString("%1../research_media/%2_%3_%4.%5").arg(
+                        QCoreApplication::applicationDirPath(),
+                        QString::number(timestamp),
+                        _name,
+                        format->toHumanReadableString(),
+                        format->getFileExtension())
+                    )
+                );
 
     _pipeline = QGst::Pipeline::create();
 

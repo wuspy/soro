@@ -24,6 +24,9 @@ public:
     QString toHumanReadableString() const Q_DECL_OVERRIDE;
     QString createGstEncodingArgs() const Q_DECL_OVERRIDE;
     QString createGstDecodingArgs(DecodingType type=DecodingType_Full) const Q_DECL_OVERRIDE;
+    QString getEncodingName() const Q_DECL_OVERRIDE;
+    QString createGstFileRecordingArgs(QString fileName) const Q_DECL_OVERRIDE;
+    QString getFileExtension() const Q_DECL_OVERRIDE;
 
     AudioFormat::Encoding getEncoding() const;
     quint32 getBitrate() const;

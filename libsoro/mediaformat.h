@@ -23,6 +23,9 @@ public:
     virtual QString toHumanReadableString() const=0;
     virtual QString createGstEncodingArgs() const=0;
     virtual QString createGstDecodingArgs(DecodingType type=DecodingType_Full) const=0;
+    virtual QString getEncodingName() const=0;
+    virtual QString createGstFileRecordingArgs(QString fileName) const=0;
+    virtual QString getFileExtension() const=0;
 
     virtual bool isUseable() const=0;
 

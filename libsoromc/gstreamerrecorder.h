@@ -17,20 +17,16 @@ class GStreamerRecorder : public QObject
 {
     Q_OBJECT
 public:
-    explicit GStreamerRecorder(SocketAddress videoAddress, QString name, QObject *parent=0);
+    explicit GStreamerRecorder(SocketAddress mediaAddress, QString name, QObject *parent=0);
 
-    void begin(VideoFormat format, qint64 timestamp);
+    void begin(const MediaFormat* format, qint64 timestamp);
     void stop();
-
-signals:
-
-public slots:
 
 private:
     QGst::PipelinePtr _pipeline;
     QGst::BinPtr _bin;
     QString _name;
-    SocketAddress _videoAddress;
+    SocketAddress _mediaAddress;
 
 };
 

@@ -323,6 +323,57 @@ QString VideoFormat::createGstDecodingArgs(VideoFormat::DecodingType type) const
     }
 }
 
+QString VideoFormat::getFileExtension() const {
+    switch (_encoding) {
+    case Encoding_MPEG4:
+        return "mp4";
+    case Encoding_H264:
+        return "avi";
+    case Encoding_MJPEG:
+        return "avi";
+    case Encoding_VP8:
+        return "webm";
+    case Encoding_H265:
+        return "mkv";
+    default:
+        return "";
+    }
+}
+
+QString VideoFormat::getEncodingName() const {
+    switch (_encoding) {
+    case Encoding_MPEG4:
+        return "mpeg4";
+    case Encoding_H264:
+        return "h264";
+    case Encoding_MJPEG:
+        return "mjpeg";
+    case Encoding_VP8:
+        return "vp8";
+    case Encoding_H265:
+        return "h265";
+    default:
+        return "";
+    }
+}
+
+QString VideoFormat::createGstFileRecordingArgs(QString fileName) const {
+    switch (_encoding) {
+    case Encoding_MPEG4:
+        return QString("mp4mux ! queue ! filesink location=%1").arg(fileName);
+    case Encoding_H264:
+        return QString("avimux ! queue ! filesink location=%1").arg(fileName);
+    case Encoding_MJPEG:
+        return QString("avimux ! queue ! filesink location=%1").arg(fileName);
+    case Encoding_VP8:
+        return QString("webmmux ! queue ! filesink location=%1").arg(fileName);
+    case Encoding_H265:
+        return QString("matroskamux ! queue ! filesink location=%1");
+    default:
+        return "";
+    }
+}
+
 QString VideoFormat::serialize() const {
     QString serial;
     serial += QString::number(static_cast<qint32>(_encoding)) + "_";

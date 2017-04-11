@@ -84,6 +84,12 @@ void ResearchControlProcess::init() {
     _monoVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT));
     _monoVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_MR_CAMERA_PORT));
 
+    // Create file recorders
+    _stereoLGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT), "StereoLeft", this);
+    _stereoRGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT), "StereoRight", this);
+    _aux1GStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT), "Aux1", this);
+    _monoGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT), "Mono", this);
+
     LOG_I(LOG_TAG, "***************Initializing Audio system******************");
 
     _audioClient = new AudioClient(MEDIAID_AUDIO, SocketAddress(_settings.roverAddress, NETWORK_ALL_AUDIO_PORT), QHostAddress::Any, this);
@@ -92,6 +98,7 @@ void ResearchControlProcess::init() {
     connect(_audioClient, &AudioClient::stateChanged, this, &ResearchControlProcess::audioClientStateChanged);
 
     _audioPlayer = new Soro::Gst::AudioPlayer(this);
+    _audioGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT), "Audio", this);
 
     LOG_I(LOG_TAG, "***************Initializing Data Recording system******************");
 
@@ -152,6 +159,7 @@ void ResearchControlProcess::init() {
     connect(_controlUi, SIGNAL(requestUiSync()), this, SLOT(ui_requestUiSync()));
     connect(_controlUi, SIGNAL(settingsApplied()), this, SLOT(ui_settingsApplied()));
     connect (_controlUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
+    connect(_controlUi, SIGNAL(zeroOrientationButtonClicked()), _mainUi, SLOT(zeroHudOrientation()));
     connect (_commentsUi, SIGNAL(recordButtonClicked()), this, SLOT(ui_toggleDataRecordButtonClicked()));
 
     connect(_sensorDataSeries, &SensorDataParser::dataParsed, _mainUi, &ResearchMainWindow::sensorUpdate);
@@ -311,14 +319,28 @@ void ResearchControlProcess::ui_settingsApplied() {
 }
 
 void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaClient::State state) {
+    // Stop all file recordings
+    _stereoLGStreamerRecorder->stop();
+    _stereoRGStreamerRecorder->stop();
+    _monoGStreamerRecorder->stop();
+    _aux1GStreamerRecorder->stop();
+
     if ((client == _stereoLVideoClient) || (client == _stereoRVideoClient)) {
         if ((_stereoLVideoClient->getState() == MediaClient::StreamingState) &&
                 (_stereoRVideoClient->getState() == MediaClient::StreamingState)) {
-            // Only play the stream once both left and right cameras are streaming
+            // Stereo L/R cameras are streaming
+
+            VideoFormat stereoLFormat = _stereoLVideoClient->getVideoFormat();
+            VideoFormat stereoRFormat = _stereoRVideoClient->getVideoFormat();
             _mainUi->getCameraWidget()->playStereo(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT),
-                                               _stereoLVideoClient->getVideoFormat(),
+                                               stereoLFormat,
                                                SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT),
-                                               _stereoRVideoClient->getVideoFormat());
+                                               stereoRFormat);
+            // Record streams
+            qint64 timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
+            _stereoLGStreamerRecorder->begin(&stereoLFormat, timestamp);
+            _stereoRGStreamerRecorder->begin(&stereoRFormat, timestamp);
+
             if (!_settings.enableStereoUi || !_settings.enableStereoVideo) {
                 LOG_E(LOG_TAG, "Video clients are playing stereo, but UI is not in stereo mode");
                 _settings.enableStereoUi = true;
@@ -328,28 +350,40 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
         }
     }
     else if ((client == _aux1VideoClient) && (_aux1VideoClient->getState() == MediaClient::StreamingState)) {
+        // Aux1 camera is streaming
+
+        VideoFormat aux1Format = _aux1VideoClient->getVideoFormat();
         if (_settings.enableStereoUi) {
             _mainUi->getCameraWidget()->playStereo(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT),
-                                             _aux1VideoClient->getVideoFormat(),
+                                             aux1Format,
                                              SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1R_CAMERA_PORT),
-                                             _aux1VideoClient->getVideoFormat());
+                                             aux1Format);
         }
         else {
             _mainUi->getCameraWidget()->playMono(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT),
-                                             _aux1VideoClient->getVideoFormat());
+                                             aux1Format);
         }
+
+        // Record stream
+        _aux1GStreamerRecorder->begin(&aux1Format, QDateTime::currentDateTime().toMSecsSinceEpoch());
     }
     else if ((client == _monoVideoClient) && (_monoVideoClient->getState() == MediaClient::StreamingState)) {
+        // Mono camera is streaming
+
+        VideoFormat monoFormat = _monoVideoClient->getVideoFormat();
         if (_settings.enableStereoUi) {
             _mainUi->getCameraWidget()->playStereo(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT),
-                                             _monoVideoClient->getVideoFormat(),
+                                             monoFormat,
                                              SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_MR_CAMERA_PORT),
-                                             _monoVideoClient->getVideoFormat());
+                                             monoFormat);
         }
         else {
             _mainUi->getCameraWidget()->playMono(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT),
-                                             _monoVideoClient->getVideoFormat());
+                                             monoFormat);
         }
+
+        // Record stream
+        _monoGStreamerRecorder->begin(&monoFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
     }
 
     if (state == MediaClient::StreamingState) {
@@ -371,14 +405,18 @@ void ResearchControlProcess::audioClientStateChanged(MediaClient *client, MediaC
     Q_UNUSED(client);
 
     switch (state) {
-    case AudioClient::StreamingState:
+    case AudioClient::StreamingState: {
+        AudioFormat audioFormat = _audioClient->getAudioFormat();
         _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT),
-                           _audioClient->getAudioFormat());
+                           audioFormat);
+        _audioGStreamerRecorder->begin(&audioFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
         _settings.enableAudio = true;
         _settings.syncUi(_controlUi);
         break;
+    }
     case AudioClient::ConnectingState:
         _audioPlayer->stop();
+        _audioGStreamerRecorder->stop();
         _settings.enableAudio = false;
         _settings.syncUi(_controlUi);
         break;

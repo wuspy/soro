@@ -35,6 +35,33 @@ quint32 AudioFormat::getBitrate() const {
     return _bitrate;
 }
 
+QString AudioFormat::getEncodingName() const {
+    switch (_encoding) {
+    case Encoding_AC3:
+        return "ac3";
+    default:
+        return "";
+    }
+}
+
+QString AudioFormat::getFileExtension() const {
+    switch (_encoding) {
+    case Encoding_AC3:
+        return "ac3";
+    default:
+        return "";
+    }
+}
+
+QString AudioFormat::createGstFileRecordingArgs(QString fileName) const {
+    switch (_encoding) {
+    case Encoding_AC3:
+        return QString("queue ! filesink location=%1").arg(fileName);
+    default:
+        return "";
+    }
+}
+
 void AudioFormat::setEncoding(AudioFormat::Encoding encoding) {
     _encoding = encoding;
 }

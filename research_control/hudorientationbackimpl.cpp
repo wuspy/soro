@@ -21,7 +21,8 @@ namespace MissionControl {
 
 HudOrientationBackImpl::HudOrientationBackImpl(QQuickItem *parent): AbstractHudOrientationImpl(parent)
 {
-
+    _frontRoll = _frontRollZero = 500;
+    _rearRoll = _rearRollZero = 500;
 }
 
 void HudOrientationBackImpl::paint(QPainter *painter) {
@@ -32,7 +33,7 @@ void HudOrientationBackImpl::paint(QPainter *painter) {
     //
     painter->resetTransform();
     painter->translate(width() / 2, height() / 2);
-    painter->rotate(1.5 * -((_frontRoll - 100.0) * (180.0/800.0) - 90.0));
+    painter->rotate(1.5 * -((_frontRoll - (_frontRollZero - 500) - 100.0) * (180.0/800.0) - 90.0));
 
     QPen pen3;
     pen3.setColor(Qt::red);
@@ -70,7 +71,7 @@ void HudOrientationBackImpl::paint(QPainter *painter) {
     //
     painter->resetTransform();
     painter->translate(width() / 2, height() / 2);
-    painter->rotate(1.5 * -((_rearRoll - 100.0) * (180.0/800.0) - 90.0));
+    painter->rotate(1.5 * -((_rearRoll - (_rearRollZero - 500) - 100.0) * (180.0/800.0) - 90.0));
 
     QPen pen2;
     pen2.setColor(Qt::green);
@@ -162,6 +163,24 @@ float HudOrientationBackImpl::getFrontRoll() const {
 
 void HudOrientationBackImpl::setFrontRoll(float frontRoll) {
     _frontRoll = frontRoll;
+    update();
+}
+
+float HudOrientationBackImpl::getRearRollZero() const {
+    return _rearRollZero;
+}
+
+void HudOrientationBackImpl::setRearRollZero(float rearRollZero) {
+    _rearRollZero = rearRollZero;
+    update();
+}
+
+float HudOrientationBackImpl::getFrontRollZero() const {
+    return _frontRollZero;
+}
+
+void HudOrientationBackImpl::setFrontRollZero(float frontRollZero) {
+    _frontRollZero = frontRollZero;
     update();
 }
 
