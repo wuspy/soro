@@ -5,19 +5,21 @@
 namespace Soro {
 namespace MissionControl {
 
-GStreamerRecorder::GStreamerRecorder(QObject *parent) : QObject(parent)
+GStreamerRecorder::GStreamerRecorder(SocketAddress videoAddress, QString name, QObject *parent) : QObject(parent)
 {
-
+    _name = name;
+    _videoAddress = videoAddress;
 }
 
-void GStreamerRecorder::begin(VideoFormat format, SocketAddress address) {
+void GStreamerRecorder::begin(VideoFormat format, qint64 timestamp) {
     stop();
-    QString binStr = QString("udpsrc host=%1 port=%2 ! %3 ! filesink locaiton=%4../research_videos/%5.raw").arg(
-                address.host.toString(),
-                QString::number(address.port),
+    QString binStr = QString("udpsrc host=%1 port=%2 ! %3 ! filesink locaiton=%4../research_videos/%5_%6.raw").arg(
+                _videoAddress.host.toString(),
+                QString::number(_videoAddress.port),
                 format.createGstDecodingArgs(VideoFormat::DecodingType_RtpDecodeOnly),
                 QCoreApplication::applicationDirPath(),
-                QString::number(QDateTime::currentDateTime().toMSecsSinceEpoch()));
+                QString::number(timestamp),
+                _name);
 
     _pipeline = QGst::Pipeline::create();
 

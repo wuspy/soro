@@ -112,7 +112,7 @@ quint32 VideoFormat::getResolutionWidth() const {
     case Resolution_2560x1440:  return 2560;
     case Resolution_3840x2160:  return 3840;
     default:
-        LOG_E(LOG_TAG, "Unknown _resolution value, returning 1280x720 default");
+        LOG_E(LOG_TAG, "Unknown resolution value, returning 1280x720 default");
         return 1280;
     }
 }
@@ -160,8 +160,8 @@ QString VideoFormat::toHumanReadableString() const {
     switch (_encoding) {
     case Encoding_Null:
         return "No Video";
-    case Encoding_MPEG2:
-        return QString("MPEG2 %1x%2@%3 (%4K)").arg(
+    case Encoding_MPEG4:
+        return QString("MP4 %1x%2@%3 (%4K)").arg(
                     QString::number(getResolutionWidth()),
                     QString::number(getResolutionHeight()),
                     framerate,
@@ -237,12 +237,12 @@ QString VideoFormat::createGstEncodingArgs() const {
                 );
 
     switch (_encoding) {
-    case Encoding_MPEG2:
+    case Encoding_MPEG4:
         encString += QString(
                         "avenc_mpeg4 bitrate=%1 bitrate-tolerance=%2 max-threads=%3 ! "
                         "rtpmp4vpay config-interval=3 pt=96"
                     ).arg(
-                        QString::number(bitrate),  // mpeg2 has bitrate in bit/sec
+                        QString::number(bitrate),  // mpeg4 has bitrate in bit/sec
                         QString::number(bitrate / 4),
                         QString::number(_maxThreads)
                     );
@@ -291,8 +291,7 @@ QString VideoFormat::createGstEncodingArgs() const {
 
 QString VideoFormat::createGstDecodingArgs(VideoFormat::DecodingType type) const {
     switch (_encoding) {
-    case Encoding_MPEG2:
-        // Same decoding args for all MPEG2 formats
+    case Encoding_MPEG4:
         return QString("application/x-rtp,media=video,encoding-name=MP4V-ES,clock-rate=90000,profile-level-id=1,payload=96"
                         " ! rtpmp4vdepay")
                 + ((type != DecodingType_RtpDecodeOnly) ?

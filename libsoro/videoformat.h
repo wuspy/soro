@@ -12,7 +12,7 @@ public:
 
     enum Encoding {
         Encoding_Null = -1,
-        Encoding_MPEG2,
+        Encoding_MPEG4,
         Encoding_MJPEG,
         Encoding_H264,
         Encoding_VP8,
