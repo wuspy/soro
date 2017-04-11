@@ -36,6 +36,8 @@ public:
     float getRearPitchZero() const;
 
 private:
+    float pitchToDegrees(float pitch, float pitchZero);
+
     float _rearPitch;
     float _frontPitch;
 

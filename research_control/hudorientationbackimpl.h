@@ -36,6 +36,8 @@ public:
     void setFrontRollZero(float frontRollZero);
 
 private:
+    float rollToDegrees(float roll, float rollZero);
+
     float _frontRollZero;
     float _rearRollZero;
 

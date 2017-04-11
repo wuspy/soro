@@ -25,64 +25,68 @@ HudOrientationBackImpl::HudOrientationBackImpl(QQuickItem *parent): AbstractHudO
     _rearRoll = _rearRollZero = 500;
 }
 
+float HudOrientationBackImpl::rollToDegrees(float roll, float rollZero) {
+    return 1.5 * -((roll - (rollZero - 500) - 100.0) * (180.0/800.0) - 90.0);
+}
+
 void HudOrientationBackImpl::paint(QPainter *painter) {
     painter->setRenderHint(QPainter::Antialiasing);
 
     //
-    // Draw FRONT wheel
+    // Draw FRONT wheels
     //
     painter->resetTransform();
     painter->translate(width() / 2, height() / 2);
-    painter->rotate(1.5 * -((_frontRoll - (_frontRollZero - 500) - 100.0) * (180.0/800.0) - 90.0));
+    painter->rotate(rollToDegrees(_frontRoll, _frontRollZero));
 
     QPen pen3;
-    pen3.setColor(Qt::red);
+    pen3.setColor(QColor("#d50000"));
     pen3.setWidth(width() / 20);
     painter->setPen(pen3);
 
-    // Draw front axel
-    QPainterPath frontAxelPath3;
-    frontAxelPath3.moveTo(width() * 2 / 5 - pen3.width() - (width() / 2), 0);
-    frontAxelPath3.lineTo((width() / 2) - width() * 2 / 5 + pen3.width(), 0);
-    painter->drawPath(frontAxelPath3);
+    // Draw axel
+    QPainterPath axelPath3;
+    axelPath3.moveTo(width() * 2 / 5 - pen3.width() - (width() / 2), 0);
+    axelPath3.lineTo((width() / 2) - width() * 2 / 5 + pen3.width(), 0);
+    painter->drawPath(axelPath3);
 
-    // Draw FL wheel
-    QPainterPath flPath3;
-    flPath3.moveTo(-width() / 2, height() * 4 / 15 - (height() / 2));
-    flPath3.lineTo(width() / 5 - (width() / 2), height() * 4 / 15 - (height() / 2));
-    flPath3.lineTo(width() * 2 / 5 - (width() / 2), 0);
-    flPath3.lineTo(width() / 5 - (width() / 2), height() * 11 / 15 - (height() / 2));
-    flPath3.lineTo(-width() / 2, height() * 11 / 15 - (height() / 2));
-    flPath3.closeSubpath();
-    painter->fillPath(flPath3, QBrush(Qt::red));
+    // Draw left wheel
+    QPainterPath lPath3;
+    lPath3.moveTo(-width() / 2, height() * 4 / 15 - (height() / 2));
+    lPath3.lineTo(width() / 5 - (width() / 2), height() * 4 / 15 - (height() / 2));
+    lPath3.lineTo(width() * 2 / 5 - (width() / 2), 0);
+    lPath3.lineTo(width() / 5 - (width() / 2), height() * 11 / 15 - (height() / 2));
+    lPath3.lineTo(-width() / 2, height() * 11 / 15 - (height() / 2));
+    lPath3.closeSubpath();
+    painter->fillPath(lPath3, QBrush(QColor("#d50000")));
 
-    // Draw FR wheel
-    QPainterPath frPath3;
-    frPath3.moveTo(width() / 2, height() * 4 / 15 - (height() / 2));
-    frPath3.lineTo(width() / 2 - width() / 5, height() * 4 / 15 - (height() / 2));
-    frPath3.lineTo(width() / 2 - width() * 2 / 5, 0);
-    frPath3.lineTo(width() / 2 - width() / 5, height() * 11 / 15 - (height() / 2));
-    frPath3.lineTo(width() / 2, height()  * 11 / 15 - (height() / 2));
-    frPath3.closeSubpath();
-    painter->fillPath(frPath3, QBrush(Qt::red));
+    // Draw right wheel
+    QPainterPath rPath3;
+    rPath3.moveTo(width() / 2, height() * 4 / 15 - (height() / 2));
+    rPath3.lineTo(width() / 2 - width() / 5, height() * 4 / 15 - (height() / 2));
+    rPath3.lineTo(width() / 2 - width() * 2 / 5, 0);
+    rPath3.lineTo(width() / 2 - width() / 5, height() * 11 / 15 - (height() / 2));
+    rPath3.lineTo(width() / 2, height()  * 11 / 15 - (height() / 2));
+    rPath3.closeSubpath();
+    painter->fillPath(rPath3, QBrush(QColor("#d50000")));
 
     //
-    // Draw MIDDLE wheel
+    // Draw MIDDLE wheels
     //
     painter->resetTransform();
     painter->translate(width() / 2, height() / 2);
-    painter->rotate(1.5 * -((_rearRoll - (_rearRollZero - 500) - 100.0) * (180.0/800.0) - 90.0));
+    painter->rotate(rollToDegrees(_rearRoll, _rearRollZero));
 
     QPen pen2;
-    pen2.setColor(Qt::green);
+    pen2.setColor(QColor("#00C853"));
     pen2.setWidth(width() / 20);
     painter->setPen(pen2);
 
-    // Draw front axel
-    QPainterPath frontAxelPath2;
-    frontAxelPath2.moveTo(width() * 2 / 5 - pen2.width() - (width() / 2), 0);
-    frontAxelPath2.lineTo((width() / 2) - width() * 2 / 5 + pen2.width(), 0);
-    painter->drawPath(frontAxelPath2);
+    // Draw axel
+    QPainterPath axelPath2;
+    axelPath2.moveTo(width() * 2 / 5 - pen2.width() - (width() / 2), 0);
+    axelPath2.lineTo((width() / 2) - width() * 2 / 5 + pen2.width(), 0);
+    painter->drawPath(axelPath2);
 
     // Draw mast
     QPainterPath mastPath;
@@ -90,62 +94,62 @@ void HudOrientationBackImpl::paint(QPainter *painter) {
     mastPath.lineTo(0, -height() / 2);
     painter->drawPath(mastPath);
 
-    // Draw FL wheel
-    QPainterPath flPath2;
-    flPath2.moveTo(-width() / 2, height() * 4 / 15 - (height() / 2));
-    flPath2.lineTo(width() / 5 - (width() / 2), height() * 4 / 15 - (height() / 2));
-    flPath2.lineTo(width() * 2 / 5 - (width() / 2), 0);
-    flPath2.lineTo(width() / 5 - (width() / 2), height() * 11 / 15 - (height() / 2));
-    flPath2.lineTo(-width() / 2, height() * 11 / 15 - (height() / 2));
-    flPath2.closeSubpath();
-    painter->fillPath(flPath2, QBrush(Qt::green));
+    // Draw left wheel
+    QPainterPath lPath2;
+    lPath2.moveTo(-width() / 2, height() * 4 / 15 - (height() / 2));
+    lPath2.lineTo(width() / 5 - (width() / 2), height() * 4 / 15 - (height() / 2));
+    lPath2.lineTo(width() * 2 / 5 - (width() / 2), 0);
+    lPath2.lineTo(width() / 5 - (width() / 2), height() * 11 / 15 - (height() / 2));
+    lPath2.lineTo(-width() / 2, height() * 11 / 15 - (height() / 2));
+    lPath2.closeSubpath();
+    painter->fillPath(lPath2, QBrush(QColor("#00C853")));
 
-    // Draw FR wheel
-    QPainterPath frPath2;
-    frPath2.moveTo(width() / 2, height() * 4 / 15 - (height() / 2));
-    frPath2.lineTo(width() / 2 - width() / 5, height() * 4 / 15 - (height() / 2));
-    frPath2.lineTo(width() / 2 - width() * 2 / 5, 0);
-    frPath2.lineTo(width() / 2 - width() / 5, height() * 11 / 15 - (height() / 2));
-    frPath2.lineTo(width() / 2, height()  * 11 / 15 - (height() / 2));
-    frPath2.closeSubpath();
-    painter->fillPath(frPath2, QBrush(Qt::green));
+    // Draw right wheel
+    QPainterPath rPath2;
+    rPath2.moveTo(width() / 2, height() * 4 / 15 - (height() / 2));
+    rPath2.lineTo(width() / 2 - width() / 5, height() * 4 / 15 - (height() / 2));
+    rPath2.lineTo(width() / 2 - width() * 2 / 5, 0);
+    rPath2.lineTo(width() / 2 - width() / 5, height() * 11 / 15 - (height() / 2));
+    rPath2.lineTo(width() / 2, height()  * 11 / 15 - (height() / 2));
+    rPath2.closeSubpath();
+    painter->fillPath(rPath2, QBrush(QColor("#00C853")));
 
     //
-    // Draw BACK wheel
+    // Draw BACK wheels
     //
     painter->resetTransform();
     painter->translate(width() / 2, height() / 2);
 
     QPen pen;
-    pen.setColor(Qt::blue);
+    pen.setColor(QColor("#2962FF"));
     pen.setWidth(width() / 20);
     painter->setPen(pen);
 
-    // Draw front axel
-    QPainterPath frontAxelPath;
-    frontAxelPath.moveTo(width() * 2 / 5 - pen.width() - (width() / 2), 0);
-    frontAxelPath.lineTo((width() / 2) - width() * 2 / 5 + pen.width(), 0);
-    painter->drawPath(frontAxelPath);
+    // Draw axel
+    QPainterPath axelPath;
+    axelPath.moveTo(width() * 2 / 5 - pen.width() - (width() / 2), 0);
+    axelPath.lineTo((width() / 2) - width() * 2 / 5 + pen.width(), 0);
+    painter->drawPath(axelPath);
 
-    // Draw FL wheel
-    QPainterPath flPath;
-    flPath.moveTo(-width() / 2, height() * 4 / 15 - (height() / 2));
-    flPath.lineTo(width() / 5 - (width() / 2), height() * 4 / 15 - (height() / 2));
-    flPath.lineTo(width() * 2 / 5 - (width() / 2), 0);
-    flPath.lineTo(width() / 5 - (width() / 2), height() * 11 / 15 - (height() / 2));
-    flPath.lineTo(-width() / 2, height() * 11 / 15 - (height() / 2));
-    flPath.closeSubpath();
-    painter->fillPath(flPath, QBrush(Qt::blue));
+    // Draw left wheel
+    QPainterPath lPath;
+    lPath.moveTo(-width() / 2, height() * 4 / 15 - (height() / 2));
+    lPath.lineTo(width() / 5 - (width() / 2), height() * 4 / 15 - (height() / 2));
+    lPath.lineTo(width() * 2 / 5 - (width() / 2), 0);
+    lPath.lineTo(width() / 5 - (width() / 2), height() * 11 / 15 - (height() / 2));
+    lPath.lineTo(-width() / 2, height() * 11 / 15 - (height() / 2));
+    lPath.closeSubpath();
+    painter->fillPath(lPath, QBrush(QColor("#2962FF")));
 
-    // Draw FR wheel
-    QPainterPath frPath;
-    frPath.moveTo(width() / 2, height() * 4 / 15 - (height() / 2));
-    frPath.lineTo(width() / 2 - width() / 5, height() * 4 / 15 - (height() / 2));
-    frPath.lineTo(width() / 2 - width() * 2 / 5, 0);
-    frPath.lineTo(width() / 2 - width() / 5, height() * 11 / 15 - (height() / 2));
-    frPath.lineTo(width() / 2, height()  * 11 / 15 - (height() / 2));
-    frPath.closeSubpath();
-    painter->fillPath(frPath, QBrush(Qt::blue));
+    // Draw right wheel
+    QPainterPath rPath;
+    rPath.moveTo(width() / 2, height() * 4 / 15 - (height() / 2));
+    rPath.lineTo(width() / 2 - width() / 5, height() * 4 / 15 - (height() / 2));
+    rPath.lineTo(width() / 2 - width() * 2 / 5, 0);
+    rPath.lineTo(width() / 2 - width() / 5, height() * 11 / 15 - (height() / 2));
+    rPath.lineTo(width() / 2, height()  * 11 / 15 - (height() / 2));
+    rPath.closeSubpath();
+    painter->fillPath(rPath, QBrush(QColor("#2962FF")));
 }
 
 float HudOrientationBackImpl::getRearRoll() const {

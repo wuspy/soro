@@ -21,13 +21,16 @@ namespace MissionControl {
 
 HudOrientationSideImpl::HudOrientationSideImpl(QQuickItem *parent): AbstractHudOrientationImpl(parent)
 {
-    _frontPitch = _frontPitchZero = 0;
-    _rearPitch = _rearPitchZero = 0;
+    _frontPitch = _frontPitchZero = 500;
+    _rearPitch = _rearPitchZero = 500;
+}
+
+float HudOrientationSideImpl::pitchToDegrees(float pitch, float pitchZero) {
+    return 1.5 * -((pitch - (pitchZero - 500) - 100.0) * (180.0/800.0) - 90.0);
 }
 
 void HudOrientationSideImpl::paint(QPainter *painter) {
     painter->setRenderHint(QPainter::Antialiasing);
-    //painter->rotate(90);
 
     int wheelSize = height() / 4;
 
@@ -35,31 +38,42 @@ void HudOrientationSideImpl::paint(QPainter *painter) {
     pen.setColor(Qt::white);
     pen.setWidth(height() / 40);
 
+    QPointF backCenter, middleCenter, frontCenter;
+
+    backCenter.setX(width() / 2 - cos(pitchToDegrees(-_rearPitch, -_rearPitchZero)) * (width() / 2 - wheelSize / 2));
+    backCenter.setY(width() / 2 - sin(pitchToDegrees(-_rearPitch, -_rearPitchZero)) * (width() / 2 - wheelSize / 2));
+
+    frontCenter.setX(width() / 2 + cos(pitchToDegrees(_frontPitch, _frontPitchZero)) * (width() / 2 - wheelSize / 2));
+    frontCenter.setY(width() / 2 + sin(pitchToDegrees(_frontPitch, _frontPitchZero)) * (width() / 2 - wheelSize / 2));
+
+    middleCenter.setX(width() / 2);
+    middleCenter.setY(height() / 2);
+
     // Draw connecting line from back to middle wheel
     QPainterPath bmPath;
-    bmPath.moveTo(wheelSize / 2, height() / 2);
-    bmPath.lineTo(width() / 2, height() / 2);
+    bmPath.moveTo(backCenter.x(), backCenter.y());
+    bmPath.lineTo(middleCenter.x(), middleCenter.y());
     painter->strokePath(bmPath, pen);
 
     // Draw connecting line from middle to front wheel
     QPainterPath mfPath;
-    mfPath.moveTo(width() / 2, height() / 2);
-    mfPath.lineTo(width() - wheelSize / 2, height() / 2);
+    mfPath.moveTo(middleCenter.x(), middleCenter.y());
+    mfPath.lineTo(frontCenter.x(), frontCenter.y());
     painter->strokePath(mfPath, pen);
 
     painter->setPen(Qt::NoPen);
 
     // Draw back wheel
-    painter->setBrush(QBrush(Qt::blue));
-    painter->drawEllipse(QRectF(0, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+    painter->setBrush(QBrush(QColor("#2962FF")));
+    painter->drawEllipse(QRectF(backCenter.x() - wheelSize / 2, backCenter.y() - wheelSize / 2, wheelSize, wheelSize));
 
     // Draw middle wheel
-    painter->setBrush(QBrush(Qt::green));
-    painter->drawEllipse(QRectF(width() / 2 - wheelSize / 2, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+    painter->setBrush(QBrush(QColor("#00C853")));
+    painter->drawEllipse(QRectF(middleCenter.x() - wheelSize / 2, middleCenter.y() - wheelSize / 2, wheelSize, wheelSize));
 
     // Draw front wheel
-    painter->setBrush(QBrush(Qt::red));
-    painter->drawEllipse(QRectF(width() - wheelSize, height() / 2 - wheelSize / 2, wheelSize, wheelSize));
+    painter->setBrush(QBrush(QColor("#d50000")));
+    painter->drawEllipse(QRectF(frontCenter.x() - wheelSize / 2, frontCenter.y() - wheelSize / 2, wheelSize, wheelSize));
 }
 
 void HudOrientationSideImpl::setFrontPitch(float frontPitch) {
