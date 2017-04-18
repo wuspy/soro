@@ -21,12 +21,10 @@ import Soro 1.0
 Item {
     property bool halfWidth: false;
 
-    property alias rearYaw: impl.rearYaw
-    property alias rearPitch: impl.rearPitch
     property alias rearRoll: impl.rearRoll
-    property alias frontYaw: impl.frontYaw
-    property alias frontPitch: impl.frontPitch
     property alias frontRoll: impl.frontRoll
+    property alias frontRollZero: impl.frontRollZero
+    property alias rearRollZero: impl.rearRollZero
 
     width: height
     opacity: 0.8

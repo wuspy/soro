@@ -320,10 +320,10 @@ void ResearchControlProcess::ui_settingsApplied() {
 
 void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaClient::State state) {
     // Stop all file recordings
-    _stereoLGStreamerRecorder->stop();
-    _stereoRGStreamerRecorder->stop();
-    _monoGStreamerRecorder->stop();
-    _aux1GStreamerRecorder->stop();
+    //_stereoLGStreamerRecorder->stop();
+    //_stereoRGStreamerRecorder->stop();
+    //_monoGStreamerRecorder->stop();
+    //_aux1GStreamerRecorder->stop();
 
     if ((client == _stereoLVideoClient) || (client == _stereoRVideoClient)) {
         if ((_stereoLVideoClient->getState() == MediaClient::StreamingState) &&
@@ -338,8 +338,8 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
                                                stereoRFormat);
             // Record streams
             qint64 timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
-            _stereoLGStreamerRecorder->begin(&stereoLFormat, timestamp);
-            _stereoRGStreamerRecorder->begin(&stereoRFormat, timestamp);
+            //_stereoLGStreamerRecorder->begin(&stereoLFormat, timestamp);
+            //_stereoRGStreamerRecorder->begin(&stereoRFormat, timestamp);
 
             if (!_settings.enableStereoUi || !_settings.enableStereoVideo) {
                 LOG_E(LOG_TAG, "Video clients are playing stereo, but UI is not in stereo mode");
@@ -365,7 +365,7 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
         }
 
         // Record stream
-        _aux1GStreamerRecorder->begin(&aux1Format, QDateTime::currentDateTime().toMSecsSinceEpoch());
+        //_aux1GStreamerRecorder->begin(&aux1Format, QDateTime::currentDateTime().toMSecsSinceEpoch());
     }
     else if ((client == _monoVideoClient) && (_monoVideoClient->getState() == MediaClient::StreamingState)) {
         // Mono camera is streaming
@@ -383,7 +383,7 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
         }
 
         // Record stream
-        _monoGStreamerRecorder->begin(&monoFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
+        //_monoGStreamerRecorder->begin(&monoFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
     }
 
     if (state == MediaClient::StreamingState) {
@@ -409,14 +409,14 @@ void ResearchControlProcess::audioClientStateChanged(MediaClient *client, MediaC
         AudioFormat audioFormat = _audioClient->getAudioFormat();
         _audioPlayer->play(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_AUDIO_PORT),
                            audioFormat);
-        _audioGStreamerRecorder->begin(&audioFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
+        //_audioGStreamerRecorder->begin(&audioFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
         _settings.enableAudio = true;
         _settings.syncUi(_controlUi);
         break;
     }
     case AudioClient::ConnectingState:
         _audioPlayer->stop();
-        _audioGStreamerRecorder->stop();
+        //_audioGStreamerRecorder->stop();
         _settings.enableAudio = false;
         _settings.syncUi(_controlUi);
         break;

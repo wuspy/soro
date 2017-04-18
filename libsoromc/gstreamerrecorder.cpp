@@ -18,14 +18,14 @@ void GStreamerRecorder::begin(const MediaFormat* format, qint64 timestamp) {
                 QString::number(_mediaAddress.port),
                 format->createGstDecodingArgs(VideoFormat::DecodingType_RtpDecodeOnly),
                 format->createGstFileRecordingArgs(
-                    QString("%1../research_media/%2_%3_%4.%5").arg(
+                    QString("\"%1/../research_media/%2_%3.%4\"").arg(
                         QCoreApplication::applicationDirPath(),
                         QString::number(timestamp),
                         _name,
-                        format->toHumanReadableString(),
                         format->getFileExtension())
                     )
                 );
+    qDebug() << binStr;
 
     _pipeline = QGst::Pipeline::create();
 
