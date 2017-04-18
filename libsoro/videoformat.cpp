@@ -204,7 +204,7 @@ QString VideoFormat::createGstEncodingArgs() const {
     switch (_stereoMode) {
     case StereoMode_SideBySide:
         stereoEncString = "videoscale method=0 add-borders=false ! "
-                          "video/x-raw,width=%1,height=%2 ! ";
+                          "video/x-raw,format=I420,width=%1,height=%2 ! ";
         stereoEncString = stereoEncString.arg(QString::number(getWidth()),
                                               QString::number(getHeight()));
         bitrate /= 2;
@@ -216,13 +216,13 @@ QString VideoFormat::createGstEncodingArgs() const {
     if (_framerate > 0) {
         framerateEncString = QString(
                         "videorate ! "
-                        "video/x-raw,framerate=%1/1 ! "
+                        "video/x-raw,format=I420,framerate=%1/1 ! "
                     ).arg(
                         QString::number(_framerate)
                     );
     }
 
-    // Comming encoding params for all codecs
+    // Common encoding params for all codecs
     encString = QString(
                     "videoscale method=0 ! "
                     "video/x-raw,format=I420,width=%1,height=%2 ! "
@@ -320,30 +320,31 @@ QString VideoFormat::createGstEncodingArgs() const {
         return "";
     }
 
+    LOG_I(LOG_TAG, "Requested to create video encoding string: " + encString);
     return encString;
 }
 
 QString VideoFormat::createGstDecodingArgs(VideoFormat::DecodingType type) const {
-    QString bin;
+    QString decString;
     switch (_encoding) {
     case Encoding_MPEG4:
-        bin = QString("application/x-rtp,media=video,encoding-name=MP4V-ES,clock-rate=90000,profile-level-id=1,payload=96"
+        decString = QString("application/x-rtp,media=video,encoding-name=MP4V-ES,clock-rate=90000,profile-level-id=1,payload=96"
                         " ! rtpmp4vdepay");
         break;
     case Encoding_H264:
-        bin = QString("application/x-rtp,media=video,encoding-name=H264,clock-rate=90000,payload=96"
+        decString = QString("application/x-rtp,media=video,encoding-name=H264,clock-rate=90000,payload=96"
                         " ! rtph264depay");
         break;
     case Encoding_MJPEG:
-        bin = QString("application/x-rtp,media=video,encoding-name=JPEG,payload=26"
+        decString = QString("application/x-rtp,media=video,encoding-name=JPEG,payload=26"
                        " ! rtpjpegdepay");
         break;
     case Encoding_VP8:
-        bin = QString("application/x-rtp,media=video,encoding-name=VP8,clock-rate=90000,payload=96"
+        decString = QString("application/x-rtp,media=video,encoding-name=VP8,clock-rate=90000,payload=96"
                        " ! rtpvp8depay");
         break;
     case Encoding_H265:
-        bin = QString("application/x-rtp,media=video,encoding-name=H265,clock-rate=90000,payload=96"
+        decString = QString("application/x-rtp,media=video,encoding-name=H265,clock-rate=90000,payload=96"
                        " ! rtph265depay");
         break;
     default:
@@ -357,35 +358,35 @@ if (type != DecodingType_RtpDecodeOnly) {
 #ifdef USE_VAAPI_DECODE
     switch (_encoding) {
     case Encoding_MJPEG:
-        bin += " ! jpegdec";
+        decString += " ! jpegdec";
         break;
     default:
-        bin += " ! vaapidecode";
+        decString += " ! vaapidecode";
         break;
     }
 #else
     switch (_encoding) {
     case Encoding_MPEG4:
-        bin += " ! avdec_mpeg4";
+        decString += " ! avdec_mpeg4";
         break;
     case Encoding_H264:
-        bin += " ! avdec_h264";
+        decString += " ! avdec_h264";
         break;
     case Encoding_MJPEG:
-        bin += " ! jpegdec";
+        decString += " ! jpegdec";
         break;
     case Encoding_VP8:
-        bin += " ! avdec_vp8";
+        decString += " ! avdec_vp8";
         break;
     case Encoding_H265:
-        bin += " ! avdec_h265";
+        decString += " ! avdec_h265";
         break;
     }
 #endif
 
 }
-
-    return bin;
+    LOG_I(LOG_TAG, "Requested to create video decoding string: " + decString);
+    return decString;
 }
 
 QString VideoFormat::getFileExtension() const {
