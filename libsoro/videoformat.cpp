@@ -204,7 +204,7 @@ QString VideoFormat::createGstEncodingArgs() const {
     switch (_stereoMode) {
     case StereoMode_SideBySide:
         stereoEncString = "videoscale method=0 add-borders=false ! "
-                          "video/x-raw,format=I420,width=%1,height=%2 ! ";
+                          "video/x-raw,width=%1,height=%2 ! ";
         stereoEncString = stereoEncString.arg(QString::number(getWidth()),
                                               QString::number(getHeight()));
         bitrate /= 2;
@@ -216,7 +216,7 @@ QString VideoFormat::createGstEncodingArgs() const {
     if (_framerate > 0) {
         framerateEncString = QString(
                         "videorate ! "
-                        "video/x-raw,format=I420,framerate=%1/1 ! "
+                        "video/x-raw,framerate=%1/1 ! "
                     ).arg(
                         QString::number(_framerate)
                     );
@@ -265,7 +265,7 @@ QString VideoFormat::createGstEncodingArgs() const {
         break;
     case Encoding_VP8:
         encString += QString(
-                        "vaapivp8enc target-bitrate=%1 ! "
+                        "vaapivp8enc bitrate=%1 ! "
                         "rtpvp8pay pt=96"
                     ).arg(
                         QString::number(bitrate) // vp8 has bitrate in bit/sec
