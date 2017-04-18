@@ -237,7 +237,7 @@ QString VideoFormat::createGstEncodingArgs() const {
                 );
 
     switch (_encoding) {
-    case Encoding_MPEG4:
+    case Encoding_MPEG4: // MPEG4 has no VAAPI encoder
         encString += QString(
                         "avenc_mpeg4 bitrate=%1 bitrate-tolerance=%2 max-threads=%3 ! "
                         "rtpmp4vpay config-interval=3 pt=96"
@@ -247,6 +247,39 @@ QString VideoFormat::createGstEncodingArgs() const {
                         QString::number(_maxThreads)
                     );
         break;
+#ifdef USE_VAAPI_ENCODE
+    case Encoding_MJPEG:
+        encString += QString(
+                        "vaapijpegenc quality=%1 ! rtpjpegpay"
+                    ).arg(
+                        QString::number(_mjpegQuality)
+                    );
+        break;
+    case Encoding_H264:
+        encString += QString(
+                        "vaapih264enc bitrate=%1 ! "
+                        "rtph264pay config-interval=3 pt=96"
+                    ).arg(
+                        QString::number(bitrate / 1000) // x264 has bitrate in kbit/sec
+                    );
+        break;
+    case Encoding_VP8:
+        encString += QString(
+                        "vaapivp8enc target-bitrate=%1 ! "
+                        "rtpvp8pay pt=96"
+                    ).arg(
+                        QString::number(bitrate) // vp8 has bitrate in bit/sec
+                    );
+        break;
+    case Encoding_H265:
+        encString += QString(
+                        "vaapih265enc bitrate=%1 ! "
+                        "rtph265pay config-interval=3 pt=96"
+                    ).arg(
+                        QString::number(bitrate / 1000) // x265 has bitrate in kbit/sec
+                    );
+        break;
+#else
     case Encoding_MJPEG:
         encString += QString(
                         "jpegenc quality=%1 ! rtpjpegpay"
@@ -280,6 +313,7 @@ QString VideoFormat::createGstEncodingArgs() const {
                         QString::number(bitrate / 1000) // x265 has bitrate in kbit/sec
                     );
         break;
+#endif
     default:
         //unknown codec
         LOG_E(LOG_TAG, "Unknown video encoding");
@@ -290,37 +324,68 @@ QString VideoFormat::createGstEncodingArgs() const {
 }
 
 QString VideoFormat::createGstDecodingArgs(VideoFormat::DecodingType type) const {
+    QString bin;
     switch (_encoding) {
     case Encoding_MPEG4:
-        return QString("application/x-rtp,media=video,encoding-name=MP4V-ES,clock-rate=90000,profile-level-id=1,payload=96"
-                        " ! rtpmp4vdepay")
-                + ((type != DecodingType_RtpDecodeOnly) ?
-                        " ! avdec_mpeg4" : "");
+        bin = QString("application/x-rtp,media=video,encoding-name=MP4V-ES,clock-rate=90000,profile-level-id=1,payload=96"
+                        " ! rtpmp4vdepay");
+        break;
     case Encoding_H264:
-        return QString("application/x-rtp,media=video,encoding-name=H264,clock-rate=90000,payload=96"
-                        " ! rtph264depay")
-                + ((type != DecodingType_RtpDecodeOnly) ?
-                        " ! avdec_h264" : "");
+        bin = QString("application/x-rtp,media=video,encoding-name=H264,clock-rate=90000,payload=96"
+                        " ! rtph264depay");
+        break;
     case Encoding_MJPEG:
-        return QString("application/x-rtp,media=video,encoding-name=JPEG,payload=26"
-                       " ! rtpjpegdepay")
-                + ((type != DecodingType_RtpDecodeOnly) ?
-                       " ! jpegdec" : "");
+        bin = QString("application/x-rtp,media=video,encoding-name=JPEG,payload=26"
+                       " ! rtpjpegdepay");
+        break;
     case Encoding_VP8:
-        return QString("application/x-rtp,media=video,encoding-name=VP8,clock-rate=90000,payload=96"
-                       " ! rtpvp8depay")
-                + ((type != DecodingType_RtpDecodeOnly) ?
-                       " ! avdec_vp8" : "");
+        bin = QString("application/x-rtp,media=video,encoding-name=VP8,clock-rate=90000,payload=96"
+                       " ! rtpvp8depay");
+        break;
     case Encoding_H265:
-        return QString("application/x-rtp,media=video,encoding-name=H265,clock-rate=90000,payload=96"
-                       " ! rtph265depay")
-                + ((type != DecodingType_RtpDecodeOnly) ?
-                       " ! avdec_h265" : "");
+        bin = QString("application/x-rtp,media=video,encoding-name=H265,clock-rate=90000,payload=96"
+                       " ! rtph265depay");
+        break;
     default:
         // unknown codec
         LOG_E(LOG_TAG, "Unknown video encoding");
         return "";
     }
+
+
+if (type != DecodingType_RtpDecodeOnly) {
+#ifdef USE_VAAPI_DECODE
+    switch (_encoding) {
+    case Encoding_MJPEG:
+        bin += " ! jpegdec";
+        break;
+    default:
+        bin += " ! vaapidecode";
+        break;
+    }
+#else
+    switch (_encoding) {
+    case Encoding_MPEG4:
+        bin += " ! avdec_mpeg4";
+        break;
+    case Encoding_H264:
+        bin += " ! avdec_h264";
+        break;
+    case Encoding_MJPEG:
+        bin += " ! jpegdec";
+        break;
+    case Encoding_VP8:
+        bin += " ! avdec_vp8";
+        break;
+    case Encoding_H265:
+        bin += " ! avdec_h265";
+        break;
+    }
+#endif
+
+}
+
+    return bin;
 }
 
 QString VideoFormat::getFileExtension() const {

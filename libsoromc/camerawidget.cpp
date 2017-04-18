@@ -56,7 +56,7 @@ void CameraWidget::play(SocketAddress address, VideoFormat format) {
     QGlib::connect(_pipeline->bus(), "message", this, &CameraWidget::onBusMessage);
 
     // create a udpsrc to receive the stream
-    QString binStr = "udpsrc address=%1 port=%2 ! %3 ! videoscale ! video/x-raw,width=%4,height=%5 ! videoconvert";
+    QString binStr = "udpsrc address=%1 port=%2 reuse=true ! %3 ! videoscale ! video/x-raw,width=%4,height=%5 ! videoconvert";
     binStr = binStr.arg(address.host.toString(),
                         QString::number(address.port),
                         format.createGstDecodingArgs(),

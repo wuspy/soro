@@ -9,4 +9,7 @@
 #  define LIBSORO_EXPORT Q_DECL_IMPORT
 #endif
 
+// Force VideoFormat to use VAAPI encoders
+#define USE_VAAPI_ENCODE
+
 #endif // SORO_GLOBAL_H

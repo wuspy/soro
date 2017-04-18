@@ -3,6 +3,7 @@
 
 #include <QtCore>
 #include "mediaformat.h"
+#include "soro_global.h"
 
 namespace Soro {
 

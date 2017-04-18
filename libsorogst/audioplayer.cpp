@@ -50,7 +50,7 @@ void AudioPlayer::play(SocketAddress address, AudioFormat encoding) {
     QGlib::connect(_pipeline->bus(), "message", this, &AudioPlayer::onBusMessage);
 
     // create a udpsrc to receive the stream
-    QString binStr = "udpsrc address=%1 port=%2 ! "
+    QString binStr = "udpsrc address=%1 port=%2 reuse=true ! "
                      "%3 ! "
                      "audioconvert ! "
                      "alsasink";
