@@ -101,8 +101,7 @@ ApplicationWindow {
     property alias cameraNames: activeCameraCombo.model
     property string roverAddress: "0.0.0.0"
     property string gamepad: "None"
-    property string driveMbedStatus: "Unknown"
-    property string dataMbedStatus: "Unknown"
+    property string mbedStatus: "Unknown"
 
     // Internal properties
 
@@ -277,16 +276,6 @@ ApplicationWindow {
         else {
             gamepadField.text = gamepad
         }
-    }
-
-    onDriveMbedStatusChanged: {
-        // Update the drive status field
-        driveMbedStatusField.text = driveMbedStatus
-    }
-
-    onDataMbedStatusChanged: {
-        // Update the data status field
-        dataMbedStatusField.text = dataMbedStatus
     }
 
     onClosing: {
@@ -585,7 +574,7 @@ ApplicationWindow {
                 GroupBox {
                     id: infoGroupBox
                     width: 200
-                    height: dataMbedStatusField.y + dataMbedStatusField.height + topPadding + bottomPadding
+                    height: mbedStatusField.y + mbedStatusField.height + topPadding + bottomPadding
                     anchors.right: parent.right
                     anchors.rightMargin: 0
                     anchors.left: parent.left
@@ -637,47 +626,24 @@ ApplicationWindow {
                     }
 
                     Label {
-                        id: driveMbedStatusLabel
+                        id: mbedStatusField
                         x: 5
                         y: 60
                         width: 100
                         text: qsTr("Drive System Status")
                         anchors.verticalCenterOffset: 0
                         anchors.leftMargin: 0
-                        anchors.verticalCenter: driveMbedStatusField.verticalCenter
+                        anchors.verticalCenter: mbedStatusField.verticalCenter
                         anchors.left: parent.left
                     }
 
                     Label {
-                        id: driveMbedStatusField
-                        text: qsTr("Unknown")
+                        id: mbedStatusField
+                        text: mbedStatus
                         anchors.leftMargin: 12
                         anchors.left: driveMbedStatusLabel.right
                         anchors.rightMargin: 0
                         anchors.top: gamepadField.bottom
-                        anchors.topMargin: 8
-                        anchors.right: parent.right
-                    }
-
-                    Label {
-                        id: dataMbedStatusLabel
-                        x: 5
-                        y: 60
-                        width: 100
-                        text: qsTr("Data System Status")
-                        anchors.verticalCenterOffset: 0
-                        anchors.leftMargin: 0
-                        anchors.verticalCenter: dataMbedStatusField.verticalCenter
-                        anchors.left: parent.left
-                    }
-
-                    Label {
-                        id: dataMbedStatusField
-                        text: qsTr("Unknown")
-                        anchors.leftMargin: 12
-                        anchors.left: dataMbedStatusLabel.right
-                        anchors.rightMargin: 0
-                        anchors.top: driveMbedStatusField.bottom
                         anchors.topMargin: 8
                         anchors.right: parent.right
                     }

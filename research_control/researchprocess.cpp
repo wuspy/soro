@@ -84,11 +84,17 @@ void ResearchControlProcess::init() {
     _monoVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT));
     _monoVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_MR_CAMERA_PORT));
 
+    // add localhost bounce to the video stream so they can be recorded to file
+    _stereoLVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT_R));
+    _stereoRVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT_R));
+    _aux1VideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1_CAMERA_PORT_R));
+    _monoVideoClient->addForwardingAddress(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_M_CAMERA_PORT_R));
+
     // Create file recorders
-    _stereoLGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT), "StereoLeft", this);
-    _stereoRGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT), "StereoRight", this);
-    _aux1GStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1L_CAMERA_PORT), "Aux1", this);
-    _monoGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_ML_CAMERA_PORT), "Mono", this);
+    _stereoLGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SL_CAMERA_PORT_R), "StereoLeft", this);
+    _stereoRGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_SR_CAMERA_PORT_R), "StereoRight", this);
+    _aux1GStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_A1_CAMERA_PORT_R), "Aux1", this);
+    _monoGStreamerRecorder = new GStreamerRecorder(SocketAddress(QHostAddress::LocalHost, NETWORK_ALL_RESEARCH_M_CAMERA_PORT_R), "Mono", this);
 
     LOG_I(LOG_TAG, "***************Initializing Audio system******************");
 
@@ -320,10 +326,10 @@ void ResearchControlProcess::ui_settingsApplied() {
 
 void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaClient::State state) {
     // Stop all file recordings
-    //_stereoLGStreamerRecorder->stop();
-    //_stereoRGStreamerRecorder->stop();
-    //_monoGStreamerRecorder->stop();
-    //_aux1GStreamerRecorder->stop();
+    _stereoLGStreamerRecorder->stop();
+    _stereoRGStreamerRecorder->stop();
+    _monoGStreamerRecorder->stop();
+    _aux1GStreamerRecorder->stop();
 
     if ((client == _stereoLVideoClient) || (client == _stereoRVideoClient)) {
         if ((_stereoLVideoClient->getState() == MediaClient::StreamingState) &&
@@ -338,8 +344,8 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
                                                stereoRFormat);
             // Record streams
             qint64 timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
-            //_stereoLGStreamerRecorder->begin(&stereoLFormat, timestamp);
-            //_stereoRGStreamerRecorder->begin(&stereoRFormat, timestamp);
+            _stereoLGStreamerRecorder->begin(&stereoLFormat, timestamp);
+            _stereoRGStreamerRecorder->begin(&stereoRFormat, timestamp);
 
             if (!_settings.enableStereoUi || !_settings.enableStereoVideo) {
                 LOG_E(LOG_TAG, "Video clients are playing stereo, but UI is not in stereo mode");
@@ -365,7 +371,7 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
         }
 
         // Record stream
-        //_aux1GStreamerRecorder->begin(&aux1Format, QDateTime::currentDateTime().toMSecsSinceEpoch());
+        _aux1GStreamerRecorder->begin(&aux1Format, QDateTime::currentDateTime().toMSecsSinceEpoch());
     }
     else if ((client == _monoVideoClient) && (_monoVideoClient->getState() == MediaClient::StreamingState)) {
         // Mono camera is streaming
@@ -383,7 +389,7 @@ void ResearchControlProcess::videoClientStateChanged(MediaClient *client, MediaC
         }
 
         // Record stream
-        //_monoGStreamerRecorder->begin(&monoFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
+        _monoGStreamerRecorder->begin(&monoFormat, QDateTime::currentDateTime().toMSecsSinceEpoch());
     }
 
     if (state == MediaClient::StreamingState) {
@@ -520,31 +526,18 @@ void ResearchControlProcess::roverSharedChannelMessageReceived(const char *messa
     stream >> reinterpret_cast<qint32&>(messageType);
     switch (messageType) {
     case SharedMessage_RoverStatusUpdate: {
-        bool driveNormal;
-        bool dataNormal;
-        stream >> driveNormal;
-        stream >> dataNormal;
-        if (!driveNormal) {
+        bool mbedStatus;
+        stream >> mbedStatus;
+        if (!mbedStatus) {
             QMetaObject::invokeMethod(_controlUi,
                                       "notify",
                                       Q_ARG(QVariant, "error"),
-                                      Q_ARG(QVariant, "Drive Mbed Error"),
-                                      Q_ARG(QVariant, "The rover has lost connection to the drive mbed. Driving will no longer work."));
-            _controlUi->setProperty("driveMbedStatus", "Mbed Error");
+                                      Q_ARG(QVariant, "Mbed Error"),
+                                      Q_ARG(QVariant, "The rover has lost connection to the mbed. Driving and data collection will no longer work."));
+            _controlUi->setProperty("mbedStatus", "Error");
         }
         else {
-            _controlUi->setProperty("driveMbedStatus", "Operational");
-        }
-        if (!dataNormal) {
-            QMetaObject::invokeMethod(_controlUi,
-                                      "notify",
-                                      Q_ARG(QVariant, "error"),
-                                      Q_ARG(QVariant, "Data Mbed Error"),
-                                      Q_ARG(QVariant, "The rover has lost connection to the data mbed. Data recording will no longer work."));
-            _controlUi->setProperty("dataMbedStatus", "Mbed Error");
-        }
-        else {
-            _controlUi->setProperty("dataMbedStatus", "Operational");
+            _controlUi->setProperty("mbedStatus", "Operational");
         }
     }
         break;

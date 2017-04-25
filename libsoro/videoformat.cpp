@@ -426,15 +426,15 @@ QString VideoFormat::getEncodingName() const {
 QString VideoFormat::createGstFileRecordingArgs(QString fileName) const {
     switch (_encoding) {
     case Encoding_MPEG4:
-        return QString("mp4mux ! queue ! filesink location=%1").arg(fileName);
+        return QString("mpeg4videoparse ! queue ! mp4mux ! queue ! filesink location=%1").arg(fileName);
     case Encoding_H264:
-        return QString("avimux ! queue ! filesink location=%1").arg(fileName);
+        return QString("h264parse ! queue ! avimux ! queue ! filesink location=%1").arg(fileName);
     case Encoding_MJPEG:
-        return QString("avimux ! queue ! filesink location=%1").arg(fileName);
+        return QString("jpegparse ! queue ! avimux ! queue ! filesink location=%1").arg(fileName);
     case Encoding_VP8:
-        return QString("webmmux ! queue ! filesink location=%1").arg(fileName);
+        return QString("queue ! webmmux streamable=true ! queue ! filesink location=%1").arg(fileName);
     case Encoding_H265:
-        return QString("matroskamux ! queue ! filesink location=%1");
+        return QString("h265parse ! queue ! matroskamux ! queue ! filesink location=%1");
     default:
         return "";
     }

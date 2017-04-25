@@ -63,13 +63,11 @@ void ResearchRoverProcess::init() {
     LOG_I(LOG_TAG, "*****************Initializing MBED systems*******************");
 
     // create mbed channels
-    _driveMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_DRIVE_MBED_PORT), MBED_ID_RESEARCH_DRIVE, this);
-    _dataMbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_DATA_MBED_PORT), MBED_ID_RESEARCH_DATA, this);
+    _mbed = new MbedChannel(SocketAddress(QHostAddress::Any, NETWORK_ROVER_RESEARCH_DRIVE_MBED_PORT), MBED_ID_RESEARCH_DRIVE, this);
 
     // observers for mbed events
-    connect(_dataMbed, &MbedChannel::messageReceived, this, &ResearchRoverProcess::dataMbedMessageReceived);
-    connect(_dataMbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::dataMbedChannelStateChanged);
-    connect(_driveMbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::driveMbedChannelStateChanged);
+    connect(_mbed, &MbedChannel::messageReceived, this, &ResearchRoverProcess::mbedMessageReceived);
+    connect(_mbed, &MbedChannel::stateChanged, this, &ResearchRoverProcess::mbedChannelStateChanged);
 
     // observers for network channels message received
     connect(_driveChannel, &Channel::messageReceived, this, &ResearchRoverProcess::driveChannelMessageReceived);
@@ -177,7 +175,7 @@ void ResearchRoverProcess::init() {
     _dataRecorder->addColumn(_gpsDataSeries->getLatitudeSeries());
     _dataRecorder->addColumn(_gpsDataSeries->getLongitudeSeries());
     connect(_gpsServer, &GpsServer::gpsUpdate, _gpsDataSeries, &GpsCsvSeries::addLocation);
-    connect(_dataMbed, &MbedChannel::messageReceived, _sensorDataSeries, &SensorDataParser::newData);
+    connect(_mbed, &MbedChannel::messageReceived, _sensorDataSeries, &SensorDataParser::newData);
 
     LOG_I(LOG_TAG, "-------------------------------------------------------");
     LOG_I(LOG_TAG, "-------------------------------------------------------");
@@ -202,12 +200,9 @@ void ResearchRoverProcess::sendSystemStatusMessage() {
     stream.setByteOrder(QDataStream::BigEndian);
 
     SharedMessageType messageType = SharedMessage_Research_RoverStatusUpdate;
-    bool driveState = _driveMbed->getState() == MbedChannel::ConnectedState;
-    bool dataState = _dataMbed->getState() == MbedChannel::ConnectedState;
 
     stream << static_cast<qint32>(messageType);
-    stream << driveState;
-    stream << dataState;
+    stream << (_mbed->getState() == MbedChannel::ConnectedState);
     _sharedChannel->sendMessage(message);
 }
 
@@ -228,16 +223,11 @@ void ResearchRoverProcess::driveChannelStateChanged(Channel::State state) {
         //Send a stop command to the rover
         char stopMessage[DriveMessage::RequiredSize];
         DriveMessage::setGamepadData_SingleStick(stopMessage, 0, 0, 0);
-        _driveMbed->sendMessage(stopMessage, DriveMessage::RequiredSize);
+        _mbed->sendMessage(stopMessage, DriveMessage::RequiredSize);
     }
 }
 
-void ResearchRoverProcess::dataMbedChannelStateChanged(MbedChannel::State state) {
-    Q_UNUSED(state);
-    sendSystemStatusMessage();
-}
-
-void ResearchRoverProcess::driveMbedChannelStateChanged(MbedChannel::State state) {
+void ResearchRoverProcess::mbedChannelStateChanged(MbedChannel::State state) {
     Q_UNUSED(state);
     sendSystemStatusMessage();
 }
@@ -248,7 +238,7 @@ void ResearchRoverProcess::driveChannelMessageReceived(const char* message, Chan
     reinterpret_cast<qint32&>(messageType) = (qint32)reinterpret_cast<unsigned char&>(header);
     switch (messageType) {
     case MbedMessage_Drive:
-        _driveMbed->sendMessage(message, (int)size);
+        _mbed->sendMessage(message, (int)size);
         break;
     default:
         LOG_E(LOG_TAG, "Received invalid message from mission control on drive control channel");
@@ -355,7 +345,7 @@ void ResearchRoverProcess::sharedChannelMessageReceived(const char* message, Cha
     }
 }
 
-void ResearchRoverProcess::dataMbedMessageReceived(const char* message, int size) {
+void ResearchRoverProcess::mbedMessageReceived(const char* message, int size) {
     // Forward the message to mission control (MbedDataParser instance will take care of logging it)
 
     QByteArray byteArray;

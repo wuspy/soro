@@ -29,8 +29,7 @@ private:
 
     /* Interfaces with the mbed controlling the drive system and data collection system
      */
-    MbedChannel *_driveMbed = nullptr;
-    MbedChannel *_dataMbed = nullptr;
+    MbedChannel *_mbed = nullptr;
 
     /* Provides GPS coordinates back to mission control
      */
@@ -60,9 +59,8 @@ private slots:
     void sendSystemStatusMessage();
     void sharedChannelStateChanged(Channel::State state);
     void driveChannelStateChanged(Channel::State state);
-    void driveMbedChannelStateChanged(MbedChannel::State state);
-    void dataMbedChannelStateChanged(MbedChannel::State state);
-    void dataMbedMessageReceived(const char* message, int size);
+    void mbedChannelStateChanged(MbedChannel::State state);
+    void mbedMessageReceived(const char* message, int size);
     void driveChannelMessageReceived(const char* message, Channel::MessageSize size);
     void sharedChannelMessageReceived(const char* message, Channel::MessageSize size);
     void gpsUpdate(NmeaMessage message);

@@ -115,6 +115,7 @@ void CameraWidget::stop(QString reason, CameraWidget::Pattern pattern) {
 
 void CameraWidget::resetPipeline() {
     if (_pipeline) {
+        _pipeline->bus()->removeSignalWatch();
         _pipeline->setState(QGst::StateNull);
         _pipeline.clear();
     }

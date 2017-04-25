@@ -8,6 +8,7 @@
 #include "libsoro/socketaddress.h"
 
 #include <Qt5GStreamer/QGst/Pipeline>
+#include <Qt5GStreamer/QGst/Message>
 #include <Qt5GStreamer/QGst/Bin>
 
 namespace Soro {
@@ -21,6 +22,9 @@ public:
 
     void begin(const MediaFormat* format, qint64 timestamp);
     void stop();
+
+private slots:
+    void onBusMessage(const QGst::MessagePtr & message);
 
 private:
     QGst::PipelinePtr _pipeline;

@@ -76,7 +76,7 @@ void GamepadManager::timerEvent(QTimerEvent *e) {
          * suitable controller
          */
         SDL_GameControllerUpdate();
-        LOG_I(LOG_TAG, "Looking for usable joysticks...");
+        //LOG_I(LOG_TAG, "Looking for usable joysticks...");
         for (int i = 0; i < SDL_NumJoysticks(); ++i) {
             char guid_str[256];
             SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
