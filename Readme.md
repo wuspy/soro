@@ -4,7 +4,7 @@
 
 This is the repository for the 2015-16 Sooner Rover team.
 
-This codebase is still under active development as it is being used for a teleoperation research project. [Here is the commit](https://github.com/doublejinitials/soro/tree/1b0f66f3ee376ff07cd3b8e10c90ad4633ec3a63) where you can see the state of the code as it was for the 2016 NASA/NIA Robo-Ops competition.
+This codebase was under active development for quite some time after, as it was being used for a teleoperation research project (development for this research project was moved to [here](https://github.com/doublejinitials/rover_research)). [Here is the commit](https://github.com/doublejinitials/soro/tree/1b0f66f3ee376ff07cd3b8e10c90ad4633ec3a63) where you can see the state of the code as it was for the 2016 NASA/NIA Robo-Ops competition.
 
 ## Dependencies
 
